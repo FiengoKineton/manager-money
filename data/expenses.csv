@@ -66,3 +66,4 @@ id,date,category,sub_category,amount,account,description,created_at
 65,2025-11-28,Transportation,Parking,3.5,Card,,2025-11-28T19:56:57
 66,2025-11-28,Claudia,KFC,29.3,Card,,2025-11-29T10:57:39
 67,2025-11-29,Eating out,,39.92,Card,Sushi Glovo,2025-11-29T22:10:21
+68,2025-11-30,Going out,,20.0,card,Pizza Glovo,2025-11-30T23:05:00

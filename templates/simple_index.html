@@ -5,7 +5,31 @@
   <h2>Transactions (simple)</h2>
   <p class="hint">Minimal view for phone / Termux: list + add only.</p>
 
-  <p style="margin-bottom:0.5rem;">
+  {# SUMMARY CARDS (Income / Expenses / Investments / Net) #}
+  <div class="summary">
+    <div class="summary-card income">
+      <h3>Income</h3>
+      <p>{{ '%.2f'|format(totals.income) }}</p>
+    </div>
+
+    <div class="summary-card expense">
+      <h3>Expenses</h3>
+      <p>{{ '%.2f'|format(totals.expenses) }}</p>
+    </div>
+
+    <div class="summary-card investment">
+      <h3>Investments (cash out)</h3>
+      <p>{{ '%.2f'|format(totals.investments) }}</p>
+    </div>
+
+    <div class="summary-card net">
+      <h3>Net</h3>
+      <p>{{ '%.2f'|format(totals.net) }}</p>
+      <small>Savings rate: {{ '%.1f'|format(totals.savings_rate * 100) }} %</small>
+    </div>
+  </div>
+
+  <p style="margin-bottom:0.5rem; margin-top:0.5rem;">
     <a href="{{ url_for('simple_add_transaction', type='expense') }}">+ Expense</a> |
     <a href="{{ url_for('simple_add_transaction', type='income') }}">+ Income</a> |
     <a href="{{ url_for('simple_add_transaction', type='investment') }}">+ Investment</a>

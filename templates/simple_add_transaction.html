@@ -12,7 +12,11 @@
 
     <div>
       <label>Category</label>
-      <input type="text" name="category" placeholder="Category">
+      <select name="category" required>
+        {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+      </select>
     </div>
 
     <div>

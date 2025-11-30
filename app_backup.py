@@ -7,6 +7,11 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 from flask import Flask, render_template, request, redirect, url_for
+from config import (
+    EXPENSE_CATEGORIES,
+    INCOME_CATEGORIES,
+    INVESTMENT_CATEGORIES,
+)
 
 # ---------------------------------------------------------------------
 # Paths (adjust if your layout is different)
@@ -77,6 +82,27 @@ def load_all_simple() -> List[Dict[str, Any]]:
         reverse=True,
     )
     return rows
+
+
+# -------- NEW: totals computation for simple app ---------------------
+def compute_totals_simple(transactions: List[Dict[str, Any]]) -> Dict[str, float]:
+    income = sum(tx["amount_float"] for tx in transactions if tx["type"] == "income")
+    expenses = sum(tx["amount_float"] for tx in transactions if tx["type"] == "expense")
+    investments = sum(
+        tx["amount_float"] for tx in transactions if tx["type"] == "investment"
+    )
+
+    net = income - expenses - investments
+    savings_rate = net / income if income > 0 else 0.0
+
+    return {
+        "income": income,
+        "expenses": expenses,
+        "investments": investments,
+        "net": net,
+        "savings_rate": savings_rate,
+    }
+# ---------------------------------------------------------------------
 
 
 def _next_id_for(path: Path) -> int:
@@ -263,7 +289,12 @@ def delete_transaction_simple(ttype: str, tx_id: int) -> None:
 @app.route("/simple", endpoint="simple_index")
 def simple_index():
     transactions = load_all_simple()
-    return render_template("simple_index.html", transactions=transactions)
+    totals = compute_totals_simple(transactions)   # <-- NEW
+    return render_template(
+        "simple_index.html",
+        transactions=transactions,
+        totals=totals,
+    )
 
 
 @app.route("/add", methods=["GET", "POST"], endpoint="add_transaction")
@@ -303,8 +334,21 @@ def simple_add_transaction():
     if ttype not in ("expense", "income", "investment"):
         ttype = "expense"
 
+    # pick category list like in the full app
+    if ttype == "expense":
+        categories = EXPENSE_CATEGORIES
+    elif ttype == "income":
+        categories = INCOME_CATEGORIES
+    else:
+        categories = INVESTMENT_CATEGORIES
+
     today = datetime.today().date().isoformat()
-    return render_template("simple_add_transaction.html", ttype=ttype, today=today)
+    return render_template(
+        "simple_add_transaction.html",
+        ttype=ttype,
+        today=today,
+        categories=categories,
+    )
 
 
 
@@ -370,6 +414,14 @@ def simple_transaction_detail(ttype: str, tx_id: int):
 
     return render_template("simple_detail.html", tx=tx_view)
 
+
+@app.route("/analysis")
+def analysis():
+    """
+    Placeholder for the simple app (no pandas, no heavy stats).
+    Just send the user back to the simple dashboard.
+    """
+    return redirect(url_for("index"))
 
 
 
