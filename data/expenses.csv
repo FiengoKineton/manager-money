@@ -71,3 +71,4 @@ id,date,category,sub_category,amount,account,description,created_at
 70,2025-12-02,Subscriptions,Amazon Prime,49.9,Card,,2025-12-02T17:55:24
 71,2025-12-04,Other,,15.8,Card,,
 72,2025-12-04,Subscriptions,Microsoft,10.0,,,
+73,2025-12-04,Restaurants,,12.5,,Pranzo colleghi,
