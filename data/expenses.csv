@@ -73,3 +73,4 @@ id,date,category,sub_category,amount,account,description,created_at
 72,2025-12-04,Subscriptions,Microsoft,10.0,,,
 73,2025-12-04,Restaurants,,12.5,,Pranzo colleghi,
 74,2025-12-04,Health,,23.7,Card,Condoms,2025-12-04T17:29:09
+75,2025-12-04,Health,,39.9,,Sonirem x2,
