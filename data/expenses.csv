@@ -69,3 +69,5 @@ id,date,category,sub_category,amount,account,description,created_at
 68,2025-11-30,Going out,,20.0,card,Pizza Glovo,2025-11-30T23:05:00
 69,2025-12-02,Gifts,,61.69,,Secret Santa + Rubik Cubes,2025-12-02T17:50:30
 70,2025-12-02,Subscriptions,Amazon Prime,49.9,Card,,2025-12-02T17:55:24
+71,2025-12-04,Other,,15.8,Card,,
+72,2025-12-04,Subscriptions,Microsoft,10.0,,,
