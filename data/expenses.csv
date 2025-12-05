@@ -74,3 +74,6 @@ id,date,category,sub_category,amount,account,description,created_at
 73,2025-12-04,Restaurants,,12.5,,Pranzo colleghi,
 74,2025-12-04,Health,,23.7,Card,Condoms,2025-12-04T17:29:09
 75,2025-12-04,Health,,39.9,,Sonirem x2,
+76,2025-12-05,Transportation,ATM,4.4,,,
+77,2025-12-05,Other,,8.0,,,
+78,2025-12-05,Coffe,,3.6,,,

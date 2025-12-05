@@ -35,6 +35,7 @@ EXPENSE_CATEGORIES = [
     "Travel",
     "Savings",
     "Other",
+    "Coffe",
 ]
 
 
