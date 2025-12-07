@@ -74,7 +74,10 @@ id,date,category,sub_category,amount,account,description,created_at
 73,2025-12-04,Restaurants,,12.5,,Pranzo colleghi,
 74,2025-12-04,Health,,23.7,Card,Condoms,2025-12-04T17:29:09
 75,2025-12-04,Health,,39.9,,Sonirem x2,
-76,2025-12-05,Transportation,ATM,4.4,,,
-77,2025-12-05,Other,,8.0,,,
+76,2025-12-05,Transportation,ATM,2.2,,,
+77,2025-12-05,Other,,7.0,,,
 78,2025-12-05,Coffe,,3.6,,,
 79,2025-12-05,Eating out,,19.62,Card,w Carlo,
+80,2025-12-06,Going out,,19.5,,,
+81,2025-12-06,Transportation,,2.16,EasyPark,,
+82,2025-12-07,Coffe,,2.0,Card,,
