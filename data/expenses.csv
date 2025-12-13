@@ -85,3 +85,5 @@ id,date,category,sub_category,amount,account,description,created_at
 84,2025-12-10,Other,,15.0,,,
 85,2025-12-10,Transportation,ATM,2.2,,,
 86,2025-12-11,Family,,48.78,,Poke bambini,
+87,2025-12-12,Transportation,,15.0,Card,Benzina Riccardo,
+88,2025-12-13,Going out,,7.7,Card,,
