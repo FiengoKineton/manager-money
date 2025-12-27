@@ -107,3 +107,6 @@ id,date,category,sub_category,amount,account,description,created_at
 106,2025-12-23,Eating out,,56.07,,,
 107,2025-12-24,Transportation,,39.91,,,
 108,2025-12-24,Other,,18.2,,,
+109,2025-12-26,Groceries,,18.9,,,
+110,2025-12-26,Claudia,,25.0,,,
+111,2025-12-27,Transportation,,3.33,,,
