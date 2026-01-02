@@ -110,3 +110,8 @@ id,date,category,sub_category,amount,account,description,created_at
 109,2025-12-26,Groceries,,18.9,,,
 110,2025-12-26,Claudia,,25.0,,,
 111,2025-12-27,Transportation,,3.33,,,
+112,2025-12-30,Transportation,,2.96,,EasyPark,
+113,2025-12-30,Transportation,,2.01,,EasyPark,
+114,2025-12-30,Restaurants,,157.5,Card,Sushi,
+115,2025-12-31,Groceries,,25.0,Card,Struffoli,
+116,2026-01-01,Claudia,,26.95,,Poke,
