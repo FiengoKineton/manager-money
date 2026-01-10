@@ -119,3 +119,5 @@ id,date,category,sub_category,amount,account,description,created_at
 118,2026-01-05,Subscriptions,,10.0,,Google,
 119,2026-01-05,Coffe,,12.5,,,
 120,2026-01-05,Shopping,,580.0,Cash,K-ring,
+121,2026-01-07,Restaurants,,23.82,,,
+122,2026-01-08,Going out,,15.7,,,
