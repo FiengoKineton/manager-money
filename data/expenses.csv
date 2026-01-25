@@ -136,3 +136,5 @@ id,date,category,sub_category,amount,account,description,created_at
 135,2026-01-21,Claudia,,881.6,,SpaHotelDolomiti,2026-01-22T11:32:38
 136,2026-01-21,Other,,15.8,,,2026-01-22T11:32:54
 137,2026-01-22,Eating out,,30.4,,Sushi,2026-01-22T20:37:08
+138,2026-01-25,Travel,,185.4,,Sestriere ski,
+139,2026-01-25,Eating out,,40.72,,Sushi,
