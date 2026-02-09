@@ -2,3 +2,4 @@ id,date,category,sub_category,amount,account,description,created_at
 1,2025-12-02,Deposit,,2000.0,Fondi Comuni,,2025-12-02T17:49:19
 2,2026-01-08,Deposit,,150.0,,Investments,
 3,2026-01-27,Deposit,,1000.0,Liquidita,,2026-01-27T10:22:16
+4,2026-02-09,Deposit,,150.0,,,2026-02-09T13:24:33

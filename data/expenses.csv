@@ -145,3 +145,6 @@ id,date,category,sub_category,amount,account,description,created_at
 144,2026-01-31,Pre-paid card,,391.0,,,
 145,2026-01-30,Claudia,,24.95,,Pitta,
 146,2026-02-01,Other,,11.8,,,2026-02-03T12:41:17
+147,2026-02-03,Subscriptions,,10.0,,Google,2026-02-09T13:22:26
+148,2026-02-08,Travel,,89.3,,DolomiaSkiTour,2026-02-09T13:23:10
+149,2026-02-08,Shopping,,108.25,,Claudia and Sofia,2026-02-09T13:24:07

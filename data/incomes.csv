@@ -8,5 +8,5 @@ id,date,category,sub_category,amount,account,description,created_at
 7,2025-11-27,PoliMi,,1638.34,,,
 8,2025-10-01,Other income,,1100.22,,Initial Net,
 9,2025-12-19,PoliMi,,1474.0,,1st payment,2025-12-19T12:53:58
-10,2026-01-02,Other,,2100.0,,Compro Oro 28gr,
+10,2026-01-02,Cash,,2100.0,,Compro Oro 28gr,
 11,2026-01-30,PoliMi,,722.22,,2nd payment,2026-01-30T10:05:47
