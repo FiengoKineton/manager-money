@@ -148,3 +148,5 @@ id,date,category,sub_category,amount,account,description,created_at
 147,2026-02-03,Subscriptions,,10.0,,Google,2026-02-09T13:22:26
 148,2026-02-08,Travel,,89.3,,DolomiaSkiTour,2026-02-09T13:23:10
 149,2026-02-08,Shopping,,108.25,,Claudia and Sofia,2026-02-09T13:24:07
+150,2026-02-09,Going out,,22.7,,Glovo,
+151,2026-02-10,Other,,23.9,,,
