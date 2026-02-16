@@ -155,3 +155,6 @@ id,date,category,sub_category,amount,account,description,created_at
 154,2026-02-15,Other,,7.7,,,
 155,2026-02-15,Shopping,,125.9,,,
 156,2026-02-15,Gifts,,100.0,,Sara,
+157,2026-02-16,Other,,22.0,,,2026-02-16T15:56:03
+158,2026-02-16,Health,,500.0,,,2026-02-16T15:56:13
+159,2026-02-16,Coffe,,1.4,,,2026-02-16T15:57:16
