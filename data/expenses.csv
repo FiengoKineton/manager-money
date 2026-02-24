@@ -166,3 +166,6 @@ id,date,category,sub_category,amount,account,description,created_at
 165,2026-02-20,Coffe,,2.5,,,
 166,2026-02-19,Transportation,,2.2,,AMT,
 167,2026-02-20,Coffe,,5.0,,,2026-02-24T12:04:47
+168,2026-02-24,Gifts,,80.0,,SV,
+169,2026-02-24,Other,,13.5,,,
+170,2026-02-24,Transportation,,48.0,,Fckng parking,
