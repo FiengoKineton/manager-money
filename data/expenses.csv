@@ -178,8 +178,13 @@ id,date,category,sub_category,amount,account,description,created_at
 177,2026-02-27,Transportation,,3.0,,,2026-02-27T15:21:29
 179,2026-02-28,Claudia,,25.5,,Birdys bakery,
 180,2026-02-28,Gifts,,158.8,,Papa e Andrea,
-181,2026-02-28,Transportation,,4.4,,,
+181,2026-02-28,Transportation,,6.6,,,
 182,2026-03-01,Other,,29.8,,,
 183,2026-03-01,Claudia,,178.2,,Ski rent,
 184,2026-02-28,Pre-paid card,,138.0,,,
 185,2026-02-27,Health,,24.84,,,
+186,2026-03-08,Coffe,sturbucks,10.0,,,2026-03-08T14:41:54
+187,2026-03-03,Subscriptions,google,10.0,,,2026-03-08T14:42:45
+188,2026-03-07,Other,,7.0,,,2026-03-08T14:43:23
+189,2026-03-08,Eating out,,80.0,Cash,,2026-03-08T14:44:37
+190,2026-03-03,Eating out,,20.0,Cash,,2026-03-08T14:45:03
