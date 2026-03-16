@@ -26,6 +26,7 @@ def summary_totals(df: pd.DataFrame) -> dict:
         "investments": float(investments_abs),
         "net": float(net),
         "savings_rate": float(savings_rate),
+        "total_availability": float(net) + float(investments_abs)
     }
 
 
@@ -194,3 +195,17 @@ def expenses_by_weekday(df):
     grp = grp.dropna(subset=["total"])
 
     return grp[["weekday", "total"]]
+
+
+def period_income_expense(df: pd.DataFrame) -> dict:
+    """Calculate income and expenses for a given time period."""
+    if df.empty:
+        return {"income": 0.0, "expenses": 0.0}
+        
+    income = df[df["type"] == "income"]["signed_amount"].sum()
+    
+    # We use a minus sign here because expenses are stored as negative numbers 
+    # in 'signed_amount', and we want to display them as positive totals.
+    expenses = -df[df["type"] == "expense"]["signed_amount"].sum()
+    
+    return {"income": float(income), "expenses": float(expenses)}

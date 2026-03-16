@@ -14,7 +14,7 @@ INVESTMENTS_CSV = DATA_DIR / "investments.csv"
 PLOTS_DIR = BASE_DIR / "static" / "plots"
 PLOTS_DIR.mkdir(exist_ok=True, parents=True)
 
-EXPENSE_CATEGORIES = [
+EXPENSE_CATEGORIES = sorted([
     "Rent",
     "Groceries",
     "Restaurants",
@@ -37,10 +37,10 @@ EXPENSE_CATEGORIES = [
     "Other",
     "Lost",
     "Coffe",
-]
+])
 
 
-INCOME_CATEGORIES = [
+INCOME_CATEGORIES = sorted([
     "PoliMi",
     "Kineton",
     "Deddo",
@@ -51,17 +51,17 @@ INCOME_CATEGORIES = [
     "Gift",
     "Cash",
     "Other",
-]
+])
 
 
-INVESTMENT_CATEGORIES = [
+INVESTMENT_CATEGORIES = sorted([
     "Deposit",
     "Withdrawal",
     "Buy",
     "Sell",
     "Dividend",
     "Other",
-]
+])
 
 DEFAULT_TYPES = ["expense", "income", "investment"]
 

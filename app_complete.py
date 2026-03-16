@@ -26,6 +26,7 @@ from utils.stats import (
     rolling_net_flow,
     largest_expenses,
     expenses_by_weekday,
+    period_income_expense,
 )
 from utils.plots import (
     plot_monthly_summary,
@@ -43,6 +44,16 @@ app = Flask(__name__)
 @app.route("/")
 def index():
     df = load_all()
+
+    today = pd.Timestamp.today()
+    start_this_month = today.replace(day=1)
+    start_3_months = today - pd.DateOffset(months=3)
+
+    df_this_month = df[(df['date'] >= start_this_month) & (df['date'] <= today)]
+    df_3_months = df[(df['date'] >= start_3_months) & (df['date'] <= today)]
+
+    stats_this_month = period_income_expense(df_this_month)
+    stats_3_months = period_income_expense(df_3_months)
 
     # Filters from query params
     start_default, end_default = default_date_range()
@@ -101,6 +112,8 @@ def index():
         categories_selected=categories,
         categories_all=all_categories,
         q=q,
+        stats_this_month=stats_this_month,
+        stats_3_months=stats_3_months,
     )
 
 
