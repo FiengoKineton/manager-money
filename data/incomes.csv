@@ -15,3 +15,4 @@ id,date,category,sub_category,amount,account,description,created_at
 14,2026-02-25,Refund,,13.61,,KTH,
 15,2026-03-06,PoliMi,,2440.77,,,2026-03-08T14:43:43
 16,2026-04-14,PoliMi,,1638.34,,,2026-04-14T18:49:05
+17,2026-04-16,Refund,Axes,126.0,,,2026-04-24T16:10:17
