@@ -10,16 +10,41 @@
 <body style="--page-bg-image: url('{{ url_for('documents_background', filename='background.jpg') }}');">
   <header class="header">
     <h1>Giuseppe's Money Manager</h1>
-    <nav>
-      <a href="{{ url_for('index') }}">Dashboard</a>
-      <a href="{{ url_for('pending_page') }}">Pending & Recurring</a>
-      <a href="{{ url_for('analysis') }}">Analysis</a>
-      <a href="{{ url_for('forecast') }}">Forecast</a>
-      <a href="{{ url_for('documents') }}">Documents</a>
-      <a href="{{ url_for('add_transaction', type='expense') }}">+ Expense</a>
-      <a href="{{ url_for('add_transaction', type='income') }}">+ Income</a>
-      <a href="{{ url_for('add_transaction', type='investment') }}">+ Investment</a>
-    </nav>
+      <nav>
+        {% if endpoint_exists('index') %}
+          <a href="{{ url_for('index') }}">Dashboard</a>
+        {% elif endpoint_exists('simple_index') %}
+          <a href="{{ url_for('simple_index') }}">Dashboard</a>
+        {% endif %}
+
+        {% if endpoint_exists('pending_page') %}
+          <a href="{{ url_for('pending_page') }}">Pending & Recurring</a>
+        {% endif %}
+
+        {% if endpoint_exists('analysis') %}
+          <a href="{{ url_for('analysis') }}">Analysis</a>
+        {% endif %}
+
+        {% if endpoint_exists('forecast') %}
+          <a href="{{ url_for('forecast') }}">Forecast</a>
+        {% endif %}
+
+        {% if endpoint_exists('documents') %}
+          <a href="{{ url_for('documents') }}">Documents</a>
+        {% endif %}
+
+        {% if endpoint_exists('add_expense') %}
+          <a href="{{ url_for('add_expense') }}">+ Expense</a>
+        {% endif %}
+
+        {% if endpoint_exists('add_income') %}
+          <a href="{{ url_for('add_income') }}">+ Income</a>
+        {% endif %}
+
+        {% if endpoint_exists('add_investment') %}
+          <a href="{{ url_for('add_investment') }}">+ Investment</a>
+        {% endif %}
+      </nav>
   </header>
 
   <main class="container">

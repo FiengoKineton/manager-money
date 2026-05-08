@@ -21,9 +21,15 @@ EXPENSES_CSV = DATA_DIR / "expenses.csv"
 INCOMES_CSV = DATA_DIR / "incomes.csv"
 INVESTMENTS_CSV = DATA_DIR / "investments.csv"
 
-url_for('documents_background', filename='background.jpg')
 
 app = Flask(__name__)
+
+@app.context_processor
+def inject_endpoint_checker():
+    def endpoint_exists(endpoint):
+        return endpoint in app.view_functions
+    return dict(endpoint_exists=endpoint_exists)
+
 
 @app.route("/documents-background/<path:filename>")
 def documents_background(filename):
