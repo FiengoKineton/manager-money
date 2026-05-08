@@ -33,17 +33,9 @@
           <a href="{{ url_for('documents') }}">Documents</a>
         {% endif %}
 
-        {% if endpoint_exists('add_expense') %}
-          <a href="{{ url_for('add_expense') }}">+ Expense</a>
-        {% endif %}
-
-        {% if endpoint_exists('add_income') %}
-          <a href="{{ url_for('add_income') }}">+ Income</a>
-        {% endif %}
-
-        {% if endpoint_exists('add_investment') %}
-          <a href="{{ url_for('add_investment') }}">+ Investment</a>
-        {% endif %}
+        <a href="{{ url_for('add_transaction', type='expense') }}">+ Expense</a>
+        <a href="{{ url_for('add_transaction', type='income') }}">+ Income</a>
+        <a href="{{ url_for('add_transaction', type='investment') }}">+ Investment</a>
       </nav>
   </header>
 

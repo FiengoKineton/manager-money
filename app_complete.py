@@ -62,6 +62,11 @@ from utils.interactive_plots import (
 
 app = Flask(__name__)
 
+@app.context_processor
+def inject_endpoint_checker():
+    def endpoint_exists(endpoint):
+        return endpoint in app.view_functions
+    return dict(endpoint_exists=endpoint_exists)
 
 @app.route("/documents-background/<path:filename>")
 def documents_background(filename):
@@ -192,9 +197,20 @@ def add_transaction():
             "description": description,
         }
 
-        account = tx.get("account", "").lower()
+        account = tx.get("account", "").strip().lower()
 
-        if account == "credit":
+        credit_keywords = {
+            "credit",
+            "credit card",
+            "card credit",
+            "carta credito",
+            "carta di credito",
+            "visa",
+            "mastercard",
+        }
+        
+        if account in credit_keywords:
+            tx["account"] = "credit"
             due_date = next_credit_due()
             append_pending(tx, due_date)
         else:
@@ -574,4 +590,8 @@ def forecast():
     return render_template("forecast.html", result=result)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=False
+    )

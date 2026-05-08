@@ -232,4 +232,3 @@ id,date,category,sub_category,amount,account,description,created_at
 233,2026-05-06,Eating out,PoliMi,23.0,,,2026-05-06T20:11:09
 234,2026-05-06,Eating in,Glovo,53.5,,,2026-05-06T20:25:36
 236,2025-12-02,Subscriptions,,49.9,auto,Amazon Prime,2026-05-08T13:09:39
-237,2026-05-08,Charity,,1.0,Credit,,
