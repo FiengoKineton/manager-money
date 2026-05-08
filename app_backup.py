@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any
 
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from config import (
     EXPENSE_CATEGORIES,
     INCOME_CATEGORIES,
@@ -21,8 +21,13 @@ EXPENSES_CSV = DATA_DIR / "expenses.csv"
 INCOMES_CSV = DATA_DIR / "incomes.csv"
 INVESTMENTS_CSV = DATA_DIR / "investments.csv"
 
+url_for('documents_background', filename='background.jpg')
+
 app = Flask(__name__)
 
+@app.route("/documents-background/<path:filename>")
+def documents_background(filename):
+    return send_from_directory("Documents", filename)
 
 # ---------------------------------------------------------------------
 # CSV helpers (no pandas, no numpy)
@@ -426,4 +431,8 @@ def analysis():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=False
+    )
