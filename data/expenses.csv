@@ -239,3 +239,6 @@ id,date,category,sub_category,amount,account,description,created_at
 241,2026-05-12,Health,,27.7,,,2026-05-12T16:29:47
 242,2026-05-12,Housing,,30.0,,Sopraluogo pavimento,2026-05-12T16:30:14
 243,2026-05-12,Coffe,,1.2,,,2026-05-12T16:30:30
+244,2026-05-15,Credit Card,,200.0,credit,Credit card payment (2026-05-15),2026-05-15T12:04:06
+245,2026-05-14,Eating out,,77.4,,,2026-05-15T12:05:49
+246,2026-05-13,Other,,61.5,,,2026-05-15T12:06:30
