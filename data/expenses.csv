@@ -245,3 +245,4 @@ id,date,category,sub_category,amount,account,description,created_at
 247,2026-05-15,Claudia,Glovo,54.52,,,2026-05-18T17:04:41
 248,2026-05-17,Other,,14.8,,,2026-05-18T17:05:05
 249,2026-05-18,Coffe,,2.5,,,2026-05-18T17:05:27
+251,2026-05-19,Health,Farmacia,4.0,,,2026-05-19T17:46:50
