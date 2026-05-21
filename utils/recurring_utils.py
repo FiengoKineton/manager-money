@@ -284,13 +284,39 @@ def append_recurring(rule):
         "frequency": str(_parse_frequency_months(rule.get("frequency", 1))),
         "day_of_month": str(rule["day_of_month"]),
         "category": rule["category"],
-        "start_date": date.today().isoformat(),
+        "start_date": (_parse_date(rule.get("start_date")) or date.today()).isoformat(),
         "last_generated": "",
     }
 
     rows.append(row)
     _write_recurring(rows)
 
+def update_recurring(rule_id, updates):
+    """
+    Update a recurring rule from today onward.
+
+    Past generated pending/executed payments are not modified because they are
+    already stored separately in pending.csv / expenses.csv.
+    """
+    rows = load_recurring()
+    today = date.today().isoformat()
+
+    for row in rows:
+        if str(row.get("id", "")) == str(rule_id):
+            row["name"] = updates.get("name", row.get("name", ""))
+            row["type"] = updates.get("type", row.get("type", "expense"))
+            row["amount"] = str(updates.get("amount", row.get("amount", "0")))
+            row["frequency"] = str(_parse_frequency_months(updates.get("frequency", row.get("frequency", 1))))
+            row["day_of_month"] = str(updates.get("day_of_month", row.get("day_of_month", 1)))
+            row["category"] = updates.get("category", row.get("category", ""))
+
+            # From the moment of modification onward
+            row["start_date"] = today
+            row["last_generated"] = ""
+
+            break
+
+    _write_recurring(rows)
 
 def delete_recurring(rule_id):
     rows = load_recurring()

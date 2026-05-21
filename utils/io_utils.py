@@ -9,17 +9,25 @@ import pandas as pd
 from config import EXPENSES_CSV, INCOMES_CSV, INVESTMENTS_CSV, DEFAULT_TYPES
 
 
-def next_credit_due(today=None, due_day=15):
-    today = today or date.today()
 
-    if today.day < due_day:
-        return date(today.year, today.month, due_day)
+def next_credit_due(payment_date=None, due_day=15):
+    """
+    Credit card logic:
+    every credit-card payment made in month M is charged on day `due_day`
+    of month M+1.
 
-    if today.month == 12:
-        return date(today.year + 1, 1, due_day)
+    Examples:
+    - 2026-02-12 -> 2026-03-15
+    - 2026-02-28 -> 2026-03-15
+    - 2026-03-02 -> 2026-04-15
+    - 2026-05-06 -> 2026-06-15
+    """
+    payment_date = payment_date or date.today()
 
-    return date(today.year, today.month + 1, due_day)
+    if payment_date.month == 12:
+        return date(payment_date.year + 1, 1, due_day)
 
+    return date(payment_date.year, payment_date.month + 1, due_day)
 
 def _ensure_csv(path: Path, fieldnames: List[str]) -> None:
     if not path.exists():

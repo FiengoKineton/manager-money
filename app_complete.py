@@ -49,7 +49,12 @@ from utils.pending_utils import (
     mark_executed,
 )
 from utils.recurring_utils import (
+    load_recurring,
+    append_recurring,
+    update_recurring,
+    delete_recurring,
     generate_recurring,
+    next_due_date_for_rule,
 )
 from utils.interactive_plots import (
     chart_monthly_summary,
@@ -211,11 +216,17 @@ def add_transaction():
         
         if account in credit_keywords:
             tx["account"] = "credit"
-            due_date = next_credit_due()
+
+            try:
+                payment_date = date.fromisoformat(date_str)
+            except (TypeError, ValueError):
+                payment_date = date.today()
+
+            due_date = next_credit_due(payment_date)
             append_pending(tx, due_date)
         else:
             append_transaction(tx)
-        
+                
         return redirect(url_for("index"))
 
     # GET
@@ -504,7 +515,21 @@ def pending_page():
                 "frequency": int(request.form.get("frequency", 1)),
                 "day_of_month": int(request.form.get("day_of_month")),
                 "category": request.form.get("category"),
+                "start_date": request.form.get("start_date"),
             })
+
+        elif action == "update":
+            update_recurring(
+                request.form.get("id"),
+                {
+                    "name": request.form.get("name"),
+                    "type": request.form.get("type"),
+                    "amount": float(request.form.get("amount")),
+                    "frequency": int(request.form.get("frequency", 1)),
+                    "day_of_month": int(request.form.get("day_of_month")),
+                    "category": request.form.get("category"),
+                }
+            )
 
         elif action == "delete":
             delete_recurring(int(request.form.get("id")))
