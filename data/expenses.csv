@@ -249,3 +249,4 @@ id,date,category,sub_category,amount,account,description,created_at
 253,2026-05-19,Subscriptions,Prime video,7.99,,,2026-05-21T10:26:38
 254,2026-05-21,Housing,Acconto Infissi,1780.0,,incl 220eur persi,2026-05-21T11:17:51
 255,2026-05-19,Housing,Infissi,2440.0,,Errore,2026-05-21T11:33:48
+256,2026-05-22,Housing,,39.33,auto,Polizza Casa e Famiglia,2026-05-22T11:18:04

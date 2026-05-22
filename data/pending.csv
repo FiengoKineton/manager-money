@@ -2,3 +2,4 @@ id,type,date_due,amount,category,account,description,status
 1,investment,2026-05-08,150.0,Deposit,auto,Deposit,executed
 2,expense,2025-12-02,49.9,Subscriptions,auto,Amazon Prime,executed
 3,expense,2026-06-15,200.0,Housing,credit,Parking,pending
+4,expense,2026-05-22,39.33,Housing,auto,Polizza Casa e Famiglia,executed

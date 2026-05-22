@@ -3,4 +3,5 @@ id,name,type,amount,frequency,day_of_month,category,start_date,last_generated
 2,Deposit,investment,150.0,1,8,Deposit,2026-05-08,2026-05-08
 3,Google One,expense,29.99,12,15,Subscriptions,2026-09-15,
 4,Amazon Prime,expense,49.9,12,2,Subscriptions,2025-12-02,2025-12-02
-5,Polizza Casa e Famiglia,expense,39.33,1,20,Housing,2026-05-21,
+5,Polizza Casa e Famiglia,expense,39.33,1,22,Housing,2026-05-22,2026-05-22
+6,NordVPN,expense,200.0,24,26,Subscriptions,2025-05-26,2025-05-26
