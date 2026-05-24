@@ -250,3 +250,10 @@ id,date,category,sub_category,amount,account,description,created_at
 254,2026-05-21,Housing,Acconto Infissi,1780.0,,incl 220eur persi,2026-05-21T11:17:51
 255,2026-05-19,Housing,Infissi,2440.0,,Errore,2026-05-21T11:33:48
 256,2026-05-22,Housing,,39.33,auto,Polizza Casa e Famiglia,2026-05-22T11:18:04
+257,2026-05-22,Shopping,,27.77,,,2026-05-24T19:03:32
+258,2026-05-22,Eating in,,57.78,,,2026-05-24T19:04:03
+259,2026-05-23,Other,,11.7,,,2026-05-24T19:04:53
+260,2026-05-23,Shopping,NewPhoneProtection,45.0,,,2026-05-24T19:05:13
+261,2026-05-23,Personal care,Barber,15.0,,,2026-05-24T19:05:56
+262,2026-05-24,Eating out,Starbucks,23.7,,,2026-05-24T19:06:18
+263,2026-05-24,Gifts,Leonardo,152.2,,,2026-05-24T19:06:37
