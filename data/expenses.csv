@@ -257,3 +257,6 @@ id,date,category,sub_category,amount,account,description,created_at
 261,2026-05-23,Personal care,Barber,15.0,,,2026-05-24T19:05:56
 262,2026-05-24,Eating out,Starbucks,23.7,,,2026-05-24T19:06:18
 263,2026-05-24,Gifts,Leonardo,152.2,,,2026-05-24T19:06:37
+264,2026-05-25,Other,,9.2,,,2026-05-28T15:43:03
+265,2026-05-27,Eating in,Glovo,28.62,,,2026-05-28T15:43:23
+266,2026-05-24,Eating in,Glovo,26.7,,,2026-05-28T15:45:25

@@ -18,3 +18,4 @@ id,date,category,sub_category,amount,account,description,created_at
 17,2026-04-16,Refund,Axes,126.0,,,2026-04-24T16:10:17
 18,2026-05-08,PoliMi,,1638.34,,,2026-05-08T12:15:18
 19,2026-05-21,Refund,Infissi,2220.0,,-11%,2026-05-21T11:34:14
+20,2026-05-27,PoliMi,,819.17,,,2026-05-28T15:43:58
