@@ -260,3 +260,6 @@ id,date,category,sub_category,amount,account,description,created_at
 264,2026-05-25,Other,,9.2,,,2026-05-28T15:43:03
 265,2026-05-27,Eating in,Glovo,28.62,,,2026-05-28T15:43:23
 266,2026-05-24,Eating in,Glovo,26.7,,,2026-05-28T15:45:25
+267,2026-05-01,Other,,36.9,,,2026-06-03T12:16:03
+268,2026-06-03,Personal care,Amzn,104.48,,,2026-06-03T12:16:26
+269,2026-06-03,Health,,27.7,,,2026-06-03T12:16:38
