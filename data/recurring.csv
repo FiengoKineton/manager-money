@@ -1,5 +1,5 @@
 id,name,type,amount,frequency,day_of_month,category,start_date,last_generated
-1,OneDrive,expense,10.0,1,4,Subscriptions,2026-05-08,
+1,OneDrive,expense,10.0,1,4,Subscriptions,2026-05-08,2026-06-04
 2,Deposit,investment,150.0,1,8,Deposit,2026-05-08,2026-05-08
 3,Google One,expense,29.99,12,15,Subscriptions,2026-09-15,
 4,Amazon Prime,expense,49.9,12,2,Subscriptions,2025-12-02,2025-12-02

@@ -20,3 +20,4 @@ id,date,category,sub_category,amount,account,description,created_at
 19,2026-05-21,Refund,Infissi,2220.0,,-11%,2026-05-21T11:34:14
 20,2026-05-27,PoliMi,,819.17,,,2026-05-28T15:43:58
 21,2026-05-28,Deddo,fake mutuo debt,4871.61,,,2026-06-03T12:17:30
+22,2026-06-04,Other income,Claudia,200.0,,Vinted balance,2026-06-04T11:53:17
