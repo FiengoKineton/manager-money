@@ -57,6 +57,10 @@
           <a href="{{ url_for('transactions.add_transaction', type='expense') }}" class="quick-action expense-action">+ Expense</a>
           <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="quick-action income-action">+ Income</a>
           <a href="{{ url_for('transactions.add_transaction', type='investment') }}" class="quick-action investment-action">+ Investment</a>
+
+          <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
+            <button type="submit" class="quick-action logout-action">Logout</button>
+          </form>
         </div>
       </header>
 

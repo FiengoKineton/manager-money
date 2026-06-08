@@ -11,7 +11,11 @@
     const totalLabel = document.getElementById("total-amount");
     const hiddenAmount = document.getElementById("amount-hidden");
 
-    if (totalLabel) totalLabel.innerText = total.toFixed(2);
+    if (totalLabel) totalLabel.innerText = total.toLocaleString(
+      "en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
     if (hiddenAmount) hiddenAmount.value = total.toFixed(2);
   }
 

@@ -17,3 +17,14 @@
 @import url("pages/sparagnat.css");
 @import url("pages/debts.css");
 @import url("pages/parent_support.css");
+
+.logout-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.logout-action {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}

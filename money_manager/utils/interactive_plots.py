@@ -70,7 +70,7 @@ def chart_monthly_summary(df_monthly):
                 name=label,
                 line=dict(color=TYPE_COLORS[color_key], width=2.5),
                 marker=dict(color=TYPE_COLORS[color_key], size=7),
-                hovertemplate="%{x}<br>" + label + ": €%{y:.2f}<extra></extra>",
+                hovertemplate="%{x}<br>" + label + ": €%{y:,.2f}<extra></extra>",
             )
         )
 
@@ -94,7 +94,7 @@ def chart_expenses_by_category(df_cat):
             x=df_cat["category"],
             y=df_cat["total"],
             marker_color=TYPE_COLORS["expenses"],
-            hovertemplate="%{x}<br>Expenses: €%{y:.2f}<extra></extra>",
+            hovertemplate="%{x}<br>Expenses: €%{y:,.2f}<extra></extra>",
         )
     )
 
@@ -122,7 +122,7 @@ def chart_cumulative_balance(df_cum):
             name="Balance",
             line=dict(color=TYPE_COLORS["balance"], width=2.5),
             marker=dict(color=TYPE_COLORS["balance"], size=6),
-            hovertemplate="%{x}<br>Balance: €%{y:.2f}<extra></extra>",
+            hovertemplate="%{x}<br>Balance: €%{y:,.2f}<extra></extra>",
         )
     )
 
@@ -148,7 +148,7 @@ def chart_rolling_net_flow(df_roll):
             mode="lines",
             name="Daily net",
             line=dict(color=TYPE_COLORS["net"], width=1.8),
-            hovertemplate="%{x}<br>Daily net: €%{y:.2f}<extra></extra>",
+            hovertemplate="%{x}<br>Daily net: €%{y:,.2f}<extra></extra>",
         )
     )
 
@@ -159,7 +159,7 @@ def chart_rolling_net_flow(df_roll):
             mode="lines",
             name="Rolling 30-day net",
             line=dict(color=TYPE_COLORS["income"], width=2.5),
-            hovertemplate="%{x}<br>Rolling net: €%{y:.2f}<extra></extra>",
+            hovertemplate="%{x}<br>Rolling net: €%{y:,.2f}<extra></extra>",
         )
     )
 
@@ -183,7 +183,7 @@ def chart_weekday_spending(df_wd):
             x=df_wd["weekday"],
             y=df_wd["total"],
             marker_color=TYPE_COLORS["expenses"],
-            hovertemplate="%{x}<br>Expenses: €%{y:.2f}<extra></extra>",
+            hovertemplate="%{x}<br>Expenses: €%{y:,.2f}<extra></extra>",
         )
     )
 

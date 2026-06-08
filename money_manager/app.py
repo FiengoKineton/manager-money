@@ -1,5 +1,6 @@
+import os
+from datetime import timedelta
 from pathlib import Path
-
 from flask import Flask
 
 from money_manager.config import ensure_runtime_directories
@@ -18,6 +19,14 @@ def create_app() -> Flask:
         template_folder=str(package_dir / "web" / "templates"),
         static_folder=str(project_root / "static"),
         static_url_path="/static",
+    )
+
+    app.config.update(
+        SECRET_KEY=os.environ.get("MONEY_MANAGER_SECRET_KEY", "dev-local-change-me"),
+        MONEY_MANAGER_PASSWORD=os.environ.get("MONEY_MANAGER_PASSWORD", "6730"),
+        PERMANENT_SESSION_LIFETIME=timedelta(days=30),
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
     )
 
     register_context_processors(app)
