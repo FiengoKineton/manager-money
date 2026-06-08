@@ -5,11 +5,12 @@ import matplotlib.pyplot as plt
 
 from money_manager.config import PLOTS_DIR
 from money_manager.repositories.transactions import load_all
+from money_manager.services.account_service import main_account_transactions
 from money_manager.utils.stats import summary_totals
 
 
 def project_wealth(monthly_income: float, monthly_expenses: float, monthly_investment: float, years: int, annual_rate: float) -> dict:
-    df = load_all()
+    df = main_account_transactions(load_all())
     totals = summary_totals(df)
 
     current_cash = totals["net"]

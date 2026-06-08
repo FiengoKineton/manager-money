@@ -4,6 +4,7 @@ import pandas as pd
 
 from money_manager.repositories.sparagnat import append_entry, delete_entry, load_entries
 from money_manager.services.analytics_service import apply_transaction_filters, build_dashboard_metrics
+from money_manager.services.account_service import main_account_transactions
 from money_manager.services.transaction_service import load_transactions
 
 KIND_SAVED_EXPENSE = "saved_expense"
@@ -56,6 +57,7 @@ def page_context(start: str, end: str) -> dict:
     filtered_transactions = apply_transaction_filters(
         transactions, start, end, ["expense", "income", "investment"], [], ""
     )
+    filtered_transactions = main_account_transactions(filtered_transactions)
     dashboard_metrics = build_dashboard_metrics(filtered_transactions, start, end)
     current_net = dashboard_metrics["totals"]["net"]
 

@@ -1,3 +1,22 @@
+
+from money_manager.config.accounts import (
+    ACCOUNT_OPTIONS,
+    AUXILIARY_ACCOUNT_KEYS,
+    AUXILIARY_ACCOUNTS,
+    MAIN_ACCOUNT_KEY,
+    MAIN_ACCOUNT_LABEL,
+    account_description_for_key,
+    account_label_for_key,
+    account_label_for_value,
+    account_options_for_analysis,
+    account_options_for_forms,
+    all_auxiliary_accounts,
+    auxiliary_account_keys,
+    category_aliases_by_key,
+    is_auxiliary_account,
+    normalize_account_key,
+    save_custom_account,
+)
 from money_manager.config.categories import (
     CATEGORY_OPTIONS,
     DEFAULT_CATEGORY_BY_TYPE,

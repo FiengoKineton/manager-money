@@ -6,20 +6,24 @@ import pandas as pd
 
 from money_manager.config import default_date_range
 from money_manager.repositories.pending import load_pending
+from money_manager.services.account_service import account_balance_rows, auxiliary_total, main_account_transactions
 from money_manager.services.analytics_service import period_summaries
 from money_manager.services.debt_service import page_context as debt_page_context
 from money_manager.services.parent_support_service import overview_totals as parent_support_totals
 from money_manager.services.pending_service import pending_total
 from money_manager.services.sparagnat_service import overview_totals as sparagnat_overview_totals
 from money_manager.services.transaction_service import load_transactions
+from money_manager.utils.filters import filter_by_date
 from money_manager.utils.stats import expenses_by_category, summary_totals
 
 
 def build_overview_context() -> dict:
     start_default, end_default = default_date_range()
     transactions = load_transactions()
-    totals = summary_totals(transactions)
-    stats_this_month, stats_3_months = period_summaries(transactions)
+    main_transactions_all = main_account_transactions(transactions)
+    main_transactions = filter_by_date(main_transactions_all, start_default, end_default)
+    totals = summary_totals(main_transactions)
+    stats_this_month, stats_3_months = period_summaries(main_transactions_all)
 
     pending_rows = load_pending()
     pending_amount = pending_total(pending_rows)
@@ -32,7 +36,10 @@ def build_overview_context() -> dict:
     active_debt = debt_context["totals"]["active_remaining"]
     parent_total = parent_context["total_support"]
 
-    top_categories = expenses_by_category(transactions).head(5).to_dict(orient="records")
+    auxiliary_accounts = account_balance_rows(transactions)
+    auxiliary_balance = auxiliary_total(transactions)
+
+    top_categories = expenses_by_category(main_transactions).head(5).to_dict(orient="records")
     recent_transactions = _recent_transactions(transactions, limit=8)
 
     cash_position = totals["net"] + totals["investments"]
@@ -54,11 +61,46 @@ def build_overview_context() -> dict:
         "parent_support_total": parent_total,
         "cash_position": cash_position,
         "stress_position": stress_position,
+        "main_transactions_count": int(len(main_transactions)),
+        "auxiliary_accounts": auxiliary_accounts,
+        "auxiliary_balance": auxiliary_balance,
+        "combined_visible_liquidity": cash_position + auxiliary_balance,
+        "liquidity_snapshot": _liquidity_snapshot(cash_position, auxiliary_balance, pending_amount, active_debt),
         "top_categories": top_categories,
         "recent_transactions": recent_transactions,
         "quick_health": _health_cards(totals, pending_amount, active_debt, parent_total),
     }
 
+
+
+def _liquidity_snapshot(cash_position: float, auxiliary_balance: float, pending_amount: float, active_debt: float) -> list[dict]:
+    combined = cash_position + auxiliary_balance
+    return [
+        {
+            "label": "Main available",
+            "value": cash_position,
+            "caption": "Bank net plus investments",
+            "tone": "main",
+        },
+        {
+            "label": "Separate liquid",
+            "value": auxiliary_balance,
+            "caption": "Cash Flow, Pre-paid, Other/custom",
+            "tone": "aux",
+        },
+        {
+            "label": "Committed",
+            "value": pending_amount + active_debt,
+            "caption": "Pending payments plus active debts",
+            "tone": "warning",
+        },
+        {
+            "label": "Visible liquidity",
+            "value": combined,
+            "caption": "Main available + separate liquid",
+            "tone": "total",
+        },
+    ]
 
 def _recent_transactions(df: pd.DataFrame, limit: int = 8) -> list[dict]:
     if df.empty:
@@ -69,6 +111,10 @@ def _recent_transactions(df: pd.DataFrame, limit: int = 8) -> list[dict]:
     display["amount_str"] = display["amount"].map(lambda value: f"{value:.2f}")
     display["description"] = display["description"].fillna("")
     display["account"] = display["account"].fillna("")
+    if "account_label" not in display.columns:
+        display["account_label"] = display["account"]
+    if "is_auxiliary_account" not in display.columns:
+        display["is_auxiliary_account"] = False
     return display.to_dict(orient="records")
 
 

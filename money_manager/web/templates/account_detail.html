@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block page_title %}{{ account.label }}{% endblock %}
+
+{% block content %}
+<section class="account-detail-hero panel-card account-{{ account.balance_tone }}">
+  <div>
+    <a class="back-link" href="{{ url_for('accounts.accounts_page') }}">← All liquid accounts</a>
+    <span class="eyebrow">Separate liquid account</span>
+    <h2>{{ account.label }}</h2>
+    <p>{{ account.description }}</p>
+  </div>
+  <div class="account-detail-balance">
+    <span>Current balance</span>
+    <strong>€ {{ '%.2f'|format(totals.balance) }}</strong>
+    <small>{{ totals.movements }} movement{{ '' if totals.movements == 1 else 's' }}</small>
+  </div>
+</section>
+
+<section class="kpi-grid account-kpi-grid">
+  <article class="kpi-card tone-income">
+    <span>Total in</span>
+    <strong>€ {{ '%.2f'|format(totals.incoming) }}</strong>
+    <small>Top-ups, income and cash collected.</small>
+  </article>
+  <article class="kpi-card tone-expense">
+    <span>Total out</span>
+    <strong>€ {{ '%.2f'|format(totals.outgoing) }}</strong>
+    <small>Expenses or transfers out of this account.</small>
+  </article>
+  <article class="kpi-card tone-net">
+    <span>Net movement</span>
+    <strong>€ {{ '%.2f'|format(totals.net_flow) }}</strong>
+    <small>Total in minus total out.</small>
+  </article>
+  <article class="kpi-card tone-investment">
+    <span>Transactions</span>
+    <strong>{{ totals.movements }}</strong>
+    <small>Rows connected to this account.</small>
+  </article>
+</section>
+
+<section class="cleanup-panel panel-card account-{{ account.balance_tone }}">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Clean up balance</span>
+      <h3>Reconcile {{ account.label }} to the real amount you have</h3>
+      <p>Example: if the app says €1000 but you really have €150 cash left, enter 150. The app will add a balancing expense on this account only.</p>
+    </div>
+  </div>
+
+  <form method="post" class="cleanup-form">
+    <input type="hidden" name="action" value="cleanup">
+    <div>
+      <label>Date</label>
+      <input type="date" name="date" value="{{ today if today is defined else '' }}">
+    </div>
+    <div>
+      <label>Real balance now (€)</label>
+      <input type="number" step="0.01" name="target_balance" placeholder="150.00" required>
+    </div>
+    <div class="form-field-wide">
+      <label>Description</label>
+      <input type="text" name="description" placeholder="Cash cleanup / manual reconciliation">
+    </div>
+    <div class="form-actions-row form-field-wide">
+      <button type="submit" class="secondary-btn">Clean up to this amount</button>
+    </div>
+  </form>
+</section>
+
+<section class="dashboard-grid dashboard-grid-large-left account-analysis-layout">
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Monthly plot</span>
+        <h3>Income and expenses per month</h3>
+      </div>
+    </div>
+
+    {% if monthly %}
+      <div class="monthly-flow-chart">
+      {% for row in monthly %}
+        <div class="monthly-flow-row">
+          <span class="month-label">{{ row.month }}</span>
+          <div class="monthly-flow-bars">
+            <div class="bar-line">
+              <small>In</small>
+              <i class="bar-in" style="width: {{ row.in_pct }}%"></i>
+              <b>€ {{ '%.2f'|format(row.incoming) }}</b>
+            </div>
+            <div class="bar-line">
+              <small>Out</small>
+              <i class="bar-out" style="width: {{ row.out_pct }}%"></i>
+              <b>€ {{ '%.2f'|format(row.outgoing) }}</b>
+            </div>
+            <div class="bar-line net-line net-{{ row.net_tone }}">
+              <small>Net</small>
+              <i style="width: {{ row.net_pct }}%"></i>
+              <b>€ {{ '%.2f'|format(row.net) }}</b>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No monthly data yet.</p>
+    {% endif %}
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Split</span>
+        <h3>Most relevant categories</h3>
+      </div>
+    </div>
+
+    {% if top_categories %}
+      <div class="category-bars">
+      {% for row in top_categories %}
+        <div class="category-bar-row">
+          <div>
+            <span>{{ row.category }}</span>
+            <strong>€ {{ '%.2f'|format(row.total) }}</strong>
+          </div>
+          <div class="category-bar"><span style="width: {{ row.pct }}%"></span></div>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No categories yet.</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Account transactions</span>
+      <h3>Movements connected to {{ account.label }}</h3>
+    </div>
+  </div>
+
+  {% if movements %}
+  <div class="account-transaction-list">
+    {% for tx in movements %}
+    <article class="account-transaction-row movement-{{ tx.direction }}">
+      <div class="movement-date">
+        <small>Date</small>
+        <span>{{ tx.date_str }}</span>
+      </div>
+      <div class="movement-main">
+        <span class="movement-source">{{ tx.source_label }}</span>
+        <strong>{{ tx.category }}</strong>
+        {% if tx.description %}<p>{{ tx.description }}</p>{% endif %}
+      </div>
+      <div class="movement-amount">
+        <strong>{{ tx.signed_amount_str }}</strong>
+        {% if tx.source_url_kind == 'transaction' %}
+          <a href="{{ url_for('transactions.transaction_detail', row_index=tx.source_row_index) }}">Edit row</a>
+        {% elif tx.source_url_kind == 'sparagnat' %}
+          <a href="{{ url_for('sparagnat.sparagnat_page') }}">Open tracker</a>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="empty">No movements yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -77,13 +77,13 @@
 
 <section class="summary summary-spaced">
   <div class="summary-card pending summary-card-flex">
-    <h3>Net (after pending this month)</h3>
+    <h3>Tracked net (after pending)</h3>
     <p>{{ '%.2f'|format(net_after_pending) }}</p>
     <small>Pending this month: {{ '%.2f'|format(pending_this_month) }}</small>
   </div>
 
   <div class="summary-card net summary-card-flex">
-    <h3>Net</h3>
+    <h3>Tracked net</h3>
     <p>{{ '%.2f'|format(totals.net) }}</p>
     <small>Savings rate: {{ '%.1f'|format(totals.savings_rate) }} %</small>
   </div>
@@ -91,7 +91,7 @@
 
 <section class="summary summary-spaced">
   <div class="summary-card net summary-card-flex summary-card-center">
-    <h3>Total Availability (Net + Investments)</h3>
+    <h3>Main Availability (Tracked Net + Investments)</h3>
     <p>{{ '%.2f'|format(totals.total_availability) }}</p>
   </div>
 </section>
@@ -176,7 +176,9 @@
           {% endif %}
         </td>
         <td>
-          {% if tx.account and tx.account != 'nan' %}
+          {% if tx.is_auxiliary_account %}
+            <span class="account-table-badge">{{ tx.account_label }}</span>
+          {% elif tx.account and tx.account != 'nan' %}
             {{ tx.account }}
           {% endif %}
         </td>
@@ -193,7 +195,7 @@
         <td>{{ tx.type.capitalize() }}</td>
         <td>{{ tx.category }}</td>
         <td>{{ tx.description }}</td>
-        <td>{{ tx.account }}</td>
+        <td>{% if tx.is_auxiliary_account %}<span class="account-table-badge">{{ tx.account_label }}</span>{% else %}{{ tx.account }}{% endif %}</td>
         <td>{{ tx.amount_str }}</td>
       </tr>
       {% endfor %}

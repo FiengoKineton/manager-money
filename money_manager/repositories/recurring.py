@@ -24,6 +24,7 @@ def append_recurring(rule: dict) -> None:
         "frequency": str(parse_frequency_months(rule.get("frequency", 1))),
         "day_of_month": str(rule.get("day_of_month", 1)),
         "category": rule.get("category", ""),
+        "account": rule.get("account", "auto"),
         "start_date": (parse_date(rule.get("start_date")) or date.today()).isoformat(),
         "last_generated": "",
     }
@@ -45,6 +46,7 @@ def update_recurring(rule_id, updates: dict) -> None:
         row["frequency"] = str(parse_frequency_months(updates.get("frequency", row.get("frequency", 1))))
         row["day_of_month"] = str(updates.get("day_of_month", row.get("day_of_month", 1)))
         row["category"] = updates.get("category", row.get("category", ""))
+        row["account"] = updates.get("account", row.get("account", "auto"))
         row["start_date"] = today
         row["last_generated"] = ""
         break

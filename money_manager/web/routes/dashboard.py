@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request
 
 from money_manager.config import TRANSACTION_TYPES, default_date_range
 from money_manager.repositories.pending import load_pending
+from money_manager.services.account_service import main_account_transactions
 from money_manager.services.analytics_service import apply_transaction_filters, build_dashboard_metrics, period_summaries
 from money_manager.services.debt_service import generate_debt_payments
 from money_manager.services.overview_service import build_overview_context
@@ -29,7 +30,8 @@ def index():
     _refresh_automatic_items()
 
     df = load_transactions()
-    stats_this_month, stats_3_months = period_summaries(df)
+    main_df = main_account_transactions(df)
+    stats_this_month, stats_3_months = period_summaries(main_df)
 
     start_default, end_default = default_date_range()
     start = request.args.get("from", start_default)
@@ -42,9 +44,10 @@ def index():
     filtered = apply_transaction_filters(df, start, end, types, categories, query)
     filtered = prepare_transactions_for_display(filtered)
 
-    metrics = build_dashboard_metrics(filtered, start, end)
+    filtered_main = main_account_transactions(filtered)
+    metrics = build_dashboard_metrics(filtered_main, start, end)
 
-    all_categories = sorted(df["category"].dropna().unique().tolist()) if not df.empty else []
+    all_categories = sorted(main_df["category"].dropna().unique().tolist()) if not main_df.empty else []
     pending_rows = load_pending()
     current_pending_total = pending_total(pending_rows)
 

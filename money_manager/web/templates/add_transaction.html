@@ -44,7 +44,12 @@
 
     <div>
       <label>Account</label>
-      <input type="text" name="account" placeholder="Bank, Card, Cash...">
+      <select name="account">
+        {% for account in account_options %}
+          <option value="{{ account.value }}">{{ account.label }}</option>
+        {% endfor %}
+      </select>
+      <small class="hint">Blank = main bank. Cash Flow, Pre-paid card and Other/custom accounts stay outside the main net. Credit card creates a pending payment that later impacts the main account.</small>
     </div>
 
     <div>

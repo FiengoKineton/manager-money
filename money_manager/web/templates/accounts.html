@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block page_title %}Liquid Accounts{% endblock %}
+
+{% block content %}
+<section class="accounts-hero panel-card">
+  <div>
+    <span class="eyebrow">Separate liquid accounts</span>
+    <h2>Cash Flow, Pre-paid card and Other/custom accounts</h2>
+    <p>
+      Use these for cash, pre-paid cards, Ticket Restaurant, or any extra liquid balance.
+      They can be matched by the <strong>account</strong> field or by clear category names.
+      They stay out of the main net balance and main category charts.
+    </p>
+  </div>
+  <div class="accounts-hero-metrics">
+    <div>
+      <span>Total balance</span>
+      <strong>€ {{ '%.2f'|format(totals.balance) }}</strong>
+    </div>
+    <div>
+      <span>Total in</span>
+      <strong>€ {{ '%.2f'|format(totals.incoming) }}</strong>
+    </div>
+    <div>
+      <span>Total out</span>
+      <strong>€ {{ '%.2f'|format(totals.outgoing) }}</strong>
+    </div>
+  </div>
+</section>
+
+<section class="custom-account-panel panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Custom account</span>
+      <h3>Add another liquid account</h3>
+      <p>Saved in <strong>data/accounts.json</strong>. Use aliases to make the analysis catch either account names or category names.</p>
+    </div>
+  </div>
+
+  <form method="post" class="custom-account-form">
+    <input type="hidden" name="action" value="add_custom_account">
+    <div>
+      <label>Name</label>
+      <input type="text" name="label" placeholder="Example: Revolut, Ticket Restaurant, Satispay" required>
+    </div>
+    <div>
+      <label>Description</label>
+      <input type="text" name="description" placeholder="What this balance represents">
+    </div>
+    <div>
+      <label>Account aliases</label>
+      <input type="text" name="aliases" placeholder="revolut, satispay, lunch card">
+      <small>Matched against the account column.</small>
+    </div>
+    <div>
+      <label>Category aliases</label>
+      <input type="text" name="category_aliases" placeholder="revolut top-up, ticket restaurant">
+      <small>Matched when the account field is blank.</small>
+    </div>
+    <div class="form-actions-row form-field-wide">
+      <button type="submit" class="primary-btn">+ Add custom account</button>
+    </div>
+  </form>
+</section>
+
+<section class="account-directory-grid">
+  {% for account in accounts %}
+  <article class="account-directory-card account-{{ account.balance_tone }}">
+    <div class="account-directory-head">
+      <div>
+        <span>{{ account.label }}</span>
+        <h3>€ {{ '%.2f'|format(account.balance) }}</h3>
+      </div>
+      <a href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Open</a>
+    </div>
+    <p>{{ account.description }}</p>
+
+    <div class="account-flow-line">
+      <div>
+        <span>In</span>
+        <strong>€ {{ '%.2f'|format(account.incoming) }}</strong>
+      </div>
+      <div>
+        <span>Out</span>
+        <strong>€ {{ '%.2f'|format(account.outgoing) }}</strong>
+      </div>
+      <div>
+        <span>Movements</span>
+        <strong>{{ account.count }}</strong>
+      </div>
+    </div>
+
+    {% if account.monthly_preview %}
+    <div class="mini-month-chart spacious-mini-chart">
+      {% for month in account.monthly_preview %}
+      <div class="mini-month-row">
+        <span>{{ month.month }}</span>
+        <div>
+          <i class="mini-in" style="width: {{ (month.incoming / (account.incoming if account.incoming else 1) * 100) if account.incoming else 0 }}%"></i>
+          <i class="mini-out" style="width: {{ (month.outgoing / (account.outgoing if account.outgoing else 1) * 100) if account.outgoing else 0 }}%"></i>
+        </div>
+        <b>€ {{ '%.2f'|format(month.net) }}</b>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="empty">No movements yet.</p>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}

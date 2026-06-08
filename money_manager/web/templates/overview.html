@@ -7,8 +7,8 @@
     <span class="eyebrow">Financial command center</span>
     <h2>Overview</h2>
     <p>
-      One clean place for the real balance, pending money, debts, saved expenses,
-      cash collected, and parent support.
+      One clean place for the main bank balance, separated liquid accounts, pending money,
+      debts, saved expenses, cash collected, and parent support.
     </p>
     <div class="hero-actions">
       <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Add expense</a>
@@ -17,43 +17,168 @@
   </div>
 
   <div class="hero-balance-card">
-    <span class="metric-label">Available position</span>
-    <strong>€ {{ '%.2f'|format(cash_position) }}</strong>
-    <small>Net + investments</small>
+    <div>
+      <span class="metric-label">Main available position</span>
+      <strong>€ {{ '%.2f'|format(cash_position) }}</strong>
+      <small>Tracked net + investments. This now matches the net used in Sparagnat e Fottut.</small>
+    </div>
     <div class="balance-subgrid">
       <div>
         <span>Stress position</span>
         <b>€ {{ '%.2f'|format(stress_position) }}</b>
       </div>
       <div>
-        <span>Pending</span>
-        <b>€ {{ '%.2f'|format(pending_amount) }}</b>
+        <span>Separate liquid</span>
+        <b>€ {{ '%.2f'|format(auxiliary_balance) }}</b>
       </div>
     </div>
   </div>
 </section>
 
-<section class="kpi-grid">
-  <article class="kpi-card tone-income">
+<section class="money-priority-grid">
+  <article class="priority-card priority-main">
+    <div>
+      <span class="eyebrow">Real tracked money</span>
+      <h3>Net balance</h3>
+      <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
+      <p>This is the same current net used in Sparagnat e Fottut: income minus expenses and investments in the selected tracked period.</p>
+    </div>
+    <a href="{{ url_for('dashboard.index') }}">See main transactions</a>
+  </article>
+
+  <article class="priority-card priority-visible">
+    <div>
+      <span class="eyebrow">Real visible liquidity</span>
+      <h3>Visible liquidity</h3>
+      <strong>€ {{ '%.2f'|format(combined_visible_liquidity) }}</strong>
+      <p>Main available + separate liquid accounts. Transfers are counted out of main and into the selected liquid account.</p>
+    </div>
+    <a href="{{ url_for('accounts.accounts_page') }}">Analyse liquid accounts</a>
+  </article>
+</section>
+
+<section class="secondary-metrics-strip">
+  <article class="mini-priority-card tone-aux">
+    <span>Separate liquid</span>
+    <strong>€ {{ '%.2f'|format(auxiliary_balance) }}</strong>
+    <small>Cash Flow, Pre-paid card, Other/custom</small>
+  </article>
+  <article class="mini-priority-card tone-warning">
+    <span>Committed</span>
+    <strong>€ {{ '%.2f'|format(pending_amount + active_debt) }}</strong>
+    <small>Pending payments plus active debts</small>
+  </article>
+  <article class="mini-priority-card tone-income">
     <span>Income</span>
     <strong>€ {{ '%.2f'|format(totals.income) }}</strong>
     <small>This month: € {{ '%.2f'|format(stats_this_month.income) }}</small>
   </article>
-  <article class="kpi-card tone-expense">
+  <article class="mini-priority-card tone-expense">
     <span>Expenses</span>
     <strong>€ {{ '%.2f'|format(totals.expenses) }}</strong>
     <small>This month: € {{ '%.2f'|format(stats_this_month.expenses) }}</small>
   </article>
-  <article class="kpi-card tone-net">
-    <span>Net balance</span>
-    <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
-    <small>Savings rate: {{ '%.1f'|format(totals.savings_rate) }}%</small>
-  </article>
-  <article class="kpi-card tone-investment">
+  <article class="mini-priority-card tone-investment">
     <span>Investments</span>
     <strong>€ {{ '%.2f'|format(totals.investments) }}</strong>
     <small>Cash out tracked as investment</small>
   </article>
+</section>
+
+<section class="account-overview-card panel-card liquid-accounts-section">
+  <div class="panel-header account-panel-header">
+    <div>
+      <span class="eyebrow">Separate liquid accounts</span>
+      <h3>Cash Flow, Pre-paid card and Other account</h3>
+      <p>
+        These balances are built from the normal transaction CSV files and, for Cash Flow, from
+        <strong>sparagnat_fottut.csv</strong> cash-collected entries. Top-ups still reduce the tracked
+        net, while increasing the selected liquid account.
+      </p>
+    </div>
+    <a class="secondary-btn compact-btn" href="{{ url_for('accounts.accounts_page') }}">Open account analysis</a>
+  </div>
+
+  <div class="account-card-grid refined-account-grid liquid-card-grid">
+    {% for account in auxiliary_accounts %}
+      <article class="account-mini-card liquid-account-card account-{{ account.balance_tone }}">
+        <div class="account-mini-head">
+          <div>
+            <span>{{ account.label }}</span>
+            <small>{{ account.last_movement_label }}</small>
+          </div>
+          <strong>€ {{ '%.2f'|format(account.balance) }}</strong>
+        </div>
+
+        <p>{{ account.description }}</p>
+
+        <div class="account-flow-line">
+          <div>
+            <span>In</span>
+            <strong>€ {{ '%.2f'|format(account.incoming) }}</strong>
+          </div>
+          <div>
+            <span>Out</span>
+            <strong>€ {{ '%.2f'|format(account.outgoing) }}</strong>
+          </div>
+          <div>
+            <span>Moves</span>
+            <strong>{{ account.count }}</strong>
+          </div>
+        </div>
+
+        <div class="account-share-bar" aria-hidden="true">
+          <span style="width: {{ account.share_pct }}%"></span>
+        </div>
+
+        <div class="account-card-actions">
+          <a href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Analyse {{ account.label }}</a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel-card account-analysis-preview">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Individual analysis</span>
+      <h3>Monthly movement preview</h3>
+      <p>Open each account to see its transactions, monthly in/out plot, net movement and category split.</p>
+    </div>
+    <span class="account-total">Total: € {{ '%.2f'|format(auxiliary_balance) }}</span>
+  </div>
+
+  <div class="analysis-preview-grid">
+    {% for account in auxiliary_accounts %}
+      <article class="analysis-preview-card">
+        <div class="analysis-preview-head">
+          <div>
+            <span>{{ account.label }}</span>
+            <strong>€ {{ '%.2f'|format(account.balance) }}</strong>
+          </div>
+          <a href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Details</a>
+        </div>
+
+        {% if account.monthly_preview %}
+          <div class="mini-month-chart">
+          {% for month in account.monthly_preview %}
+            <div class="mini-month-row">
+              <span>{{ month.month }}</span>
+              <div>
+                <i class="mini-in" style="width: {{ (month.incoming / (account.incoming if account.incoming else 1) * 100) if account.incoming else 0 }}%"></i>
+                <i class="mini-out" style="width: {{ (month.outgoing / (account.outgoing if account.outgoing else 1) * 100) if account.outgoing else 0 }}%"></i>
+              </div>
+              <b>€ {{ '%.2f'|format(month.net) }}</b>
+            </div>
+          {% endfor %}
+          </div>
+        {% else %}
+          <p class="empty">No movements yet.</p>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </div>
 </section>
 
 <section class="dashboard-grid dashboard-grid-large-left">
@@ -207,6 +332,7 @@
           <div>
             <strong>{{ tx.category }}</strong>
             <span>{{ tx.date_str }}{% if tx.description %} · {{ tx.description }}{% endif %}</span>
+            {% if tx.is_auxiliary_account %}<em class="auxiliary-inline-badge">{{ tx.account_label }}</em>{% endif %}
           </div>
           <b>€ {{ tx.amount_str }}</b>
         </div>

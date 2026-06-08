@@ -2,7 +2,7 @@ from datetime import date
 
 import pandas as pd
 
-from money_manager.config import CREDIT_ACCOUNT_KEYWORDS, CREDIT_CARD_DUE_DAY, TRANSACTION_TYPES
+from money_manager.config import CREDIT_ACCOUNT_KEYWORDS, CREDIT_CARD_DUE_DAY, TRANSACTION_TYPES, normalize_account_key
 from money_manager.domain.transaction import TransactionInput
 from money_manager.repositories.pending import append_pending
 from money_manager.repositories.transactions import (
@@ -81,6 +81,8 @@ def transaction_detail_context(row_index: int) -> tuple[dict, list[str]]:
         "sub_category": clean(row.get("sub_category", "")),
         "amount": f"{row['amount']:.2f}",
         "account": clean(row.get("account", "")),
+        "account_key": clean(row.get("account_key", normalize_account_key(row.get("account", "")))),
+        "account_label": clean(row.get("account_label", "")),
         "description": clean(row.get("description", "")),
     }
 

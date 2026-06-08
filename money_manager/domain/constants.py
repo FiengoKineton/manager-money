@@ -30,6 +30,7 @@ RECURRING_FIELDS = [
     "frequency",
     "day_of_month",
     "category",
+    "account",
     "start_date",
     "last_generated",
 ]

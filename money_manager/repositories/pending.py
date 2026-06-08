@@ -32,3 +32,9 @@ def mark_executed(tx_id: int) -> None:
         if str(row.get("id", "")) == str(tx_id):
             row["status"] = "executed"
     write_rows(PENDING_CSV, PENDING_FIELDS, rows)
+
+
+def delete_pending(tx_id: int | str) -> None:
+    """Remove one pending/executed payment row from the pending queue CSV."""
+    rows = [row for row in load_pending() if str(row.get("id", "")) != str(tx_id)]
+    write_rows(PENDING_CSV, PENDING_FIELDS, rows)

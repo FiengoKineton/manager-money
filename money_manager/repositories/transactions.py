@@ -6,6 +6,7 @@ import pandas as pd
 from money_manager.config import TRANSACTION_FILES, TRANSACTION_TYPES
 from money_manager.domain.constants import TRANSACTION_FIELDS
 from money_manager.repositories.csv_files import append_row, ensure_csv, next_numeric_id, read_rows
+from money_manager.services.account_service import enrich_transactions_with_accounts
 
 
 def csv_path_for_type(transaction_type: str) -> Path:
@@ -44,6 +45,7 @@ def load_all() -> pd.DataFrame:
     df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0.0)
     df["signed_amount"] = df.apply(_signed_amount, axis=1)
+    df = enrich_transactions_with_accounts(df)
     df = df.sort_values(by=["date", "created_at"], ascending=[False, False])
     return df
 

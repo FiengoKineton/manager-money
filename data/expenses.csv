@@ -269,3 +269,5 @@ id,date,category,sub_category,amount,account,description,created_at
 273,2026-06-07,Other,,12.6,,,2026-06-08T08:46:17
 274,2026-06-07,Shopping,Earbuds,189.99,,,2026-06-08T08:46:45
 275,2026-06-05,Coffe,,12.4,,,2026-06-08T08:47:31
+276,2026-06-08,Account cleanup,Reconcile to € 80.00,1590.0,Cash Flow,cleanup,2026-06-08T16:34:49
+277,2026-06-08,Account cleanup,Reconcile to € 3.53,1704.6000000000001,Pre-paid card,cleanup,2026-06-08T16:35:01

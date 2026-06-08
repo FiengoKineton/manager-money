@@ -1,0 +1,16 @@
+{
+  "accounts": [
+    {
+      "key": "edenred",
+      "label": "EdenRed",
+      "description": "Ticket restaurants",
+      "aliases": [
+        "edenred"
+      ],
+      "category_aliases": [
+        "ticket restaurants"
+      ],
+      "is_custom": true
+    }
+  ]
+}

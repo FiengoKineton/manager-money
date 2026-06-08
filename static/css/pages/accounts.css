@@ -1,0 +1,410 @@
+.accounts-hero,
+.account-detail-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.75fr);
+  gap: 1rem;
+  align-items: stretch;
+  margin-bottom: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.16), transparent 20rem),
+    rgba(255, 255, 255, 0.96);
+}
+
+.accounts-hero h2,
+.account-detail-hero h2 {
+  margin: 0.25rem 0 0.35rem;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  letter-spacing: -0.07em;
+}
+
+.accounts-hero p,
+.account-detail-hero p,
+.account-directory-card p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.accounts-hero-metrics {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+}
+
+.accounts-hero-metrics div,
+.account-detail-balance {
+  border: 1px solid rgba(191, 219, 254, 0.9);
+  border-radius: 18px;
+  padding: 0.95rem;
+  background: linear-gradient(135deg, #eff6ff, rgba(255, 255, 255, 0.92));
+}
+
+.accounts-hero-metrics span,
+.account-detail-balance span,
+.account-directory-card span,
+.movement-date small,
+.movement-source {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.accounts-hero-metrics strong,
+.account-detail-balance strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+  letter-spacing: -0.06em;
+}
+
+.account-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.account-directory-card,
+.analysis-preview-card {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-sm);
+}
+
+.account-directory-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 360px;
+}
+
+.account-directory-head,
+.analysis-preview-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.account-directory-head h3,
+.analysis-preview-head strong {
+  margin: 0.2rem 0 0;
+  font-size: 1.55rem;
+  letter-spacing: -0.06em;
+}
+
+.account-directory-head a,
+.analysis-preview-head a,
+.account-card-actions a,
+.movement-amount a,
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: var(--brand-dark);
+  padding: 0.38rem 0.68rem;
+  font-weight: 850;
+  font-size: 0.78rem;
+  text-decoration: none;
+}
+
+.account-flow-line {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.account-flow-line div {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.7rem;
+  background: var(--surface-soft);
+}
+
+.account-flow-line span {
+  font-size: 0.68rem;
+}
+
+.account-flow-line strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+  letter-spacing: -0.03em;
+}
+
+.mini-month-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.spacious-mini-chart {
+  margin-top: auto;
+}
+
+.mini-month-row {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) 76px;
+  gap: 0.55rem;
+  align-items: center;
+  font-size: 0.78rem;
+}
+
+.mini-month-row > span {
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.mini-month-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mini-month-row i {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  min-width: 4px;
+}
+
+.mini-in,
+.bar-in {
+  background: var(--good);
+}
+
+.mini-out,
+.bar-out {
+  background: var(--bad);
+}
+
+.mini-month-row b {
+  text-align: right;
+  font-size: 0.76rem;
+}
+
+.account-detail-balance {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.account-detail-balance small {
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.back-link {
+  width: fit-content;
+  margin-bottom: 0.9rem;
+}
+
+.account-kpi-grid {
+  margin-bottom: 1rem;
+}
+
+.account-analysis-layout {
+  align-items: start;
+}
+
+.monthly-flow-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.monthly-flow-row {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: start;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-soft);
+}
+
+.month-label {
+  color: var(--ink-soft);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.monthly-flow-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.bar-line {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 88px;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.bar-line small {
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.bar-line i {
+  display: block;
+  min-width: 4px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--brand);
+}
+
+.bar-line b {
+  text-align: right;
+  letter-spacing: -0.03em;
+}
+
+.net-positive i { background: var(--good); }
+.net-negative i { background: var(--bad); }
+
+.account-transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.account-transaction-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) 120px;
+  gap: 0.85rem;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.82rem;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.account-transaction-row.movement-in {
+  border-left: 5px solid var(--good);
+}
+
+.account-transaction-row.movement-out {
+  border-left: 5px solid var(--bad);
+}
+
+.movement-date span,
+.movement-main strong,
+.movement-amount strong {
+  display: block;
+  margin-top: 0.2rem;
+  letter-spacing: -0.03em;
+}
+
+.movement-main p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.movement-amount {
+  text-align: right;
+}
+
+.movement-amount a {
+  margin-top: 0.45rem;
+}
+
+.account-positive {
+  border-color: rgba(22, 163, 74, 0.22);
+}
+
+.account-negative {
+  border-color: rgba(220, 38, 38, 0.22);
+}
+
+@media (max-width: 1050px) {
+  .account-directory-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .accounts-hero,
+  .account-detail-hero,
+  .monthly-flow-row,
+  .account-transaction-row {
+    grid-template-columns: 1fr;
+  }
+
+  .movement-amount {
+    text-align: left;
+  }
+}
+
+@media (max-width: 650px) {
+  .account-flow-line,
+  .bar-line,
+  .mini-month-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-month-row b,
+  .bar-line b {
+    text-align: left;
+  }
+}
+
+/* Liquid accounts v4 */
+.custom-account-panel,
+.cleanup-panel {
+  margin-bottom: 1rem;
+}
+
+.custom-account-panel p,
+.cleanup-panel p {
+  color: var(--muted);
+  margin: 0.35rem 0 0;
+}
+
+.custom-account-form,
+.cleanup-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem 1rem;
+  align-items: end;
+}
+
+.custom-account-form label,
+.cleanup-form label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-weight: 850;
+  margin-bottom: 0.3rem;
+}
+
+.cleanup-panel {
+  background:
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 20rem),
+    rgba(255, 255, 255, 0.96);
+}
+
+.cleanup-panel.account-negative {
+  background:
+    radial-gradient(circle at top right, rgba(220, 38, 38, 0.10), transparent 20rem),
+    rgba(255, 255, 255, 0.96);
+}
+
+.account-directory-card {
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.account-directory-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--line-strong);
+}

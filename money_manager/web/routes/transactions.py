@@ -2,7 +2,7 @@ from datetime import date
 
 from flask import Blueprint, redirect, render_template, request, url_for
 
-from money_manager.config import TRANSACTION_TYPES
+from money_manager.config import TRANSACTION_TYPES, account_options_for_forms
 from money_manager.domain.transaction import TransactionInput
 from money_manager.services.category_service import category_context
 from money_manager.services.transaction_service import (
@@ -51,4 +51,4 @@ def transaction_detail(row_index: int):
     except LookupError:
         return f"Transaction {row_index} not found", 404
 
-    return render_template("transaction_detail.html", tx=tx, categories=categories)
+    return render_template("transaction_detail.html", tx=tx, categories=categories, account_options=account_options_for_forms())

@@ -32,7 +32,16 @@
 
     <div>
       <label>Account</label>
-      <input type="text" name="account" value="{{ tx.account }}">
+      <select name="account">
+        {% for account in account_options %}
+          {% set account_value = account.value %}
+          <option value="{{ account_value }}"
+            {% if (tx.account_key == account.key) or (tx.account == account.label) or (tx.account == account.key) or (tx.account == account.value) or (not tx.account and account.key == 'main_bank') %}selected{% endif %}>
+            {{ account.label }}
+          </option>
+        {% endfor %}
+      </select>
+      <small class="hint">Blank = main bank. Separate liquid accounts stay out of main net/category charts. Credit card impacts the main account when processed as pending.</small>
     </div>
 
     <div class="form-field-wide">

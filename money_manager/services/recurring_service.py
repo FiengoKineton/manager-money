@@ -1,5 +1,7 @@
 from datetime import date
 
+from money_manager.config import account_label_for_value, is_auxiliary_account
+
 from money_manager.repositories.pending import append_pending, load_pending
 from money_manager.repositories.recurring import (
     add_months,
@@ -15,6 +17,37 @@ from money_manager.repositories.recurring import (
 )
 
 
+
+def prepare_recurring_for_display(rows: list[dict]) -> list[dict]:
+    """Decorate recurring rules with UI-only fields and sort by next due date."""
+    prepared = []
+    for row in rows:
+        decorated = dict(row)
+
+        try:
+            amount = float(decorated.get("amount", 0.0))
+        except (TypeError, ValueError):
+            amount = 0.0
+
+        frequency = parse_frequency_months(decorated.get("frequency"))
+        next_due = next_due_date_for_rule(decorated)
+
+        decorated["type"] = str(decorated.get("type", "expense") or "expense").lower()
+        decorated["amount_value"] = amount
+        decorated["amount_str"] = f"€ {amount:.2f}"
+        decorated["frequency"] = frequency
+        decorated["monthly_equivalent"] = amount / frequency if frequency else amount
+        decorated["annual_equivalent"] = decorated["monthly_equivalent"] * 12
+        decorated["frequency_label"] = "Monthly" if frequency == 1 else f"Every {frequency} months"
+        decorated["next_payment"] = next_due.isoformat()
+        decorated["next_payment_sort"] = next_due
+        decorated["start_date"] = decorated.get("start_date", "") or "—"
+        decorated["account_label"] = account_label_for_value(decorated.get("account", ""))
+        decorated["is_auxiliary_account"] = is_auxiliary_account(decorated.get("account", ""))
+        prepared.append(decorated)
+
+    return sorted(prepared, key=lambda row: (row["next_payment_sort"], row.get("name", "")))
+
 def append_rule_from_form(form) -> None:
     append_recurring({
         "name": form.get("name", ""),
@@ -23,6 +56,7 @@ def append_rule_from_form(form) -> None:
         "frequency": int(form.get("frequency", 1)),
         "day_of_month": int(form.get("day_of_month", 1)),
         "category": form.get("category", ""),
+        "account": form.get("account", "auto"),
         "start_date": form.get("start_date", ""),
     })
 
@@ -37,6 +71,7 @@ def update_rule_from_form(form) -> None:
             "frequency": int(form.get("frequency", 1)),
             "day_of_month": int(form.get("day_of_month", 1)),
             "category": form.get("category", ""),
+            "account": form.get("account", "auto"),
         },
     )
 
@@ -81,7 +116,7 @@ def generate_recurring(today: date | None = None) -> int:
                     "type": row.get("type", "expense"),
                     "amount": normalize_amount(row.get("amount", 0)),
                     "category": row.get("category", ""),
-                    "account": "auto",
+                    "account": row.get("account", "auto"),
                     "description": row.get("name", ""),
                 },
                 due_date,
@@ -121,6 +156,7 @@ def _matching_pending_exists(row: dict, due_date: date) -> bool:
     name = str(row.get("name", ""))
     transaction_type = str(row.get("type", ""))
     category = str(row.get("category", ""))
+    account = str(row.get("account", "auto"))
     amount = normalize_amount(row.get("amount", 0))
 
     for tx in load_pending():
@@ -131,6 +167,8 @@ def _matching_pending_exists(row: dict, due_date: date) -> bool:
         if tx.get("type") != transaction_type:
             continue
         if tx.get("category") != category:
+            continue
+        if str(tx.get("account", "auto")) != account:
             continue
 
         if abs(normalize_amount(tx.get("amount", 0)) - amount) < 0.01:

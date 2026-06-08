@@ -103,3 +103,455 @@
     grid-template-columns: 1fr;
   }
 }
+
+.account-overview-card {
+  margin-bottom: 1rem;
+}
+
+.account-total {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.account-note {
+  margin: -0.35rem 0 1rem;
+  font-size: 0.9rem;
+}
+
+.account-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.account-mini-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: linear-gradient(180deg, #fff 0%, var(--surface-soft) 100%);
+}
+
+.account-mini-card > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.account-mini-card span {
+  color: var(--muted);
+  font-weight: 850;
+  font-size: 0.78rem;
+}
+
+.account-mini-card strong {
+  letter-spacing: -0.04em;
+}
+
+.account-mini-card p {
+  min-height: 2.6rem;
+  margin: 0.6rem 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.account-mini-stats {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.account-mini-stats small,
+.auxiliary-inline-badge,
+.account-table-badge {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: var(--brand-dark);
+}
+
+.combined-liquidity-row {
+  margin-top: 0.85rem;
+}
+
+.auxiliary-inline-badge {
+  margin-top: 0.35rem;
+  font-style: normal;
+}
+
+.account-table-badge {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .account-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Refined overview v2 */
+.liquidity-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+}
+
+.liquidity-snapshot-card {
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 18px;
+  padding: 0.95rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquidity-snapshot-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--brand);
+}
+
+.liquidity-snapshot-card.liquidity-aux::before { background: #7c3aed; }
+.liquidity-snapshot-card.liquidity-warning::before { background: var(--warning); }
+.liquidity-snapshot-card.liquidity-total::before { background: var(--good); }
+
+.liquidity-snapshot-card span,
+.account-footer-strip span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.liquidity-snapshot-card strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  letter-spacing: -0.06em;
+}
+
+.liquidity-snapshot-card small {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.account-panel-header p {
+  margin: 0.35rem 0 0;
+}
+
+.refined-account-grid .account-mini-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 220px;
+}
+
+.account-mini-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.account-mini-head small {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.74rem;
+}
+
+.account-positive {
+  border-color: rgba(22, 112, 63, 0.18);
+}
+
+.account-negative {
+  border-color: rgba(180, 35, 24, 0.20);
+}
+
+.account-share-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-muted);
+}
+
+.account-share-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), #60a5fa);
+}
+
+.account-mini-card p {
+  min-height: auto;
+  margin: 0;
+}
+
+.account-mini-stats {
+  margin-top: auto;
+}
+
+.account-footer-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.account-footer-strip > div {
+  border: 1px solid rgba(191, 219, 254, 0.9);
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.9), rgba(255, 255, 255, 0.92));
+}
+
+.account-footer-strip strong {
+  display: block;
+  margin-top: 0.25rem;
+  letter-spacing: -0.03em;
+}
+
+.account-footer-strip small {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 1050px) {
+  .liquidity-snapshot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .liquidity-snapshot-grid,
+  .account-footer-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Overview polish v3 */
+.liquid-accounts-section {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(59, 130, 246, 0.10), transparent 18rem),
+    rgba(255, 255, 255, 0.94);
+}
+
+.compact-btn {
+  white-space: nowrap;
+  height: fit-content;
+}
+
+.liquid-card-grid .liquid-account-card {
+  min-height: 250px;
+  padding: 1rem;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.liquid-card-grid .liquid-account-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--line-strong);
+}
+
+.account-card-actions {
+  margin-top: auto;
+}
+
+.account-analysis-preview {
+  margin-bottom: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.12), transparent 18rem),
+    rgba(255, 255, 255, 0.96);
+}
+
+.account-analysis-preview .panel-header p {
+  color: var(--muted);
+  margin: 0.35rem 0 0;
+}
+
+.analysis-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.analysis-preview-card {
+  min-height: 180px;
+}
+
+@media (max-width: 1000px) {
+  .analysis-preview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Overview v4: main numbers first, supporting numbers second */
+.money-priority-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.priority-card {
+  min-height: 300px;
+  border-radius: 32px;
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  box-shadow: var(--shadow);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  position: relative;
+}
+
+.priority-card::after {
+  content: "";
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 999px;
+  right: -90px;
+  bottom: -105px;
+  background: rgba(96, 165, 250, 0.16);
+}
+
+.priority-main {
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.22), transparent 24rem),
+    linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+}
+
+.priority-visible {
+  background:
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.18), transparent 22rem),
+    linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  border-color: rgba(187, 247, 208, 0.95);
+}
+
+.priority-card h3 {
+  margin: 0.3rem 0 0;
+  font-size: clamp(1.45rem, 3vw, 2.25rem);
+  letter-spacing: -0.06em;
+}
+
+.priority-card strong {
+  display: block;
+  margin-top: 0.8rem;
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  line-height: 0.92;
+  letter-spacing: -0.09em;
+  color: var(--ink);
+}
+
+.priority-card p {
+  max-width: 56ch;
+  color: var(--muted);
+  margin: 1rem 0 0;
+  font-size: 0.98rem;
+}
+
+.priority-card a {
+  position: relative;
+  z-index: 1;
+  width: fit-content;
+  display: inline-flex;
+  border-radius: 999px;
+  background: var(--ink);
+  color: white;
+  text-decoration: none;
+  font-weight: 850;
+  padding: 0.72rem 1rem;
+}
+
+.priority-visible a {
+  background: var(--good);
+}
+
+.secondary-metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.mini-priority-card {
+  min-height: 135px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.95rem;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.mini-priority-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--brand);
+}
+
+.mini-priority-card.tone-aux::before { background: #7c3aed; }
+.mini-priority-card.tone-warning::before { background: var(--warning); }
+.mini-priority-card.tone-income::before { background: var(--good); }
+.mini-priority-card.tone-expense::before { background: var(--bad); }
+.mini-priority-card.tone-net::before { background: var(--brand); }
+.mini-priority-card.tone-investment::before { background: #111827; }
+
+.mini-priority-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mini-priority-card strong {
+  display: block;
+  margin-top: 0.55rem;
+  font-size: clamp(1.15rem, 2.2vw, 1.8rem);
+  letter-spacing: -0.06em;
+}
+
+.mini-priority-card small {
+  display: block;
+  margin-top: 0.45rem;
+}
+
+@media (max-width: 1200px) {
+  .secondary-metrics-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 950px) {
+  .money-priority-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .secondary-metrics-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .priority-card {
+    min-height: 240px;
+  }
+}

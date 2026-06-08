@@ -1,5 +1,6 @@
 import pandas as pd
 
+from money_manager.services.account_service import main_account_transactions
 from money_manager.utils.filters import filter_by_categories, filter_by_date, filter_by_query, filter_by_types
 from money_manager.utils.interactive_plots import (
     chart_cumulative_balance,
@@ -60,6 +61,7 @@ def build_dashboard_metrics(df: pd.DataFrame, start: str, end: str) -> dict:
 
 
 def build_analysis_metrics(df: pd.DataFrame) -> dict:
+    df = main_account_transactions(df)
     totals = summary_totals(df)
     df_wd = weekday_spending(df)
     df_roll = rolling_net_flow(df)

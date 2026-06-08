@@ -40,6 +40,7 @@
         <div class="nav-group">
           <span class="nav-label">Reports</span>
           <a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if request.endpoint == 'analysis.analysis' else '' }}">Analysis</a>
+          <a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if request.endpoint in ['accounts.accounts_page', 'accounts.account_detail'] else '' }}">Liquid Accounts</a>
           <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if request.endpoint == 'forecast.forecast' else '' }}">Forecast</a>
           <a href="{{ url_for('documents.documents') }}" class="{{ 'active' if request.endpoint == 'documents.documents' else '' }}">Documents</a>
         </div>

@@ -35,3 +35,21 @@
 small {
   color: var(--muted);
 }
+
+/* Small quality-of-life polish shared by the app */
+:focus-visible {
+  outline: 3px solid rgba(96, 165, 250, 0.45);
+  outline-offset: 2px;
+}
+
+.clickable-row,
+button,
+a,
+select,
+input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.clickable-row:hover {
+  background: rgba(239, 246, 255, 0.75);
+}
