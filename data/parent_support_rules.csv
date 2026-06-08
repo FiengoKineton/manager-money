@@ -1,0 +1,3 @@
+id,name,kind,parent,category,monthly_amount,day_of_month,start_date,end_date,payment_method,description,active,created_at
+1,Full car expenses,covered_expense,Dad,Car,600.0,1,2025-09-01,,paid directly,Car payments - fuel - telepass,yes,2026-06-08T10:43:52
+2,Martage,covered_expense,Dad,House rent,4871.61,1,2026-06-01,,paid directly,mutuo casa,yes,2026-06-08T10:45:50

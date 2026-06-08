@@ -1,4 +1,5 @@
-from datetime import date
+from calendar import monthrange
+from datetime import date, datetime
 
 import pandas as pd
 
@@ -7,7 +8,14 @@ from money_manager.config.categories import (
     PARENT_SUPPORT_CATEGORIES,
     PARENT_SUPPORT_KINDS,
 )
-from money_manager.repositories.parent_support import append_entry, delete_entry, load_entries
+from money_manager.repositories.parent_support import (
+    append_entry,
+    append_rule,
+    delete_entry,
+    delete_rule,
+    load_entries,
+    load_rules,
+)
 
 KIND_DIRECT_MONEY = "direct_money"
 KIND_COVERED_EXPENSE = "covered_expense"
@@ -20,6 +28,57 @@ def parse_amount(value) -> float:
     except ValueError:
         return 0.0
 
+def parse_int(value, default: int = 1) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def parse_date(value):
+    if not value:
+        return None
+
+    parsed = pd.to_datetime(value, errors="coerce")
+    if pd.isna(parsed):
+        return None
+
+    return parsed.date()
+
+
+def is_active(value) -> bool:
+    return str(value).strip().lower() in {"yes", "true", "1", "active", "on"}
+
+
+def add_rule_from_form(form) -> None:
+    kind = form.get("kind", KIND_COVERED_EXPENSE)
+    if kind not in PARENT_SUPPORT_KINDS:
+        kind = KIND_COVERED_EXPENSE
+
+    category = form.get("category", DEFAULT_PARENT_SUPPORT_CATEGORY).strip()
+    if not category:
+        category = DEFAULT_PARENT_SUPPORT_CATEGORY
+
+    append_rule({
+        "name": form.get("name", "").strip(),
+        "kind": kind,
+        "parent": form.get("parent", "").strip(),
+        "category": category,
+        "monthly_amount": parse_amount(form.get("monthly_amount")),
+        "day_of_month": max(1, min(31, parse_int(form.get("day_of_month"), 1))),
+        "start_date": form.get("start_date", date.today().isoformat()),
+        "end_date": form.get("end_date", ""),
+        "payment_method": form.get("payment_method", ""),
+        "description": form.get("description", ""),
+        "active": "yes",
+    })
+
+
+def delete_rule_from_form(form) -> None:
+    try:
+        delete_rule(int(form.get("id")))
+    except (TypeError, ValueError):
+        return
 
 def add_entry_from_form(form) -> None:
     kind = form.get("kind", KIND_DIRECT_MONEY)
@@ -49,12 +108,13 @@ def delete_entry_from_form(form) -> None:
 
 
 def page_context(start: str, end: str) -> dict:
-    df = entries_frame()
+    df = entries_frame(start, end)
     filtered = filter_by_date(df, start, end)
     totals = totals_from_frame(filtered)
 
     return {
         "entries": prepare_for_display(filtered),
+        "rules": prepare_rules_for_display(),
         "totals": totals,
         "monthly": monthly_summary(filtered),
         "category_summary": category_summary(filtered),
@@ -65,25 +125,133 @@ def page_context(start: str, end: str) -> dict:
 
 
 def overview_totals(start: str | None = None, end: str | None = None) -> dict:
-    df = entries_frame()
+    df = entries_frame(start, end)
     if start or end:
         df = filter_by_date(df, start, end)
     return totals_from_frame(df)
 
 
-def entries_frame() -> pd.DataFrame:
-    rows = load_entries()
+def entries_frame(start: str | None = None, end: str | None = None) -> pd.DataFrame:
+    manual_rows = load_entries()
+    generated_rows = generate_monthly_rule_entries(start, end)
+
+    rows = [*manual_rows, *generated_rows]
+
     if not rows:
         return pd.DataFrame(columns=[
-            "id", "date", "kind", "parent", "category", "amount", "payment_method", "description", "created_at"
+            "id",
+            "date",
+            "kind",
+            "parent",
+            "category",
+            "amount",
+            "payment_method",
+            "description",
+            "created_at",
+            "generated",
+            "rule_id",
         ])
 
     df = pd.DataFrame(rows)
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["created_at"] = pd.to_datetime(df.get("created_at"), errors="coerce")
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0.0)
+
+    if "generated" not in df.columns:
+        df["generated"] = "no"
+
+    if "rule_id" not in df.columns:
+        df["rule_id"] = ""
+
     return df.sort_values(by=["date", "created_at"], ascending=[False, False])
 
+def generate_monthly_rule_entries(start: str | None, end: str | None) -> list[dict]:
+    rules = load_rules()
+
+    start_date = parse_date(start) or date(date.today().year, 1, 1)
+    end_date = parse_date(end) or date.today()
+
+    generated = []
+
+    for rule in rules:
+        if not is_active(rule.get("active", "yes")):
+            continue
+
+        amount = parse_amount(rule.get("monthly_amount"))
+        if amount <= 0:
+            continue
+
+        rule_start = parse_date(rule.get("start_date")) or start_date
+        rule_end = parse_date(rule.get("end_date")) or end_date
+
+        effective_start = max(start_date, rule_start)
+        effective_end = min(end_date, rule_end)
+
+        if effective_start > effective_end:
+            continue
+
+        day_of_month = max(1, min(31, parse_int(rule.get("day_of_month"), 1)))
+
+        current = date(effective_start.year, effective_start.month, 1)
+        last_month = date(effective_end.year, effective_end.month, 1)
+
+        while current <= last_month:
+            last_day = monthrange(current.year, current.month)[1]
+            occurrence_day = min(day_of_month, last_day)
+            occurrence_date = date(current.year, current.month, occurrence_day)
+
+            if effective_start <= occurrence_date <= effective_end:
+                rule_id = rule.get("id", "")
+                month_key = occurrence_date.strftime("%Y-%m")
+
+                generated.append({
+                    "id": f"rule-{rule_id}-{month_key}",
+                    "date": occurrence_date.isoformat(),
+                    "kind": rule.get("kind", KIND_COVERED_EXPENSE),
+                    "parent": rule.get("parent", ""),
+                    "category": rule.get("category", ""),
+                    "amount": amount,
+                    "payment_method": rule.get("payment_method", ""),
+                    "description": rule.get("description", rule.get("name", "")),
+                    "created_at": rule.get("created_at", ""),
+                    "generated": "yes",
+                    "rule_id": rule_id,
+                })
+
+            current = next_month(current)
+
+    return generated
+
+
+def next_month(value: date) -> date:
+    if value.month == 12:
+        return date(value.year + 1, 1, 1)
+    return date(value.year, value.month + 1, 1)
+
+
+def prepare_rules_for_display() -> list[dict]:
+    rules = load_rules()
+    prepared = []
+
+    for rule in rules:
+        prepared.append({
+            "id": rule.get("id", ""),
+            "name": rule.get("name", ""),
+            "kind": rule.get("kind", ""),
+            "kind_label": PARENT_SUPPORT_KINDS.get(rule.get("kind", ""), rule.get("kind", "")),
+            "parent": rule.get("parent", ""),
+            "category": rule.get("category", ""),
+            "monthly_amount": parse_amount(rule.get("monthly_amount")),
+            "monthly_amount_str": f"{parse_amount(rule.get('monthly_amount')):.2f}",
+            "day_of_month": rule.get("day_of_month", "1"),
+            "start_date": rule.get("start_date", ""),
+            "end_date": rule.get("end_date", ""),
+            "payment_method": rule.get("payment_method", ""),
+            "description": rule.get("description", ""),
+            "active": is_active(rule.get("active", "yes")),
+        })
+
+    return prepared
 
 def filter_by_date(df: pd.DataFrame, start: str | None, end: str | None) -> pd.DataFrame:
     if df.empty:
@@ -173,4 +341,13 @@ def prepare_for_display(df: pd.DataFrame) -> list[dict]:
     display["parent"] = display["parent"].fillna("")
     display["payment_method"] = display["payment_method"].fillna("")
     display["description"] = display["description"].fillna("")
+
+    if "generated" not in display.columns:
+        display["generated"] = "no"
+
+    display["generated_label"] = display["generated"].map({
+        "yes": "Monthly rule",
+        "no": "Manual",
+    }).fillna("Manual")
+
     return display.to_dict(orient="records")

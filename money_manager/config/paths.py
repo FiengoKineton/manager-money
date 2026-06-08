@@ -15,6 +15,7 @@ PENDING_CSV = DATA_DIR / "pending.csv"
 RECURRING_CSV = DATA_DIR / "recurring.csv"
 SPARAGNAT_CSV = DATA_DIR / "sparagnat_fottut.csv"
 PARENT_SUPPORT_CSV = DATA_DIR / "parent_support.csv"
+PARENT_SUPPORT_RULES_CSV = DATA_DIR / "parent_support_rules.csv"
 DEBTS_CSV = DATA_DIR / "debts.csv"
 DEBT_RULES_CSV = DATA_DIR / "debt_rules.csv"
 

@@ -6,7 +6,10 @@
   <div>
     <span class="eyebrow">Support tracker</span>
     <h2>Parent Support</h2>
-    <p>Track what your parents give you or cover for you: fuel money, rent, bills, groceries, university costs, and similar help.</p>
+    <p>
+      Track recurring help from your parents: fuel money, rent, bills, groceries,
+      university costs, car payments, and similar monthly support.
+    </p>
   </div>
 </section>
 
@@ -35,11 +38,13 @@
     <strong>€ {{ '%.2f'|format(totals.direct_money) }}</strong>
     <small>Cash or bank transfer you receive directly.</small>
   </article>
+
   <article class="kpi-card tone-expense">
     <span>Expenses covered</span>
     <strong>€ {{ '%.2f'|format(totals.covered_expenses) }}</strong>
     <small>Fuel, rent, bills or other costs paid for you.</small>
   </article>
+
   <article class="kpi-card tone-net">
     <span>Total support</span>
     <strong>€ {{ '%.2f'|format(totals.total_support) }}</strong>
@@ -51,17 +56,25 @@
   <article class="form-section panel-card parent-support-card">
     <div class="panel-header">
       <div>
-        <span class="eyebrow">New record</span>
-        <h3>Add parent support</h3>
+        <span class="eyebrow">Monthly rule</span>
+        <h3>Add monthly parent support</h3>
+        <p class="muted small-text">
+          Example: car payment €500/month, rent €300/month, fuel money €100/month.
+        </p>
       </div>
     </div>
 
     <form method="post" class="entry-form designer-form">
-      <input type="hidden" name="action" value="add">
+      <input type="hidden" name="action" value="add_rule">
 
       <div class="form-field">
-        <label>Date</label>
-        <input type="date" name="date" value="{{ today }}" required>
+        <label>Name</label>
+        <input
+          type="text"
+          name="name"
+          placeholder="Car payment, rent, fuel money..."
+          required
+        >
       </div>
 
       <div class="form-field">
@@ -75,35 +88,85 @@
 
       <div class="form-field">
         <label>Parent</label>
-        <input type="text" name="parent" placeholder="Mum, dad, parents...">
+        <input
+          type="text"
+          name="parent"
+          placeholder="Mum, dad, parents..."
+        >
       </div>
 
       <div class="form-field">
         <label>Category</label>
         <select name="category" required>
           {% for category in categories %}
-          <option value="{{ category }}" {% if category == default_category %}selected{% endif %}>{{ category }}</option>
+          <option value="{{ category }}" {% if category == default_category %}selected{% endif %}>
+            {{ category }}
+          </option>
           {% endfor %}
         </select>
       </div>
 
       <div class="form-field">
-        <label>Amount (€)</label>
-        <input type="number" step="0.01" name="amount" required>
+        <label>Monthly amount (€)</label>
+        <input
+          type="number"
+          step="0.01"
+          name="monthly_amount"
+          placeholder="500"
+          required
+        >
+      </div>
+
+      <div class="form-field">
+        <label>Day of month</label>
+        <input
+          type="number"
+          min="1"
+          max="31"
+          name="day_of_month"
+          value="1"
+          required
+        >
+      </div>
+
+      <div class="form-field">
+        <label>Start date</label>
+        <input
+          type="date"
+          name="start_date"
+          value="{{ today }}"
+          required
+        >
+      </div>
+
+      <div class="form-field">
+        <label>End date</label>
+        <input
+          type="date"
+          name="end_date"
+        >
       </div>
 
       <div class="form-field">
         <label>Payment method</label>
-        <input type="text" name="payment_method" placeholder="cash / bank / card / paid directly">
+        <input
+          type="text"
+          name="payment_method"
+          placeholder="cash / bank / paid directly"
+        >
       </div>
 
       <div class="form-field form-field-wide">
         <label>Description</label>
-        <input type="text" name="description" placeholder="Example: fuel money, rent paid, electricity bill covered...">
+        <input
+          type="text"
+          name="description"
+          placeholder="Example: parents cover my car payment every month"
+        >
       </div>
 
       <div class="form-actions">
-        <button type="submit">Add support</button>
+        <button type="submit">Add monthly support</button>
       </div>
     </form>
   </article>
@@ -115,6 +178,7 @@
         <h3>By category</h3>
       </div>
     </div>
+
     {% if category_summary %}
       <div class="category-bars">
       {% for row in category_summary %}
@@ -123,7 +187,9 @@
             <span>{{ row.category or 'Uncategorized' }}</span>
             <strong>€ {{ '%.2f'|format(row.total) }}</strong>
           </div>
-          <div class="category-bar"><span style="width: {{ (row.total / category_summary[0].total * 100) if category_summary[0].total else 0 }}%"></span></div>
+          <div class="category-bar">
+            <span style="width: {{ (row.total / category_summary[0].total * 100) if category_summary[0].total else 0 }}%"></span>
+          </div>
         </div>
       {% endfor %}
       </div>
@@ -134,7 +200,56 @@
 </section>
 
 <section class="transactions panel-card parent-support-card">
+  <h2>Monthly Support Rules</h2>
+
+  {% if rules %}
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Parent</th>
+        <th>Category</th>
+        <th>Monthly amount</th>
+        <th>Day</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Method</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for rule in rules %}
+      <tr>
+        <td>{{ rule.name }}</td>
+        <td>{{ rule.kind_label }}</td>
+        <td>{{ rule.parent }}</td>
+        <td>{{ rule.category }}</td>
+        <td>€ {{ rule.monthly_amount_str }}</td>
+        <td>{{ rule.day_of_month }}</td>
+        <td>{{ rule.start_date }}</td>
+        <td>{{ rule.end_date or 'Ongoing' }}</td>
+        <td>{{ rule.payment_method }}</td>
+        <td>
+          <form method="post" class="inline-form">
+            <input type="hidden" name="action" value="delete_rule">
+            <input type="hidden" name="id" value="{{ rule.id }}">
+            <button type="submit" class="danger-btn compact-btn">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="empty">No monthly support rules yet.</p>
+  {% endif %}
+</section>
+
+<section class="transactions panel-card parent-support-card">
   <h2>Monthly Summary</h2>
+
   {% if monthly %}
   <table>
     <thead>
@@ -145,13 +260,14 @@
         <th>Total</th>
       </tr>
     </thead>
+
     <tbody>
       {% for row in monthly %}
       <tr>
         <td>{{ row.month }}</td>
-        <td>{{ '%.2f'|format(row.direct_money) }}</td>
-        <td>{{ '%.2f'|format(row.covered_expenses) }}</td>
-        <td>{{ '%.2f'|format(row.total_support) }}</td>
+        <td>€ {{ '%.2f'|format(row.direct_money) }}</td>
+        <td>€ {{ '%.2f'|format(row.covered_expenses) }}</td>
+        <td>€ {{ '%.2f'|format(row.total_support) }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -163,6 +279,7 @@
 
 <section class="transactions panel-card parent-support-card">
   <h2>Support Records</h2>
+
   {% if entries %}
   <table>
     <thead>
@@ -173,10 +290,12 @@
         <th>Category</th>
         <th>Method</th>
         <th>Description</th>
+        <th>Source</th>
         <th>Amount</th>
         <th>Actions</th>
       </tr>
     </thead>
+
     <tbody>
       {% for entry in entries %}
       <tr class="row-{{ 'income' if entry.kind == 'direct_money' else 'expense' }}">
@@ -186,13 +305,18 @@
         <td>{{ entry.category }}</td>
         <td>{{ entry.payment_method }}</td>
         <td>{{ entry.description }}</td>
+        <td>{{ entry.generated_label }}</td>
         <td>{{ entry.amount_str }}</td>
         <td>
+          {% if entry.generated != "yes" %}
           <form method="post" class="inline-form">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="id" value="{{ entry.id }}">
             <button type="submit" class="danger-btn compact-btn">Delete</button>
           </form>
+          {% else %}
+          <span class="muted small-text">Generated</span>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}

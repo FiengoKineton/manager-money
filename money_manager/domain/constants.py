@@ -58,6 +58,22 @@ PARENT_SUPPORT_FIELDS = [
     "created_at",
 ]
 
+PARENT_SUPPORT_RULE_FIELDS = [
+    "id",
+    "name",
+    "kind",
+    "parent",
+    "category",
+    "monthly_amount",
+    "day_of_month",
+    "start_date",
+    "end_date",
+    "payment_method",
+    "description",
+    "active",
+    "created_at",
+]
+
 DEBT_FIELDS = [
     "id",
     "name",

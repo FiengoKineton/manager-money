@@ -25,6 +25,7 @@ from money_manager.config.paths import (
     RECURRING_CSV,
     SPARAGNAT_CSV,
     PARENT_SUPPORT_CSV,
+    PARENT_SUPPORT_RULES_CSV,
     TRANSACTION_FILES,
     ensure_runtime_directories,
 )
