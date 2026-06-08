@@ -56,15 +56,25 @@
   <article class="form-section panel-card parent-support-card">
     <div class="panel-header">
       <div>
-        <span class="eyebrow">Monthly rule</span>
-        <h3>Add monthly parent support</h3>
+        <span class="eyebrow">Support entry</span>
+        <h3>Add parent support</h3>
         <p class="muted small-text">
-          Example: car payment €500/month, rent €300/month, fuel money €100/month.
+          Choose whether this is recurring monthly support or a single one-time payment.
         </p>
       </div>
     </div>
 
-    <form method="post" class="entry-form designer-form">
+    <div class="support-mode-toggle">
+      <button type="button" class="support-mode-btn active" data-support-mode="monthly">
+        Monthly support
+      </button>
+      <button type="button" class="support-mode-btn" data-support-mode="once">
+        One-time payment
+      </button>
+    </div>
+
+    <!-- MONTHLY SUPPORT FORM -->
+    <form method="post" class="entry-form designer-form support-form" id="monthly-support-form">
       <input type="hidden" name="action" value="add_rule">
 
       <div class="form-field">
@@ -167,6 +177,83 @@
 
       <div class="form-actions">
         <button type="submit">Add monthly support</button>
+      </div>
+    </form>
+
+    <!-- ONE-TIME SUPPORT FORM -->
+    <form method="post" class="entry-form designer-form support-form hidden-support-form" id="one-time-support-form">
+      <input type="hidden" name="action" value="add">
+
+      <div class="form-field">
+        <label>Date</label>
+        <input
+          type="date"
+          name="date"
+          value="{{ today }}"
+          required
+        >
+      </div>
+
+      <div class="form-field">
+        <label>Type</label>
+        <select name="kind" required>
+          {% for value, label in kind_labels.items() %}
+          <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label>Parent</label>
+        <input
+          type="text"
+          name="parent"
+          placeholder="Mum, dad, parents..."
+        >
+      </div>
+
+      <div class="form-field">
+        <label>Category</label>
+        <select name="category" required>
+          {% for category in categories %}
+          <option value="{{ category }}" {% if category == default_category %}selected{% endif %}>
+            {{ category }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label>Amount (€)</label>
+        <input
+          type="number"
+          step="0.01"
+          name="amount"
+          placeholder="100"
+          required
+        >
+      </div>
+
+      <div class="form-field">
+        <label>Payment method</label>
+        <input
+          type="text"
+          name="payment_method"
+          placeholder="cash / bank / paid directly"
+        >
+      </div>
+
+      <div class="form-field form-field-wide">
+        <label>Description</label>
+        <input
+          type="text"
+          name="description"
+          placeholder="Example: one-time fuel money, birthday cash, rent helped once..."
+        >
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">Add one-time support</button>
       </div>
     </form>
   </article>
@@ -326,4 +413,33 @@
     <p class="empty">No support records yet.</p>
   {% endif %}
 </section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const buttons = document.querySelectorAll(".support-mode-btn");
+    const monthlyForm = document.getElementById("monthly-support-form");
+    const oneTimeForm = document.getElementById("one-time-support-form");
+
+    buttons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        const mode = button.dataset.supportMode;
+
+        buttons.forEach(function (btn) {
+          btn.classList.remove("active");
+        });
+
+        button.classList.add("active");
+
+        if (mode === "monthly") {
+          monthlyForm.classList.remove("hidden-support-form");
+          oneTimeForm.classList.add("hidden-support-form");
+        } else {
+          monthlyForm.classList.add("hidden-support-form");
+          oneTimeForm.classList.remove("hidden-support-form");
+        }
+      });
+    });
+  });
+</script>
+
 {% endblock %}

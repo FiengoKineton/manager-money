@@ -48,3 +48,7 @@ tr.is-closed td {
     grid-template-columns: 1fr;
   }
 }
+
+.hidden-debt-rule-field {
+  display: none;
+}

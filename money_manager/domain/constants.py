@@ -94,10 +94,12 @@ DEBT_RULE_FIELDS = [
     "id",
     "debt_id",
     "name",
+    "rule_type",
     "amount",
     "frequency",
     "day_of_month",
     "start_date",
+    "payoff_date",
     "last_generated",
     "active",
 ]

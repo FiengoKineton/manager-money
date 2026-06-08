@@ -86,6 +86,7 @@ PARENT_SUPPORT_KINDS = {
 PARENT_SUPPORT_CATEGORIES = sorted([
     "Fuel",
     "House rent",
+    "House mortgage",
     "Groceries",
     "Bills",
     "Car",

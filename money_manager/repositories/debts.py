@@ -64,17 +64,25 @@ def write_debt_rules(rows: list[dict]) -> None:
 
 def append_debt_rule(data: dict) -> None:
     rows = load_debt_rules()
+
+    rule_type = data.get("rule_type", "monthly_instalment")
+    if rule_type not in {"monthly_instalment", "payoff_date"}:
+        rule_type = "monthly_instalment"
+
     row = {
         "id": next_numeric_id(rows),
         "debt_id": data.get("debt_id", ""),
         "name": data.get("name", ""),
+        "rule_type": rule_type,
         "amount": _amount(data.get("amount")),
         "frequency": max(1, int(float(data.get("frequency", 1) or 1))),
         "day_of_month": max(1, min(31, int(float(data.get("day_of_month", 1) or 1)))),
         "start_date": data.get("start_date", ""),
+        "payoff_date": data.get("payoff_date", ""),
         "last_generated": "",
         "active": "1",
     }
+
     append_row(DEBT_RULES_CSV, DEBT_RULE_FIELDS, row)
 
 
@@ -117,15 +125,23 @@ def _normalize_debt(row: dict) -> dict:
 
 def _normalize_rule(row: dict) -> dict:
     normalized = {field: row.get(field, "") for field in DEBT_RULE_FIELDS}
+
+    if normalized.get("rule_type") not in {"monthly_instalment", "payoff_date"}:
+        normalized["rule_type"] = "monthly_instalment"
+
     normalized["amount"] = _amount(normalized.get("amount"))
+
     try:
         normalized["frequency"] = str(max(1, int(float(normalized.get("frequency") or 1))))
     except (TypeError, ValueError):
         normalized["frequency"] = "1"
+
     try:
         normalized["day_of_month"] = str(max(1, min(31, int(float(normalized.get("day_of_month") or 1)))))
     except (TypeError, ValueError):
         normalized["day_of_month"] = "1"
+
     if normalized["active"] == "":
         normalized["active"] = "1"
+
     return normalized

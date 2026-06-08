@@ -1,14 +1,22 @@
-document.addEventListener("submit", (event) => {
-  const form = event.target;
-  const action = form.querySelector('input[name="action"]')?.value;
+document.addEventListener("DOMContentLoaded", () => {
+  const ruleTypeSelect = document.getElementById("debt-rule-type");
+  const monthlyFields = document.querySelectorAll(".monthly-rule-field");
+  const payoffFields = document.querySelectorAll(".payoff-rule-field");
 
-  if (action === "delete_debt" || action === "delete_rule") {
-    const ok = window.confirm("Delete this item? This does not remove transactions already created.");
-    if (!ok) event.preventDefault();
+  if (!ruleTypeSelect) return;
+
+  function syncRuleFields() {
+    const isPayoff = ruleTypeSelect.value === "payoff_date";
+
+    monthlyFields.forEach((field) => {
+      field.classList.toggle("hidden-debt-rule-field", isPayoff);
+    });
+
+    payoffFields.forEach((field) => {
+      field.classList.toggle("hidden-debt-rule-field", !isPayoff);
+    });
   }
 
-  if (action === "pay_debt") {
-    const ok = window.confirm("Register this payment as an expense transaction with category Debt?");
-    if (!ok) event.preventDefault();
-  }
+  ruleTypeSelect.addEventListener("change", syncRuleFields);
+  syncRuleFields();
 });
