@@ -17,6 +17,7 @@
 @import url("pages/sparagnat.css");
 @import url("pages/debts.css");
 @import url("pages/parent_support.css");
+@import url("responsive.css");
 
 .logout-form {
   display: inline-flex;
