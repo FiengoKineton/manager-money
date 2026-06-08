@@ -265,3 +265,7 @@ id,date,category,sub_category,amount,account,description,created_at
 269,2026-06-03,Health,,27.7,,,2026-06-03T12:16:38
 270,2026-06-04,Subscriptions,,10.0,auto,OneDrive,2026-06-04T11:51:22
 271,2026-06-03,Shopping,Amzn,22.99,,,2026-06-04T11:51:57
+272,2026-06-07,Eating in,Nicolo,20.27,,,2026-06-08T08:46:02
+273,2026-06-07,Other,,12.6,,,2026-06-08T08:46:17
+274,2026-06-07,Shopping,Earbuds,189.99,,,2026-06-08T08:46:45
+275,2026-06-05,Coffe,,12.4,,,2026-06-08T08:47:31
