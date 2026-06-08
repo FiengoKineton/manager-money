@@ -1,0 +1,84 @@
+button,
+.primary-btn,
+.secondary-btn,
+.danger-btn,
+.transaction-form button,
+.recurring-form button,
+.debt-form button,
+.entry-form button {
+  font: inherit;
+}
+
+.primary-btn,
+.transaction-form button,
+.recurring-form button,
+.debt-form button,
+.entry-form button,
+.form-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.62rem 0.95rem;
+  font-size: 0.9rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--brand);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.18);
+}
+
+.primary-btn:hover,
+.transaction-form button:hover,
+.recurring-form button:hover,
+.debt-form button:hover,
+.entry-form button:hover,
+.form-actions button:hover {
+  background: var(--brand-dark);
+  transform: translateY(-1px);
+}
+
+.secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.58rem 0.85rem;
+  font-size: 0.88rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.secondary-btn:hover {
+  background: var(--surface-muted);
+}
+
+.danger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.58rem 0.85rem;
+  font-size: 0.88rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--bad) !important;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.danger-btn:hover {
+  filter: brightness(0.92);
+}
+
+.compact-btn {
+  padding: 0.42rem 0.68rem;
+  font-size: 0.78rem;
+}

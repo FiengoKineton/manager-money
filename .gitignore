@@ -12,3 +12,11 @@ ENV/
 dist/
 build/
 *.egg-info/
+.DS_Store
+
+
+# Ignore all files in the _OLD directory
+_OLD/**
+.archive/
+.archive/**
+

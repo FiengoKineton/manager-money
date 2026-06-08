@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block page_title %}Parent Support{% endblock %}
+
+{% block content %}
+<section class="page-heading professional-heading">
+  <div>
+    <span class="eyebrow">Support tracker</span>
+    <h2>Parent Support</h2>
+    <p>Track what your parents give you or cover for you: fuel money, rent, bills, groceries, university costs, and similar help.</p>
+  </div>
+</section>
+
+<section class="filters panel-card">
+  <form method="get" action="{{ url_for('parent_support.parent_support_page') }}" class="filters-form compact-filters">
+    <div class="filter-date">
+      <label class="block-label">Period</label>
+      <div class="date-inputs">
+        <div>
+          <span class="small-label">From</span>
+          <input type="date" name="from" value="{{ start }}">
+        </div>
+        <div>
+          <span class="small-label">To</span>
+          <input type="date" name="to" value="{{ end }}">
+        </div>
+      </div>
+    </div>
+    <button type="submit" class="primary-btn">Apply</button>
+  </form>
+</section>
+
+<section class="kpi-grid support-kpis">
+  <article class="kpi-card tone-income">
+    <span>Money given</span>
+    <strong>€ {{ '%.2f'|format(totals.direct_money) }}</strong>
+    <small>Cash or bank transfer you receive directly.</small>
+  </article>
+  <article class="kpi-card tone-expense">
+    <span>Expenses covered</span>
+    <strong>€ {{ '%.2f'|format(totals.covered_expenses) }}</strong>
+    <small>Fuel, rent, bills or other costs paid for you.</small>
+  </article>
+  <article class="kpi-card tone-net">
+    <span>Total support</span>
+    <strong>€ {{ '%.2f'|format(totals.total_support) }}</strong>
+    <small>Kept outside normal income to avoid hiding dependence.</small>
+  </article>
+</section>
+
+<section class="dashboard-grid dashboard-grid-large-left">
+  <article class="form-section panel-card parent-support-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">New record</span>
+        <h3>Add parent support</h3>
+      </div>
+    </div>
+
+    <form method="post" class="entry-form designer-form">
+      <input type="hidden" name="action" value="add">
+
+      <div class="form-field">
+        <label>Date</label>
+        <input type="date" name="date" value="{{ today }}" required>
+      </div>
+
+      <div class="form-field">
+        <label>Type</label>
+        <select name="kind" required>
+          {% for value, label in kind_labels.items() %}
+          <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label>Parent</label>
+        <input type="text" name="parent" placeholder="Mum, dad, parents...">
+      </div>
+
+      <div class="form-field">
+        <label>Category</label>
+        <select name="category" required>
+          {% for category in categories %}
+          <option value="{{ category }}" {% if category == default_category %}selected{% endif %}>{{ category }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label>Amount (€)</label>
+        <input type="number" step="0.01" name="amount" required>
+      </div>
+
+      <div class="form-field">
+        <label>Payment method</label>
+        <input type="text" name="payment_method" placeholder="cash / bank / card / paid directly">
+      </div>
+
+      <div class="form-field form-field-wide">
+        <label>Description</label>
+        <input type="text" name="description" placeholder="Example: fuel money, rent paid, electricity bill covered...">
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">Add support</button>
+      </div>
+    </form>
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Breakdown</span>
+        <h3>By category</h3>
+      </div>
+    </div>
+    {% if category_summary %}
+      <div class="category-bars">
+      {% for row in category_summary %}
+        <div class="category-bar-row">
+          <div>
+            <span>{{ row.category or 'Uncategorized' }}</span>
+            <strong>€ {{ '%.2f'|format(row.total) }}</strong>
+          </div>
+          <div class="category-bar"><span style="width: {{ (row.total / category_summary[0].total * 100) if category_summary[0].total else 0 }}%"></span></div>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No support records for this period.</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="transactions panel-card parent-support-card">
+  <h2>Monthly Summary</h2>
+  {% if monthly %}
+  <table>
+    <thead>
+      <tr>
+        <th>Month</th>
+        <th>Money given</th>
+        <th>Expenses covered</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in monthly %}
+      <tr>
+        <td>{{ row.month }}</td>
+        <td>{{ '%.2f'|format(row.direct_money) }}</td>
+        <td>{{ '%.2f'|format(row.covered_expenses) }}</td>
+        <td>{{ '%.2f'|format(row.total_support) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="empty">No monthly summary yet.</p>
+  {% endif %}
+</section>
+
+<section class="transactions panel-card parent-support-card">
+  <h2>Support Records</h2>
+  {% if entries %}
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Parent</th>
+        <th>Category</th>
+        <th>Method</th>
+        <th>Description</th>
+        <th>Amount</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in entries %}
+      <tr class="row-{{ 'income' if entry.kind == 'direct_money' else 'expense' }}">
+        <td>{{ entry.date_str }}</td>
+        <td>{{ entry.kind_label }}</td>
+        <td>{{ entry.parent }}</td>
+        <td>{{ entry.category }}</td>
+        <td>{{ entry.payment_method }}</td>
+        <td>{{ entry.description }}</td>
+        <td>{{ entry.amount_str }}</td>
+        <td>
+          <form method="post" class="inline-form">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" value="{{ entry.id }}">
+            <button type="submit" class="danger-btn compact-btn">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="empty">No support records yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

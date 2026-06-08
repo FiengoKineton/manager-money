@@ -1,4 +1,4 @@
-flask
-pandas
-matplotlib
-plotly
+Flask>=3.0
+pandas>=2.0
+matplotlib>=3.7
+plotly>=5.20

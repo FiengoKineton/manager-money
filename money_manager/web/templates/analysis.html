@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block page_title %}Analysis{% endblock %}
+
+{% block content %}
+
+<section class="summary">
+  <div class="summary-card income">
+    <h3>Total income</h3>
+    <p>{{ '%.2f'|format(totals.income if totals.income is defined else totals['income']) }}</p>
+  </div>
+  <div class="summary-card expense">
+    <h3>Total expenses</h3>
+    <p>{{ '%.2f'|format(totals.expenses if totals.expenses is defined else totals['expenses']) }}</p>
+  </div>
+  <div class="summary-card investment">
+    <h3>Investments (cash out)</h3>
+    <p>{{ '%.2f'|format(totals.investments if totals.investments is defined else totals['investments']) }}</p>
+  </div>
+  <div class="summary-card net">
+    <h3>Net</h3>
+    <p>{{ '%.2f'|format(totals.net if totals.net is defined else totals['net']) }}</p>
+    {% if totals.savings_rate is defined %}
+      <small>Savings rate: {{ '%.1f'|format(totals.savings_rate) }} %</small>
+    {% endif %}
+  </div>
+</section>
+
+<h2>Visual summary</h2>
+<div class="analysis-plots-grid">
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.monthly_summary|safe }}
+  </div>
+
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.rolling_net_flow|safe }}
+  </div>
+
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.expenses_by_category|safe }}
+  </div>
+
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.weekday_spending|safe }}
+  </div>
+
+  <div class="chart-card chart-wide">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.cumulative_balance|safe }}
+  </div>
+</div>
+
+
+<section class="transactions">
+  <h2>Top expenses</h2>
+  {% if top_expenses %}
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in top_expenses %}
+          <tr>
+            <td>{{ tx.date_str }}</td>
+            <td>{{ tx.category }}</td>
+            <td>{{ tx.description }}</td>
+            <td>{{ '%.2f'|format(tx.amount) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty">No expenses yet.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

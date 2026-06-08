@@ -1,0 +1,139 @@
+from datetime import date
+
+from money_manager.repositories.pending import append_pending, load_pending
+from money_manager.repositories.recurring import (
+    add_months,
+    append_recurring,
+    delete_recurring,
+    first_due_date,
+    load_recurring,
+    normalize_amount,
+    parse_date,
+    parse_frequency_months,
+    update_recurring,
+    write_recurring,
+)
+
+
+def append_rule_from_form(form) -> None:
+    append_recurring({
+        "name": form.get("name", ""),
+        "type": form.get("type", "expense"),
+        "amount": float(form.get("amount", 0)),
+        "frequency": int(form.get("frequency", 1)),
+        "day_of_month": int(form.get("day_of_month", 1)),
+        "category": form.get("category", ""),
+        "start_date": form.get("start_date", ""),
+    })
+
+
+def update_rule_from_form(form) -> None:
+    update_recurring(
+        form.get("id"),
+        {
+            "name": form.get("name", ""),
+            "type": form.get("type", "expense"),
+            "amount": float(form.get("amount", 0)),
+            "frequency": int(form.get("frequency", 1)),
+            "day_of_month": int(form.get("day_of_month", 1)),
+            "category": form.get("category", ""),
+        },
+    )
+
+
+def delete_rule_from_form(form) -> None:
+    delete_recurring(int(form.get("id")))
+
+
+def next_due_date_for_rule(row: dict, today: date | None = None) -> date:
+    today = today or date.today()
+    frequency_months = parse_frequency_months(row.get("frequency"))
+
+    try:
+        desired_day = int(row.get("day_of_month", 1))
+    except (TypeError, ValueError):
+        desired_day = 1
+
+    last_generated = parse_date(row.get("last_generated"))
+
+    if last_generated:
+        return add_months(last_generated, frequency_months, desired_day)
+
+    return first_due_date(row, today)
+
+
+def generate_recurring(today: date | None = None) -> int:
+    today = today or date.today()
+    rows = load_recurring()
+
+    changed = False
+    created = 0
+
+    for row in rows:
+        for due_date in _iter_due_dates_to_generate(row, today):
+            if _matching_pending_exists(row, due_date):
+                row["last_generated"] = due_date.isoformat()
+                changed = True
+                continue
+
+            append_pending(
+                {
+                    "type": row.get("type", "expense"),
+                    "amount": normalize_amount(row.get("amount", 0)),
+                    "category": row.get("category", ""),
+                    "account": "auto",
+                    "description": row.get("name", ""),
+                },
+                due_date,
+            )
+            row["last_generated"] = due_date.isoformat()
+            changed = True
+            created += 1
+
+    if changed:
+        write_recurring(rows)
+
+    return created
+
+
+def _iter_due_dates_to_generate(row: dict, today: date):
+    frequency_months = parse_frequency_months(row.get("frequency"))
+
+    try:
+        desired_day = int(row.get("day_of_month", 1))
+    except (TypeError, ValueError):
+        desired_day = 1
+
+    due_date = first_due_date(row, today)
+    last_generated = parse_date(row.get("last_generated"))
+
+    if last_generated:
+        while due_date <= last_generated:
+            due_date = add_months(due_date, frequency_months, desired_day)
+
+    while due_date <= today:
+        yield due_date
+        due_date = add_months(due_date, frequency_months, desired_day)
+
+
+def _matching_pending_exists(row: dict, due_date: date) -> bool:
+    due = due_date.isoformat()
+    name = str(row.get("name", ""))
+    transaction_type = str(row.get("type", ""))
+    category = str(row.get("category", ""))
+    amount = normalize_amount(row.get("amount", 0))
+
+    for tx in load_pending():
+        if tx.get("date_due") != due:
+            continue
+        if tx.get("description") != name:
+            continue
+        if tx.get("type") != transaction_type:
+            continue
+        if tx.get("category") != category:
+            continue
+
+        if abs(normalize_amount(tx.get("amount", 0)) - amount) < 0.01:
+            return True
+
+    return False

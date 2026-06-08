@@ -1,0 +1,4 @@
+id,date,kind,person,category,amount,account,description,created_at
+1,2026-05-30,cash_collected,Dad,cash,50.0,cash,,2026-06-08T09:50:59
+2,2026-06-06,saved_expense,Dad,Shopping,120.0,card,Claudia bathing suits,2026-06-08T09:51:37
+3,2026-06-06,saved_expense,Dad,Shopping,100.0,card,bathing suit,2026-06-08T09:52:11

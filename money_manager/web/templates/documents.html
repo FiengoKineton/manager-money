@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block page_title %}Documents{% endblock %}
+
+{% block content %}
+<div class="doc-container">
+  <h2>Document Viewer</h2>
+
+  <div class="folder-controls">
+    <button class="folder-btn" data-folder="Cedolini">Cedolini</button>
+    <button class="folder-btn" data-folder="Tasse - Detrazioni Fiscali">Tasse - Detrazioni Fiscali</button>
+    <br><br>
+    <strong>Viewing: </strong> <span id="current-folder-label">Cedolini</span>
+
+    <p class="muted small-text">
+      Only these files are shown: {{ allowed_extensions | join(", ") }}
+    </p>
+  </div>
+
+  <iframe id="file-viewer" class="viewer-window" title="Document viewer"></iframe>
+
+  <div class="nav-controls">
+    <button class="nav-btn" data-doc-action="previous">&#8592;</button>
+    <span id="file-indicator">Loading files...</span>
+    <button class="nav-btn" data-doc-action="next">&#8594;</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/documents.js') }}"></script>
+{% endblock %}

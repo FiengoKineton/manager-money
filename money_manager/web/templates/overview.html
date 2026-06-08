@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block page_title %}Overview{% endblock %}
+
+{% block content %}
+<section class="overview-hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Financial command center</span>
+    <h2>Overview</h2>
+    <p>
+      One clean place for the real balance, pending money, debts, saved expenses,
+      cash collected, and parent support.
+    </p>
+    <div class="hero-actions">
+      <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Add expense</a>
+      <a class="secondary-btn" href="{{ url_for('dashboard.index') }}">Open detailed dashboard</a>
+    </div>
+  </div>
+
+  <div class="hero-balance-card">
+    <span class="metric-label">Available position</span>
+    <strong>€ {{ '%.2f'|format(cash_position) }}</strong>
+    <small>Net + investments</small>
+    <div class="balance-subgrid">
+      <div>
+        <span>Stress position</span>
+        <b>€ {{ '%.2f'|format(stress_position) }}</b>
+      </div>
+      <div>
+        <span>Pending</span>
+        <b>€ {{ '%.2f'|format(pending_amount) }}</b>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="kpi-grid">
+  <article class="kpi-card tone-income">
+    <span>Income</span>
+    <strong>€ {{ '%.2f'|format(totals.income) }}</strong>
+    <small>This month: € {{ '%.2f'|format(stats_this_month.income) }}</small>
+  </article>
+  <article class="kpi-card tone-expense">
+    <span>Expenses</span>
+    <strong>€ {{ '%.2f'|format(totals.expenses) }}</strong>
+    <small>This month: € {{ '%.2f'|format(stats_this_month.expenses) }}</small>
+  </article>
+  <article class="kpi-card tone-net">
+    <span>Net balance</span>
+    <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
+    <small>Savings rate: {{ '%.1f'|format(totals.savings_rate) }}%</small>
+  </article>
+  <article class="kpi-card tone-investment">
+    <span>Investments</span>
+    <strong>€ {{ '%.2f'|format(totals.investments) }}</strong>
+    <small>Cash out tracked as investment</small>
+  </article>
+</section>
+
+<section class="dashboard-grid dashboard-grid-large-left">
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Decision view</span>
+        <h3>Real money vs assisted money</h3>
+      </div>
+      <a href="{{ url_for('sparagnat.sparagnat_page') }}">Open tracker</a>
+    </div>
+
+    <div class="comparison-list">
+      <div class="comparison-row">
+        <span>Current real net</span>
+        <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
+      </div>
+      <div class="comparison-row warning">
+        <span>Net if you paid saved expenses</span>
+        <strong>€ {{ '%.2f'|format(net_if_you_paid_saved_expenses) }}</strong>
+      </div>
+      <div class="comparison-row">
+        <span>Saved expenses</span>
+        <strong>€ {{ '%.2f'|format(saved_expenses) }}</strong>
+      </div>
+      <div class="comparison-row">
+        <span>Cash collected</span>
+        <strong>€ {{ '%.2f'|format(cash_collected) }}</strong>
+      </div>
+      <div class="comparison-row accent">
+        <span>Parent support tracked separately</span>
+        <strong>€ {{ '%.2f'|format(parent_support_total) }}</strong>
+      </div>
+    </div>
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Status</span>
+        <h3>Financial health</h3>
+      </div>
+    </div>
+
+    <div class="health-stack">
+      {% for card in quick_health %}
+      <div class="health-pill health-{{ card.tone }}">
+        <div>
+          <span>{{ card.label }}</span>
+          <strong>{{ card.value }}</strong>
+        </div>
+        <p>{{ card.text }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section class="dashboard-grid dashboard-grid-even">
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Planning</span>
+        <h3>Debt and pending</h3>
+      </div>
+      <a href="{{ url_for('debts.debts_page') }}">Manage debts</a>
+    </div>
+
+    <div class="mini-metrics">
+      <div>
+        <span>Active debt</span>
+        <strong>€ {{ '%.2f'|format(active_debt) }}</strong>
+      </div>
+      <div>
+        <span>Pending debt payments</span>
+        <strong>€ {{ '%.2f'|format(pending_debt_payments) }}</strong>
+      </div>
+      <div>
+        <span>All pending</span>
+        <strong>€ {{ '%.2f'|format(pending_amount) }}</strong>
+      </div>
+    </div>
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Parent support</span>
+        <h3>Fuel, rent, cash and covered costs</h3>
+      </div>
+      <a href="{{ url_for('parent_support.parent_support_page') }}">Open page</a>
+    </div>
+
+    <div class="mini-metrics">
+      <div>
+        <span>Money given</span>
+        <strong>€ {{ '%.2f'|format(parent_support.direct_money) }}</strong>
+      </div>
+      <div>
+        <span>Costs covered</span>
+        <strong>€ {{ '%.2f'|format(parent_support.covered_expenses) }}</strong>
+      </div>
+      <div>
+        <span>Total support</span>
+        <strong>€ {{ '%.2f'|format(parent_support.total_support) }}</strong>
+      </div>
+    </div>
+  </article>
+</section>
+
+<section class="dashboard-grid dashboard-grid-even">
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Expenses</span>
+        <h3>Top categories</h3>
+      </div>
+      <a href="{{ url_for('analysis.analysis') }}">Full analysis</a>
+    </div>
+
+    {% if top_categories %}
+      <div class="category-bars">
+      {% for row in top_categories %}
+        <div class="category-bar-row">
+          <div>
+            <span>{{ row.category }}</span>
+            <strong>€ {{ '%.2f'|format(row.total) }}</strong>
+          </div>
+          <div class="category-bar"><span style="width: {{ (row.total / top_categories[0].total * 100) if top_categories[0].total else 0 }}%"></span></div>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No expense categories yet.</p>
+    {% endif %}
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Latest</span>
+        <h3>Recent transactions</h3>
+      </div>
+      <a href="{{ url_for('dashboard.index') }}">View all</a>
+    </div>
+
+    {% if recent_transactions %}
+      <div class="recent-list">
+      {% for tx in recent_transactions %}
+        <div class="recent-row recent-{{ tx.type }}">
+          <div>
+            <strong>{{ tx.category }}</strong>
+            <span>{{ tx.date_str }}{% if tx.description %} · {{ tx.description }}{% endif %}</span>
+          </div>
+          <b>€ {{ tx.amount_str }}</b>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No transactions yet.</p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}

@@ -1,0 +1,172 @@
+.dashboard-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-grid-large-left {
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+}
+
+.dashboard-grid-even {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+.kpi-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -32px -48px auto;
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  opacity: 0.8;
+}
+
+.kpi-card span,
+.metric-label {
+  display: block;
+  color: var(--muted);
+  font-weight: 750;
+  font-size: 0.8rem;
+}
+
+.kpi-card strong {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  letter-spacing: -0.05em;
+}
+
+.kpi-card small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--muted);
+}
+
+.tone-income { border-top: 4px solid var(--good); }
+.tone-expense { border-top: 4px solid var(--bad); }
+.tone-net { border-top: 4px solid var(--brand); }
+.tone-investment { border-top: 4px solid #111827; }
+
+.mini-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.mini-metrics div,
+.comparison-row,
+.health-pill,
+.recent-row,
+.category-bar-row {
+  padding: 0.8rem;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+}
+
+.mini-metrics span,
+.comparison-row span,
+.health-pill span,
+.recent-row span,
+.category-bar-row span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.mini-metrics strong,
+.comparison-row strong,
+.health-pill strong,
+.category-bar-row strong {
+  display: block;
+  margin-top: 0.25rem;
+  letter-spacing: -0.04em;
+}
+
+.category-bars,
+.recent-list,
+.comparison-list,
+.health-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.category-bar-row > div:first-child,
+.recent-row,
+.comparison-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.category-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  margin-top: 0.65rem;
+}
+
+.category-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), #60a5fa);
+}
+
+.health-pill p {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.83rem;
+}
+
+.health-good { background: var(--good-soft); border-color: #bbf7d0; }
+.health-bad { background: var(--bad-soft); border-color: #fecaca; }
+.health-warning { background: var(--warning-soft); border-color: #fedf89; }
+.health-neutral { background: var(--neutral-soft); border-color: #c7d2fe; }
+
+.comparison-row.warning { background: var(--warning-soft); border-color: #fedf89; }
+.comparison-row.accent { background: var(--brand-soft); border-color: #bfdbfe; }
+
+.recent-row.recent-income { border-left: 4px solid var(--good); }
+.recent-row.recent-expense { border-left: 4px solid var(--bad); }
+.recent-row.recent-investment { border-left: 4px solid #111827; }
+
+@media (max-width: 1100px) {
+  .dashboard-grid-large-left,
+  .dashboard-grid-even,
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-grid-large-left,
+  .dashboard-grid-even,
+  .kpi-grid,
+  .mini-metrics {
+    grid-template-columns: 1fr;
+  }
+}

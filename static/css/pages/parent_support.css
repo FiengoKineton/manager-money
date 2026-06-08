@@ -1,0 +1,13 @@
+.parent-support-card {
+  margin-bottom: 1rem;
+}
+
+.support-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .support-kpis {
+    grid-template-columns: 1fr;
+  }
+}

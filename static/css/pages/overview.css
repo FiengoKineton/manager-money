@@ -1,0 +1,105 @@
+.overview-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.8fr);
+  gap: 1rem;
+  align-items: stretch;
+  margin-bottom: 1rem;
+}
+
+.hero-copy,
+.hero-balance-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(191, 219, 254, 0.85);
+  box-shadow: var(--shadow);
+}
+
+.hero-copy {
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.24), transparent 20rem),
+    linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+}
+
+.hero-copy h2 {
+  margin: 0.2rem 0 0.45rem;
+  font-size: clamp(2rem, 5vw, 4rem);
+  letter-spacing: -0.08em;
+  line-height: 0.95;
+}
+
+.hero-copy p {
+  margin: 0;
+  max-width: 66ch;
+  color: var(--ink-soft);
+  font-size: 1rem;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-top: 1.25rem;
+}
+
+.hero-balance-card {
+  padding: 1.25rem;
+  background: #0f172a;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 260px;
+  overflow: hidden;
+  position: relative;
+}
+
+.hero-balance-card::after {
+  content: "";
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  border-radius: 999px;
+  background: rgba(96, 165, 250, 0.26);
+  right: -64px;
+  bottom: -74px;
+}
+
+.hero-balance-card .metric-label,
+.hero-balance-card small,
+.hero-balance-card span {
+  color: #cbd5e1;
+}
+
+.hero-balance-card strong {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: -0.08em;
+}
+
+.balance-subgrid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.2rem;
+}
+
+.balance-subgrid div {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 0.8rem;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.balance-subgrid b {
+  display: block;
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 950px) {
+  .overview-hero {
+    grid-template-columns: 1fr;
+  }
+}

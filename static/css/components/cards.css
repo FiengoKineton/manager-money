@@ -1,0 +1,58 @@
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.summary-spaced {
+  margin-top: 1rem;
+}
+
+.summary-card {
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.summary-card p {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 850;
+  letter-spacing: -0.05em;
+}
+
+.summary-card small {
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.summary-card.income {
+  border-top: 4px solid var(--good);
+}
+
+.summary-card.expense {
+  border-top: 4px solid var(--bad);
+}
+
+.summary-card.investment {
+  border-top: 4px solid #111827;
+}
+
+.summary-card.net {
+  border-top: 4px solid var(--brand);
+}
+
+.summary-card.pending {
+  border-top: 4px solid var(--warning);
+}
+
+.summary-card-center {
+  text-align: center;
+}

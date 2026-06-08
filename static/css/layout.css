@@ -1,0 +1,11 @@
+.header {
+  display: none;
+}
+
+.professional-heading {
+  padding: 1.1rem;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(255,255,255,0.94), rgba(219,234,254,0.62));
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}

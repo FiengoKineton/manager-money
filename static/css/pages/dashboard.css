@@ -1,0 +1,54 @@
+.period-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.period-card {
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.period-card h3 {
+  margin: 0 0 0.7rem;
+}
+
+.period-card p,
+.income-text,
+.expense-text {
+  margin: 0.45rem 0;
+  font-size: 1.15rem;
+  font-weight: 850;
+}
+
+.dashboard-charts-home {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-charts-home .chart-full {
+  grid-column: 1 / -1;
+  min-height: 380px;
+}
+
+.dashboard-charts-home .chart-card {
+  min-height: 340px;
+}
+
+#toggle-transactions-btn {
+  margin-top: 0.85rem;
+}
+
+@media (max-width: 900px) {
+  .period-summary,
+  .dashboard-charts-home {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-charts-home .chart-full {
+    grid-column: span 1;
+  }
+}

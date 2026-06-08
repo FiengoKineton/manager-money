@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block page_title %}Sparagnat e Fottut{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <h2>Sparagnat e Fottut</h2>
+    <p>Track money you saved because someone else paid for you, and cash you collected over time.</p>
+  </div>
+</section>
+
+<section class="filters">
+  <form method="get" action="{{ url_for('sparagnat.sparagnat_page') }}" class="filters-form compact-filters">
+    <div class="filter-date">
+      <label class="block-label">Period</label>
+      <div class="date-inputs">
+        <div>
+          <span class="small-label">From</span>
+          <input type="date" name="from" value="{{ start }}">
+        </div>
+        <div>
+          <span class="small-label">To</span>
+          <input type="date" name="to" value="{{ end }}">
+        </div>
+      </div>
+    </div>
+    <button type="submit" class="primary-btn">Apply</button>
+  </form>
+</section>
+
+<section class="summary sparagnat-summary">
+  <div class="summary-card expense">
+    <h3>Saved expenses</h3>
+    <p>{{ '%.2f'|format(totals.saved_expenses) }}</p>
+    <small>Expenses paid by someone else.</small>
+  </div>
+  <div class="summary-card income">
+    <h3>Cash collected</h3>
+    <p>{{ '%.2f'|format(totals.cash_collected) }}</p>
+    <small>Physical cash received/taken over time.</small>
+  </div>
+  <div class="summary-card net">
+    <h3>Current net</h3>
+    <p>{{ '%.2f'|format(totals.current_net) }}</p>
+    <small>Based on real transactions in this period.</small>
+  </div>
+  <div class="summary-card pending">
+    <h3>Net if you had paid</h3>
+    <p>{{ '%.2f'|format(totals.net_if_you_paid) }}</p>
+    <small>Current net minus saved expenses.</small>
+  </div>
+</section>
+
+<section class="form-section sparagnat-card">
+  <h2>Add Entry</h2>
+  <form method="post" class="entry-form">
+    <input type="hidden" name="action" value="add">
+
+    <div class="form-field">
+      <label>Date</label>
+      <input type="date" name="date" value="{{ today }}" required>
+    </div>
+
+    <div class="form-field">
+      <label>Type</label>
+      <select name="kind" required>
+        <option value="saved_expense">Expense paid by someone else</option>
+        <option value="cash_collected">Cash collected</option>
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label>Person</label>
+      <input type="text" name="person" placeholder="Parents, friend...">
+    </div>
+
+    <div class="form-field">
+      <label>Category</label>
+      <input type="text" name="category" placeholder="Food, rent, fuel, cash...">
+    </div>
+
+    <div class="form-field">
+      <label>Amount (€)</label>
+      <input type="number" step="0.01" name="amount" required>
+    </div>
+
+    <div class="form-field">
+      <label>Account</label>
+      <input type="text" name="account" placeholder="cash / card / none">
+    </div>
+
+    <div class="form-field form-field-wide">
+      <label>Description</label>
+      <input type="text" name="description" placeholder="Example: parents paid dinner, cash from parents...">
+    </div>
+
+    <div class="form-actions">
+      <button type="submit">Add entry</button>
+    </div>
+  </form>
+</section>
+
+<section class="transactions sparagnat-card">
+  <h2>Monthly Summary</h2>
+  {% if monthly %}
+  <table>
+    <thead>
+      <tr>
+        <th>Month</th>
+        <th>Saved expenses</th>
+        <th>Cash collected</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in monthly %}
+      <tr>
+        <td>{{ row.month }}</td>
+        <td>{{ '%.2f'|format(row.saved_expenses) }}</td>
+        <td>{{ '%.2f'|format(row.cash_collected) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>No entries for this period.</p>
+  {% endif %}
+</section>
+
+<section class="transactions sparagnat-card">
+  <h2>Entries</h2>
+  {% if entries %}
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Person</th>
+        <th>Category</th>
+        <th>Description</th>
+        <th>Amount</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in entries %}
+      <tr class="row-{{ 'income' if entry.kind == 'cash_collected' else 'expense' }}">
+        <td>{{ entry.date_str }}</td>
+        <td>{{ entry.kind_label }}</td>
+        <td>{{ entry.person }}</td>
+        <td>{{ entry.category }}</td>
+        <td>{{ entry.description }}</td>
+        <td>{{ entry.amount_str }}</td>
+        <td>
+          <form method="post" class="inline-form">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" value="{{ entry.id }}">
+            <button type="submit" class="danger-btn compact-btn">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>No entries yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,37 @@
+.empty {
+  text-align: center;
+  color: var(--muted);
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0.25rem 0 0;
+}
+
+.is-hidden {
+  display: none;
+}
+
+.is-visible-table {
+  display: table-row-group;
+}
+
+.income-text {
+  color: var(--good);
+}
+
+.expense-text {
+  color: var(--bad);
+}
+
+.inline-form {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+small {
+  color: var(--muted);
+}

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Money Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body class="app-body" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('dashboard.overview') }}">
+        <span class="brand-mark">GM</span>
+        <span>
+          <strong>Giuseppe</strong>
+          <small>Money Manager</small>
+        </span>
+      </a>
+
+      <nav class="sidebar-nav" aria-label="Main navigation">
+        <div class="nav-group">
+          <span class="nav-label">Home</span>
+          <a href="{{ url_for('dashboard.overview') }}" class="{{ 'active' if request.endpoint == 'dashboard.overview' else '' }}">Overview</a>
+          <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if request.endpoint == 'dashboard.index' else '' }}">Transactions Dashboard</a>
+        </div>
+
+        <div class="nav-group">
+          <span class="nav-label">Planning</span>
+          <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if request.endpoint == 'pending.pending_page' else '' }}">Pending & Recurring</a>
+          <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if request.endpoint == 'debts.debts_page' else '' }}">Debts</a>
+        </div>
+
+        <div class="nav-group">
+          <span class="nav-label">Support</span>
+          <a href="{{ url_for('sparagnat.sparagnat_page') }}" class="{{ 'active' if request.endpoint == 'sparagnat.sparagnat_page' else '' }}">Sparagnat e Fottut</a>
+          <a href="{{ url_for('parent_support.parent_support_page') }}" class="{{ 'active' if request.endpoint == 'parent_support.parent_support_page' else '' }}">Parent Support</a>
+        </div>
+
+        <div class="nav-group">
+          <span class="nav-label">Reports</span>
+          <a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if request.endpoint == 'analysis.analysis' else '' }}">Analysis</a>
+          <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if request.endpoint == 'forecast.forecast' else '' }}">Forecast</a>
+          <a href="{{ url_for('documents.documents') }}" class="{{ 'active' if request.endpoint == 'documents.documents' else '' }}">Documents</a>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="app-main">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">Personal finance workspace</span>
+          <h1>{% block page_title %}Money Manager{% endblock %}</h1>
+        </div>
+        <div class="quick-actions">
+          <a href="{{ url_for('transactions.add_transaction', type='expense') }}" class="quick-action expense-action">+ Expense</a>
+          <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="quick-action income-action">+ Income</a>
+          <a href="{{ url_for('transactions.add_transaction', type='investment') }}" class="quick-action investment-action">+ Investment</a>
+        </div>
+      </header>
+
+      <div class="container">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
