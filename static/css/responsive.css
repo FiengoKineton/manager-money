@@ -798,3 +798,84 @@
     font-size: 1.15rem;
   }
 }
+
+/* =========================
+   Floating mobile action bar
+   ========================= */
+
+.mobile-action-bar {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  body {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-action-bar {
+    position: fixed;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(0.65rem + env(safe-area-inset-bottom));
+    z-index: 9999;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.45rem;
+    padding: 0.55rem;
+    border-radius: 24px;
+    background: rgba(15, 23, 42, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-action-item {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.16rem;
+    min-height: 54px;
+    border-radius: 18px;
+    text-decoration: none;
+    color: #f8fafc;
+    font-weight: 850;
+    background: rgba(255, 255, 255, 0.08);
+    transition: 0.15s ease;
+  }
+
+  .mobile-action-item:active {
+    transform: scale(0.96);
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .mobile-action-item span {
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  .mobile-action-item small {
+    font-size: 0.68rem;
+    line-height: 1;
+  }
+
+  .mobile-expense {
+    color: #fecaca;
+  }
+
+  .mobile-income {
+    color: #bbf7d0;
+  }
+
+  .mobile-pending {
+    color: #fde68a;
+  }
+
+  .mobile-investment {
+    color: #bfdbfe;
+  }
+
+  .topbar .quick-actions {
+    display: none;
+  }
+}

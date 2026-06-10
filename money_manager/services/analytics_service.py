@@ -4,6 +4,7 @@ import pandas as pd
 
 from money_manager.services.account_service import main_account_transactions
 from money_manager.services.investment_service import investment_habit_snapshot
+from money_manager.services.forecast_service import estimate_cashflow_habits
 from money_manager.utils.filters import filter_by_amount_range, filter_by_categories, filter_by_date, filter_by_query, filter_by_types
 from money_manager.utils.interactive_plots import (
     chart_cumulative_balance,
@@ -138,12 +139,13 @@ def _spending_habits(main_df: pd.DataFrame, df_month: pd.DataFrame, df_cat: pd.D
         if complete.empty:
             complete = recent
 
-    avg_income = _mean_nonempty(complete, "income")
-    avg_expenses = _mean_nonempty(complete, "expenses")
+    smart_habits = estimate_cashflow_habits(main_df, df_month)
+    avg_income = float(smart_habits["income"]["value"])
+    avg_expenses = float(smart_habits["spending"]["value"])
     avg_investments = _mean_nonempty(complete, "investments")
-    avg_net = _mean_nonempty(complete, "net")
+    avg_net = float(smart_habits["monthly_net"])
     savings_rate = 0.0 if avg_income <= 0 else max(avg_net, 0.0) / avg_income * 100.0
-    burn_ratio = 0.0 if avg_income <= 0 else avg_expenses / avg_income * 100.0
+    burn_ratio = float(smart_habits["burn_ratio"])
 
     latest_month = complete.tail(1).to_dict(orient="records")
     latest_month = latest_month[0] if latest_month else {"month": "", "income": 0.0, "expenses": 0.0, "investments": 0.0, "net": 0.0}
@@ -174,6 +176,10 @@ def _spending_habits(main_df: pd.DataFrame, df_month: pd.DataFrame, df_cat: pd.D
         "latest_month": latest_month,
         "top_category": top_category,
         "peak_weekday": peak_weekday,
+        "income_method": smart_habits["income"].get("method", "smart income habit"),
+        "spending_method": smart_habits["spending"].get("method", "smart spending habit"),
+        "income_one_offs_excluded": smart_habits["income"].get("excluded_one_offs", 0),
+        "spending_one_offs_excluded": smart_habits["spending"].get("excluded_one_offs", 0),
     }
 
 
@@ -222,7 +228,7 @@ def _insight_cards(totals: dict, habits: dict, investment: dict) -> list[dict]:
         "label": "Average monthly net",
         "value": f"€{habits['avg_monthly_net']:.2f}",
         "tone": "good" if habits["avg_monthly_net"] >= 0 else "danger",
-        "text": f"Based on the last {habits['months_used']} usable month(s) of main-bank activity.",
+        "text": "Smart estimate based on recent frequency and cleaned one-off activity.",
     })
 
     cards.append({
@@ -236,7 +242,7 @@ def _insight_cards(totals: dict, habits: dict, investment: dict) -> list[dict]:
         "label": "Investment habit",
         "value": f"€{investment['monthly_net_investment']:.2f}/mo",
         "tone": "good" if investment["monthly_net_investment"] >= 0 else "warning",
-        "text": "Average deposits/buys minus withdrawals/sells. Dividends are tracked separately.",
+        "text": "Latest repeated deposits/buys minus withdrawals/sells. Old one-off top-ups are downweighted.",
     })
 
     cards.append({

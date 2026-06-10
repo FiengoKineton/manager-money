@@ -13,16 +13,16 @@
   </div>
   <div class="forecast-auto-box">
     <span>Auto defaults</span>
-    <strong>{{ defaults.months_used }} month basis</strong>
-    <small>Return default: {{ '%.2f'|format(params.annual_return_pct) }}%</small>
+    <strong>Smart habit defaults</strong>
+    <small>{{ defaults.income_habit.method }} · return {{ '%.2f'|format(params.annual_return_pct) }}%</small>
   </div>
 </section>
 
 <section class="forecast-defaults-grid">
-  <article><span>Starting cash</span><strong>€ {{ '%.2f'|format(params.starting_cash) }}</strong><small>Main net + separate liquid accounts</small></article>
+  <article><span>Monthly income</span><strong>€ {{ '%.2f'|format(params.monthly_income) }}</strong><small>{{ defaults.income_habit.method }}</small></article>
+  <article><span>Monthly spending</span><strong>€ {{ '%.2f'|format(params.monthly_spending) }}</strong><small>{{ defaults.spending_habit.method }}</small></article>
+  <article><span>Monthly net investment</span><strong>€ {{ '%.2f'|format(params.monthly_net_investment) }}</strong><small>{{ defaults.investment_habits.habit_method }}</small></article>
   <article><span>Investment value</span><strong>€ {{ '%.2f'|format(params.starting_investment_value) }}</strong><small>From current investment proxy</small></article>
-  <article><span>Monthly spending</span><strong>€ {{ '%.2f'|format(params.monthly_spending) }}</strong><small>Recent spending habit</small></article>
-  <article><span>Monthly net investment</span><strong>€ {{ '%.2f'|format(params.monthly_net_investment) }}</strong><small>Buys/deposits minus sells/withdrawals</small></article>
 </section>
 
 <section class="forecast-control-card">
@@ -43,16 +43,19 @@
     <div>
       <label>Monthly income (€)</label>
       <input type="number" name="monthly_income" step="0.01" value="{{ '%.2f'|format(params.monthly_income) }}">
+      <small class="forecast-input-hint">Auto: repeated recent income, excluding {{ defaults.income_habit.excluded_one_offs }} one-off log(s).</small>
     </div>
 
     <div>
       <label>Monthly spending (€)</label>
       <input type="number" name="monthly_spending" step="0.01" value="{{ '%.2f'|format(params.monthly_spending) }}">
+      <small class="forecast-input-hint">Auto: recent spending with outlier clipping.</small>
     </div>
 
     <div>
       <label>Monthly net investment (€)</label>
       <input type="number" name="monthly_net_investment" step="0.01" value="{{ '%.2f'|format(params.monthly_net_investment) }}">
+      <small class="forecast-input-hint">Auto: latest repeated flow. Raw average: € {{ '%.2f'|format(defaults.investment_habits.average_monthly_net_investment) }}/mo.</small>
     </div>
 
     <div>

@@ -72,3 +72,11 @@
     grid-column: auto;
   }
 }
+
+.forecast-input-hint {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.74rem;
+  line-height: 1.25;
+  color: var(--muted);
+}

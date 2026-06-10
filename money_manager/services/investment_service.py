@@ -185,10 +185,16 @@ def investment_habit_snapshot(refresh: bool = False) -> dict:
         last_activity = tx["date"].max().strftime("%Y-%m-%d")
 
     annual_return_pct = _annualized_return_pct(daily, totals)
-    monthly_deposit_buy = deposits_buys / months
-    monthly_withdraw_sell = withdrawals_sells / months
-    monthly_net_investment = (deposits_buys - withdrawals_sells) / months
-    monthly_dividends = dividends / months
+    average_monthly_deposit_buy = deposits_buys / months
+    average_monthly_withdraw_sell = withdrawals_sells / months
+    average_monthly_net_investment = (deposits_buys - withdrawals_sells) / months
+    average_monthly_dividends = dividends / months
+
+    smart_habit = _smart_investment_monthly_habit(tx)
+    monthly_deposit_buy = smart_habit["monthly_deposit_buy"]
+    monthly_withdraw_sell = smart_habit["monthly_withdraw_sell"]
+    monthly_net_investment = smart_habit["monthly_net_investment"]
+    monthly_dividends = smart_habit["monthly_dividends"]
 
     return {
         "months_observed": months,
@@ -201,6 +207,12 @@ def investment_habit_snapshot(refresh: bool = False) -> dict:
         "monthly_withdraw_sell": monthly_withdraw_sell,
         "monthly_net_investment": monthly_net_investment,
         "monthly_dividends": monthly_dividends,
+        "average_monthly_deposit_buy": average_monthly_deposit_buy,
+        "average_monthly_withdraw_sell": average_monthly_withdraw_sell,
+        "average_monthly_net_investment": average_monthly_net_investment,
+        "average_monthly_dividends": average_monthly_dividends,
+        "habit_method": smart_habit["method"],
+        "habit_months_used": smart_habit["months_used"],
         "annual_return_pct": annual_return_pct,
         "net_invested": totals.get("net_invested", 0.0),
         "estimated_value": totals.get("estimated_value", 0.0),
@@ -211,6 +223,119 @@ def investment_habit_snapshot(refresh: bool = False) -> dict:
         "flow_rows": _flow_rows_for_display(tx, market)[:8],
     }
 
+
+
+def _smart_investment_monthly_habit(tx: pd.DataFrame) -> dict:
+    """Estimate current investment habit without letting old top-ups dominate.
+
+    Example: 2000 + 1000 early deposits and then repeated 150 EUR monthly
+    becomes about 150 EUR/month, not the all-time average.
+    """
+    empty = {
+        "monthly_deposit_buy": 0.0,
+        "monthly_withdraw_sell": 0.0,
+        "monthly_net_investment": 0.0,
+        "monthly_dividends": 0.0,
+        "months_used": 0,
+        "method": "no investment history yet",
+    }
+    if tx.empty or "date" not in tx:
+        return empty
+
+    flows_in = tx[tx["flow_signed"] > 0].copy()
+    flows_out = tx[tx["flow_signed"] < 0].copy()
+    dividends = tx[tx["is_dividend"]].copy()
+
+    deposit_buy = _estimate_flow_series_habit(_monthly_flow_series(flows_in, "flow_signed", positive=True, include_current=True))
+    withdraw_sell = _estimate_flow_series_habit(_monthly_flow_series(flows_out, "flow_signed", positive=False, include_current=True))
+    dividend = _estimate_flow_series_habit(_monthly_flow_series(dividends, "amount", positive=True, include_current=True))
+
+    net = deposit_buy["value"] - withdraw_sell["value"]
+    months_used = max(deposit_buy["months_used"], withdraw_sell["months_used"], dividend["months_used"])
+    method = "latest repeated flow, with old one-off top-ups downweighted"
+
+    return {
+        "monthly_deposit_buy": round(float(deposit_buy["value"]), 2),
+        "monthly_withdraw_sell": round(float(withdraw_sell["value"]), 2),
+        "monthly_net_investment": round(float(net), 2),
+        "monthly_dividends": round(float(dividend["value"]), 2),
+        "months_used": int(months_used),
+        "method": method,
+    }
+
+
+def _monthly_flow_series(tx: pd.DataFrame, column: str, positive: bool = True, include_current: bool = True) -> pd.Series:
+    if tx.empty or "date" not in tx:
+        return pd.Series(dtype=float)
+    tmp = tx.copy()
+    tmp["date"] = pd.to_datetime(tmp["date"], errors="coerce")
+    tmp[column] = pd.to_numeric(tmp[column], errors="coerce").fillna(0.0).abs()
+    tmp = tmp.dropna(subset=["date"])
+    if tmp.empty:
+        return pd.Series(dtype=float)
+    tmp["month"] = tmp["date"].dt.to_period("M")
+    start = tmp["month"].min()
+    end = max(pd.Timestamp.today().to_period("M"), tmp["month"].max())
+    month_index = pd.period_range(start=start, end=end, freq="M")
+    series = tmp.groupby("month")[column].sum().reindex(month_index, fill_value=0.0)
+    series.index = series.index.astype(str)
+    current_month = pd.Timestamp.today().to_period("M").strftime("%Y-%m")
+    if not include_current and len(series) > 1 and current_month in series.index:
+        series = series.drop(index=current_month)
+    return series.astype(float)
+
+
+def _estimate_flow_series_habit(series: pd.Series) -> dict:
+    if series is None or len(series) == 0:
+        return {"value": 0.0, "months_used": 0}
+
+    values = pd.to_numeric(series, errors="coerce").fillna(0.0).astype(float)
+    recent = values.tail(6)
+    nonzero_all = values[values.abs() > 0.01]
+    if nonzero_all.empty:
+        return {"value": 0.0, "months_used": int(len(recent))}
+
+    latest_nonzero = nonzero_all.tail(4)
+    if len(latest_nonzero) >= 2 and _flow_values_are_close(latest_nonzero.tail(2)):
+        return {"value": round(float(latest_nonzero.tail(2).median()), 2), "months_used": int(len(latest_nonzero.tail(2)))}
+    if len(latest_nonzero) >= 3 and _flow_values_are_close(latest_nonzero.tail(3)):
+        return {"value": round(float(latest_nonzero.tail(3).median()), 2), "months_used": int(len(latest_nonzero.tail(3)))}
+
+    clipped = _clip_monthly_outliers(recent)
+    if clipped.empty:
+        return {"value": 0.0, "months_used": int(len(recent))}
+    weights = pd.Series(range(1, len(clipped) + 1), index=clipped.index, dtype=float)
+    value = float((clipped * weights).sum() / weights.sum())
+    return {"value": round(value, 2), "months_used": int(len(clipped))}
+
+
+def _flow_values_are_close(values: pd.Series, tolerance: float = 0.30) -> bool:
+    vals = pd.to_numeric(values, errors="coerce").dropna().abs()
+    vals = vals[vals > 0.01]
+    if len(vals) < 2:
+        return False
+    med = float(vals.median())
+    if med <= 0:
+        return False
+    return float((vals - med).abs().max() / med) <= tolerance
+
+
+def _clip_monthly_outliers(values: pd.Series) -> pd.Series:
+    vals = pd.to_numeric(values, errors="coerce").dropna().astype(float)
+    if vals.empty:
+        return vals
+    nonzero = vals[vals.abs() > 0.01]
+    if len(nonzero) < 3:
+        return vals
+    median = float(nonzero.median())
+    mad = float((nonzero - median).abs().median())
+    if mad <= 0.01:
+        lower = max(0.0, median * 0.5)
+        upper = median * 1.5
+    else:
+        lower = max(0.0, median - 2.5 * mad)
+        upper = median + 2.5 * mad
+    return vals.clip(lower=lower, upper=upper)
 
 def _observed_month_count(tx: pd.DataFrame) -> int:
     if tx.empty or "date" not in tx:

@@ -14,25 +14,25 @@
   <div class="analysis-hero-score">
     <span>Monthly net habit</span>
     <strong>€ {{ '%.2f'|format(habits.avg_monthly_net) }}</strong>
-    <small>Average over {{ habits.months_used }} recent usable month(s)</small>
+    <small>Smart estimate, not a plain average</small>
   </div>
 </section>
 
 <section class="analysis-kpi-grid">
   <article class="analysis-kpi tone-income">
-    <span>Avg income / month</span>
+    <span>Income habit / month</span>
     <strong>€ {{ '%.2f'|format(habits.avg_monthly_income) }}</strong>
-    <small>Total income: € {{ '%.2f'|format(totals.income) }}</small>
+    <small>{{ habits.income_method }}</small>
   </article>
   <article class="analysis-kpi tone-expense">
-    <span>Avg spending / month</span>
+    <span>Spending habit / month</span>
     <strong>€ {{ '%.2f'|format(habits.avg_monthly_expenses) }}</strong>
-    <small>{{ '%.0f'|format(habits.burn_ratio) }}% of average income</small>
+    <small>{{ '%.0f'|format(habits.burn_ratio) }}% of estimated income habit</small>
   </article>
   <article class="analysis-kpi tone-investment">
     <span>Net invested / month</span>
     <strong>€ {{ '%.2f'|format(investment.monthly_net_investment) }}</strong>
-    <small>Deposits/buys minus withdrawals/sells</small>
+    <small>Smart habit. Raw average: € {{ '%.2f'|format(investment.average_monthly_net_investment) }}/mo</small>
   </article>
   <article class="analysis-kpi tone-profit {{ 'positive' if investment.profit_loss >= 0 else 'negative' }}">
     <span>Investment P/L</span>
@@ -100,6 +100,8 @@
       <div><dt>Deposits + buys</dt><dd>€ {{ '%.2f'|format(investment.deposits_buys) }}</dd></div>
       <div><dt>Withdrawals + sells</dt><dd>€ {{ '%.2f'|format(investment.withdrawals_sells) }}</dd></div>
       <div><dt>Dividends received</dt><dd>€ {{ '%.2f'|format(investment.dividends) }}</dd></div>
+      <div><dt>Smart monthly investment habit</dt><dd>€ {{ '%.2f'|format(investment.monthly_net_investment) }}</dd></div>
+      <div><dt>Raw monthly investment average</dt><dd>€ {{ '%.2f'|format(investment.average_monthly_net_investment) }}</dd></div>
       <div><dt>Auto annual return assumption</dt><dd>{{ '%.2f'|format(investment.annual_return_pct) }}%</dd></div>
     </dl>
     <p class="muted small-text">The forecast page uses these values as defaults, but you can override them before running a scenario.</p>

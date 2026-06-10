@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -16,6 +17,30 @@ GREEN = "#18794e"
 RED = "#c2410c"
 INK = "#111827"
 MUTED = "#64748b"
+
+INCOME_ONE_OFF_KEYWORDS = {
+    "refund",
+    "rimborso",
+    "reimbursement",
+    "initial",
+    "initial net",
+    "cash",
+    "loan",
+    "prestito",
+    "recovery",
+    "recupero",
+    "transfer",
+    "bonifico giroconto",
+}
+
+SPENDING_ONE_OFF_KEYWORDS = {
+    "loan",
+    "prestito",
+    "deposito",
+    "deposit",
+    "giroconto",
+    "transfer",
+}
 
 
 @dataclass
@@ -49,51 +74,77 @@ def build_forecast_page_context(form=None) -> dict:
     }
 
 
+def estimate_cashflow_habits(main_df: pd.DataFrame, df_month: pd.DataFrame | None = None) -> dict:
+    if df_month is None:
+        df_month = monthly_summary(main_df)
+    income_habit = _estimate_income_habit(main_df, df_month)
+    spending_habit = _estimate_spending_habit(main_df, df_month)
+    monthly_net = income_habit["value"] - spending_habit["value"]
+    burn_ratio = 0.0 if income_habit["value"] <= 0 else spending_habit["value"] / income_habit["value"] * 100.0
+    return {
+        "income": income_habit,
+        "spending": spending_habit,
+        "monthly_net": round(monthly_net, 2),
+        "burn_ratio": round(burn_ratio, 2),
+    }
+
+
 def build_forecast_defaults() -> dict:
+    """Build smart defaults for the forecast.
+
+    The defaults deliberately avoid a plain historical average.  They combine:
+    - recent complete months, so current/incomplete data does not understate the habit;
+    - frequency, so repeated monthly behaviour is trusted more than one-off logs;
+    - robust clipping, so big refunds/top-ups do not dominate the forecast.
+    """
     df = load_all()
     main_df = main_account_transactions(df)
     monthly = monthly_summary(main_df)
-    recent = _recent_complete_months(monthly, months=6)
 
-    avg_income = _mean(recent, "income")
-    avg_spending = _mean(recent, "expenses")
+    cashflow_habits = estimate_cashflow_habits(main_df, monthly)
+    income_habit = cashflow_habits["income"]
+    spending_habit = cashflow_habits["spending"]
 
     totals = summary_totals(main_df)
-    cash = float(totals.get("net", 0.0) or 0.0) + auxiliary_total(df)
+    cash = _safe_float(totals.get("net", 0.0)) + auxiliary_total(df)
     investment_overview = overview_snapshot(refresh=False)
     investment_habits = investment_habit_snapshot(refresh=False)
 
-    starting_value = float(investment_overview.get("estimated_value", 0.0) or 0.0)
-    starting_capital = float(investment_overview.get("net_invested", 0.0) or 0.0)
+    starting_value = _safe_float(investment_overview.get("estimated_value", 0.0))
+    starting_capital = _safe_float(investment_overview.get("net_invested", 0.0))
     if abs(starting_value) < 0.01:
         starting_value = starting_capital
 
-    annual_return = float(investment_habits.get("annual_return_pct", 0.0) or 0.0)
-    if abs(annual_return) < 0.01 and abs(investment_habits.get("profit_loss_pct", 0.0) or 0.0) > 0.01:
-        annual_return = float(investment_habits.get("profit_loss_pct", 0.0) or 0.0)
+    annual_return = _safe_float(investment_habits.get("annual_return_pct", 0.0))
+    if abs(annual_return) < 0.01 and abs(_safe_float(investment_habits.get("profit_loss_pct", 0.0))) > 0.01:
+        annual_return = _safe_float(investment_habits.get("profit_loss_pct", 0.0))
     if abs(annual_return) < 0.01:
         annual_return = 5.0
 
     params = ForecastParams(
         years=5,
-        monthly_income=avg_income,
-        monthly_spending=avg_spending,
-        monthly_net_investment=float(investment_habits.get("monthly_net_investment", 0.0) or 0.0),
+        monthly_income=income_habit["value"],
+        monthly_spending=spending_habit["value"],
+        monthly_net_investment=_safe_float(investment_habits.get("monthly_net_investment", 0.0)),
         annual_return_pct=annual_return,
         annual_income_growth_pct=0.0,
         annual_spending_growth_pct=2.0,
         starting_cash=cash,
         starting_investment_value=starting_value,
         starting_invested_capital=starting_capital,
-        monthly_dividends=float(investment_habits.get("monthly_dividends", 0.0) or 0.0),
+        monthly_dividends=_safe_float(investment_habits.get("monthly_dividends", 0.0)),
     )
+
+    complete_recent = _recent_complete_months(monthly, months=6)
 
     return {
         "params": params,
-        "months_used": int(len(recent)),
+        "months_used": int(max(income_habit.get("months_used", 0), spending_habit.get("months_used", 0), len(complete_recent))),
+        "income_habit": income_habit,
+        "spending_habit": spending_habit,
         "investment_habits": investment_habits,
         "basis": {
-            "main_net": float(totals.get("net", 0.0) or 0.0),
+            "main_net": _safe_float(totals.get("net", 0.0)),
             "separate_liquid": auxiliary_total(df),
             "starting_cash": cash,
             "starting_investment_value": starting_value,
@@ -108,13 +159,13 @@ def project_financial_future(params: ForecastParams) -> dict:
     monthly_income_growth = _monthly_rate(params.annual_income_growth_pct)
     monthly_spending_growth = _monthly_rate(params.annual_spending_growth_pct)
 
-    cash = float(params.starting_cash)
-    investment_value = float(params.starting_investment_value)
-    invested_capital = float(params.starting_invested_capital)
-    current_income = float(params.monthly_income)
-    current_spending = float(params.monthly_spending)
-    current_net_investment = float(params.monthly_net_investment)
-    dividends = float(params.monthly_dividends)
+    cash = _safe_float(params.starting_cash)
+    investment_value = _safe_float(params.starting_investment_value)
+    invested_capital = _safe_float(params.starting_invested_capital)
+    current_income = _safe_float(params.monthly_income)
+    current_spending = _safe_float(params.monthly_spending)
+    current_net_investment = _safe_float(params.monthly_net_investment)
+    dividends = _safe_float(params.monthly_dividends)
 
     today = pd.Timestamp.today().normalize()
     rows = []
@@ -196,9 +247,230 @@ def _params_from_form(form, defaults: ForecastParams) -> ForecastParams:
 
 def _float_from_form(form, key: str, default: float) -> float:
     try:
-        return float(form.get(key, default))
+        return _safe_float(form.get(key, default), default)
+    except (TypeError, ValueError):
+        return _safe_float(default)
+
+
+def _safe_float(value, default: float = 0.0) -> float:
+    try:
+        number = float(value)
     except (TypeError, ValueError):
         return float(default or 0.0)
+    if not isfinite(number):
+        return float(default or 0.0)
+    return number
+
+
+def _estimate_income_habit(main_df: pd.DataFrame, df_month: pd.DataFrame) -> dict:
+    income = _clean_habit_transactions(main_df, "income")
+    if income.empty:
+        series = _recent_complete_months(df_month, months=6).set_index("month").get("income", pd.Series(dtype=float))
+        value = _smart_monthly_series_estimate(series, fallback_column="income")
+        return {"value": value, "months_used": int(len(series)), "method": "recent weighted income months", "excluded_one_offs": 0}
+
+    income["is_one_off"] = income.apply(_looks_like_income_one_off, axis=1)
+    recurring_income = income[~income["is_one_off"]].copy()
+    excluded = int(income["is_one_off"].sum())
+
+    if recurring_income.empty:
+        recent = _recent_complete_months(df_month, months=6)
+        value = _smart_monthly_series_estimate(recent.set_index("month")["income"] if "income" in recent else pd.Series(dtype=float))
+        return {"value": value, "months_used": int(len(recent)), "method": "recent weighted income months", "excluded_one_offs": excluded}
+
+    # Estimate each repeated income source separately. This is better than a
+    # raw average because one high/low salary month does not rewrite the default.
+    source_values = []
+    for _, group in recurring_income.groupby("habit_key"):
+        months = _monthly_amount_series(group, value_col="amount", include_current=True)
+        nonzero_count = int((months.abs() > 0.01).sum())
+        if nonzero_count >= 2 or len(group) >= 2:
+            source_values.append(_smart_monthly_series_estimate(months))
+
+    if source_values:
+        value = sum(source_values)
+        method = "recurring income sources with recent-frequency weighting"
+        months_used = int(max(1, recurring_income["date"].dt.to_period("M").nunique()))
+    else:
+        recent = _recent_complete_months(df_month, months=6)
+        value = _smart_monthly_series_estimate(recent.set_index("month")["income"] if "income" in recent else pd.Series(dtype=float))
+        method = "recent weighted income months"
+        months_used = int(len(recent))
+
+    return {
+        "value": round(_safe_float(value), 2),
+        "months_used": months_used,
+        "method": method,
+        "excluded_one_offs": excluded,
+    }
+
+
+def _estimate_spending_habit(main_df: pd.DataFrame, df_month: pd.DataFrame) -> dict:
+    expenses = _clean_habit_transactions(main_df, "expense")
+    if not expenses.empty:
+        expenses["is_one_off"] = expenses.apply(_looks_like_spending_one_off, axis=1)
+        excluded = int(expenses["is_one_off"].sum())
+        expenses = expenses[~expenses["is_one_off"]]
+    else:
+        excluded = 0
+
+    if not expenses.empty:
+        months = _monthly_amount_series(expenses, value_col="amount", include_current=False)
+        value = _smart_monthly_series_estimate(months)
+        months_used = int(len(months.tail(6)))
+        method = "recent spending months with outlier clipping"
+    else:
+        recent = _recent_complete_months(df_month, months=6)
+        value = _smart_monthly_series_estimate(recent.set_index("month")["expenses"] if "expenses" in recent else pd.Series(dtype=float))
+        months_used = int(len(recent))
+        method = "recent weighted expense months"
+
+    return {
+        "value": round(_safe_float(value), 2),
+        "months_used": months_used,
+        "method": method,
+        "excluded_one_offs": excluded,
+    }
+
+
+def _clean_habit_transactions(df: pd.DataFrame, transaction_type: str) -> pd.DataFrame:
+    if df.empty or "type" not in df.columns:
+        return pd.DataFrame(columns=["date", "amount", "category", "sub_category", "description", "habit_key"])
+
+    tx = df[df["type"].eq(transaction_type)].copy()
+    if tx.empty:
+        return pd.DataFrame(columns=["date", "amount", "category", "sub_category", "description", "habit_key"])
+
+    tx["date"] = pd.to_datetime(tx["date"], errors="coerce")
+    tx["amount"] = pd.to_numeric(tx["amount"], errors="coerce").fillna(0.0).abs()
+    for column in ["category", "sub_category", "description"]:
+        if column not in tx.columns:
+            tx[column] = ""
+        tx[column] = tx[column].fillna("").astype(str)
+    tx = tx.dropna(subset=["date"])
+    tx = tx[tx["amount"] > 0]
+    tx["category_clean"] = tx["category"].str.strip().str.casefold()
+    tx["sub_category_clean"] = tx["sub_category"].str.strip().str.casefold()
+    tx["description_clean"] = tx["description"].str.strip().str.casefold()
+    tx["habit_key"] = tx["category_clean"] + "|" + tx["sub_category_clean"]
+    return tx
+
+
+def _looks_like_income_one_off(row) -> bool:
+    text = " ".join([
+        str(row.get("category_clean", "")),
+        str(row.get("sub_category_clean", "")),
+        str(row.get("description_clean", "")),
+    ])
+    return any(keyword in text for keyword in INCOME_ONE_OFF_KEYWORDS)
+
+
+def _looks_like_spending_one_off(row) -> bool:
+    text = " ".join([
+        str(row.get("category_clean", "")),
+        str(row.get("sub_category_clean", "")),
+        str(row.get("description_clean", "")),
+    ])
+    return any(keyword in text for keyword in SPENDING_ONE_OFF_KEYWORDS)
+
+
+def _monthly_amount_series(tx: pd.DataFrame, value_col: str = "amount", include_current: bool = False) -> pd.Series:
+    if tx.empty or "date" not in tx:
+        return pd.Series(dtype=float)
+
+    tmp = tx.copy()
+    tmp["date"] = pd.to_datetime(tmp["date"], errors="coerce")
+    tmp[value_col] = pd.to_numeric(tmp[value_col], errors="coerce").fillna(0.0)
+    tmp = tmp.dropna(subset=["date"])
+    if tmp.empty:
+        return pd.Series(dtype=float)
+
+    tmp["month"] = tmp["date"].dt.to_period("M")
+    start = tmp["month"].min()
+    end = max(pd.Timestamp.today().to_period("M"), tmp["month"].max())
+    month_index = pd.period_range(start=start, end=end, freq="M")
+    series = tmp.groupby("month")[value_col].sum().reindex(month_index, fill_value=0.0)
+    series.index = series.index.astype(str)
+
+    current_month = pd.Timestamp.today().to_period("M").strftime("%Y-%m")
+    if not include_current and len(series) > 1 and current_month in series.index:
+        series = series.drop(index=current_month)
+    return series.astype(float)
+
+
+def _smart_monthly_series_estimate(series: pd.Series, fallback_column: str | None = None) -> float:
+    """Frequency-aware monthly estimate.
+
+    It gives priority to the latest repeated behaviour.  For example, if the
+    investment history has big initial top-ups but the last months are 150 EUR,
+    the estimate becomes about 150 EUR instead of the whole-period average.
+    """
+    if series is None or len(series) == 0:
+        return 0.0
+
+    values = pd.to_numeric(series, errors="coerce").fillna(0.0).astype(float)
+    recent = values.tail(6)
+    nonzero_recent = recent[recent.abs() > 0.01]
+    nonzero_all = values[values.abs() > 0.01]
+
+    if nonzero_recent.empty and nonzero_all.empty:
+        return 0.0
+
+    # If the latest 2-3 non-zero months are consistent, trust them first.
+    latest_nonzero = nonzero_all.tail(4)
+    if len(latest_nonzero) >= 2:
+        last2 = latest_nonzero.tail(2)
+        if _values_are_close(last2):
+            return round(_safe_float(last2.median()), 2)
+    if len(latest_nonzero) >= 3:
+        last3 = latest_nonzero.tail(3)
+        if _values_are_close(last3):
+            return round(_safe_float(last3.median()), 2)
+
+    # Otherwise use a recency-weighted clipped mean over recent months. Zeros are
+    # kept if the activity is sporadic, which lowers the estimate correctly.
+    recent = recent.copy()
+    if len(recent) < 3 and len(values) >= 3:
+        recent = values.tail(3)
+
+    clipped = _clip_outliers(recent)
+    if clipped.empty:
+        return 0.0
+    weights = pd.Series(range(1, len(clipped) + 1), index=clipped.index, dtype=float)
+    estimate = float((clipped * weights).sum() / weights.sum())
+    return round(_safe_float(estimate), 2)
+
+
+def _values_are_close(values: pd.Series, tolerance: float = 0.30) -> bool:
+    vals = pd.to_numeric(values, errors="coerce").dropna().abs()
+    vals = vals[vals > 0.01]
+    if len(vals) < 2:
+        return False
+    med = float(vals.median())
+    if med <= 0:
+        return False
+    spread = float((vals - med).abs().max() / med)
+    return spread <= tolerance
+
+
+def _clip_outliers(values: pd.Series) -> pd.Series:
+    vals = pd.to_numeric(values, errors="coerce").dropna().astype(float)
+    if vals.empty:
+        return vals
+    nonzero = vals[vals.abs() > 0.01]
+    if len(nonzero) < 3:
+        return vals
+    median = float(nonzero.median())
+    mad = float((nonzero - median).abs().median())
+    if mad <= 0.01:
+        upper = median * 1.5 if median >= 0 else median * 0.5
+        lower = median * 0.5 if median >= 0 else median * 1.5
+    else:
+        upper = median + 2.5 * mad
+        lower = median - 2.5 * mad
+    if median >= 0:
+        lower = max(0.0, lower)
+    return vals.clip(lower=lower, upper=upper)
 
 
 def _recent_complete_months(df_month: pd.DataFrame, months: int = 6) -> pd.DataFrame:
@@ -216,11 +488,11 @@ def _recent_complete_months(df_month: pd.DataFrame, months: int = 6) -> pd.DataF
 def _mean(df: pd.DataFrame, column: str) -> float:
     if df.empty or column not in df:
         return 0.0
-    return float(pd.to_numeric(df[column], errors="coerce").fillna(0.0).mean())
+    return _safe_float(pd.to_numeric(df[column], errors="coerce").fillna(0.0).mean())
 
 
 def _monthly_rate(annual_pct: float) -> float:
-    annual = max(float(annual_pct or 0.0), -99.0) / 100.0
+    annual = max(_safe_float(annual_pct), -99.0) / 100.0
     return (1.0 + annual) ** (1.0 / 12.0) - 1.0
 
 
@@ -251,7 +523,6 @@ def _forecast_warnings(params: ForecastParams, final: dict) -> list[str]:
     if final.get("cash", 0.0) < 0:
         warnings.append("Projected cash becomes negative by the end of the horizon. Reduce spending or investment contributions in this scenario.")
     return warnings
-
 
 def _chart_projection(df: pd.DataFrame) -> str:
     if df.empty:

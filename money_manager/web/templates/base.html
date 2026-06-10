@@ -103,6 +103,28 @@
     </main>
   </div>
 
+  <nav class="mobile-action-bar" aria-label="Quick mobile actions">
+    <a href="{{ url_for('transactions.add_transaction', type='expense') }}" class="mobile-action-item mobile-expense">
+      <span>−</span>
+      <small>Expense</small>
+    </a>
+
+    <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="mobile-action-item mobile-income">
+      <span>＋</span>
+      <small>Income</small>
+    </a>
+
+    <a href="{{ url_for('pending.pending_payments_page') if endpoint_exists('pending.pending_payments_page') else url_for('pending.pending_page') }}" class="mobile-action-item mobile-pending">
+      <span>⏳</span>
+      <small>Pending</small>
+    </a>
+
+    <a href="{{ url_for('transactions.add_transaction', type='investment') }}" class="mobile-action-item mobile-investment">
+      <span>↗</span>
+      <small>Invest</small>
+    </a>
+  </nav>
+
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
