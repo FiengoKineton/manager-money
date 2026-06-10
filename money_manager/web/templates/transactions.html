@@ -127,6 +127,12 @@
         <td>{{ tx.amount_str }}</td>
         <td class="table-action-rail">
           <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="icon-link-btn icon-link-edit" title="Edit transaction" aria-label="Edit transaction">✎</a>
+
+          <form method="post" action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="row-action-form delay-row-form">
+            <input type="date" name="delay_date" value="{{ tx.delay_date_default }}" class="transaction-delay-date">
+            <button type="submit" name="action" value="delay" class="icon-action-btn icon-action-delay" title="Delay transaction to selected date" aria-label="Delay transaction to selected date">⏳</button>
+          </form>
+
           <form method="post" action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="row-action-form">
             <button type="submit" name="action" value="delete" class="icon-action-btn icon-action-delete" title="Delete transaction" aria-label="Delete transaction" onclick="return confirm('Delete this transaction?')">×</button>
           </form>
@@ -147,6 +153,12 @@
         <td>{{ tx.amount_str }}</td>
         <td class="table-action-rail">
           <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="icon-link-btn icon-link-edit" title="Edit transaction" aria-label="Edit transaction">✎</a>
+
+          <form method="post" action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="row-action-form delay-row-form">
+            <input type="date" name="delay_date" value="{{ tx.delay_date_default }}" class="transaction-delay-date">
+            <button type="submit" name="action" value="delay" class="icon-action-btn icon-action-delay" title="Delay transaction to selected date" aria-label="Delay transaction to selected date">⏳</button>
+          </form>
+
           <form method="post" action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="row-action-form">
             <button type="submit" name="action" value="delete" class="icon-action-btn icon-action-delete" title="Delete transaction" aria-label="Delete transaction" onclick="return confirm('Delete this transaction?')">×</button>
           </form>

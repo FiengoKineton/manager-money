@@ -16,6 +16,7 @@ from money_manager.services.transaction_service import (
     save_new_transaction,
     transaction_detail_context,
     update_existing_transaction,
+    delay_existing_transaction,
 )
 
 bp = Blueprint("transactions", __name__)
@@ -85,6 +86,10 @@ def transaction_detail(row_index: int):
         if action == "delete":
             delete_existing_transaction(row_index)
             return redirect(url_for("transactions.transactions_page"))
+        
+        if action == "delay":
+            delay_existing_transaction(row_index, request.form.get("delay_date", ""))
+            return redirect(request.referrer or url_for("transactions.transactions_page"))
 
         if action == "update":
             update_existing_transaction(row_index, request.form)

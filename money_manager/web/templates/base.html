@@ -69,10 +69,16 @@
 
     <main class="app-main">
       <header class="topbar">
-        <div>
+        <div class="topbar-title">
           <span class="eyebrow">Personal finance workspace</span>
           <h1>{% block page_title %}Money Manager{% endblock %}</h1>
         </div>
+
+        <a class="topbar-balance-pill" href="{{ url_for('dashboard.overview_detailed') }}">
+          <span>Main bank net</span>
+          <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
+        </a>
+
         <div class="quick-actions">
           <a href="{{ url_for('transactions.add_transaction', type='expense') }}" class="quick-action expense-action">+ Expense</a>
           <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="quick-action income-action">+ Income</a>
@@ -89,6 +95,28 @@
       </div>
     </main>
   </div>
+
+  <nav class="mobile-action-bar" aria-label="Quick mobile actions">
+    <a href="{{ url_for('transactions.add_transaction', type='expense') }}" class="mobile-action-item mobile-expense">
+      <span>＋</span>
+      <small>Expense</small>
+    </a>
+
+    <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="mobile-action-item mobile-income">
+      <span>＋</span>
+      <small>Income</small>
+    </a>
+
+    <a href="{{ url_for('pending.pending_page') }}" class="mobile-action-item mobile-pending">
+      <span>⏳</span>
+      <small>Pending</small>
+    </a>
+
+    <a href="{{ url_for('transactions.add_transaction', type='investment') }}" class="mobile-action-item mobile-investment">
+      <span>＋</span>
+      <small>Invest</small>
+    </a>
+  </nav>
 
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   {% block scripts %}{% endblock %}

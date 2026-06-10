@@ -43,11 +43,47 @@
     }, 100);
   };
 
+  function wireMobileNavGroups() {
+    const groups = Array.from(document.querySelectorAll(".nav-group"));
+    const isMobile = () => window.matchMedia("(max-width: 1000px)").matches;
+
+    groups.forEach((group) => {
+      const summary = group.querySelector("summary");
+      if (!summary) return;
+
+      summary.addEventListener("click", () => {
+        if (!isMobile()) return;
+
+        window.setTimeout(() => {
+          groups.forEach((other) => {
+            if (other !== group) {
+              other.removeAttribute("open");
+            }
+          });
+        }, 0);
+      });
+
+      group.querySelectorAll(".nav-items a").forEach((link) => {
+        link.addEventListener("click", () => {
+          if (isMobile()) {
+            group.removeAttribute("open");
+          }
+        });
+      });
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!isMobile()) return;
+      if (event.target.closest(".nav-group")) return;
+
+      groups.forEach((group) => {
+        group.removeAttribute("open");
+      });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     wireClickableRows();
-
-    document.querySelectorAll('[data-action="select-all-filters"]').forEach((button) => {
-      button.addEventListener("click", selectAllFilters);
+    wireMobileNavGroups();
     });
-  });
 })();

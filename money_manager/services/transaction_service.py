@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 import pandas as pd
 
@@ -80,6 +80,7 @@ def prepare_transactions_for_display(df: pd.DataFrame) -> pd.DataFrame:
     df["date_str"] = df["date"].dt.strftime("%Y-%m-%d")
     df["amount_str"] = df["amount"].map(lambda amount: f"{amount:.2f}")
     df["row_index"] = df.index
+    df["delay_date_default"] = (date.today() + timedelta(days=1)).isoformat()
     return df
 
 
@@ -115,10 +116,23 @@ def transaction_detail_context(row_index: int) -> tuple[dict, list[str]]:
         "account_key": clean(row.get("account_key", normalize_account_key(row.get("account", "")))),
         "account_label": clean(row.get("account_label", "")),
         "description": clean(row.get("description", "")),
+        "delay_date_default": (date.today() + timedelta(days=1)).isoformat(),
     }
 
     return tx, categories_for(tx["type"])
 
+def delay_existing_transaction(row_index: int, new_date: str) -> None:
+    if not new_date:
+        return
+
+    df = load_all()
+    row = df.loc[row_index]
+
+    update_transaction(
+        int(row["id"]),
+        row["type"],
+        {"date": new_date},
+    )
 
 def update_existing_transaction(row_index: int, form) -> None:
     df = load_all()

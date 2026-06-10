@@ -63,6 +63,15 @@
       <button type="submit" name="action" value="delete" class="icon-action-btn icon-action-delete" title="Delete transaction" aria-label="Delete transaction" onclick="return confirm('Delete this transaction?')">×</button>
       <a href="{{ url_for('transactions.transactions_page') }}" class="form-back-link">Back to list</a>
     </div>
+
+    <div class="form-field-wide delay-detail-box">
+      <label>Delay transaction</label>
+      <div class="delay-row-form">
+        <input type="date" name="delay_date" value="{{ tx.delay_date_default }}">
+        <button type="submit" name="action" value="delay" class="icon-action-btn icon-action-delay" title="Delay transaction to selected date" aria-label="Delay transaction to selected date">⏳</button>
+      </div>
+      <small class="hint">This changes the saved transaction date. Use it when the transaction was logged for today but actually happens later.</small>
+    </div>
   </form>
 </section>
 {% endblock %}

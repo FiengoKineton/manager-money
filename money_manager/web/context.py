@@ -1,4 +1,20 @@
+from money_manager.config import default_date_range
+from money_manager.services.account_service import main_account_transactions
+from money_manager.services.transaction_service import load_transactions
+from money_manager.utils.filters import filter_by_date
 from money_manager.utils.formatting import format_euro, format_number, thousands_format_filter
+from money_manager.utils.stats import summary_totals
+
+
+def _topbar_main_bank_net() -> float:
+    try:
+        start, end = default_date_range()
+        df = load_transactions()
+        main_df = main_account_transactions(df)
+        main_df = filter_by_date(main_df, start, end)
+        return float(summary_totals(main_df)["net"])
+    except Exception:
+        return 0.0
 
 
 def register_context_processors(app):
@@ -11,4 +27,7 @@ def register_context_processors(app):
         def endpoint_exists(endpoint):
             return endpoint in app.view_functions
 
-        return {"endpoint_exists": endpoint_exists}
+        return {
+            "endpoint_exists": endpoint_exists,
+            "topbar_main_bank_net": _topbar_main_bank_net(),
+        }

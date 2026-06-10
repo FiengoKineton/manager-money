@@ -236,7 +236,6 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 239,2026-05-09,Family,Amazon,19.99,,,,,,,,2026-05-11T19:56:53
 240,2026-05-12,Other,,5.0,,,,,,,,2026-05-12T16:29:33
 241,2026-05-12,Health,,27.7,,,,,,,,2026-05-12T16:29:47
-242,2026-05-12,Housing,,30.0,,,,,,,Sopraluogo pavimento,2026-05-12T16:30:14
 243,2026-05-12,Coffe,,1.2,,,,,,,,2026-05-12T16:30:30
 245,2026-05-14,Eating out,,77.4,,,,,,,,2026-05-15T12:05:49
 246,2026-05-13,Other,,61.5,,,,,,,,2026-05-15T12:06:30
@@ -271,6 +270,7 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 276,2026-06-08,Account cleanup,Reconcile to € 80.00,1590.0,,,,,,Cash Flow,cleanup,2026-06-08T16:34:49
 277,2026-06-08,Account cleanup,Reconcile to € 3.53,1704.6,,,,,,Pre-paid card,cleanup,2026-06-08T16:35:01
 278,2026-06-09,Debt,CILA,715.5,,,,,,,Debt payment to Umberto Mautone: CILA,2026-06-09T20:21:37
-279,2026-06-10,Debt,S26 Ultra,100.0,,,,,,auto,Debt instalment: Phone Payments,2026-06-10T15:33:39
-280,2026-06-10,Debt,Verbale auto,41.6,,,,,,auto,Debt extinguishment: Payoff,2026-06-10T15:33:39
+279,2026-06-11,Debt,S26 Ultra,100.0,,,,,,auto,Debt instalment: Phone Payments,2026-06-10T15:33:39
+280,2026-06-11,Debt,Verbale auto,41.6,,,,,,auto,Debt extinguishment: Payoff,2026-06-10T15:33:39
 281,2026-04-28,Money owed to me,Mom's household stuff,250.0,,,,,,,Loan/receivable created: Riccardo owes me for Mom's household stuff. Lost,2026-06-10T18:18:09
+282,2026-05-12,Housing,Sopralluogo,30.0,,,,,,,Loan/receivable created: Leroy Marlaine owes me for Sopralluogo,2026-06-10T23:44:52
