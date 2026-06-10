@@ -157,6 +157,98 @@ def overview_snapshot(refresh: bool = False) -> dict:
         "profit_loss_tone": totals.get("profit_loss_tone", "positive"),
     }
 
+
+def investment_habit_snapshot(refresh: bool = False) -> dict:
+    """Return compact investment behaviour metrics for Analysis and Forecast.
+
+    Deposits and buys are treated as invested cash. Withdrawals and sells are
+    treated as cash coming back out. Dividends are tracked separately because
+    they are income from the portfolio, not market profit/loss.
+    """
+    cache = refresh_market_data(force=True) if refresh else _read_cache()
+    assets = load_investment_assets()
+    tx = _load_investment_transactions()
+    market = _weighted_market_index(assets, cache)
+    daily = _estimate_daily_portfolio(tx, market)
+    totals = _investment_totals(tx, daily)
+
+    months = _observed_month_count(tx)
+    if tx.empty:
+        deposits_buys = withdrawals_sells = dividends = 0.0
+        transaction_count = 0
+        last_activity = ""
+    else:
+        deposits_buys = float(tx.loc[tx["flow_signed"] > 0, "flow_signed"].sum())
+        withdrawals_sells = float(-tx.loc[tx["flow_signed"] < 0, "flow_signed"].sum())
+        dividends = float(tx.loc[tx["is_dividend"], "amount"].sum())
+        transaction_count = int(len(tx))
+        last_activity = tx["date"].max().strftime("%Y-%m-%d")
+
+    annual_return_pct = _annualized_return_pct(daily, totals)
+    monthly_deposit_buy = deposits_buys / months
+    monthly_withdraw_sell = withdrawals_sells / months
+    monthly_net_investment = (deposits_buys - withdrawals_sells) / months
+    monthly_dividends = dividends / months
+
+    return {
+        "months_observed": months,
+        "transaction_count": transaction_count,
+        "last_activity": last_activity,
+        "deposits_buys": deposits_buys,
+        "withdrawals_sells": withdrawals_sells,
+        "dividends": dividends,
+        "monthly_deposit_buy": monthly_deposit_buy,
+        "monthly_withdraw_sell": monthly_withdraw_sell,
+        "monthly_net_investment": monthly_net_investment,
+        "monthly_dividends": monthly_dividends,
+        "annual_return_pct": annual_return_pct,
+        "net_invested": totals.get("net_invested", 0.0),
+        "estimated_value": totals.get("estimated_value", 0.0),
+        "profit_loss": totals.get("profit_loss", 0.0),
+        "profit_loss_pct": totals.get("profit_loss_pct", 0.0),
+        "profit_loss_tone": totals.get("profit_loss_tone", "positive"),
+        "cashflows_chart": _chart_cashflows(tx),
+        "flow_rows": _flow_rows_for_display(tx, market)[:8],
+    }
+
+
+def _observed_month_count(tx: pd.DataFrame) -> int:
+    if tx.empty or "date" not in tx:
+        return 1
+    dates = tx["date"].dropna()
+    if dates.empty:
+        return 1
+    start = dates.min().to_period("M")
+    end = max(pd.Timestamp.today(), dates.max()).to_period("M")
+    return max(1, (end.year - start.year) * 12 + (end.month - start.month) + 1)
+
+
+def _annualized_return_pct(daily: pd.DataFrame, totals: dict) -> float:
+    fallback = float(totals.get("profit_loss_pct", 0.0) or 0.0)
+    if daily.empty or len(daily) < 2:
+        return fallback
+
+    first = daily[daily["net_invested"].abs() > 0.01].head(1)
+    latest = daily.tail(1)
+    if first.empty or latest.empty:
+        return fallback
+
+    start_date = pd.to_datetime(first.iloc[0]["date"], errors="coerce")
+    end_date = pd.to_datetime(latest.iloc[0]["date"], errors="coerce")
+    if pd.isna(start_date) or pd.isna(end_date):
+        return fallback
+
+    years = max((end_date - start_date).days / 365.25, 1 / 12)
+    principal = abs(float(latest.iloc[0].get("net_invested", 0.0) or 0.0))
+    value = float(latest.iloc[0].get("estimated_value", principal) or principal)
+    if principal <= 0 or value <= 0:
+        return fallback
+
+    try:
+        return ((value / principal) ** (1 / years) - 1.0) * 100.0
+    except Exception:
+        return fallback
+
 def _load_investment_transactions() -> pd.DataFrame:
     df = load_by_type("investment")
     if df.empty:

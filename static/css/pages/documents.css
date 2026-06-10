@@ -1,45 +1,207 @@
-.doc-container {
-  max-width: 900px;
-  margin: 0 auto;
-  text-align: center;
+.documents-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: stretch;
+  margin-bottom: 1rem;
+  padding: 1.25rem;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.14), transparent 22rem),
+    rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: var(--shadow-sm);
 }
 
-.folder-controls {
-  margin-bottom: 20px;
+.documents-hero h2 {
+  margin: 0.2rem 0 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.documents-hero p {
+  color: var(--muted);
+  max-width: 72ch;
+  line-height: 1.55;
+}
+
+.documents-extension-pill {
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem;
+  border-radius: 22px;
+  background: #0f172a;
+  color: white;
+}
+
+.documents-extension-pill span {
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.documents-extension-pill strong {
+  margin-top: 0.35rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.documents-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 1rem;
+  min-height: calc(100vh - 220px);
+}
+
+.documents-sidebar-card,
+.documents-viewer-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.documents-sidebar-card {
+  padding: 1rem;
+  align-self: start;
+  position: sticky;
+  top: 6rem;
+}
+
+.documents-sidebar-card h3 {
+  margin: 0 0 0.8rem;
+  letter-spacing: -0.04em;
+}
+
+.folder-button-stack {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.folder-btn,
+.document-file-item,
+.nav-btn {
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  background: rgba(248, 250, 252, 0.96);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  border-radius: 14px;
+  transition: 0.15s ease;
 }
 
 .folder-btn {
-  padding: 10px 20px;
-  font-size: 16px;
-  margin: 0 5px;
-  cursor: pointer;
+  padding: 0.75rem 0.85rem;
+  text-align: left;
 }
 
-.viewer-window {
-  width: 100%;
-  height: 600px;
-  border: 2px solid #ccc;
-  border-radius: 8px;
-  margin-bottom: 15px;
+.folder-btn:hover,
+.folder-btn.active,
+.document-file-item:hover,
+.document-file-item.active {
+  background: #2454d6;
+  color: white;
+  border-color: #2454d6;
 }
 
-.nav-controls {
+.document-current-folder {
+  margin: 1rem 0;
+  padding: 0.85rem;
+  border-radius: 18px;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.document-current-folder span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.document-current-folder strong {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.document-file-list {
+  display: grid;
+  gap: 0.45rem;
+  max-height: 52vh;
+  overflow: auto;
+  padding-right: 0.2rem;
+}
+
+.document-file-item {
   display: flex;
-  justify-content: center;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+}
+
+.document-file-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.documents-viewer-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.documents-viewer-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.7rem;
   align-items: center;
-  gap: 20px;
-  font-size: 18px;
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+}
+
+#file-indicator {
+  text-align: center;
+  color: var(--muted);
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-btn {
-  padding: 10px 20px;
-  font-size: 18px;
-  cursor: pointer;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  background: #eee;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  font-size: 1.15rem;
 }
 
-.nav-btn:hover {
-  background: #ddd;
+.viewer-window {
+  display: block;
+  width: 100%;
+  height: min(78vh, 820px);
+  border: 0;
+  background: #f8fafc;
+}
+
+@media (max-width: 980px) {
+  .documents-hero,
+  .documents-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .documents-sidebar-card {
+    position: static;
+  }
+
+  .document-file-list {
+    max-height: 260px;
+  }
 }

@@ -2,52 +2,164 @@
 {% block page_title %}Forecast{% endblock %}
 
 {% block content %}
+<section class="forecast-hero">
+  <div>
+    <span class="eyebrow">Smart scenario forecast</span>
+    <h2>Predict your cash + investments using your real habits</h2>
+    <p>
+      The only required input is the number of years. Income, spending, monthly net investment,
+      dividends and expected investment return are prefilled from your saved transactions and the Investments page.
+    </p>
+  </div>
+  <div class="forecast-auto-box">
+    <span>Auto defaults</span>
+    <strong>{{ defaults.months_used }} month basis</strong>
+    <small>Return default: {{ '%.2f'|format(params.annual_return_pct) }}%</small>
+  </div>
+</section>
 
-<section class="form-section">
-  <h2>Financial Forecast</h2>
+<section class="forecast-defaults-grid">
+  <article><span>Starting cash</span><strong>€ {{ '%.2f'|format(params.starting_cash) }}</strong><small>Main net + separate liquid accounts</small></article>
+  <article><span>Investment value</span><strong>€ {{ '%.2f'|format(params.starting_investment_value) }}</strong><small>From current investment proxy</small></article>
+  <article><span>Monthly spending</span><strong>€ {{ '%.2f'|format(params.monthly_spending) }}</strong><small>Recent spending habit</small></article>
+  <article><span>Monthly net investment</span><strong>€ {{ '%.2f'|format(params.monthly_net_investment) }}</strong><small>Buys/deposits minus sells/withdrawals</small></article>
+</section>
 
-  <form method="post" class="transaction-form">
-
+<section class="forecast-control-card">
+  <div class="panel-header">
     <div>
-      <label>Monthly Income (€)</label>
-      <input type="number" name="income" step="0.01" required>
+      <span class="eyebrow">Scenario inputs</span>
+      <h2>Run a forecast</h2>
+      <p>Start with the automatic values, then change any number to test a better or worse scenario.</p>
+    </div>
+  </div>
+
+  <form method="post" class="forecast-form-grid">
+    <div class="forecast-required">
+      <label>Years to forecast</label>
+      <input type="number" name="years" value="{{ params.years }}" min="1" max="60" required>
     </div>
 
     <div>
-      <label>Monthly Expenses (€)</label>
-      <input type="number" name="expenses" step="0.01" required>
+      <label>Monthly income (€)</label>
+      <input type="number" name="monthly_income" step="0.01" value="{{ '%.2f'|format(params.monthly_income) }}">
     </div>
 
     <div>
-      <label>Monthly Investment (€)</label>
-      <input type="number" name="investment" step="0.01" required>
+      <label>Monthly spending (€)</label>
+      <input type="number" name="monthly_spending" step="0.01" value="{{ '%.2f'|format(params.monthly_spending) }}">
     </div>
 
     <div>
-      <label>Years</label>
-      <input type="number" name="years" value="5">
+      <label>Monthly net investment (€)</label>
+      <input type="number" name="monthly_net_investment" step="0.01" value="{{ '%.2f'|format(params.monthly_net_investment) }}">
     </div>
 
     <div>
-      <label>Annual Return (%)</label>
-      <input type="number" name="rate" value="5" step="0.1">
+      <label>Annual investment return (%)</label>
+      <input type="number" name="annual_return_pct" step="0.1" value="{{ '%.2f'|format(params.annual_return_pct) }}">
     </div>
 
-    <button type="submit">Run Forecast</button>
+    <div>
+      <label>Monthly dividends (€)</label>
+      <input type="number" name="monthly_dividends" step="0.01" value="{{ '%.2f'|format(params.monthly_dividends) }}">
+    </div>
+
+    <div>
+      <label>Income growth / year (%)</label>
+      <input type="number" name="annual_income_growth_pct" step="0.1" value="{{ '%.2f'|format(params.annual_income_growth_pct) }}">
+    </div>
+
+    <div>
+      <label>Spending growth / year (%)</label>
+      <input type="number" name="annual_spending_growth_pct" step="0.1" value="{{ '%.2f'|format(params.annual_spending_growth_pct) }}">
+    </div>
+
+    <div>
+      <label>Starting cash (€)</label>
+      <input type="number" name="starting_cash" step="0.01" value="{{ '%.2f'|format(params.starting_cash) }}">
+    </div>
+
+    <div>
+      <label>Starting investment value (€)</label>
+      <input type="number" name="starting_investment_value" step="0.01" value="{{ '%.2f'|format(params.starting_investment_value) }}">
+    </div>
+
+    <div>
+      <label>Starting invested capital (€)</label>
+      <input type="number" name="starting_invested_capital" step="0.01" value="{{ '%.2f'|format(params.starting_invested_capital) }}">
+    </div>
+
+    <div class="forecast-submit-row">
+      <button type="submit" class="primary-btn">Run forecast</button>
+    </div>
   </form>
 </section>
 
 {% if result %}
-<section class="summary">
-  <div class="summary-card net">
-    <h3>Projected Value after {{ result.years }} years</h3>
-    <p>{{ '%.2f'|format(result.final_value) }}</p>
-  </div>
+<section class="forecast-results-grid">
+  <article class="forecast-result-main">
+    <span>Projected total after {{ result.years }} years</span>
+    <strong>€ {{ '%.2f'|format(result.final.total_value) }}</strong>
+    <small>Cash + estimated investment value</small>
+  </article>
+  <article><span>Projected cash</span><strong>€ {{ '%.2f'|format(result.final.cash) }}</strong></article>
+  <article><span>Investment value</span><strong>€ {{ '%.2f'|format(result.final.investment_value) }}</strong></article>
+  <article><span>Investment P/L</span><strong>€ {{ '%.2f'|format(result.final.investment_profit_loss) }}</strong></article>
 </section>
 
-<section class="plots">
-  <img src="{{ url_for('static', filename='plots/forecast.png') }}">
+{% if result.warnings %}
+<section class="forecast-warning-box">
+  {% for warning in result.warnings %}
+    <p>⚠ {{ warning }}</p>
+  {% endfor %}
 </section>
 {% endif %}
 
+<div class="forecast-chart-grid">
+  <div class="chart-card chart-wide">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ result.charts.projection|safe }}
+  </div>
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ result.charts.cashflow|safe }}
+  </div>
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ result.charts.investment_profit|safe }}
+  </div>
+</div>
+
+<section class="transactions professional-table-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Year-by-year</span>
+      <h2>Forecast checkpoints</h2>
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Year</th>
+        <th>Cash</th>
+        <th>Investment value</th>
+        <th>Investment P/L</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in result.yearly %}
+        <tr>
+          <td>{{ row.year }}</td>
+          <td>€ {{ '%.2f'|format(row.cash) }}</td>
+          <td>€ {{ '%.2f'|format(row.investment_value) }}</td>
+          <td>€ {{ '%.2f'|format(row.investment_profit_loss) }}</td>
+          <td>€ {{ '%.2f'|format(row.total_value) }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
 {% endblock %}
