@@ -33,6 +33,18 @@ def append_entry(entry: dict) -> None:
     append_row(PARENT_SUPPORT_CSV, PARENT_SUPPORT_FIELDS, row)
 
 
+def update_entry(entry_id: int, updates: dict) -> None:
+    rows = load_entries()
+    for row in rows:
+        if str(row.get("id", "")) != str(entry_id):
+            continue
+        for key in ["date", "kind", "parent", "category", "amount", "payment_method", "description"]:
+            if key in updates:
+                row[key] = updates[key]
+        break
+    write_rows(PARENT_SUPPORT_CSV, PARENT_SUPPORT_FIELDS, rows)
+
+
 def delete_entry(entry_id: int) -> None:
     rows = [row for row in load_entries() if str(row.get("id", "")) != str(entry_id)]
     write_rows(PARENT_SUPPORT_CSV, PARENT_SUPPORT_FIELDS, rows)
@@ -60,6 +72,30 @@ def append_rule(rule: dict) -> None:
         "created_at": datetime.now().isoformat(timespec="seconds"),
     }
     append_row(PARENT_SUPPORT_RULES_CSV, PARENT_SUPPORT_RULE_FIELDS, row)
+
+
+def update_rule(rule_id: int, updates: dict) -> None:
+    rows = load_rules()
+    for row in rows:
+        if str(row.get("id", "")) != str(rule_id):
+            continue
+        for key in [
+            "name",
+            "kind",
+            "parent",
+            "category",
+            "monthly_amount",
+            "day_of_month",
+            "start_date",
+            "end_date",
+            "payment_method",
+            "description",
+            "active",
+        ]:
+            if key in updates:
+                row[key] = updates[key]
+        break
+    write_rows(PARENT_SUPPORT_RULES_CSV, PARENT_SUPPORT_RULE_FIELDS, rows)
 
 
 def delete_rule(rule_id: int) -> None:

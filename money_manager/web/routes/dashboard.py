@@ -6,21 +6,29 @@ from money_manager.services.account_service import main_account_transactions
 from money_manager.services.analytics_service import apply_transaction_filters, build_dashboard_metrics, period_summaries
 from money_manager.services.debt_service import generate_debt_payments
 from money_manager.services.overview_service import build_overview_context
-from money_manager.services.pending_service import pending_total, process_pending
+from money_manager.services.pending_service import pending_total
 from money_manager.services.recurring_service import generate_recurring
-from money_manager.services.transaction_service import load_transactions, prepare_transactions_for_display
+from money_manager.services.transaction_service import load_transactions
 
 bp = Blueprint("dashboard", __name__)
 
 
 def _refresh_automatic_items() -> None:
+    # Generate queues, but do not mark pending items as paid automatically.
+    # Payments can now be executed or delayed explicitly from the Pending page.
     generate_recurring()
     generate_debt_payments()
-    process_pending()
 
 
 @bp.route("/")
 def overview():
+    _refresh_automatic_items()
+    return render_template("overview_simple.html", **build_overview_context())
+
+
+@bp.route("/overview")
+@bp.route("/overview/detailed")
+def overview_detailed():
     _refresh_automatic_items()
     return render_template("overview.html", **build_overview_context())
 
@@ -40,10 +48,10 @@ def index():
     types = request.args.getlist("types") or TRANSACTION_TYPES[:]
     categories = request.args.getlist("category")
     query = request.args.get("q", "").strip()
+    amount_min = request.args.get("amount_min", "").strip()
+    amount_max = request.args.get("amount_max", "").strip()
 
-    filtered = apply_transaction_filters(df, start, end, types, categories, query)
-    filtered = prepare_transactions_for_display(filtered)
-
+    filtered = apply_transaction_filters(df, start, end, types, categories, query, amount_min, amount_max)
     filtered_main = main_account_transactions(filtered)
     metrics = build_dashboard_metrics(filtered_main, start, end)
 
@@ -53,8 +61,6 @@ def index():
 
     return render_template(
         "index.html",
-        transactions=filtered.to_dict(orient="records"),
-        transactions_initial=filtered.head(50).to_dict(orient="records"),
         totals=metrics["totals"],
         start=start,
         end=end,
@@ -63,6 +69,8 @@ def index():
         categories_selected=categories,
         categories_all=all_categories,
         q=query,
+        amount_min=amount_min,
+        amount_max=amount_max,
         stats_this_month=stats_this_month,
         stats_3_months=stats_3_months,
         net_after_pending=metrics["totals"]["net"] - current_pending_total,

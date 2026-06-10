@@ -21,6 +21,7 @@ CUSTOM_ACCOUNTS_JSON = DATA_DIR / "accounts.json"
 MAIN_ACCOUNT_KEY = "main_bank"
 MAIN_ACCOUNT_LABEL = "Main bank account"
 CREDIT_OPTION_KEY = "credit_card"
+PAYPAL_OPTION_KEY = "paypal"
 
 # These are the built-in non-main accounts.  The third one intentionally acts as
 # a generic "other account" bucket and also catches old Ticket Restaurant rows.
@@ -103,22 +104,32 @@ MAIN_ACCOUNT_ALIASES = {
     "conto",
     "conto corrente",
     "credit",
+    "card",
+    "debit card",
+    "easypark",
     "credit card",
     "card credit",
     "carta credito",
     "carta di credito",
     "visa",
     "mastercard",
+    "paypal",
+    "pay pal",
 }
 
 CREDIT_ACCOUNT_ALIASES = {
     "credit",
+    "card",
+    "debit card",
+    "easypark",
     "credit card",
     "card credit",
     "carta credito",
     "carta di credito",
     "visa",
     "mastercard",
+    "paypal",
+    "pay pal",
 }
 
 
@@ -159,7 +170,7 @@ def _normalise_account_record(raw: dict) -> dict | None:
         return None
 
     key = _slugify(str(raw.get("key") or label))
-    if key in {MAIN_ACCOUNT_KEY, CREDIT_OPTION_KEY, "credit"}:
+    if key in {MAIN_ACCOUNT_KEY, CREDIT_OPTION_KEY, PAYPAL_OPTION_KEY, "credit"}:
         return None
 
     aliases = _split_aliases(raw.get("aliases"))
@@ -256,6 +267,13 @@ def account_options_for_forms(include_credit: bool = True) -> list[dict]:
             "value": "credit",
             "kind": "credit",
         })
+        options.append({
+            "key": PAYPAL_OPTION_KEY,
+            "label": "PayPal",
+            "description": "Same main-net logic as credit card: it is scheduled as a pending card-style payment, not as separate liquidity.",
+            "value": "paypal",
+            "kind": "credit",
+        })
     return options
 
 
@@ -292,6 +310,11 @@ def normalize_account_key(value: str | None) -> str:
     return _alias_to_key().get(text, MAIN_ACCOUNT_KEY)
 
 
+def is_main_account_value(value: str | None) -> bool:
+    """True only for blank/Main/Credit/PayPal aliases, not for unknown accounts."""
+    return _clean_text(value) in MAIN_ACCOUNT_ALIASES
+
+
 def account_label_for_key(key: str | None) -> str:
     canonical = LEGACY_KEY_ALIASES.get(str(key or ""), str(key or ""))
     if canonical == MAIN_ACCOUNT_KEY:
@@ -314,6 +337,8 @@ def account_description_for_key(key: str | None) -> str:
 
 def account_label_for_value(value: str | None) -> str:
     raw = _clean_text(value)
+    if raw in {"paypal", "pay pal"}:
+        return "PayPal"
     if raw in CREDIT_ACCOUNT_ALIASES:
         return "Credit card"
     return account_label_for_key(normalize_account_key(value))

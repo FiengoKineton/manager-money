@@ -50,23 +50,32 @@ def load_all() -> pd.DataFrame:
     return df
 
 
-def append_transaction(tx: dict) -> None:
+def append_transaction(tx: dict) -> int:
     transaction_type = tx.get("type")
     path = csv_path_for_type(transaction_type)
     rows = read_rows(path, TRANSACTION_FIELDS)
 
+    row_id = next_numeric_id(rows)
     row = {
-        "id": next_numeric_id(rows),
+        "id": row_id,
         "date": tx.get("date", ""),
         "category": tx.get("category", ""),
         "sub_category": tx.get("sub_category", ""),
+        # amount is always stored in EUR. Foreign-currency inputs keep their
+        # original amount/rate in the columns below and in the description.
         "amount": str(tx.get("amount", "0")),
+        "original_amount": tx.get("original_amount", ""),
+        "original_currency": tx.get("original_currency", ""),
+        "exchange_rate_to_eur": tx.get("exchange_rate_to_eur", ""),
+        "exchange_correction_to_eur": tx.get("exchange_correction_to_eur", ""),
+        "exchange_effective_rate_to_eur": tx.get("exchange_effective_rate_to_eur", ""),
         "account": tx.get("account", ""),
         "description": tx.get("description", ""),
         "created_at": datetime.now().isoformat(timespec="seconds"),
     }
 
     append_row(path, TRANSACTION_FIELDS, row)
+    return int(row_id)
 
 
 def update_transaction(tx_id: int, transaction_type: str, data: dict) -> bool:
@@ -82,7 +91,19 @@ def update_transaction(tx_id: int, transaction_type: str, data: dict) -> bool:
     if not mask.any():
         return False
 
-    editable_columns = ["date", "category", "sub_category", "amount", "account", "description"]
+    editable_columns = [
+        "date",
+        "category",
+        "sub_category",
+        "amount",
+        "original_amount",
+        "original_currency",
+        "exchange_rate_to_eur",
+        "exchange_correction_to_eur",
+        "exchange_effective_rate_to_eur",
+        "account",
+        "description",
+    ]
     for col in editable_columns:
         if col in data:
             df.loc[mask, col] = data[col]

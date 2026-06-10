@@ -5,4 +5,4 @@ id,name,type,amount,frequency,day_of_month,category,account,start_date,last_gene
 4,Amazon Prime,expense,49.9,12,2,Subscriptions,,2025-12-02,2025-12-02
 5,Polizza Casa e Famiglia,expense,39.33,1,22,Housing,,2026-05-22,2026-05-22
 6,NordVPN,expense,200.0,24,26,Subscriptions,,2025-05-26,2025-05-26
-7,Ticket Restaurants,income,200.0,1,10,Kineton,EdenRed,2026-06-01,
+7,Ticket Restaurants,income,200.0,1,10,Kineton,EdenRed,2026-06-01,2026-06-10

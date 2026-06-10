@@ -82,3 +82,84 @@ button,
   padding: 0.42rem 0.68rem;
   font-size: 0.78rem;
 }
+
+/* Universal compact icon actions used across saved rows */
+.icon-action-btn,
+.icon-link-btn {
+  width: 2.1rem;
+  height: 2.1rem;
+  min-width: 2.1rem;
+  min-height: 2.1rem;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 950;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+  transition: transform 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease;
+}
+
+.icon-action-btn:hover,
+.icon-link-btn:hover {
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 11px 22px rgba(15, 23, 42, 0.18);
+}
+
+.icon-action-update,
+.icon-action-save,
+.icon-link-edit {
+  background: var(--good);
+}
+
+.icon-action-delete {
+  background: var(--bad);
+}
+
+.icon-action-muted {
+  background: var(--ink-soft);
+}
+
+.inline-action-rail,
+.table-action-rail,
+.card-action-rail {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.inline-edit-table input,
+.inline-edit-table select,
+.inline-edit-table textarea {
+  min-width: 92px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.42rem 0.5rem;
+  border-radius: 10px;
+}
+
+.inline-edit-table textarea,
+.table-note-input {
+  min-width: 180px;
+  min-height: 2.25rem;
+}
+
+.table-mini-form,
+.row-action-form {
+  margin: 0;
+}
+
+@media (pointer: coarse) {
+  .icon-action-btn,
+  .icon-link-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

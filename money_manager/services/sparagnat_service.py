@@ -2,7 +2,7 @@ from datetime import date
 
 import pandas as pd
 
-from money_manager.repositories.sparagnat import append_entry, delete_entry, load_entries
+from money_manager.repositories.sparagnat import append_entry, delete_entry, load_entries, update_entry
 from money_manager.services.analytics_service import apply_transaction_filters, build_dashboard_metrics
 from money_manager.services.account_service import main_account_transactions
 from money_manager.services.transaction_service import load_transactions
@@ -29,6 +29,27 @@ def add_entry_from_form(form) -> None:
         kind = KIND_SAVED_EXPENSE
 
     append_entry({
+        "date": form.get("date", date.today().isoformat()),
+        "kind": kind,
+        "person": form.get("person", ""),
+        "category": form.get("category", ""),
+        "amount": parse_amount(form.get("amount")),
+        "account": form.get("account", "cash"),
+        "description": form.get("description", ""),
+    })
+
+
+def update_entry_from_form(form) -> None:
+    try:
+        entry_id = int(form.get("id"))
+    except (TypeError, ValueError):
+        return
+
+    kind = form.get("kind", KIND_SAVED_EXPENSE)
+    if kind not in KIND_LABELS:
+        kind = KIND_SAVED_EXPENSE
+
+    update_entry(entry_id, {
         "date": form.get("date", date.today().isoformat()),
         "kind": kind,
         "person": form.get("person", ""),

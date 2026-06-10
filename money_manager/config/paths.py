@@ -18,6 +18,10 @@ PARENT_SUPPORT_CSV = DATA_DIR / "parent_support.csv"
 PARENT_SUPPORT_RULES_CSV = DATA_DIR / "parent_support_rules.csv"
 DEBTS_CSV = DATA_DIR / "debts.csv"
 DEBT_RULES_CSV = DATA_DIR / "debt_rules.csv"
+RECEIVABLES_CSV = DATA_DIR / "receivables.csv"
+INVESTMENT_ASSETS_CSV = DATA_DIR / "investment_assets.csv"
+INVESTMENT_MARKET_CACHE_JSON = DATA_DIR / "investment_market_cache.json"
+CURRENCIES_JSON = DATA_DIR / "currencies.json"
 
 DOCUMENT_FOLDERS = [
     "Cedolini",

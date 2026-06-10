@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block page_title %}Recurring Rules{% endblock %}
+
+{% block content %}
+<section class="form-section pending-card pending-hero-card">
+  <div class="pending-hero-copy">
+    <span class="eyebrow">Automation rules</span>
+    <h2>Recurring rules</h2>
+    <p>Rules generate pending payments automatically. Generated payments stay in the Pending page until you pay, delay, edit or delete them.</p>
+    <div class="hero-actions">
+      <a class="secondary-btn compact-btn" href="{{ url_for('pending.pending_page') }}">Open pending payments</a>
+    </div>
+  </div>
+  <div class="pending-hero-metrics">
+    <div>
+      <span>Rules</span>
+      <strong>{{ recurring|length }}</strong>
+      <small>Monthly or multi-month schedules.</small>
+    </div>
+    <div>
+      <span>Next queue</span>
+      <strong>{% if recurring %}{{ recurring[0].next_payment }}{% else %}—{% endif %}</strong>
+      <small>First upcoming generated payment.</small>
+    </div>
+  </div>
+</section>
+
+<section class="form-section pending-card add-recurring-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">New automation</span>
+      <h2>Add recurring payment</h2>
+      <p>Create the rule once; the app will queue generated movements when they become due.</p>
+    </div>
+  </div>
+
+  <form method="post" class="recurring-form">
+    <input type="hidden" name="action" value="add">
+
+    <div class="form-field form-field-wide">
+      <label>Name</label>
+      <input type="text" name="name" placeholder="Condominio, Parking, Ticket Restaurant..." required>
+    </div>
+
+    <div class="form-field">
+      <label>Type</label>
+      <select name="type" id="type-select">
+        <option value="expense">Expense</option>
+        <option value="investment">Investment</option>
+        <option value="income">Income</option>
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label>Category</label>
+      <select name="category" id="category-select" required></select>
+    </div>
+
+    <div class="form-field">
+      <label>Account</label>
+      <select name="account">
+        {% for account in account_options %}
+          <option value="{{ account.value }}">{{ account.label }}</option>
+        {% endfor %}
+      </select>
+      <small>Blank = main bank. Liquid accounts stay separate. Credit card and PayPal become pending main-account payments.</small>
+    </div>
+
+    <div class="form-field">
+      <label>Amount (€)</label>
+      <input type="number" step="0.01" name="amount" required>
+    </div>
+
+    <div class="form-field">
+      <label>Day of month</label>
+      <input type="number" name="day_of_month" min="1" max="31" required>
+    </div>
+
+    <div class="form-field">
+      <label>Start date</label>
+      <input type="date" name="start_date">
+      <small>Leave empty to start from today.</small>
+    </div>
+
+    <div class="form-field">
+      <label>Repeat every</label>
+      <div class="frequency-input">
+        <input type="number" name="frequency" min="1" max="120" value="1" required>
+        <span>month(s)</span>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit">Add recurring</button>
+    </div>
+  </form>
+</section>
+
+<section class="transactions pending-card recurring-rules-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Automatic schedule</span>
+      <h2>Saved recurring rules</h2>
+      <p>Rules are ordered by the next generated payment, so the next thing to check is always first.</p>
+    </div>
+    <span class="section-count">{{ recurring|length }} rule{{ '' if recurring|length == 1 else 's' }}</span>
+  </div>
+
+  {% if recurring %}
+  <div class="recurring-rule-list">
+    {% for r in recurring %}
+    <form method="post" class="recurring-rule-card rule-{{ r.type|lower }} {% if r.is_auxiliary_account %}rule-auxiliary{% endif %}">
+      <input type="hidden" name="id" value="{{ r.id }}">
+
+      <div class="rule-card-topline">
+        <div class="rule-name-field">
+          <label>Name</label>
+          <input type="text" name="name" value="{{ r.name }}" required>
+        </div>
+        <div class="rule-amount-stack">
+          <strong>{{ r.amount_str }}</strong>
+          <span>{{ r.frequency_label }}</span>
+        </div>
+        <div class="rule-badges">
+          <span class="type-badge type-{{ r.type|lower }}">{{ r.type|capitalize }}</span>
+          <span class="soft-badge next-badge">Next: {{ r.next_payment }}</span>
+          {% if r.is_auxiliary_account %}<span class="soft-badge account-badge-soft">{{ r.account_label }}</span>{% endif %}
+        </div>
+      </div>
+
+      <div class="rule-metric-grid">
+        <div>
+          <span>Monthly equivalent</span>
+          <strong>€ {{ '%.2f'|format(r.monthly_equivalent) }}</strong>
+        </div>
+        <div>
+          <span>Yearly equivalent</span>
+          <strong>€ {{ '%.2f'|format(r.annual_equivalent) }}</strong>
+        </div>
+        <div>
+          <span>Account</span>
+          <strong>{{ r.account_label }}</strong>
+        </div>
+        <div>
+          <span>Start date</span>
+          <strong>{{ r.start_date }}</strong>
+        </div>
+      </div>
+
+      <div class="rule-fields-grid compact-rule-fields">
+        <div>
+          <label>Type</label>
+          <select name="type">
+            <option value="expense" {% if r.type == "expense" %}selected{% endif %}>Expense</option>
+            <option value="investment" {% if r.type == "investment" %}selected{% endif %}>Investment</option>
+            <option value="income" {% if r.type == "income" %}selected{% endif %}>Income</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Amount</label>
+          <input type="number" step="0.01" name="amount" value="{{ r.amount }}" required>
+        </div>
+
+        <div>
+          <label>Day</label>
+          <input type="number" name="day_of_month" min="1" max="31" value="{{ r.day_of_month }}" required>
+        </div>
+
+        <div>
+          <label>Frequency</label>
+          <input type="number" name="frequency" min="1" max="120" value="{{ r.frequency }}" required>
+        </div>
+
+        <div>
+          <label>Start</label>
+          <input type="date" name="start_date" value="{{ r.start_date }}">
+        </div>
+
+        <div>
+          <label>Category</label>
+          <input type="text" name="category" value="{{ r.category }}" required>
+        </div>
+
+        <div>
+          <label>Account</label>
+          <select name="account">
+            {% for account in account_options %}
+              {% set account_value = account.value %}
+              <option value="{{ account_value }}"
+                {% if (r.account == account.label) or (r.account == account.key) or (r.account == account.value) or (not r.account and account.key == 'main_bank') or (r.account == 'auto' and account.key == 'main_bank') %}selected{% endif %}>
+                {{ account.label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="rule-card-actions rule-action-rail" aria-label="Rule actions">
+        <button type="submit" name="action" value="update" class="icon-action-btn icon-action-save" title="Update rule" aria-label="Update rule">✎</button>
+        <button type="submit" name="action" value="delete" class="icon-action-btn icon-action-delete" title="Delete rule" aria-label="Delete rule" onclick="return confirm('Delete this recurring rule?')">×</button>
+      </div>
+    </form>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="empty">No recurring rules yet.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script id="category-config" type="application/json">
+{
+  "categoriesByType": {{ categories_by_type | tojson }},
+  "defaultCategoryByType": {{ default_category_by_type | tojson }}
+}
+</script>
+<script src="{{ url_for('static', filename='js/recurring.js') }}"></script>
+{% endblock %}

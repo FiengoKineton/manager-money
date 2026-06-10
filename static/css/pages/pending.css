@@ -677,3 +677,77 @@
     justify-content: flex-end;
   }
 }
+
+.payment-edit-grid {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.55fr) minmax(140px, 0.7fr) minmax(180px, 1fr);
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.payment-edit-grid label,
+.payment-edit-side label,
+.payment-date-block label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.22rem;
+}
+
+.payment-edit-side input,
+.payment-edit-side select,
+.payment-date-block input,
+.payment-edit-grid input,
+.payment-edit-grid select {
+  width: 100%;
+  min-width: 0;
+}
+
+.payment-edit-side {
+  display: grid;
+  grid-template-columns: minmax(95px, 1fr);
+  gap: 0.25rem;
+  white-space: normal;
+}
+
+@media (max-width: 980px) {
+  .payment-edit-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Manual pending payment workflow */
+.payment-action-rail-wide {
+  justify-content: space-between;
+}
+
+.payment-action-rail-wide .icon-action-btn {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  font-size: 0.96rem;
+}
+
+.icon-action-delay {
+  background: #f59e0b;
+}
+
+.icon-action-execute {
+  background: var(--brand);
+}
+
+.payment-overdue {
+  border-color: rgba(180, 35, 24, 0.35) !important;
+}
+
+.payment-due-today {
+  border-color: rgba(245, 158, 11, 0.38) !important;
+}
+
+.warning-text {
+  color: var(--bad) !important;
+}

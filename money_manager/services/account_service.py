@@ -12,6 +12,7 @@ from money_manager.config import (
     auxiliary_account_keys,
     category_aliases_by_key,
     normalize_account_key,
+    is_main_account_value,
     save_custom_account,
 )
 
@@ -69,37 +70,51 @@ def enrich_transactions_with_accounts(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main_account_transactions(df: pd.DataFrame) -> pd.DataFrame:
-    """Transactions that affect the real tracked net balance.
+    """Transactions that affect the main bank/net balance.
 
-    A movement can affect both the main tracked net and a separate liquid
-    account. Example: an expense categorized as ``Pre-paid card`` is still money
-    leaving the main bank, but it also increases the pre-paid-card balance.
+    The net balance is intentionally conservative now: it includes only rows
+    whose raw CSV ``account`` field is blank or explicitly points to the main
+    route (Main bank account, Credit card, PayPal, or their aliases).
 
-    The only rows excluded from the main tracked net are account-only cleanup
-    adjustments, because those are reconciliation entries created only to fix the
-    balance of a separate liquid account.
+    Rows explicitly assigned to Cash Flow, Pre-paid card, Other account, EdenRed,
+    or any custom liquid account are excluded from the main net and are analysed
+    in the separate liquid-account page. Category hints such as ``Pre-paid card``
+    can still be used to build the auxiliary account balance, but they no longer
+    remove a blank-account row from the main net. This is important for top-ups:
+    money can leave the main bank and also become available in a liquid account.
     """
     if df.empty:
         return df.copy()
     if "account_key" not in df.columns:
         df = enrich_transactions_with_accounts(df)
-    return df[~_is_account_only_cleanup(df)].copy()
+    return df[_affects_main_net_mask(df)].copy()
 
 
-
-def _is_account_only_cleanup(df: pd.DataFrame) -> pd.Series:
+def _affects_main_net_mask(df: pd.DataFrame) -> pd.Series:
     if df.empty:
         return pd.Series(dtype=bool, index=df.index)
 
-    category = df.get("category", pd.Series("", index=df.index)).fillna("").astype(str).str.strip().str.casefold()
-    account_key = df.get("account_key", pd.Series(MAIN_ACCOUNT_KEY, index=df.index))
-    route_source = df.get("account_route_source", pd.Series("", index=df.index)).fillna("").astype(str)
+    raw_account = df.get("account", pd.Series("", index=df.index)).fillna("").astype(str)
+    raw_account_clean = raw_account.map(_clean_text)
 
-    return (
-        category.eq("account cleanup")
-        & account_key.isin(auxiliary_account_keys())
-        & route_source.eq("explicit_account")
-    )
+    # Blank account is the default main bank route.
+    blank_account = raw_account_clean.eq("")
+
+    explicit_main = raw_account.map(is_main_account_value)
+
+    # Historical CSVs used account="Cash" for purchases that should still be
+    # treated as main-bank spending. The explicit Cash Flow label remains a
+    # separate liquid account; only the short value "cash" is pulled back into
+    # the main net. Cash mentioned in description/sub-category is also main.
+    sub_category = df.get("sub_category", pd.Series("", index=df.index)).fillna("").astype(str).str.casefold()
+    description = df.get("description", pd.Series("", index=df.index)).fillna("").astype(str).str.casefold()
+    cash_keyword_main = raw_account_clean.eq("cash") | sub_category.str.contains("cash", na=False) | description.str.contains("cash", na=False)
+
+    transaction_type = df.get("type", pd.Series("", index=df.index)).fillna("").astype(str).str.casefold()
+    account_key = df.get("account_key", pd.Series("", index=df.index)).fillna("").astype(str)
+    investment_main = transaction_type.eq("investment") & ~account_key.isin(auxiliary_account_keys())
+
+    return blank_account | explicit_main | cash_keyword_main | investment_main
 
 def auxiliary_account_transactions(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:

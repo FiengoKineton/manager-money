@@ -18,33 +18,53 @@
         </span>
       </a>
 
+      {% set ep = request.endpoint or '' %}
+      {% set home_open = ep in ['dashboard.overview', 'dashboard.overview_detailed', 'dashboard.index', 'transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction'] %}
+      {% set planning_open = ep in ['pending.pending_page', 'pending.recurring_page', 'debts.debts_page', 'receivables.receivables_page'] %}
+      {% set accounts_open = ep in ['accounts.accounts_page', 'accounts.account_detail', 'currencies.currencies_page', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
+      {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'forecast.forecast', 'documents.documents'] %}
       <nav class="sidebar-nav" aria-label="Main navigation">
-        <div class="nav-group">
-          <span class="nav-label">Home</span>
-          <a href="{{ url_for('dashboard.overview') }}" class="{{ 'active' if request.endpoint == 'dashboard.overview' else '' }}">Overview</a>
-          <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if request.endpoint == 'dashboard.index' else '' }}">Transactions Dashboard</a>
-        </div>
+        <details class="nav-group" {% if home_open %}open{% endif %}>
+          <summary class="nav-label">Home</summary>
+          <div class="nav-items">
+            <a href="{{ url_for('dashboard.overview') }}" class="{{ 'active' if ep == 'dashboard.overview' else '' }}">Quick Overview</a>
+            <a href="{{ url_for('dashboard.overview_detailed') }}" class="{{ 'active' if ep == 'dashboard.overview_detailed' else '' }}">Detailed Overview</a>
+            <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if ep == 'dashboard.index' else '' }}">Dashboard</a>
+            <a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if ep in ['transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction'] else '' }}">Transactions</a>
+          </div>
+        </details>
 
-        <div class="nav-group">
-          <span class="nav-label">Planning</span>
-          <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if request.endpoint == 'pending.pending_page' else '' }}">Pending & Recurring</a>
-          <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if request.endpoint == 'debts.debts_page' else '' }}">Debts</a>
-        </div>
+        <details class="nav-group" {% if planning_open %}open{% endif %}>
+          <summary class="nav-label">Planning</summary>
+          <div class="nav-items">
+            <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}">Pending Payments</a>
+            <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}">Recurring Rules</a>
+            <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}">Debts I Owe</a>
+            <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}">Money Owed to Me</a>
+          </div>
+        </details>
 
-        <div class="nav-group">
-          <span class="nav-label">Support</span>
-          <a href="{{ url_for('sparagnat.sparagnat_page') }}" class="{{ 'active' if request.endpoint == 'sparagnat.sparagnat_page' else '' }}">Sparagnat e Fottut</a>
-          <a href="{{ url_for('parent_support.parent_support_page') }}" class="{{ 'active' if request.endpoint == 'parent_support.parent_support_page' else '' }}">Parent Support</a>
-        </div>
+        <details class="nav-group" {% if accounts_open %}open{% endif %}>
+          <summary class="nav-label">Accounts</summary>
+          <div class="nav-items">
+            <a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if ep in ['accounts.accounts_page', 'accounts.account_detail'] else '' }}">Liquid Accounts</a>
+            <a href="{{ url_for('currencies.currencies_page') }}" class="{{ 'active' if ep == 'currencies.currencies_page' else '' }}">Currency Exchange</a>
+            <a href="{{ url_for('sparagnat.sparagnat_page') }}" class="{{ 'active' if ep == 'sparagnat.sparagnat_page' else '' }}">Sparagnat e Fottut</a>
+            <a href="{{ url_for('parent_support.parent_support_page') }}" class="{{ 'active' if ep == 'parent_support.parent_support_page' else '' }}">Parent Support</a>
+          </div>
+        </details>
 
-        <div class="nav-group">
-          <span class="nav-label">Reports</span>
-          <a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if request.endpoint == 'analysis.analysis' else '' }}">Analysis</a>
-          <a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if request.endpoint in ['accounts.accounts_page', 'accounts.account_detail'] else '' }}">Liquid Accounts</a>
-          <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if request.endpoint == 'forecast.forecast' else '' }}">Forecast</a>
-          <a href="{{ url_for('documents.documents') }}" class="{{ 'active' if request.endpoint == 'documents.documents' else '' }}">Documents</a>
-        </div>
+        <details class="nav-group" {% if wealth_open %}open{% endif %}>
+          <summary class="nav-label">Wealth & Reports</summary>
+          <div class="nav-items">
+            <a href="{{ url_for('investments.investments_page') }}" class="{{ 'active' if ep == 'investments.investments_page' else '' }}">Investments</a>
+            <a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if ep == 'analysis.analysis' else '' }}">Analysis</a>
+            <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if ep == 'forecast.forecast' else '' }}">Forecast</a>
+            <a href="{{ url_for('documents.documents') }}" class="{{ 'active' if ep == 'documents.documents' else '' }}">Documents</a>
+          </div>
+        </details>
       </nav>
+
     </aside>
 
     <main class="app-main">

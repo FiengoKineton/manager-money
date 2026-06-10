@@ -1,23 +1,24 @@
-id,date,category,sub_category,amount,account,description,created_at
-1,2025-10-08,PoliMi,,1096.22,,First half-payement,
-2,2025-10-13,Other income,,871.83,,Kineton,
-3,2025-11-10,Cash,,100.0,,Recupero Prelievi Riccardo (Deddo),
-4,2025-11-19,PoliMi,,2282.4,,First Full payement,
-5,2025-11-21,Deddo,,400.0,,Reimborso Visite Mediche,
-6,2025-11-22,Other income,,50.0,,Quota altri regalo Tommaso,
-7,2025-11-27,PoliMi,,1638.34,,,
-8,2025-10-01,Other income,,1100.22,,Initial Net,
-9,2025-12-19,PoliMi,,1474.0,,1st payment,2025-12-19T12:53:58
-10,2026-01-02,Cash,,2100.0,,Compro Oro 28gr,
-11,2026-01-30,PoliMi,,722.22,,2nd payment,2026-01-30T10:05:47
-12,2026-02-11,PoliMi,,2200.0,,,
-13,2026-02-28,Cash,,100.0,,Quota regalo papa e andrea,
-14,2026-02-25,Refund,,13.61,,KTH,
-15,2026-03-06,PoliMi,,2440.77,,,2026-03-08T14:43:43
-16,2026-04-14,PoliMi,,1638.34,,,2026-04-14T18:49:05
-17,2026-04-16,Refund,Axes,126.0,,,2026-04-24T16:10:17
-18,2026-05-08,PoliMi,,1638.34,,,2026-05-08T12:15:18
-19,2026-05-21,Refund,Infissi,2220.0,,-11%,2026-05-21T11:34:14
-20,2026-05-27,PoliMi,,819.17,,,2026-05-28T15:43:58
-21,2026-05-28,Deddo,fake mutuo debt,4871.61,,,2026-06-03T12:17:30
-22,2026-06-05,Other income,Claudia,200.0,,Vinted balance,2026-06-04T11:53:17
+id,date,category,sub_category,amount,original_amount,original_currency,exchange_rate_to_eur,exchange_correction_to_eur,exchange_effective_rate_to_eur,account,description,created_at
+1,2025-10-08,PoliMi,,1096.22,,,,,,,First half-payement,
+2,2025-10-13,Other income,,871.83,,,,,,,Kineton,
+3,2025-11-10,Cash,,100.0,,,,,,,Recupero Prelievi Riccardo (Deddo),
+4,2025-11-19,PoliMi,,2282.4,,,,,,,First Full payement,
+5,2025-11-21,Deddo,,400.0,,,,,,,Reimborso Visite Mediche,
+6,2025-11-22,Other income,,50.0,,,,,,,Quota altri regalo Tommaso,
+7,2025-11-27,PoliMi,,1638.34,,,,,,,,
+8,2025-10-01,Other income,,1100.22,,,,,,,Initial Net,
+9,2025-12-19,PoliMi,,1474.0,,,,,,,1st payment,2025-12-19T12:53:58
+10,2026-01-02,Cash,,2100.0,,,,,,,Compro Oro 28gr,
+11,2026-01-30,PoliMi,,722.22,,,,,,,2nd payment,2026-01-30T10:05:47
+12,2026-02-11,PoliMi,,2200.0,,,,,,,,
+13,2026-02-28,Cash,,100.0,,,,,,,Quota regalo papa e andrea,
+14,2026-02-25,Refund,,13.61,,,,,,,KTH,
+15,2026-03-06,PoliMi,,2440.77,,,,,,,,2026-03-08T14:43:43
+16,2026-04-14,PoliMi,,1638.34,,,,,,,,2026-04-14T18:49:05
+17,2026-04-16,Refund,Axes,126.0,,,,,,,,2026-04-24T16:10:17
+18,2026-05-08,PoliMi,,1638.34,,,,,,,,2026-05-08T12:15:18
+19,2026-05-21,Refund,Infissi,2220.0,,,,,,,-11%,2026-05-21T11:34:14
+20,2026-05-27,PoliMi,,819.17,,,,,,,,2026-05-28T15:43:58
+21,2026-05-28,Deddo,fake mutuo debt,4871.61,,,,,,,,2026-06-03T12:17:30
+22,2026-06-05,Other income,Claudia,200.0,,,,,,,Vinted balance,2026-06-04T11:53:17
+23,2026-06-10,Kineton,,110.0,,,,,,EdenRed,Ticket Restaurants,2026-06-10T15:33:43

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block page_title %}Transactions{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">Transaction log</span>
+    <h2>Transactions</h2>
+    <p>Only the transaction list lives here now. The dashboard keeps the charts and totals separate.</p>
+  </div>
+  <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">+ Add transaction</a>
+</section>
+
+<section class="filters">
+  <form method="get" action="{{ url_for('transactions.transactions_page') }}" class="filters-form">
+    <div class="filter-date">
+      <label class="block-label">Date</label>
+      <div class="date-inputs">
+        <div>
+          <span class="small-label">From</span>
+          <input type="date" name="from" value="{{ start }}">
+        </div>
+        <div>
+          <span class="small-label">To</span>
+          <input type="date" name="to" value="{{ end }}">
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-main">
+      <div class="filter-row">
+        <div class="filter-field">
+          <label>Types</label>
+          <div class="types-group">
+            {% for t in all_types %}
+              <label class="checkbox-inline">
+                <input type="checkbox"
+                       class="type-checkbox"
+                       name="types"
+                       value="{{ t }}"
+                       {% if t in active_types %}checked{% endif %}>
+                {{ t.capitalize() }}
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label>Category</label>
+          <select name="category" id="category-select" multiple size="4">
+            {% for c in categories_all %}
+              <option value="{{ c }}" {% if c in categories_selected %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+          <p class="hint">Hold Ctrl (Cmd) to select multiple.</p>
+        </div>
+
+        <div class="filter-field">
+          <label>Search</label>
+          <input type="text" name="q" value="{{ q }}" placeholder="Description, category, account">
+        </div>
+
+        <div class="filter-field amount-range-field">
+          <label>Amount range (€)</label>
+          <div class="amount-range-inputs">
+            <input type="number" step="0.01" min="0" name="amount_min" value="{{ amount_min }}" placeholder="Min">
+            <input type="number" step="0.01" min="0" name="amount_max" value="{{ amount_max }}" placeholder="Max">
+          </div>
+          <p class="hint">Uses the displayed absolute amount.</p>
+        </div>
+      </div>
+
+      <div class="filters-actions">
+        <button type="submit" class="primary-btn">Apply</button>
+        <button type="button" class="secondary-btn" data-action="select-all-filters">All</button>
+        <a class="secondary-btn" href="{{ url_for('dashboard.index') }}">Open dashboard</a>
+      </div>
+    </div>
+  </form>
+</section>
+
+<section class="transactions">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Saved rows</span>
+      <h2>Transactions</h2>
+    </div>
+    <span class="section-count">{{ transactions|length }} shown</span>
+  </div>
+
+  <table class="inline-edit-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Category</th>
+        <th>Description</th>
+        <th>Account</th>
+        <th>Amount (€)</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for tx in transactions_initial %}
+      <tr class="row-{{ tx.type }} clickable-row"
+          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
+        <td>{{ tx.date_str }}</td>
+        <td>{{ tx.type.capitalize() }}</td>
+        <td>
+          {{ tx.category }}
+          {% if tx.sub_category and tx.sub_category != 'nan' %}
+            <br><small>{{ tx.sub_category }}</small>
+          {% endif %}
+        </td>
+        <td>
+          {% if tx.description and tx.description != 'nan' %}
+            {{ tx.description }}
+          {% endif %}
+        </td>
+        <td>
+          {% if tx.is_auxiliary_account %}
+            <span class="account-table-badge">{{ tx.account_label }}</span>
+          {% elif tx.account and tx.account != 'nan' %}
+            {{ tx.account }}
+          {% endif %}
+        </td>
+        <td>{{ tx.amount_str }}</td>
+        <td class="table-action-rail">
+          <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="icon-link-btn icon-link-edit" title="Edit transaction" aria-label="Edit transaction">✎</a>
+          <form method="post" action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="row-action-form">
+            <button type="submit" name="action" value="delete" class="icon-action-btn icon-action-delete" title="Delete transaction" aria-label="Delete transaction" onclick="return confirm('Delete this transaction?')">×</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+
+    <tbody id="full-transactions" class="is-hidden">
+      {% for tx in transactions[50:] %}
+      <tr class="row-{{ tx.type }} clickable-row"
+          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
+        <td>{{ tx.date_str }}</td>
+        <td>{{ tx.type.capitalize() }}</td>
+        <td>{{ tx.category }}</td>
+        <td>{{ tx.description }}</td>
+        <td>{% if tx.is_auxiliary_account %}<span class="account-table-badge">{{ tx.account_label }}</span>{% else %}{{ tx.account }}{% endif %}</td>
+        <td>{{ tx.amount_str }}</td>
+        <td class="table-action-rail">
+          <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="icon-link-btn icon-link-edit" title="Edit transaction" aria-label="Edit transaction">✎</a>
+          <form method="post" action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="row-action-form">
+            <button type="submit" name="action" value="delete" class="icon-action-btn icon-action-delete" title="Delete transaction" aria-label="Delete transaction" onclick="return confirm('Delete this transaction?')">×</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if transactions|length > 50 %}
+    <button id="toggle-transactions-btn" class="secondary-btn">Show more</button>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

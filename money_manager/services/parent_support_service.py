@@ -15,6 +15,8 @@ from money_manager.repositories.parent_support import (
     delete_rule,
     load_entries,
     load_rules,
+    update_entry,
+    update_rule,
 )
 
 KIND_DIRECT_MONEY = "direct_money"
@@ -80,6 +82,32 @@ def delete_rule_from_form(form) -> None:
     except (TypeError, ValueError):
         return
 
+
+def update_rule_from_form(form) -> None:
+    try:
+        rule_id = int(form.get("id"))
+    except (TypeError, ValueError):
+        return
+
+    kind = form.get("kind", KIND_COVERED_EXPENSE)
+    if kind not in PARENT_SUPPORT_KINDS:
+        kind = KIND_COVERED_EXPENSE
+
+    update_rule(rule_id, {
+        "name": form.get("name", "").strip(),
+        "kind": kind,
+        "parent": form.get("parent", "").strip(),
+        "category": form.get("category", DEFAULT_PARENT_SUPPORT_CATEGORY).strip() or DEFAULT_PARENT_SUPPORT_CATEGORY,
+        "monthly_amount": parse_amount(form.get("monthly_amount")),
+        "day_of_month": max(1, min(31, parse_int(form.get("day_of_month"), 1))),
+        "start_date": form.get("start_date", ""),
+        "end_date": form.get("end_date", ""),
+        "payment_method": form.get("payment_method", ""),
+        "description": form.get("description", ""),
+        "active": "yes" if form.get("active") else "no",
+    })
+
+
 def add_entry_from_form(form) -> None:
     kind = form.get("kind", KIND_DIRECT_MONEY)
     if kind not in PARENT_SUPPORT_KINDS:
@@ -105,6 +133,27 @@ def delete_entry_from_form(form) -> None:
         delete_entry(int(form.get("id")))
     except (TypeError, ValueError):
         return
+
+
+def update_entry_from_form(form) -> None:
+    try:
+        entry_id = int(form.get("id"))
+    except (TypeError, ValueError):
+        return
+
+    kind = form.get("kind", KIND_DIRECT_MONEY)
+    if kind not in PARENT_SUPPORT_KINDS:
+        kind = KIND_DIRECT_MONEY
+
+    update_entry(entry_id, {
+        "date": form.get("date", date.today().isoformat()),
+        "kind": kind,
+        "parent": form.get("parent", ""),
+        "category": form.get("category", DEFAULT_PARENT_SUPPORT_CATEGORY).strip() or DEFAULT_PARENT_SUPPORT_CATEGORY,
+        "amount": parse_amount(form.get("amount")),
+        "payment_method": form.get("payment_method", ""),
+        "description": form.get("description", ""),
+    })
 
 
 def page_context(start: str, end: str) -> dict:

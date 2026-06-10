@@ -4,13 +4,15 @@ from datetime import date
 
 import pandas as pd
 
-from money_manager.config import default_date_range
+from money_manager.config import CREDIT_ACCOUNT_KEYWORDS, default_date_range
 from money_manager.repositories.pending import load_pending
 from money_manager.services.account_service import account_balance_rows, auxiliary_total, main_account_transactions
 from money_manager.services.analytics_service import period_summaries
 from money_manager.services.debt_service import page_context as debt_page_context
+from money_manager.services.investment_service import overview_snapshot as investment_overview_snapshot
 from money_manager.services.parent_support_service import overview_totals as parent_support_totals
 from money_manager.services.pending_service import pending_total
+from money_manager.services.receivable_service import overview_totals as receivable_overview_totals
 from money_manager.services.sparagnat_service import overview_totals as sparagnat_overview_totals
 from money_manager.services.transaction_service import load_transactions
 from money_manager.utils.filters import filter_by_date
@@ -27,9 +29,12 @@ def build_overview_context() -> dict:
 
     pending_rows = load_pending()
     pending_amount = pending_total(pending_rows)
+    credit_pending_amount = _credit_pending_total(pending_rows)
     debt_context = debt_page_context()
     sparagnat_context = sparagnat_overview_totals(start_default, end_default)
     parent_context = parent_support_totals(start_default, end_default)
+    receivable_context = receivable_overview_totals()
+    investment_context = investment_overview_snapshot(refresh=False)
 
     saved_expenses = sparagnat_context["saved_expenses"]
     cash_collected = sparagnat_context["cash_collected"]
@@ -42,8 +47,20 @@ def build_overview_context() -> dict:
     top_categories = expenses_by_category(main_transactions).head(5).to_dict(orient="records")
     recent_transactions = _recent_transactions(transactions, limit=8)
 
-    cash_position = totals["net"] + totals["investments"]
-    stress_position = cash_position - pending_amount - active_debt
+    # Key money definitions:
+    # - net balance remains the conservative main-bank net.
+    # - all_accounts_net adds every tracked liquid account balance.
+    # - main_available_position then adds invested capital, but not market P/L.
+    # - stress position removes pending credit/PayPal outflow and active debts.
+    # - adjusted stress adds recoverable receivables and unrealised investment P/L.
+    all_accounts_net = totals["net"] + auxiliary_balance
+    investment_capital = investment_context["net_invested"]
+    investment_profit_loss = investment_context["profit_loss"]
+    cash_position = all_accounts_net + investment_capital
+    stress_position = cash_position - credit_pending_amount - active_debt
+    adjusted_stress_position = stress_position + receivable_context["active_remaining"] + investment_profit_loss
+    visible_liquidity = all_accounts_net
+    market_adjusted_position = cash_position + investment_profit_loss
 
     return {
         "today": date.today().isoformat(),
@@ -52,6 +69,7 @@ def build_overview_context() -> dict:
         "stats_this_month": stats_this_month,
         "stats_3_months": stats_3_months,
         "pending_amount": pending_amount,
+        "credit_pending_amount": credit_pending_amount,
         "active_debt": active_debt,
         "pending_debt_payments": debt_context["totals"]["pending_debt_payments"],
         "saved_expenses": saved_expenses,
@@ -59,48 +77,79 @@ def build_overview_context() -> dict:
         "net_if_you_paid_saved_expenses": totals["net"] - saved_expenses,
         "parent_support": parent_context,
         "parent_support_total": parent_total,
+        "receivables": receivable_context,
+        "receivable_active_remaining": receivable_context["active_remaining"],
+        "net_if_receivables_repaid": totals["net"] + receivable_context["active_remaining"],
+        "visible_if_receivables_repaid": visible_liquidity + receivable_context["active_remaining"],
+        "investment_overview": investment_context,
+        "investment_capital": investment_capital,
+        "investment_profit_loss": investment_profit_loss,
+        "investment_profit_loss_pct": investment_context["profit_loss_pct"],
+        "investment_estimated_value": investment_context["estimated_value"],
+        "all_accounts_net": all_accounts_net,
         "cash_position": cash_position,
+        "main_available_position": cash_position,
+        "market_adjusted_position": market_adjusted_position,
+        "total_financial_position": market_adjusted_position,
         "stress_position": stress_position,
+        "adjusted_stress_position": adjusted_stress_position,
         "main_transactions_count": int(len(main_transactions)),
         "auxiliary_accounts": auxiliary_accounts,
         "auxiliary_balance": auxiliary_balance,
-        "combined_visible_liquidity": cash_position + auxiliary_balance,
-        "liquidity_snapshot": _liquidity_snapshot(cash_position, auxiliary_balance, pending_amount, active_debt),
+        "combined_visible_liquidity": visible_liquidity,
+        "liquidity_snapshot": _liquidity_snapshot(cash_position, visible_liquidity, credit_pending_amount, active_debt, adjusted_stress_position),
         "top_categories": top_categories,
         "recent_transactions": recent_transactions,
-        "quick_health": _health_cards(totals, pending_amount, active_debt, parent_total),
+        "quick_health": _health_cards(totals, credit_pending_amount, active_debt, parent_total),
     }
 
 
+def _credit_pending_total(rows: list[dict]) -> float:
+    """Open credit-card/PayPal expenses still expected to leave the main route."""
+    total = 0.0
+    for row in rows:
+        if str(row.get("status", "pending")).lower() != "pending":
+            continue
+        if str(row.get("type", "expense")).lower() == "income":
+            continue
+        account_value = str(row.get("account", "")).strip().casefold()
+        if account_value not in CREDIT_ACCOUNT_KEYWORDS:
+            continue
+        try:
+            total += float(row.get("amount", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            continue
+    return float(total)
 
-def _liquidity_snapshot(cash_position: float, auxiliary_balance: float, pending_amount: float, active_debt: float) -> list[dict]:
-    combined = cash_position + auxiliary_balance
+
+def _liquidity_snapshot(cash_position: float, visible_liquidity: float, credit_pending: float, active_debt: float, adjusted_stress: float) -> list[dict]:
     return [
         {
             "label": "Main available",
             "value": cash_position,
-            "caption": "Bank net plus investments",
+            "caption": "All account net + invested capital",
             "tone": "main",
         },
         {
-            "label": "Separate liquid",
-            "value": auxiliary_balance,
-            "caption": "Cash Flow, Pre-paid, Other/custom",
+            "label": "Visible liquidity",
+            "value": visible_liquidity,
+            "caption": "Main net + separate liquid accounts",
             "tone": "aux",
         },
         {
-            "label": "Committed",
-            "value": pending_amount + active_debt,
-            "caption": "Pending payments plus active debts",
+            "label": "Committed credit/debt",
+            "value": credit_pending + active_debt,
+            "caption": "Credit/PayPal pending plus active debts",
             "tone": "warning",
         },
         {
-            "label": "Visible liquidity",
-            "value": combined,
-            "caption": "Main available + separate liquid",
+            "label": "Adjusted stress",
+            "value": adjusted_stress,
+            "caption": "Stress + owed to me + market P/L",
             "tone": "total",
         },
     ]
+
 
 def _recent_transactions(df: pd.DataFrame, limit: int = 8) -> list[dict]:
     if df.empty:
@@ -158,10 +207,10 @@ def _health_cards(totals: dict, pending_amount: float, active_debt: float, paren
 
     if pending_amount > 0:
         cards.append({
-            "label": "Pending this month",
+            "label": "Credit pressure",
             "value": f"€{pending_amount:.2f}",
             "tone": "warning",
-            "text": "This amount is already expected to leave your balance.",
+            "text": "This credit-card/PayPal amount is already expected to leave your balance.",
         })
 
     if income > 0 and expenses / income > 0.80:

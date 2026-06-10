@@ -383,3 +383,115 @@
     text-align: center;
   }
 }
+
+/* Extra mobile polish for editable saved rows */
+@media (max-width: 760px) {
+  .transactions {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .inline-edit-table {
+    min-width: 920px;
+  }
+
+  .table-action-rail,
+  .inline-action-rail,
+  .card-action-rail {
+    justify-content: flex-start;
+  }
+
+  .inline-edit-table input,
+  .inline-edit-table select,
+  .inline-edit-table textarea {
+    font-size: 0.86rem;
+  }
+
+  .debt-actions,
+  .asset-delete-row,
+  .payment-edit-grid {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .inline-action-rail .icon-action-btn,
+  .inline-action-rail .icon-link-btn,
+  .table-action-rail .icon-action-btn,
+  .table-action-rail .icon-link-btn {
+    flex: 1 1 44px;
+  }
+}
+
+/* More compact navigation and easier tablet/phone pages */
+@media (max-width: 1000px) {
+  .sidebar-nav {
+    align-items: center;
+  }
+
+  .nav-group {
+    flex: 0 0 auto;
+  }
+
+  .nav-group > summary.nav-label {
+    white-space: nowrap;
+    margin: 0;
+    padding: 0.62rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+  }
+
+  .nav-group[open] .nav-items,
+  .nav-group:hover .nav-items,
+  .nav-group:focus-within .nav-items {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    z-index: 80;
+    min-width: 220px;
+    padding: 0.55rem;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.98);
+    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.3);
+  }
+
+  .nav-items a {
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .quick-overview-grid,
+  .quick-link-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-action-rail-wide {
+    justify-content: flex-end;
+    gap: 0.4rem;
+  }
+}
+
+@media (max-width: 1000px) {
+  .nav-group {
+    display: block;
+    flex-direction: initial;
+    gap: 0;
+  }
+}
+
+.amount-range-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.55rem;
+}
+
+.amount-range-inputs input {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .amount-range-inputs {
+    grid-template-columns: 1fr;
+  }
+}

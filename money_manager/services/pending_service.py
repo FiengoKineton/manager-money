@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
-from money_manager.config import CREDIT_CARD_PAYMENT_CATEGORY, account_label_for_value, is_auxiliary_account
+from money_manager.config import CREDIT_ACCOUNT_KEYWORDS, CREDIT_CARD_PAYMENT_CATEGORY, account_label_for_value, is_auxiliary_account
 from money_manager.repositories.pending import load_pending, mark_executed
 from money_manager.repositories.transactions import append_transaction
 
@@ -65,11 +65,35 @@ def prepare_pending_for_display(rows: list[dict]) -> dict:
     }
 
 
+def execute_pending_by_id(tx_id: int | str, execution_date: str | None = None) -> bool:
+    """Execute one open pending row and write the real transaction.
+
+    This is intentionally manual. Opening the app should generate the queue, not
+    silently mark bills as paid before you can delay or correct them.
+    """
+    for tx in load_pending():
+        if str(tx.get("id", "")) != str(tx_id):
+            continue
+        if str(tx.get("status", "pending")).lower() != "pending":
+            return False
+        _execute_pending_row(tx, execution_date=execution_date)
+        mark_executed(int(tx["id"]))
+        return True
+    return False
+
+
 def process_pending(today: date | None = None) -> None:
+    """Execute all pending rows that are due up to `today`.
+
+    Use this only from explicit user actions. The page views do not call it
+    automatically anymore, so a delayed real-world payment does not get falsely
+    inserted into the transaction log.
+    """
     today = today or date.today()
     pending = load_pending()
 
-    credit_group: dict[str, float] = {}
+    credit_group: dict[tuple[str, str], float] = {}
+    credit_ids: dict[tuple[str, str], list[int]] = {}
     other_to_execute = []
 
     for tx in pending:
@@ -89,46 +113,68 @@ def process_pending(today: date | None = None) -> None:
         except (TypeError, ValueError):
             amount = 0.0
 
-        if str(tx.get("account", "")).lower() == "credit":
-            credit_group[tx["date_due"]] = credit_group.get(tx["date_due"], 0.0) + amount
+        account_value = str(tx.get("account", "")).strip().lower()
+        if account_value in CREDIT_ACCOUNT_KEYWORDS:
+            group_key = (tx["date_due"], "paypal" if account_value in {"paypal", "pay pal"} else "credit")
+            credit_group[group_key] = credit_group.get(group_key, 0.0) + amount
+            credit_ids.setdefault(group_key, []).append(int(tx["id"]))
         else:
             other_to_execute.append(tx)
 
     for tx in other_to_execute:
-        if tx.get("source") == "debt":
-            from money_manager.services.debt_service import register_pending_debt_payment
-
-            register_pending_debt_payment(tx)
-        else:
-            append_transaction({
-                "type": tx.get("type", "expense"),
-                "date": tx.get("date_due", ""),
-                "category": tx.get("category", ""),
-                "sub_category": "",
-                "amount": float(tx.get("amount", 0.0)),
-                "account": tx.get("account", ""),
-                "description": tx.get("description", ""),
-            })
+        _execute_pending_row(tx)
         mark_executed(int(tx["id"]))
 
-    for due_date, total in credit_group.items():
+    for (due_date, account_value), total in credit_group.items():
+        label = "PayPal" if account_value == "paypal" else "Credit card"
         append_transaction({
             "type": "expense",
             "date": due_date,
             "category": CREDIT_CARD_PAYMENT_CATEGORY,
-            "sub_category": "",
+            "sub_category": label,
             "amount": total,
-            "account": "credit",
-            "description": f"Credit card payment ({due_date})",
+            "account": account_value,
+            "description": f"{label} payment ({due_date})",
         })
 
-        for tx in pending:
-            if (
-                tx.get("status") == "pending"
-                and str(tx.get("account", "")).lower() == "credit"
-                and tx.get("date_due") == due_date
-            ):
-                mark_executed(int(tx["id"]))
+        for tx_id in credit_ids.get((due_date, account_value), []):
+            mark_executed(tx_id)
+
+
+def _execute_pending_row(tx: dict, execution_date: str | None = None) -> None:
+    execution_date = execution_date or tx.get("date_due", date.today().isoformat())
+    account_value = str(tx.get("account", "")).strip().lower()
+
+    if tx.get("source") == "debt":
+        from money_manager.services.debt_service import register_pending_debt_payment
+
+        debt_tx = dict(tx)
+        debt_tx["date_due"] = execution_date
+        register_pending_debt_payment(debt_tx)
+        return
+
+    if account_value in CREDIT_ACCOUNT_KEYWORDS:
+        label = "PayPal" if account_value in {"paypal", "pay pal"} else "Credit card"
+        append_transaction({
+            "type": "expense",
+            "date": execution_date,
+            "category": CREDIT_CARD_PAYMENT_CATEGORY,
+            "sub_category": label,
+            "amount": float(tx.get("amount", 0.0)),
+            "account": "paypal" if label == "PayPal" else "credit",
+            "description": f"{label} payment ({execution_date})",
+        })
+        return
+
+    append_transaction({
+        "type": tx.get("type", "expense"),
+        "date": execution_date,
+        "category": tx.get("category", ""),
+        "sub_category": "",
+        "amount": float(tx.get("amount", 0.0)),
+        "account": tx.get("account", ""),
+        "description": tx.get("description", ""),
+    })
 
 
 def _decorate_pending_row(row: dict) -> dict:
@@ -153,4 +199,12 @@ def _decorate_pending_row(row: dict) -> dict:
         due = date.max
     decorated["date_due_sort"] = due
     decorated["date_due_str"] = "" if due == date.max else due.isoformat()
+
+    if due == date.max:
+        delay_base = date.today()
+    else:
+        delay_base = max(due, date.today())
+    decorated["delay_date_default"] = (delay_base + timedelta(days=1)).isoformat()
+    decorated["is_overdue"] = bool(due != date.max and due < date.today() and decorated["status"] == "pending")
+    decorated["is_due_today"] = bool(due == date.today() and decorated["status"] == "pending")
     return decorated

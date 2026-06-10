@@ -2,7 +2,7 @@ from datetime import date
 
 from money_manager.config import account_label_for_value, is_auxiliary_account
 
-from money_manager.repositories.pending import append_pending, load_pending
+from money_manager.repositories.pending import append_pending, delete_pending_for_source, load_pending
 from money_manager.repositories.recurring import (
     add_months,
     append_recurring,
@@ -62,8 +62,10 @@ def append_rule_from_form(form) -> None:
 
 
 def update_rule_from_form(form) -> None:
+    rule_id = form.get("id")
+    delete_pending_for_source("recurring", rule_id, only_pending=True)
     update_recurring(
-        form.get("id"),
+        rule_id,
         {
             "name": form.get("name", ""),
             "type": form.get("type", "expense"),
@@ -72,12 +74,15 @@ def update_rule_from_form(form) -> None:
             "day_of_month": int(form.get("day_of_month", 1)),
             "category": form.get("category", ""),
             "account": form.get("account", "auto"),
+            "start_date": form.get("start_date", ""),
         },
     )
 
 
 def delete_rule_from_form(form) -> None:
-    delete_recurring(int(form.get("id")))
+    rule_id = form.get("id")
+    delete_pending_for_source("recurring", rule_id, only_pending=True)
+    delete_recurring(int(rule_id))
 
 
 def next_due_date_for_rule(row: dict, today: date | None = None) -> date:
@@ -118,6 +123,8 @@ def generate_recurring(today: date | None = None) -> int:
                     "category": row.get("category", ""),
                     "account": row.get("account", "auto"),
                     "description": row.get("name", ""),
+                    "source": "recurring",
+                    "source_id": row.get("id", ""),
                 },
                 due_date,
             )

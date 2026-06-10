@@ -1,0 +1,100 @@
+.investment-heading {
+  align-items: flex-start;
+}
+
+.investment-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.investment-plot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.investment-plot-card-wide {
+  grid-column: 1 / -1;
+}
+
+.investment-plot-card .chart-embed {
+  min-height: 320px;
+}
+
+.investment-symbol-list,
+.asset-delete-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.investment-symbol-row,
+.asset-delete-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.investment-symbol-row span,
+.investment-symbol-row small,
+.investment-symbol-row em {
+  display: block;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.investment-symbol-ok {
+  border-left: 5px solid var(--good);
+}
+
+.investment-symbol-missing {
+  border-left: 5px solid var(--warning);
+}
+
+.investment-asset-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.investment-cell-positive {
+  color: var(--good);
+  font-weight: 900;
+}
+
+.investment-cell-negative {
+  color: var(--bad);
+  font-weight: 900;
+}
+
+@media (max-width: 1100px) {
+  .investment-summary,
+  .investment-plot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .investment-symbol-row,
+  .asset-delete-row,
+  .investment-asset-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.asset-edit-row {
+  grid-template-columns: 1fr 1.2fr 0.7fr 0.55fr auto auto;
+}
+
+.asset-edit-row input {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .asset-edit-row {
+    grid-template-columns: 1fr;
+  }
+}

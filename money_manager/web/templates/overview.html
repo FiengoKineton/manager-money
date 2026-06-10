@@ -20,7 +20,7 @@
     <div>
       <span class="metric-label">Main available position</span>
       <strong>€ {{ '%.2f'|format(cash_position) }}</strong>
-      <small>Tracked net + investments. This now matches the net used in Sparagnat e Fottut.</small>
+      <small>All account nets + invested capital. Market gain/loss is shown separately.</small>
     </div>
     <div class="balance-subgrid">
       <div>
@@ -28,8 +28,8 @@
         <b>€ {{ '%.2f'|format(stress_position) }}</b>
       </div>
       <div>
-        <span>Separate liquid</span>
-        <b>€ {{ '%.2f'|format(auxiliary_balance) }}</b>
+        <span>Adjusted stress</span>
+        <b>€ {{ '%.2f'|format(adjusted_stress_position) }}</b>
       </div>
     </div>
   </div>
@@ -41,9 +41,9 @@
       <span class="eyebrow">Real tracked money</span>
       <h3>Net balance</h3>
       <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
-      <p>This is the same current net used in Sparagnat e Fottut: income minus expenses and investments in the selected tracked period.</p>
+      <p>Income minus expenses and investments for the main route only. Explicit liquid accounts like EdenRed, Cash Flow and Pre-paid card are excluded.</p>
     </div>
-    <a href="{{ url_for('dashboard.index') }}">See main transactions</a>
+    <a href="{{ url_for('transactions.transactions_page') }}">See main transactions</a>
   </article>
 
   <article class="priority-card priority-visible">
@@ -51,7 +51,7 @@
       <span class="eyebrow">Real visible liquidity</span>
       <h3>Visible liquidity</h3>
       <strong>€ {{ '%.2f'|format(combined_visible_liquidity) }}</strong>
-      <p>Main available + separate liquid accounts. Transfers are counted out of main and into the selected liquid account.</p>
+      <p>Main-bank net + separate liquid accounts. This excludes investment capital and therefore stays closer to real cash/liquid money.</p>
     </div>
     <a href="{{ url_for('accounts.accounts_page') }}">Analyse liquid accounts</a>
   </article>
@@ -64,9 +64,9 @@
     <small>Cash Flow, Pre-paid card, Other/custom</small>
   </article>
   <article class="mini-priority-card tone-warning">
-    <span>Committed</span>
-    <strong>€ {{ '%.2f'|format(pending_amount + active_debt) }}</strong>
-    <small>Pending payments plus active debts</small>
+    <span>Credit/debt pressure</span>
+    <strong>€ {{ '%.2f'|format(credit_pending_amount + active_debt) }}</strong>
+    <small>Credit/PayPal pending plus active debts</small>
   </article>
   <article class="mini-priority-card tone-income">
     <span>Income</span>
@@ -79,9 +79,24 @@
     <small>This month: € {{ '%.2f'|format(stats_this_month.expenses) }}</small>
   </article>
   <article class="mini-priority-card tone-investment">
-    <span>Investments</span>
-    <strong>€ {{ '%.2f'|format(totals.investments) }}</strong>
-    <small>Cash out tracked as investment</small>
+    <span>Investment capital</span>
+    <strong>€ {{ '%.2f'|format(investment_capital) }}</strong>
+    <small>Deposits/buys minus withdrawals/sells</small>
+  </article>
+  <article class="mini-priority-card tone-investment">
+    <span>Investment P/L</span>
+    <strong>€ {{ '%.2f'|format(investment_profit_loss) }}</strong>
+    <small>{{ '%.2f'|format(investment_profit_loss_pct) }} % estimated market move</small>
+  </article>
+  <article class="mini-priority-card tone-income">
+    <span>Owed to me</span>
+    <strong>€ {{ '%.2f'|format(receivable_active_remaining) }}</strong>
+    <small>Net if repaid: € {{ '%.2f'|format(net_if_receivables_repaid) }}</small>
+  </article>
+  <article class="mini-priority-card tone-net">
+    <span>Adjusted stress</span>
+    <strong>€ {{ '%.2f'|format(adjusted_stress_position) }}</strong>
+    <small>Stress + owed to me + investment P/L</small>
   </article>
 </section>
 
@@ -212,6 +227,10 @@
         <span>Parent support tracked separately</span>
         <strong>€ {{ '%.2f'|format(parent_support_total) }}</strong>
       </div>
+      <div class="comparison-row income">
+        <span>Net if money owed to me was repaid</span>
+        <strong>€ {{ '%.2f'|format(net_if_receivables_repaid) }}</strong>
+      </div>
     </div>
   </article>
 
@@ -257,8 +276,12 @@
         <strong>€ {{ '%.2f'|format(pending_debt_payments) }}</strong>
       </div>
       <div>
-        <span>All pending</span>
-        <strong>€ {{ '%.2f'|format(pending_amount) }}</strong>
+        <span>Credit/PayPal pending</span>
+        <strong>€ {{ '%.2f'|format(credit_pending_amount) }}</strong>
+      </div>
+      <div>
+        <span>Owed to me</span>
+        <strong>€ {{ '%.2f'|format(receivable_active_remaining) }}</strong>
       </div>
     </div>
   </article>
@@ -322,7 +345,7 @@
         <span class="eyebrow">Latest</span>
         <h3>Recent transactions</h3>
       </div>
-      <a href="{{ url_for('dashboard.index') }}">View all</a>
+      <a href="{{ url_for('transactions.transactions_page') }}">View all</a>
     </div>
 
     {% if recent_transactions %}

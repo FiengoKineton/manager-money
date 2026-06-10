@@ -1,0 +1,27 @@
+.receivables-card {
+  margin-bottom: 1rem;
+}
+
+.receivables-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.progress-bar-income {
+  background: linear-gradient(90deg, var(--good), #86efac);
+}
+
+.mini-pay-form select {
+  min-width: 145px;
+}
+
+@media (max-width: 1100px) {
+  .receivables-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .receivables-summary {
+    grid-template-columns: 1fr;
+  }
+}

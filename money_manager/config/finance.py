@@ -13,6 +13,8 @@ CREDIT_ACCOUNT_KEYWORDS = {
     "carta di credito",
     "visa",
     "mastercard",
+    "paypal",
+    "pay pal",
 }
 
 

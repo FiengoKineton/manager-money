@@ -129,7 +129,7 @@
 <section class="transactions sparagnat-card">
   <h2>Entries</h2>
   {% if entries %}
-  <table>
+  <table class="inline-edit-table">
     <thead>
       <tr>
         <th>Date</th>
@@ -144,18 +144,32 @@
     <tbody>
       {% for entry in entries %}
       <tr class="row-{{ 'income' if entry.kind == 'cash_collected' else 'expense' }}">
-        <td>{{ entry.date_str }}</td>
-        <td>{{ entry.kind_label }}</td>
-        <td>{{ entry.person }}</td>
-        <td>{{ entry.category }}</td>
-        <td>{{ entry.description }}</td>
-        <td>{{ entry.amount_str }}</td>
         <td>
-          <form method="post" class="inline-form">
-            <input type="hidden" name="action" value="delete">
-            <input type="hidden" name="id" value="{{ entry.id }}">
-            <button type="submit" class="danger-btn compact-btn">Delete</button>
-          </form>
+          <form id="sparagnat-update-{{ entry.id }}" method="post"></form>
+          <input form="sparagnat-update-{{ entry.id }}" type="hidden" name="action" value="update">
+          <input form="sparagnat-update-{{ entry.id }}" type="hidden" name="id" value="{{ entry.id }}">
+          <input form="sparagnat-update-{{ entry.id }}" type="date" name="date" value="{{ entry.date_str }}" required>
+        </td>
+        <td>
+          <select form="sparagnat-update-{{ entry.id }}" name="kind">
+            {% for key, label in kind_labels.items() %}
+              <option value="{{ key }}" {% if key == entry.kind %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td><input form="sparagnat-update-{{ entry.id }}" type="text" name="person" value="{{ entry.person }}"></td>
+        <td><input form="sparagnat-update-{{ entry.id }}" type="text" name="category" value="{{ entry.category }}"></td>
+        <td><input form="sparagnat-update-{{ entry.id }}" type="text" name="description" value="{{ entry.description }}" class="table-note-input"></td>
+        <td><input form="sparagnat-update-{{ entry.id }}" type="number" step="0.01" name="amount" value="{{ entry.amount }}" required></td>
+        <td>
+          <div class="table-action-rail">
+            <button form="sparagnat-update-{{ entry.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update entry" aria-label="Update entry">✎</button>
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="id" value="{{ entry.id }}">
+              <button type="submit" class="icon-action-btn icon-action-delete" title="Delete entry" aria-label="Delete entry" onclick="return confirm('Delete this entry?')">×</button>
+            </form>
+          </div>
         </td>
       </tr>
       {% endfor %}

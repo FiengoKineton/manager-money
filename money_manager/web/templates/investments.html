@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block page_title %}Investments{% endblock %}
+
+{% block content %}
+<section class="page-heading investment-heading">
+  <div>
+    <h2>Investments</h2>
+    <p>
+      Deposits and buys increase invested capital. Withdrawals and sells reduce it.
+      Dividends are shown as cash return but are not mixed into the market profit/loss margin.
+    </p>
+  </div>
+  <form method="post" class="inline-form">
+    <input type="hidden" name="action" value="refresh_market">
+    <button type="submit" class="secondary-btn">Refresh market data</button>
+  </form>
+</section>
+
+<section class="summary investment-summary">
+  <div class="summary-card investment">
+    <h3>Net invested</h3>
+    <p>{{ '%.2f'|format(totals.net_invested) }}</p>
+  </div>
+  <div class="summary-card income">
+    <h3>Estimated value</h3>
+    <p>{{ '%.2f'|format(totals.estimated_value) }}</p>
+  </div>
+  <div class="summary-card {{ 'income' if totals.profit_loss >= 0 else 'expense' }}">
+    <h3>Estimated P/L</h3>
+    <p>{{ '%.2f'|format(totals.profit_loss) }}</p>
+    <small>{{ '%.2f'|format(totals.profit_loss_pct) }}%</small>
+  </div>
+  <div class="summary-card pending">
+    <h3>Dividends excluded</h3>
+    <p>{{ '%.2f'|format(totals.dividends) }}</p>
+  </div>
+</section>
+
+<section class="investment-plot-grid">
+  <article class="panel-card investment-plot-card investment-plot-card-wide">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Market estimate</span>
+        <h3>Profit/Loss margin</h3>
+        <p>Green/red bars are the estimated gain or loss caused by the configured market proxy.</p>
+      </div>
+    </div>
+    <div class="chart-embed">{{ charts.profit_loss | safe }}</div>
+  </article>
+
+  <article class="panel-card investment-plot-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Flows</span>
+        <h3>Deposits, withdrawals, buys, sells</h3>
+      </div>
+    </div>
+    <div class="chart-embed">{{ charts.cashflows | safe }}</div>
+  </article>
+
+  <article class="panel-card investment-plot-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Web market data</span>
+        <h3>Weighted market proxy</h3>
+      </div>
+    </div>
+    <div class="chart-embed">{{ charts.market | safe }}</div>
+  </article>
+</section>
+
+<section class="dashboard-grid dashboard-grid-even">
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Market connection</span>
+        <h3>Tracked symbols</h3>
+        <p>
+          These symbols are fetched through Yahoo Finance chart data when the app starts
+          and again when this page is opened/refreshed. Edit the proxy to match what you own.
+        </p>
+      </div>
+    </div>
+
+    {% if market_status %}
+      <div class="investment-symbol-list">
+      {% for row in market_status %}
+        <div class="investment-symbol-row investment-symbol-{{ row.status }}">
+          <div>
+            <strong>{{ row.symbol }}</strong>
+            <span>{{ row.label }} · {{ '%.0f'|format(row.allocation_pct) }}%</span>
+            {% if row.error %}<small>{{ row.error }}</small>{% endif %}
+          </div>
+          <b>{% if row.last_price is not none %}{{ '%.2f'|format(row.last_price) }}{% else %}—{% endif %}</b>
+          <em>{{ row.last_date }}</em>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No active market symbols yet.</p>
+    {% endif %}
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Configure proxy</span>
+        <h3>Add market symbol</h3>
+        <p>Use ticker symbols like VWCE.MI, SWDA.MI, SPY, QQQ, or whatever matches your portfolio.</p>
+      </div>
+    </div>
+
+    <form method="post" class="investment-asset-form">
+      <input type="hidden" name="action" value="add_asset">
+      <div class="form-field">
+        <label>Symbol</label>
+        <input type="text" name="symbol" placeholder="VWCE.MI" required>
+      </div>
+      <div class="form-field">
+        <label>Label</label>
+        <input type="text" name="label" placeholder="ETF / fund name">
+      </div>
+      <div class="form-field">
+        <label>Allocation %</label>
+        <input type="number" step="0.01" name="allocation_pct" value="100">
+      </div>
+      <div class="form-field">
+        <label>Currency</label>
+        <input type="text" name="currency" value="EUR">
+      </div>
+      <button type="submit" class="primary-btn">Add symbol</button>
+    </form>
+
+    {% if assets %}
+      <div class="asset-delete-list">
+      {% for asset in assets %}
+        <form method="post" class="asset-delete-row asset-edit-row">
+          <input type="hidden" name="id" value="{{ asset.id }}">
+          <input type="text" name="symbol" value="{{ asset.symbol }}" aria-label="Symbol" required>
+          <input type="text" name="label" value="{{ asset.label }}" aria-label="Label">
+          <input type="number" step="0.01" name="allocation_pct" value="{{ asset.allocation_pct }}" aria-label="Allocation percentage">
+          <input type="text" name="currency" value="{{ asset.currency }}" aria-label="Currency">
+          <label class="checkbox-inline">
+            <input type="checkbox" name="active" value="1" {% if asset.active|string in ['1', 'true', 'True', 'yes'] %}checked{% endif %}>
+            Active
+          </label>
+          <div class="inline-action-rail">
+            <button type="submit" name="action" value="update_asset" class="icon-action-btn icon-action-update" title="Update symbol" aria-label="Update symbol">✎</button>
+            <button type="submit" name="action" value="delete_asset" class="icon-action-btn icon-action-delete" title="Delete symbol" aria-label="Delete symbol" onclick="return confirm('Delete this market symbol?')">×</button>
+          </div>
+        </form>
+      {% endfor %}
+      </div>
+    {% endif %}
+  </article>
+</section>
+
+<section class="transactions panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Per movement estimate</span>
+      <h3>Contribution analysis</h3>
+      <p>Deposit and buy rows produce market P/L. Withdrawal and sell rows reduce exposure. Dividend rows are excluded from P/L.</p>
+    </div>
+  </div>
+
+  {% if flow_rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Category</th>
+        <th>Amount (€)</th>
+        <th>Signed flow</th>
+        <th>Estimated current value</th>
+        <th>Estimated P/L</th>
+        <th>Account / note</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in flow_rows %}
+      <tr>
+        <td>{{ row.date }}</td>
+        <td>{{ row.category }}</td>
+        <td>{{ '%.2f'|format(row.amount) }}</td>
+        <td>{{ '%.2f'|format(row.signed_flow) }}</td>
+        <td>{% if row.is_dividend %}Dividend excluded{% else %}{{ '%.2f'|format(row.estimated_value) }}{% endif %}</td>
+        <td class="investment-cell-{{ row.tone }}">{% if row.is_dividend %}—{% else %}{{ '%.2f'|format(row.profit_loss) }}{% endif %}</td>
+        <td>{{ row.account }}{% if row.description %} · {{ row.description }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>No investment movements yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

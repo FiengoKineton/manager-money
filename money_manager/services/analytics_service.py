@@ -1,7 +1,7 @@
 import pandas as pd
 
 from money_manager.services.account_service import main_account_transactions
-from money_manager.utils.filters import filter_by_categories, filter_by_date, filter_by_query, filter_by_types
+from money_manager.utils.filters import filter_by_amount_range, filter_by_categories, filter_by_date, filter_by_query, filter_by_types
 from money_manager.utils.interactive_plots import (
     chart_cumulative_balance,
     chart_expenses_by_category,
@@ -28,9 +28,10 @@ from money_manager.utils.stats import (
 )
 
 
-def apply_transaction_filters(df: pd.DataFrame, start, end, types, categories, query) -> pd.DataFrame:
+def apply_transaction_filters(df: pd.DataFrame, start, end, types, categories, query, amount_min=None, amount_max=None) -> pd.DataFrame:
     filtered = df.copy()
     filtered = filter_by_date(filtered, start, end)
+    filtered = filter_by_amount_range(filtered, amount_min, amount_max)
     filtered = filter_by_types(filtered, types)
     filtered = filter_by_categories(filtered, categories)
     filtered = filter_by_query(filtered, query)

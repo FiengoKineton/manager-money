@@ -12,10 +12,13 @@
 @import url("pages/dashboard.css");
 @import url("pages/analysis.css");
 @import url("pages/accounts.css");
+@import url("pages/currencies.css");
 @import url("pages/pending.css");
 @import url("pages/documents.css");
 @import url("pages/sparagnat.css");
 @import url("pages/debts.css");
+@import url("pages/receivables.css");
+@import url("pages/investments.css");
 @import url("pages/parent_support.css");
 @import url("responsive.css");
 

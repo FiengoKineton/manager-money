@@ -19,7 +19,8 @@
 
   function wireClickableRows() {
     document.querySelectorAll(".clickable-row").forEach((row) => {
-      row.addEventListener("click", () => {
+      row.addEventListener("click", (event) => {
+        if (event.target.closest("a, button, input, select, textarea, label, form")) return;
         const href = row.dataset.href;
         if (href) window.location.href = href;
       });

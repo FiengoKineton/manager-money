@@ -6,3 +6,6 @@ id,type,date_due,amount,category,account,description,status,source,source_id
 5,expense,2026-06-04,10.0,Subscriptions,auto,OneDrive,executed,,
 6,investment,2026-06-08,150.0,Deposit,auto,Deposit,executed,,
 7,expense,2026-07-15,200.0,Housing,credit,2nd payment,pending,,
+8,expense,2026-06-10,100.0,Debt,auto,Debt instalment: Phone Payments,executed,debt,3
+9,expense,2026-06-10,41.6,Debt,auto,Debt extinguishment: Payoff,executed,debt,4
+10,income,2026-06-10,200.0,Kineton,EdenRed,Ticket Restaurants,executed,,

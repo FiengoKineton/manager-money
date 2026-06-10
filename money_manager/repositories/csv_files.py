@@ -6,8 +6,10 @@ from typing import Iterable
 def ensure_csv(path: Path, fieldnames: list[str]) -> None:
     """Create or migrate a CSV file so it has the requested headers.
 
-    Existing rows are preserved when new columns are added. This lets the app
-    evolve its data model without manually editing old CSV files.
+    Existing rows are preserved when new columns are added.  The requested
+    fieldnames are kept first and in the correct order so later appends do not
+    accidentally write values under the wrong columns after a schema migration.
+    Any unknown extra columns are kept after the requested schema.
     """
     path.parent.mkdir(exist_ok=True, parents=True)
 
@@ -22,16 +24,25 @@ def ensure_csv(path: Path, fieldnames: list[str]) -> None:
         existing_headers = reader.fieldnames or []
         rows = list(reader)
 
-    missing_headers = [field for field in fieldnames if field not in existing_headers]
-    if not missing_headers:
+    desired_headers = [*fieldnames, *[header for header in existing_headers if header not in fieldnames]]
+    if existing_headers == desired_headers:
         return
 
-    merged_headers = [*existing_headers, *missing_headers]
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=merged_headers)
+        writer = csv.DictWriter(f, fieldnames=desired_headers)
         writer.writeheader()
         for row in rows:
-            writer.writerow({field: row.get(field, "") for field in merged_headers})
+            writer.writerow({field: row.get(field, "") for field in desired_headers})
+
+
+def _current_headers(path: Path, fallback: list[str]) -> list[str]:
+    try:
+        with path.open(newline="", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            headers = next(reader, [])
+            return headers or fallback
+    except OSError:
+        return fallback
 
 
 def read_rows(path: Path, fieldnames: list[str]) -> list[dict]:
@@ -42,18 +53,20 @@ def read_rows(path: Path, fieldnames: list[str]) -> list[dict]:
 
 def write_rows(path: Path, fieldnames: list[str], rows: Iterable[dict]) -> None:
     ensure_csv(path, fieldnames)
+    headers = _current_headers(path, fieldnames)
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=headers)
         writer.writeheader()
         for row in rows:
-            writer.writerow({field: row.get(field, "") for field in fieldnames})
+            writer.writerow({field: row.get(field, "") for field in headers})
 
 
 def append_row(path: Path, fieldnames: list[str], row: dict) -> None:
     ensure_csv(path, fieldnames)
+    headers = _current_headers(path, fieldnames)
     with path.open("a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writerow({field: row.get(field, "") for field in fieldnames})
+        writer = csv.DictWriter(f, fieldnames=headers)
+        writer.writerow({field: row.get(field, "") for field in headers})
 
 
 def next_numeric_id(rows: list[dict], field: str = "id") -> int:

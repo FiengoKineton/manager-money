@@ -482,8 +482,8 @@
 
 .secondary-metrics-strip {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
   margin-bottom: 1rem;
 }
 
@@ -536,7 +536,7 @@
 
 @media (max-width: 1200px) {
   .secondary-metrics-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -572,4 +572,58 @@
   .liquid-card-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Quick overview page */
+.overview-simple-hero {
+  margin-bottom: 1rem;
+}
+
+.quick-overview-grid,
+.quick-link-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1.2rem;
+}
+
+.quick-link-card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid rgba(226, 232, 240, 0.94);
+  border-radius: 20px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.quick-link-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--line-strong);
+}
+
+.quick-link-card span {
+  display: block;
+  color: var(--brand);
+  font-size: 0.74rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.quick-link-card strong {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: 1.05rem;
+  letter-spacing: -0.03em;
+}
+
+.quick-link-card small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--muted);
+  line-height: 1.35;
 }

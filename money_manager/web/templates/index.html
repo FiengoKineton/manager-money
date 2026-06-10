@@ -1,7 +1,16 @@
 {% extends "base.html" %}
-{% block page_title %}Transactions Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">Charts and totals</span>
+    <h2>Dashboard</h2>
+    <p>Use this page for the financial picture. The full transaction log is now on its own page.</p>
+  </div>
+  <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page') }}">Open transactions</a>
+</section>
+
 <section class="filters">
   <form method="get" action="{{ url_for('dashboard.index') }}" class="filters-form">
     <div class="filter-date">
@@ -48,7 +57,16 @@
 
         <div class="filter-field">
           <label>Search</label>
-          <input type="text" name="q" value="{{ q }}" placeholder="Description or category">
+          <input type="text" name="q" value="{{ q }}" placeholder="Description, category, account">
+        </div>
+
+        <div class="filter-field amount-range-field">
+          <label>Amount range (€)</label>
+          <div class="amount-range-inputs">
+            <input type="number" step="0.01" min="0" name="amount_min" value="{{ amount_min }}" placeholder="Min">
+            <input type="number" step="0.01" min="0" name="amount_max" value="{{ amount_max }}" placeholder="Max">
+          </div>
+          <p class="hint">Uses the displayed absolute amount.</p>
         </div>
       </div>
 
@@ -77,9 +95,9 @@
 
 <section class="summary summary-spaced">
   <div class="summary-card pending summary-card-flex">
-    <h3>Tracked net (after pending)</h3>
+    <h3>Tracked net after open pending</h3>
     <p>{{ '%.2f'|format(net_after_pending) }}</p>
-    <small>Pending this month: {{ '%.2f'|format(pending_this_month) }}</small>
+    <small>Open pending impact: {{ '%.2f'|format(pending_this_month) }}</small>
   </div>
 
   <div class="summary-card net summary-card-flex">
@@ -87,12 +105,11 @@
     <p>{{ '%.2f'|format(totals.net) }}</p>
     <small>Savings rate: {{ '%.1f'|format(totals.savings_rate) }} %</small>
   </div>
-</section>
 
-<section class="summary summary-spaced">
   <div class="summary-card net summary-card-flex summary-card-center">
-    <h3>Main Availability (Tracked Net + Investments)</h3>
+    <h3>Main availability</h3>
     <p>{{ '%.2f'|format(totals.total_availability) }}</p>
+    <small>Tracked net + investment cash out.</small>
   </div>
 </section>
 
@@ -144,67 +161,4 @@
   </div>
 </section>
 {% endif %}
-
-<section class="transactions">
-  <h2>Transactions</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Type</th>
-        <th>Category</th>
-        <th>Description</th>
-        <th>Account</th>
-        <th>Amount</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for tx in transactions_initial %}
-      <tr class="row-{{ tx.type }} clickable-row"
-          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
-        <td>{{ tx.date_str }}</td>
-        <td>{{ tx.type.capitalize() }}</td>
-        <td>
-          {{ tx.category }}
-          {% if tx.sub_category and tx.sub_category != 'nan' %}
-            <br><small>{{ tx.sub_category }}</small>
-          {% endif %}
-        </td>
-        <td>
-          {% if tx.description and tx.description != 'nan' %}
-            {{ tx.description }}
-          {% endif %}
-        </td>
-        <td>
-          {% if tx.is_auxiliary_account %}
-            <span class="account-table-badge">{{ tx.account_label }}</span>
-          {% elif tx.account and tx.account != 'nan' %}
-            {{ tx.account }}
-          {% endif %}
-        </td>
-        <td>{{ tx.amount_str }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-
-    <tbody id="full-transactions" class="is-hidden">
-      {% for tx in transactions[50:] %}
-      <tr class="row-{{ tx.type }} clickable-row"
-          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
-        <td>{{ tx.date_str }}</td>
-        <td>{{ tx.type.capitalize() }}</td>
-        <td>{{ tx.category }}</td>
-        <td>{{ tx.description }}</td>
-        <td>{% if tx.is_auxiliary_account %}<span class="account-table-badge">{{ tx.account_label }}</span>{% else %}{{ tx.account }}{% endif %}</td>
-        <td>{{ tx.amount_str }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <button id="toggle-transactions-btn" class="secondary-btn">Show more</button>
-</section>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}

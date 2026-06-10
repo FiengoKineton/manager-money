@@ -26,6 +26,18 @@
       <input type="text" name="sub_category">
     </div>
 
+    <div>
+      <label>Input currency</label>
+      <select name="currency" id="currency-select">
+        {% for currency in currency_options %}
+          <option value="{{ currency.code }}" data-rate="{{ currency.rate_to_eur }}" data-correction="{{ currency.correction_to_eur }}" data-effective="{{ currency.effective_rate_to_eur }}" {% if currency.code == 'EUR' %}selected{% endif %}>
+            {{ currency.label }}
+          </option>
+        {% endfor %}
+      </select>
+      <small class="hint">The CSV amount is saved in EUR. If this is not EUR, the original amount and rate are added to the description.</small>
+    </div>
+
     <div class="form-field-wide">
       <label>Amounts (multiple)</label>
 
@@ -35,9 +47,15 @@
 
       <button type="button" id="add-amount-btn" class="secondary-btn">+ Add another</button>
 
-      <p>
-        <strong>Total: € <span id="total-amount">0.00</span></strong>
-      </p>
+      <div class="currency-total-box">
+        <p>
+          <strong>Total input: <span id="total-currency-code">EUR</span> <span id="total-amount">0.00</span></strong>
+        </p>
+        <p>
+          <strong>Saved in EUR: € <span id="eur-total-amount">0.00</span></strong>
+        </p>
+        <small id="currency-rate-preview" class="hint">Rate: 1.000000 + correction 0.000000 = 1.000000 EUR per unit.</small>
+      </div>
 
       <input type="hidden" name="amount" id="amount-hidden">
     </div>
@@ -49,7 +67,7 @@
           <option value="{{ account.value }}">{{ account.label }}</option>
         {% endfor %}
       </select>
-      <small class="hint">Blank = main bank. Cash Flow, Pre-paid card and Other/custom accounts stay outside the main net. Credit card creates a pending payment that later impacts the main account.</small>
+      <small class="hint">Blank = main bank. Cash Flow, Pre-paid card, EdenRed and Other/custom accounts stay outside the main net. Credit card and PayPal create a pending payment that later impacts the main account.</small>
     </div>
 
     <div>
@@ -65,5 +83,8 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+  window.moneyManagerCurrencies = {{ currency_options_json | safe }};
+</script>
 <script src="{{ url_for('static', filename='js/transactions.js') }}"></script>
 {% endblock %}

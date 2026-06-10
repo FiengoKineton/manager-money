@@ -25,6 +25,18 @@ def append_entry(entry: dict) -> None:
     append_row(SPARAGNAT_CSV, SPARAGNAT_FIELDS, row)
 
 
+def update_entry(entry_id: int, updates: dict) -> None:
+    rows = load_entries()
+    for row in rows:
+        if str(row.get("id", "")) != str(entry_id):
+            continue
+        for key in ["date", "kind", "person", "category", "amount", "account", "description"]:
+            if key in updates:
+                row[key] = updates[key]
+        break
+    write_rows(SPARAGNAT_CSV, SPARAGNAT_FIELDS, rows)
+
+
 def delete_entry(entry_id: int) -> None:
     rows = [row for row in load_entries() if str(row.get("id", "")) != str(entry_id)]
     write_rows(SPARAGNAT_CSV, SPARAGNAT_FIELDS, rows)

@@ -10,6 +10,7 @@ class TransactionInput:
     amount: float
     account: str
     description: str
+    currency: str = "EUR"
 
     @classmethod
     def from_form(cls, form) -> "TransactionInput":
@@ -27,6 +28,7 @@ class TransactionInput:
             amount=amount,
             account=form.get("account", ""),
             description=form.get("description", ""),
+            currency=str(form.get("currency", "EUR") or "EUR").upper(),
         )
 
     def as_dict(self) -> dict:
@@ -38,4 +40,5 @@ class TransactionInput:
             "amount": self.amount,
             "account": self.account,
             "description": self.description,
+            "currency": self.currency,
         }

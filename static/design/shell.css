@@ -294,3 +294,69 @@ body.app-body::after {
     flex: 1;
   }
 }
+
+/* Collapsible sidebar groups: show categories by default, reveal pages on click/hover. */
+.sidebar-nav {
+  gap: 0.55rem;
+}
+
+.nav-group {
+  position: relative;
+  display: block;
+  border-radius: 14px;
+}
+
+.nav-group > summary.nav-label {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.72rem 0.75rem;
+  margin: 0;
+  border-radius: 12px;
+  color: #dbeafe;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-group > summary.nav-label::-webkit-details-marker {
+  display: none;
+}
+
+.nav-group > summary.nav-label::after {
+  content: "›";
+  font-size: 1.1rem;
+  transform: rotate(0deg);
+  transition: transform 0.16s ease;
+  opacity: 0.85;
+}
+
+.nav-group[open] > summary.nav-label::after,
+.nav-group:hover > summary.nav-label::after {
+  transform: rotate(90deg);
+}
+
+.nav-items {
+  display: none;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.35rem 0 0.1rem 0.35rem;
+}
+
+.nav-group[open] .nav-items,
+.nav-group:hover .nav-items,
+.nav-group:focus-within .nav-items {
+  display: flex;
+}
+
+.nav-group:hover > summary.nav-label,
+.nav-group[open] > summary.nav-label {
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+}
+
+.sidebar-nav .nav-items a {
+  margin-left: 0.15rem;
+}

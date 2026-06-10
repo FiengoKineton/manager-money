@@ -290,7 +290,7 @@
   <h2>Monthly Support Rules</h2>
 
   {% if rules %}
-  <table>
+  <table class="inline-edit-table">
     <thead>
       <tr>
         <th>Name</th>
@@ -301,7 +301,7 @@
         <th>Day</th>
         <th>Start</th>
         <th>End</th>
-        <th>Method</th>
+        <th>Method / active</th>
         <th>Actions</th>
       </tr>
     </thead>
@@ -309,21 +309,48 @@
     <tbody>
       {% for rule in rules %}
       <tr>
-        <td>{{ rule.name }}</td>
-        <td>{{ rule.kind_label }}</td>
-        <td>{{ rule.parent }}</td>
-        <td>{{ rule.category }}</td>
-        <td>€ {{ rule.monthly_amount_str }}</td>
-        <td>{{ rule.day_of_month }}</td>
-        <td>{{ rule.start_date }}</td>
-        <td>{{ rule.end_date or 'Ongoing' }}</td>
-        <td>{{ rule.payment_method }}</td>
         <td>
-          <form method="post" class="inline-form">
-            <input type="hidden" name="action" value="delete_rule">
-            <input type="hidden" name="id" value="{{ rule.id }}">
-            <button type="submit" class="danger-btn compact-btn">Delete</button>
-          </form>
+          <form id="parent-rule-update-{{ rule.id }}" method="post"></form>
+          <input form="parent-rule-update-{{ rule.id }}" type="hidden" name="action" value="update_rule">
+          <input form="parent-rule-update-{{ rule.id }}" type="hidden" name="id" value="{{ rule.id }}">
+          <input form="parent-rule-update-{{ rule.id }}" type="text" name="name" value="{{ rule.name }}" required>
+          <input form="parent-rule-update-{{ rule.id }}" type="text" name="description" value="{{ rule.description }}" placeholder="Note" class="table-note-input">
+        </td>
+        <td>
+          <select form="parent-rule-update-{{ rule.id }}" name="kind">
+            {% for key, label in kind_labels.items() %}
+              <option value="{{ key }}" {% if key == rule.kind %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td><input form="parent-rule-update-{{ rule.id }}" type="text" name="parent" value="{{ rule.parent }}"></td>
+        <td>
+          <select form="parent-rule-update-{{ rule.id }}" name="category">
+            {% for category in categories %}
+              <option value="{{ category }}" {% if category == rule.category %}selected{% endif %}>{{ category }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td><input form="parent-rule-update-{{ rule.id }}" type="number" step="0.01" name="monthly_amount" value="{{ rule.monthly_amount }}" required></td>
+        <td><input form="parent-rule-update-{{ rule.id }}" type="number" name="day_of_month" min="1" max="31" value="{{ rule.day_of_month }}" required></td>
+        <td><input form="parent-rule-update-{{ rule.id }}" type="date" name="start_date" value="{{ rule.start_date }}"></td>
+        <td><input form="parent-rule-update-{{ rule.id }}" type="date" name="end_date" value="{{ rule.end_date }}"></td>
+        <td>
+          <input form="parent-rule-update-{{ rule.id }}" type="text" name="payment_method" value="{{ rule.payment_method }}" placeholder="Cash, bank...">
+          <label class="checkbox-inline">
+            <input form="parent-rule-update-{{ rule.id }}" type="checkbox" name="active" value="1" {% if rule.active %}checked{% endif %}>
+            Active
+          </label>
+        </td>
+        <td>
+          <div class="table-action-rail">
+            <button form="parent-rule-update-{{ rule.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update support rule" aria-label="Update support rule">✎</button>
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="delete_rule">
+              <input type="hidden" name="id" value="{{ rule.id }}">
+              <button type="submit" class="icon-action-btn icon-action-delete" title="Delete support rule" aria-label="Delete support rule" onclick="return confirm('Delete this support rule?')">×</button>
+            </form>
+          </div>
         </td>
       </tr>
       {% endfor %}
@@ -368,7 +395,7 @@
   <h2>Support Records</h2>
 
   {% if entries %}
-  <table>
+  <table class="inline-edit-table">
     <thead>
       <tr>
         <th>Date</th>
@@ -386,25 +413,53 @@
     <tbody>
       {% for entry in entries %}
       <tr class="row-{{ 'income' if entry.kind == 'direct_money' else 'expense' }}">
-        <td>{{ entry.date_str }}</td>
-        <td>{{ entry.kind_label }}</td>
-        <td>{{ entry.parent }}</td>
-        <td>{{ entry.category }}</td>
-        <td>{{ entry.payment_method }}</td>
-        <td>{{ entry.description }}</td>
-        <td>{{ entry.generated_label }}</td>
-        <td>{{ entry.amount_str }}</td>
-        <td>
-          {% if entry.generated != "yes" %}
-          <form method="post" class="inline-form">
-            <input type="hidden" name="action" value="delete">
-            <input type="hidden" name="id" value="{{ entry.id }}">
-            <button type="submit" class="danger-btn compact-btn">Delete</button>
-          </form>
-          {% else %}
-          <span class="muted small-text">Generated</span>
-          {% endif %}
-        </td>
+        {% if entry.generated != "yes" %}
+          <td>
+            <form id="parent-entry-update-{{ entry.id }}" method="post"></form>
+            <input form="parent-entry-update-{{ entry.id }}" type="hidden" name="action" value="update">
+            <input form="parent-entry-update-{{ entry.id }}" type="hidden" name="id" value="{{ entry.id }}">
+            <input form="parent-entry-update-{{ entry.id }}" type="date" name="date" value="{{ entry.date_str }}" required>
+          </td>
+          <td>
+            <select form="parent-entry-update-{{ entry.id }}" name="kind">
+              {% for key, label in kind_labels.items() %}
+                <option value="{{ key }}" {% if key == entry.kind %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td><input form="parent-entry-update-{{ entry.id }}" type="text" name="parent" value="{{ entry.parent }}"></td>
+          <td>
+            <select form="parent-entry-update-{{ entry.id }}" name="category">
+              {% for category in categories %}
+                <option value="{{ category }}" {% if category == entry.category %}selected{% endif %}>{{ category }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td><input form="parent-entry-update-{{ entry.id }}" type="text" name="payment_method" value="{{ entry.payment_method }}"></td>
+          <td><input form="parent-entry-update-{{ entry.id }}" type="text" name="description" value="{{ entry.description }}" class="table-note-input"></td>
+          <td>{{ entry.generated_label }}</td>
+          <td><input form="parent-entry-update-{{ entry.id }}" type="number" step="0.01" name="amount" value="{{ entry.amount }}" required></td>
+          <td>
+            <div class="table-action-rail">
+              <button form="parent-entry-update-{{ entry.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update support record" aria-label="Update support record">✎</button>
+              <form method="post" class="row-action-form">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="id" value="{{ entry.id }}">
+                <button type="submit" class="icon-action-btn icon-action-delete" title="Delete support record" aria-label="Delete support record" onclick="return confirm('Delete this support record?')">×</button>
+              </form>
+            </div>
+          </td>
+        {% else %}
+          <td>{{ entry.date_str }}</td>
+          <td>{{ entry.kind_label }}</td>
+          <td>{{ entry.parent }}</td>
+          <td>{{ entry.category }}</td>
+          <td>{{ entry.payment_method }}</td>
+          <td>{{ entry.description }}</td>
+          <td>{{ entry.generated_label }}</td>
+          <td>{{ entry.amount_str }}</td>
+          <td><span class="soft-badge">Generated from rule</span></td>
+        {% endif %}
       </tr>
       {% endfor %}
     </tbody>

@@ -38,3 +38,50 @@ def delete_pending(tx_id: int | str) -> None:
     """Remove one pending/executed payment row from the pending queue CSV."""
     rows = [row for row in load_pending() if str(row.get("id", "")) != str(tx_id)]
     write_rows(PENDING_CSV, PENDING_FIELDS, rows)
+
+def update_pending(tx_id: int | str, updates: dict) -> None:
+    rows = load_pending()
+    for row in rows:
+        if str(row.get("id", "")) != str(tx_id):
+            continue
+        for key in ["type", "date_due", "amount", "category", "account", "description", "status", "source", "source_id"]:
+            if key in updates:
+                row[key] = updates[key]
+        break
+    write_rows(PENDING_CSV, PENDING_FIELDS, rows)
+
+
+def delete_pending_for_source(source: str, source_id: int | str, only_pending: bool = True) -> None:
+    rows = []
+    for row in load_pending():
+        same_source = row.get("source") == source and str(row.get("source_id", "")) == str(source_id)
+        if same_source and (not only_pending or row.get("status") == "pending"):
+            continue
+        rows.append(row)
+    write_rows(PENDING_CSV, PENDING_FIELDS, rows)
+
+
+
+def delete_pending_for_source_description(source: str, source_id: int | str, description: str, only_pending: bool = True) -> None:
+    rows = []
+    for row in load_pending():
+        same_source = row.get("source") == source and str(row.get("source_id", "")) == str(source_id)
+        same_description = row.get("description", "") == description
+        if same_source and same_description and (not only_pending or row.get("status") == "pending"):
+            continue
+        rows.append(row)
+    write_rows(PENDING_CSV, PENDING_FIELDS, rows)
+
+
+def delay_pending(tx_id: int | str, new_due_date: str) -> None:
+    """Move a pending payment to a future due date without executing it."""
+    if not new_due_date:
+        return
+
+    rows = load_pending()
+    for row in rows:
+        if str(row.get("id", "")) == str(tx_id):
+            row["date_due"] = new_due_date
+            row["status"] = "pending"
+            break
+    write_rows(PENDING_CSV, PENDING_FIELDS, rows)

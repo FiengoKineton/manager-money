@@ -9,6 +9,8 @@ from money_manager.services.parent_support_service import (
     delete_entry_from_form,
     delete_rule_from_form,
     page_context,
+    update_entry_from_form,
+    update_rule_from_form,
 )
 
 bp = Blueprint("parent_support", __name__, url_prefix="/parents")
@@ -23,12 +25,16 @@ def parent_support_page():
             add_rule_from_form(request.form)
         elif action == "delete_rule":
             delete_rule_from_form(request.form)
+        elif action == "update_rule":
+            update_rule_from_form(request.form)
 
         # Optional old compatibility.
         elif action == "add":
             add_entry_from_form(request.form)
         elif action == "delete":
             delete_entry_from_form(request.form)
+        elif action == "update":
+            update_entry_from_form(request.form)
 
         return redirect(url_for("parent_support.parent_support_page"))
 

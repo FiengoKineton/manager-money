@@ -12,7 +12,7 @@ from money_manager.repositories.debts import (
     update_debt_rule,
     write_debt_rules,
 )
-from money_manager.repositories.pending import append_pending, load_pending
+from money_manager.repositories.pending import append_pending, delete_pending_for_source, delete_pending_for_source_description, load_pending
 from money_manager.repositories.recurring import add_months, first_due_date, normalize_amount, parse_date, parse_frequency_months
 from money_manager.repositories.transactions import append_transaction
 
@@ -34,9 +34,41 @@ def add_debt_from_form(form) -> None:
 
 def delete_debt_from_form(form) -> None:
     try:
-        delete_debt(int(form.get("id")))
+        debt_id = int(form.get("id"))
     except (TypeError, ValueError):
         return
+    delete_pending_for_source("debt", debt_id, only_pending=True)
+    delete_debt(debt_id)
+
+
+def update_debt_from_form(form) -> None:
+    debt_id = _safe_int(form.get("id"))
+    if debt_id is None:
+        return
+
+    remaining = _amount(form.get("remaining_amount"))
+    status = form.get("status", "active")
+    if remaining <= 0.005:
+        status = "paid"
+
+    updates = {
+        "name": form.get("name", ""),
+        "creditor": form.get("creditor", ""),
+        "original_amount": _amount(form.get("original_amount")),
+        "remaining_amount": remaining,
+        "account": form.get("account", ""),
+        "start_date": form.get("start_date", ""),
+        "due_date": form.get("due_date", ""),
+        "description": form.get("description", ""),
+        "status": status,
+    }
+    if status != "active":
+        updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
+    update_debt(debt_id, updates)
+
+    if status != "active":
+        _deactivate_rules_for_debt(debt_id)
+        delete_pending_for_source("debt", debt_id, only_pending=True)
 
 
 def pay_debt_from_form(form) -> None:
@@ -86,10 +118,37 @@ def add_rule_from_form(form) -> None:
 
 
 def delete_rule_from_form(form) -> None:
-    try:
-        delete_debt_rule(int(form.get("id")))
-    except (TypeError, ValueError):
+    rule_id = _safe_int(form.get("id"))
+    if rule_id is None:
         return
+    rule = rule_by_id(rule_id)
+    if rule:
+        delete_pending_for_source_description("debt", rule.get("debt_id", ""), _pending_description(rule), only_pending=True)
+    delete_debt_rule(rule_id)
+
+
+def update_rule_from_form(form) -> None:
+    rule_id = _safe_int(form.get("id"))
+    if rule_id is None:
+        return
+
+    rule_type = form.get("rule_type", "monthly_instalment")
+    if rule_type not in {"monthly_instalment", "payoff_date"}:
+        rule_type = "monthly_instalment"
+
+    updates = {
+        "debt_id": form.get("debt_id", ""),
+        "name": form.get("name", ""),
+        "rule_type": rule_type,
+        "amount": 0.0 if rule_type == "payoff_date" else _amount(form.get("amount")),
+        "frequency": form.get("frequency", 1),
+        "day_of_month": form.get("day_of_month", 1),
+        "start_date": form.get("start_date", ""),
+        "payoff_date": form.get("payoff_date", ""),
+        "active": "1" if form.get("active") else "0",
+    }
+    update_debt_rule(rule_id, updates)
+    _sync_debt_rules_with_debts()
 
 
 def pay_rule_now_from_form(form) -> None:
@@ -156,6 +215,10 @@ def register_debt_payment(debt_id, amount: float, payment_date: str, account: st
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
     update_debt(int(debt["id"]), updates)
 
+    if remaining <= 0.005:
+        _deactivate_rules_for_debt(debt_id)
+        delete_pending_for_source("debt", debt_id, only_pending=True)
+
 
 def generate_debt_payments(today: date | None = None) -> int:
     today = today or date.today()
@@ -163,14 +226,18 @@ def generate_debt_payments(today: date | None = None) -> int:
     changed = False
     created = 0
 
+    debt_lookup = {str(debt.get("id")): debt for debt in load_debts()}
+
     for row in rows:
         if str(row.get("active", "1")) not in {"1", "true", "True", "yes"}:
             continue
 
-        debt = debt_by_id(row.get("debt_id"))
+        debt = debt_lookup.get(str(row.get("debt_id")))
         remaining_budget = _amount(debt.get("remaining_amount")) if debt else 0.0
 
         if not debt or debt.get("status") != "active" or remaining_budget <= 0:
+            row["active"] = "0"
+            changed = True
             continue
 
         rule_type = row.get("rule_type", "monthly_instalment")
@@ -265,6 +332,7 @@ def rule_by_id(rule_id) -> dict | None:
 
 
 def page_context() -> dict:
+    _sync_debt_rules_with_debts()
     generate_debt_payments()
 
     debts = load_debts()
@@ -283,7 +351,12 @@ def page_context() -> dict:
     for rule in rules:
         rule["amount"] = _amount(rule.get("amount"))
         rule["frequency"] = _safe_int(rule.get("frequency")) or 1
-        rule["debt_name"] = debt_lookup.get(str(rule.get("debt_id")), {}).get("name", "Unknown debt")
+        linked_debt = debt_lookup.get(str(rule.get("debt_id")), {})
+        linked_remaining = _amount(linked_debt.get("remaining_amount")) if linked_debt else 0.0
+        rule["debt_name"] = linked_debt.get("name", "Unknown debt")
+        rule["debt_remaining"] = linked_remaining
+        rule["linked_debt_active"] = bool(linked_debt and linked_debt.get("status") == "active" and linked_remaining > 0)
+        rule["is_active"] = str(rule.get("active", "1")).strip().lower() in {"1", "true", "yes", "on"}
 
         if rule.get("rule_type") == "payoff_date":
             rule["rule_type_label"] = "Extinguish on date"
@@ -296,8 +369,10 @@ def page_context() -> dict:
 
         next_due = next_due_date_for_rule(rule)
         rule["next_payment"] = next_due.isoformat() if next_due else ""
+        rule["is_payable"] = bool(rule["is_active"] and rule["linked_debt_active"] and next_due)
+        rule["status_label"] = "Active" if rule["is_payable"] else "Completed / inactive"
 
-    active_debts = [row for row in debts if row.get("status") == "active"]
+    active_debts = [row for row in debts if row.get("status") == "active" and _amount(row.get("remaining_amount")) > 0]
     totals = {
         "active_remaining": sum(_amount(row.get("remaining_amount")) for row in active_debts),
         "original_active": sum(_amount(row.get("original_amount")) for row in active_debts),
@@ -308,6 +383,7 @@ def page_context() -> dict:
     return {
         "debts": debts,
         "active_debts": active_debts,
+        "debt_options": debts,
         "rules": rules,
         "pending_debt_payments": pending,
         "totals": totals,
@@ -317,6 +393,9 @@ def page_context() -> dict:
 
 def next_due_date_for_rule(row: dict, today: date | None = None) -> date | None:
     today = today or date.today()
+
+    if str(row.get("active", "1")).strip().lower() not in {"1", "true", "yes", "on"}:
+        return None
 
     if row.get("rule_type") == "payoff_date":
         if str(row.get("active", "1")) not in {"1", "true", "True", "yes"}:
@@ -377,6 +456,31 @@ def _pending_description(row: dict) -> str:
         return f"Debt extinguishment: {row.get('name', '')}"
 
     return f"Debt instalment: {row.get('name', '')}"
+
+
+def _deactivate_rules_for_debt(debt_id) -> None:
+    rows = load_debt_rules()
+    changed = False
+    for row in rows:
+        if str(row.get("debt_id")) == str(debt_id) and str(row.get("active", "1")) != "0":
+            row["active"] = "0"
+            changed = True
+    if changed:
+        write_debt_rules(rows)
+
+
+def _sync_debt_rules_with_debts() -> None:
+    debts = {str(row.get("id")): row for row in load_debts()}
+    rows = load_debt_rules()
+    changed = False
+    for row in rows:
+        debt = debts.get(str(row.get("debt_id")))
+        if not debt or debt.get("status") != "active" or _amount(debt.get("remaining_amount")) <= 0:
+            if str(row.get("active", "1")) != "0":
+                row["active"] = "0"
+                changed = True
+    if changed:
+        write_debt_rules(rows)
 
 
 def _safe_int(value):

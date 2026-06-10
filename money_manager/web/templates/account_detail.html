@@ -157,9 +157,9 @@
       <div class="movement-amount">
         <strong>{{ tx.signed_amount_str }}</strong>
         {% if tx.source_url_kind == 'transaction' %}
-          <a href="{{ url_for('transactions.transaction_detail', row_index=tx.source_row_index) }}">Edit row</a>
+          <a href="{{ url_for('transactions.transaction_detail', row_index=tx.source_row_index) }}" class="icon-link-btn icon-link-edit" title="Edit transaction" aria-label="Edit transaction">✎</a>
         {% elif tx.source_url_kind == 'sparagnat' %}
-          <a href="{{ url_for('sparagnat.sparagnat_page') }}">Open tracker</a>
+          <a href="{{ url_for('sparagnat.sparagnat_page') }}" class="secondary-btn compact-btn">Open tracker</a>
         {% endif %}
       </div>
     </article>

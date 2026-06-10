@@ -4,6 +4,7 @@ import pandas as pd
 
 from money_manager.config import CREDIT_ACCOUNT_KEYWORDS, CREDIT_CARD_DUE_DAY, TRANSACTION_TYPES, normalize_account_key
 from money_manager.domain.transaction import TransactionInput
+from money_manager.services.currency_service import append_conversion_note, convert_amount_to_eur
 from money_manager.repositories.pending import append_pending
 from money_manager.repositories.transactions import (
     append_transaction,
@@ -23,11 +24,14 @@ def next_credit_due(payment_date=None, due_day: int = CREDIT_CARD_DUE_DAY) -> da
 
 
 def save_new_transaction(tx_input: TransactionInput) -> None:
-    tx = tx_input.as_dict()
-    account = tx.get("account", "").strip().lower()
+    tx = _transaction_payload_in_eur(tx_input)
+    account = str(tx.get("account", "")).strip().lower()
 
     if account in CREDIT_ACCOUNT_KEYWORDS:
-        tx["account"] = "credit"
+        # Keep PayPal distinguishable in the pending table, but process it with
+        # the same delayed-payment logic as the credit card. Both are main-net
+        # routes, not separate liquid accounts.
+        tx["account"] = "paypal" if account in {"paypal", "pay pal"} else "credit"
         try:
             payment_date = date.fromisoformat(tx_input.date)
         except (TypeError, ValueError):
@@ -37,6 +41,28 @@ def save_new_transaction(tx_input: TransactionInput) -> None:
         return
 
     append_transaction(tx)
+
+
+def _transaction_payload_in_eur(tx_input: TransactionInput) -> dict:
+    tx = tx_input.as_dict()
+    conversion = convert_amount_to_eur(tx_input.amount, tx_input.currency)
+    tx["amount"] = conversion["amount_eur"]
+    tx["description"] = append_conversion_note(tx_input.description, conversion)
+
+    if conversion.get("is_conversion"):
+        tx["original_amount"] = f"{conversion['original_amount']:.2f}"
+        tx["original_currency"] = conversion["original_currency"]
+        tx["exchange_rate_to_eur"] = f"{conversion['rate_to_eur']:.8f}"
+        tx["exchange_correction_to_eur"] = f"{conversion['correction_to_eur']:.8f}"
+        tx["exchange_effective_rate_to_eur"] = f"{conversion['effective_rate_to_eur']:.8f}"
+    else:
+        tx["original_amount"] = ""
+        tx["original_currency"] = "EUR"
+        tx["exchange_rate_to_eur"] = "1.00000000"
+        tx["exchange_correction_to_eur"] = "0.00000000"
+        tx["exchange_effective_rate_to_eur"] = "1.00000000"
+    tx.pop("currency", None)
+    return tx
 
 
 def load_transactions() -> pd.DataFrame:
@@ -80,6 +106,11 @@ def transaction_detail_context(row_index: int) -> tuple[dict, list[str]]:
         "category": clean(row.get("category", "")),
         "sub_category": clean(row.get("sub_category", "")),
         "amount": f"{row['amount']:.2f}",
+        "original_amount": clean(row.get("original_amount", "")),
+        "original_currency": clean(row.get("original_currency", "")),
+        "exchange_rate_to_eur": clean(row.get("exchange_rate_to_eur", "")),
+        "exchange_correction_to_eur": clean(row.get("exchange_correction_to_eur", "")),
+        "exchange_effective_rate_to_eur": clean(row.get("exchange_effective_rate_to_eur", "")),
         "account": clean(row.get("account", "")),
         "account_key": clean(row.get("account_key", normalize_account_key(row.get("account", "")))),
         "account_label": clean(row.get("account_label", "")),
@@ -93,14 +124,32 @@ def update_existing_transaction(row_index: int, form) -> None:
     df = load_all()
     row = df.loc[row_index]
     tx_input = TransactionInput.from_form({**form, "type": row["type"]})
-    update_transaction(int(row["id"]), row["type"], {
+
+    data = {
         "date": tx_input.date,
         "category": tx_input.category,
         "sub_category": tx_input.sub_category,
         "amount": tx_input.amount,
         "account": tx_input.account,
         "description": tx_input.description,
-    })
+    }
+
+    # The transaction detail screen edits the already-saved EUR value.  The add
+    # screen has the currency selector and passes currency explicitly, so only
+    # re-run conversion when that field is present.
+    if "currency" in form:
+        converted = _transaction_payload_in_eur(tx_input)
+        data.update({
+            "amount": converted["amount"],
+            "description": converted["description"],
+            "original_amount": converted.get("original_amount", ""),
+            "original_currency": converted.get("original_currency", ""),
+            "exchange_rate_to_eur": converted.get("exchange_rate_to_eur", ""),
+            "exchange_correction_to_eur": converted.get("exchange_correction_to_eur", ""),
+            "exchange_effective_rate_to_eur": converted.get("exchange_effective_rate_to_eur", ""),
+        })
+
+    update_transaction(int(row["id"]), row["type"], data)
 
 
 def delete_existing_transaction(row_index: int) -> None:

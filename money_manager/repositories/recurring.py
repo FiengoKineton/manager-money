@@ -34,11 +34,17 @@ def append_recurring(rule: dict) -> None:
 
 def update_recurring(rule_id, updates: dict) -> None:
     rows = load_recurring()
-    today = date.today().isoformat()
 
     for row in rows:
         if str(row.get("id", "")) != str(rule_id):
             continue
+
+        old_schedule = (
+            row.get("amount"),
+            row.get("frequency"),
+            row.get("day_of_month"),
+            row.get("start_date"),
+        )
 
         row["name"] = updates.get("name", row.get("name", ""))
         row["type"] = updates.get("type", row.get("type", "expense"))
@@ -47,8 +53,16 @@ def update_recurring(rule_id, updates: dict) -> None:
         row["day_of_month"] = str(updates.get("day_of_month", row.get("day_of_month", 1)))
         row["category"] = updates.get("category", row.get("category", ""))
         row["account"] = updates.get("account", row.get("account", "auto"))
-        row["start_date"] = today
-        row["last_generated"] = ""
+        row["start_date"] = updates.get("start_date") or row.get("start_date") or date.today().isoformat()
+
+        new_schedule = (
+            row.get("amount"),
+            row.get("frequency"),
+            row.get("day_of_month"),
+            row.get("start_date"),
+        )
+        if new_schedule != old_schedule:
+            row["last_generated"] = ""
         break
 
     write_recurring(rows)

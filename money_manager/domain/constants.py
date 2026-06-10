@@ -4,6 +4,11 @@ TRANSACTION_FIELDS = [
     "category",
     "sub_category",
     "amount",
+    "original_amount",
+    "original_currency",
+    "exchange_rate_to_eur",
+    "exchange_correction_to_eur",
+    "exchange_effective_rate_to_eur",
     "account",
     "description",
     "created_at",
@@ -42,6 +47,11 @@ SPARAGNAT_FIELDS = [
     "person",
     "category",
     "amount",
+    "original_amount",
+    "original_currency",
+    "exchange_rate_to_eur",
+    "exchange_correction_to_eur",
+    "exchange_effective_rate_to_eur",
     "account",
     "description",
     "created_at",
@@ -103,6 +113,32 @@ DEBT_RULE_FIELDS = [
     "payoff_date",
     "last_generated",
     "active",
+]
+
+RECEIVABLE_FIELDS = [
+    "id",
+    "name",
+    "debtor",
+    "original_amount",
+    "remaining_amount",
+    "account",
+    "start_date",
+    "due_date",
+    "description",
+    "status",
+    "linked_expense_transaction_id",
+    "created_at",
+    "closed_at",
+]
+
+INVESTMENT_ASSET_FIELDS = [
+    "id",
+    "symbol",
+    "label",
+    "allocation_pct",
+    "currency",
+    "active",
+    "created_at",
 ]
 
 WEEKDAY_ORDER = [

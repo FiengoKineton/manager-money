@@ -14,6 +14,7 @@ from money_manager.config.accounts import (
     auxiliary_account_keys,
     category_aliases_by_key,
     is_auxiliary_account,
+    is_main_account_value,
     normalize_account_key,
     save_custom_account,
 )
@@ -45,6 +46,10 @@ from money_manager.config.paths import (
     SPARAGNAT_CSV,
     PARENT_SUPPORT_CSV,
     PARENT_SUPPORT_RULES_CSV,
+    RECEIVABLES_CSV,
+    INVESTMENT_ASSETS_CSV,
+    INVESTMENT_MARKET_CACHE_JSON,
+    CURRENCIES_JSON,
     TRANSACTION_FILES,
     ensure_runtime_directories,
 )

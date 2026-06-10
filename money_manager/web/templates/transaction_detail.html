@@ -30,6 +30,15 @@
       <input type="number" step="0.01" name="amount" value="{{ tx.amount }}">
     </div>
 
+
+    {% if tx.original_currency and tx.original_currency != 'EUR' %}
+    <div class="form-field-wide currency-total-box">
+      <strong>Original foreign input</strong>
+      <p>{{ tx.original_amount }} {{ tx.original_currency }} saved as € {{ tx.amount }}.</p>
+      <small>Rate {{ tx.exchange_rate_to_eur }} + correction {{ tx.exchange_correction_to_eur }} = {{ tx.exchange_effective_rate_to_eur }} EUR per unit.</small>
+    </div>
+    {% endif %}
+
     <div>
       <label>Account</label>
       <select name="account">
@@ -49,10 +58,10 @@
       <textarea name="description" rows="2">{{ tx.description }}</textarea>
     </div>
 
-    <div class="form-actions-row form-field-wide">
-      <button type="submit" name="action" value="update">Save changes</button>
-      <button type="submit" name="action" value="delete" class="danger-btn">Delete</button>
-      <a href="{{ url_for('dashboard.index') }}" class="form-back-link">Back to list</a>
+    <div class="form-actions-row form-field-wide inline-action-rail">
+      <button type="submit" name="action" value="update" class="icon-action-btn icon-action-update" title="Update transaction" aria-label="Update transaction">✎</button>
+      <button type="submit" name="action" value="delete" class="icon-action-btn icon-action-delete" title="Delete transaction" aria-label="Delete transaction" onclick="return confirm('Delete this transaction?')">×</button>
+      <a href="{{ url_for('transactions.transactions_page') }}" class="form-back-link">Back to list</a>
     </div>
   </form>
 </section>
