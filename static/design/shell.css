@@ -170,6 +170,56 @@ body.app-body::after {
   letter-spacing: -0.03em;
 }
 
+.topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+}
+
+.topbar-title {
+  min-width: 0;
+}
+
+.topbar-balance-pill {
+  justify-self: center;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 220px;
+  padding: 0.55rem 1.15rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.topbar-balance-pill span,
+.sidebar-mobile-balance-pill span {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 850;
+  color: var(--muted);
+}
+
+.topbar-balance-pill strong,
+.sidebar-mobile-balance-pill strong {
+  margin-top: 0.05rem;
+  font-size: 1.05rem;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+}
+
+.quick-actions {
+  justify-self: end;
+}
+
+.sidebar-mobile-balance-pill {
+  display: none;
+}
+
 .quick-actions {
   display: flex;
   gap: 0.55rem;

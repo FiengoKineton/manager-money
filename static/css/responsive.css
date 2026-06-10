@@ -762,3 +762,39 @@
   }
 }
 
+/* =========================
+   Mobile top net balance
+   ========================= */
+
+@media (max-width: 1000px) {
+  .topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar-balance-pill {
+    display: none;
+  }
+
+  .sidebar-mobile-balance-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    width: calc(100% - 1rem);
+    margin: 0.55rem 0.5rem 0.35rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.20);
+  }
+
+  .sidebar-mobile-balance-pill span {
+    color: rgba(226, 232, 240, 0.78);
+  }
+
+  .sidebar-mobile-balance-pill strong {
+    color: #ffffff;
+    font-size: 1.15rem;
+  }
+}

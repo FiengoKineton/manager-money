@@ -27,6 +27,10 @@
       {% set accounts_open = ep in ['accounts.accounts_page', 'accounts.account_detail', 'currencies.currencies_page', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
       {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'forecast.forecast', 'documents.documents'] %}
       <nav class="sidebar-nav" aria-label="Main navigation">
+        <div class="sidebar-mobile-balance-pill">
+          <span>Main bank net</span>
+          <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
+        </div>
         <details class="nav-group" {% if home_open %}open{% endif %}>
           <summary class="nav-label">Home</summary>
           <div class="nav-items">
@@ -72,10 +76,16 @@
 
     <main class="app-main">
       <header class="topbar">
-        <div>
+        <div class="topbar-title">
           <span class="eyebrow">Personal finance workspace</span>
           <h1>{% block page_title %}Money Manager{% endblock %}</h1>
         </div>
+
+        <div class="topbar-balance-pill">
+          <span>Main bank net</span>
+          <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
+        </div>
+
         <div class="quick-actions">
           <a href="{{ url_for('transactions.add_transaction', type='expense') }}" class="quick-action expense-action">+ Expense</a>
           <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="quick-action income-action">+ Income</a>
