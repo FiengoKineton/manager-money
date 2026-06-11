@@ -35,6 +35,7 @@ CATEGORY_OPTIONS = {
         "Coffe",
         "Housing",
         "Debt",
+        "Payable",
     ]),
     "income": sorted([
         "PoliMi",

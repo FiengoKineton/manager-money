@@ -131,6 +131,22 @@ RECEIVABLE_FIELDS = [
     "closed_at",
 ]
 
+PAYABLE_FIELDS = [
+    "id",
+    "name",
+    "payee",
+    "original_amount",
+    "remaining_amount",
+    "category",
+    "account",
+    "start_date",
+    "due_date",
+    "description",
+    "status",
+    "created_at",
+    "closed_at",
+]
+
 INVESTMENT_ASSET_FIELDS = [
     "id",
     "symbol",

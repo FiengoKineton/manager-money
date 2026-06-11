@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block page_title %}Payables{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <h2>Payables</h2>
+    <p>
+      Track money you still need to pay without recording the expense immediately.
+      When you pay all or part of it, the app creates an expense in the chosen account
+      and reduces the remaining amount.
+    </p>
+  </div>
+</section>
+
+<section class="summary payables-summary">
+  <div class="summary-card expense">
+    <h3>Still to pay</h3>
+    <p>{{ '%.2f'|format(totals.active_remaining) }}</p>
+  </div>
+  <div class="summary-card neutral">
+    <h3>Main net now</h3>
+    <p>{{ '%.2f'|format(totals.main_net_now) }}</p>
+  </div>
+  <div class="summary-card pending">
+    <h3>Main net if paid all now</h3>
+    <p>{{ '%.2f'|format(totals.main_net_if_paid_all) }}</p>
+  </div>
+  <div class="summary-card pending">
+    <h3>Visible liquidity if paid all</h3>
+    <p>{{ '%.2f'|format(totals.visible_liquidity_if_paid_all) }}</p>
+  </div>
+  <div class="summary-card income">
+    <h3>Paid tracked</h3>
+    <p>{{ '%.2f'|format(totals.paid_total) }}</p>
+  </div>
+</section>
+
+<section class="form-section payables-card">
+  <h2>Add Payable</h2>
+  <form method="post" class="debt-form">
+    <input type="hidden" name="action" value="add_payable">
+
+    <div class="form-field form-field-wide">
+      <label>Name</label>
+      <input type="text" name="name" placeholder="Deposit, invoice, friend, future payment..." required>
+    </div>
+
+    <div class="form-field">
+      <label>Payee</label>
+      <input type="text" name="payee" placeholder="Person / company">
+    </div>
+
+    <div class="form-field">
+      <label>Original amount (€)</label>
+      <input type="number" step="0.01" name="original_amount" required>
+    </div>
+
+    <div class="form-field">
+      <label>Remaining amount (€)</label>
+      <input type="number" step="0.01" name="remaining_amount" placeholder="Leave empty = original">
+    </div>
+
+    <div class="form-field">
+      <label>Expense category</label>
+      <input type="text" name="category" value="Payable" placeholder="Payable / Debt / Other">
+    </div>
+
+    <div class="form-field">
+      <label>Account to pay from</label>
+      <select name="account">
+        {% for account in account_options %}
+          <option value="{{ account.value }}">{{ account.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label>Start date</label>
+      <input type="date" name="start_date" value="{{ today }}">
+    </div>
+
+    <div class="form-field">
+      <label>Due date</label>
+      <input type="date" name="due_date">
+    </div>
+
+    <div class="form-field form-field-wide">
+      <label>Description</label>
+      <input type="text" name="description" placeholder="Optional note">
+    </div>
+
+    <div class="form-actions">
+      <button type="submit">Add payable</button>
+    </div>
+  </form>
+</section>
+
+<section class="transactions payables-card">
+  <h2>Tracked Payables</h2>
+
+  {% if payables %}
+  <table class="inline-edit-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Payee</th>
+        <th>Original</th>
+        <th>Remaining</th>
+        <th>Paid</th>
+        <th>Progress</th>
+        <th>Due / account</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in payables %}
+      <tr class="{{ 'is-closed' if item.status != 'active' else '' }}">
+        <td>
+          <form id="payable-update-{{ item.id }}" method="post"></form>
+          <input form="payable-update-{{ item.id }}" type="hidden" name="action" value="update_payable">
+          <input form="payable-update-{{ item.id }}" type="hidden" name="id" value="{{ item.id }}">
+          <input form="payable-update-{{ item.id }}" type="text" name="name" value="{{ item.name }}" required>
+          <input form="payable-update-{{ item.id }}" type="text" name="description" value="{{ item.description }}" placeholder="Note" class="table-note-input">
+          <input form="payable-update-{{ item.id }}" type="hidden" name="category" value="{{ item.category or 'Payable' }}">
+        </td>
+        <td><input form="payable-update-{{ item.id }}" type="text" name="payee" value="{{ item.payee }}"></td>
+        <td><input form="payable-update-{{ item.id }}" type="number" step="0.01" name="original_amount" value="{{ item.original_amount }}" required></td>
+        <td><input form="payable-update-{{ item.id }}" type="number" step="0.01" name="remaining_amount" value="{{ item.remaining_amount }}" required></td>
+        <td>{{ '%.2f'|format(item.paid_amount) }}</td>
+        <td>
+          <div class="progress-wrap progress-wrap-expense">
+            <div class="progress-bar progress-bar-expense" style="width: {{ item.progress }}%"></div>
+          </div>
+          <small>{{ '%.0f'|format(item.progress) }}%</small>
+        </td>
+        <td>
+          <input form="payable-update-{{ item.id }}" type="date" name="due_date" value="{{ item.due_date }}" aria-label="Due date">
+          <input form="payable-update-{{ item.id }}" type="date" name="start_date" value="{{ item.start_date }}" aria-label="Start date">
+          <select form="payable-update-{{ item.id }}" name="account" aria-label="Payment account">
+            {% for account in account_options %}
+              <option value="{{ account.value }}" {% if account.value == item.account or account.key == item.account or account.label == item.account %}selected{% endif %}>{{ account.label }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td>
+          <select form="payable-update-{{ item.id }}" name="status">
+            <option value="active" {% if item.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="paid" {% if item.status == 'paid' %}selected{% endif %}>Paid</option>
+            <option value="cancelled" {% if item.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+          </select>
+        </td>
+        <td class="debt-actions">
+          <div class="table-action-rail">
+            <button form="payable-update-{{ item.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update payable" aria-label="Update payable">✎</button>
+
+            {% if item.status == 'active' and item.remaining_amount > 0 %}
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="pay_payable">
+              <input type="hidden" name="id" value="{{ item.id }}">
+              <input type="hidden" name="amount" value="{{ item.remaining_amount }}">
+              <input type="hidden" name="date" value="{{ today }}">
+              <input type="hidden" name="account" value="{{ item.account }}">
+              <button type="submit" class="secondary-btn compact-btn" onclick="return confirm('Create the expense and mark this payable as paid?')">Pay all</button>
+            </form>
+
+            <form method="post" class="mini-pay-form">
+              <input type="hidden" name="action" value="pay_payable">
+              <input type="hidden" name="id" value="{{ item.id }}">
+              <input type="date" name="date" value="{{ today }}" aria-label="Payment date">
+              <input type="number" step="0.01" name="amount" placeholder="Partial" required>
+              <select name="account" aria-label="Payment account">
+                {% for account in account_options %}
+                  <option value="{{ account.value }}" {% if account.value == item.account or account.key == item.account or account.label == item.account %}selected{% endif %}>{{ account.label }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="secondary-btn compact-btn">Pay</button>
+            </form>
+            {% endif %}
+
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="delete_payable">
+              <input type="hidden" name="id" value="{{ item.id }}">
+              <button type="submit" class="icon-action-btn icon-action-delete" title="Delete payable" aria-label="Delete payable" onclick="return confirm('Delete this payable?')">×</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>No payables yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

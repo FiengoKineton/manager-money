@@ -245,7 +245,6 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 251,2026-05-19,Health,Farmacia,4.0,,,,,,,,2026-05-19T17:46:50
 252,2026-05-21,Other,,11.0,,,,,,,,2026-05-21T10:25:16
 253,2026-05-19,Subscriptions,Prime video,7.99,,,,,,,,2026-05-21T10:26:38
-254,2026-05-21,Housing,Acconto Infissi,1780.0,,,,,,,incl 220eur persi,2026-05-21T11:17:51
 255,2026-05-19,Housing,Infissi,2440.0,,,,,,,Errore,2026-05-21T11:33:48
 256,2026-05-22,Housing,,39.33,,,,,,auto,Polizza Casa e Famiglia,2026-05-22T11:18:04
 257,2026-05-22,Shopping,,27.77,,,,,,,,2026-05-24T19:03:32
@@ -274,3 +273,4 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 280,2026-06-11,Debt,Verbale auto,41.6,,,,,,auto,Debt extinguishment: Payoff,2026-06-10T15:33:39
 281,2026-04-28,Money owed to me,Mom's household stuff,250.0,,,,,,,Loan/receivable created: Riccardo owes me for Mom's household stuff. Lost,2026-06-10T18:18:09
 282,2026-05-12,Housing,Sopralluogo,30.0,,,,,,,Loan/receivable created: Leroy Marlaine owes me for Sopralluogo,2026-06-10T23:44:52
+283,2026-05-21,Payable,Infissi,1780.0,,,,,,,Payable payment to Giuseppe: Infissi,2026-06-11T12:46:21
