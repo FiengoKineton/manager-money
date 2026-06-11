@@ -23,3 +23,5 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 22,2026-06-05,Other income,Claudia,200.0,,,,,,,Vinted balance,2026-06-04T11:53:17
 23,2026-06-10,Kineton,,110.0,,,,,,EdenRed,Ticket Restaurants,2026-06-10T15:33:43
 24,2026-06-11,Kineton,,1122.6,,EUR,1.0,0.0,1.0,,half month and minus debts,2026-06-11T10:00:06
+25,2026-06-11,Refund,Sopralluogo,6.0,,,,,,,Money collected from Leroy Marlaine: Sopralluogo,2026-06-11T18:54:08
+26,2026-06-11,Refund,Sopralluogo,24.0,,,,,,Cash Flow,Money collected from Leroy Marlaine: Sopralluogo,2026-06-11T18:54:18

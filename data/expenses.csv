@@ -275,3 +275,4 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 282,2026-05-12,Housing,Sopralluogo,30.0,,,,,,,Loan/receivable created: Leroy Marlaine owes me for Sopralluogo,2026-06-10T23:44:52
 283,2026-05-21,Payable,Infissi,1780.0,,,,,,,Payable payment to Giuseppe: Infissi,2026-06-11T12:46:21
 284,2026-06-11,Payable,Ceramiche e Pavimenti,4688.3,,,,,,,Payable payment to Spazio 121: Ceramiche e Pavimenti,2026-06-11T13:12:58
+285,2026-06-11,Home renovation,,13.5,,EUR,1.0,0.0,1.0,,,2026-06-11T18:54:51
