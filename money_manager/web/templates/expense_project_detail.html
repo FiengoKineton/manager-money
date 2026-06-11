@@ -7,7 +7,7 @@
     <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="back-link">← Expense Projects</a>
     <h2>{{ project.name }}</h2>
     <p>
-      Real transactions are counted as money already spent. Planned items are future expected costs
+      Real expense and income transactions are counted in this sheet. Planned items are future expected costs
       and stay outside your net balance until you pay all or part of them.
     </p>
   </div>
@@ -15,16 +15,24 @@
 
 <section class="summary expense-project-summary detail-summary">
   <div class="summary-card expense">
-    <h3>Actual spent</h3>
+    <h3>Actual expenses</h3>
     <p>{{ '%.2f'|format(project.actual_spent) }}</p>
+  </div>
+  <div class="summary-card income">
+    <h3>Income / recoveries</h3>
+    <p>{{ '%.2f'|format(project.actual_income) }}</p>
+  </div>
+  <div class="summary-card neutral">
+    <h3>Net project cost</h3>
+    <p>{{ '%.2f'|format(project.actual_net_cost) }}</p>
   </div>
   <div class="summary-card pending">
     <h3>Expected left</h3>
     <p>{{ '%.2f'|format(project.remaining_expected) }}</p>
   </div>
-  <div class="summary-card neutral">
-    <h3>Project forecast</h3>
-    <p>{{ '%.2f'|format(project.forecast_total) }}</p>
+  <div class="summary-card pending">
+    <h3>Forecast net cost</h3>
+    <p>{{ '%.2f'|format(project.forecast_net_total) }}</p>
   </div>
   <div class="summary-card neutral">
     <h3>Main net now</h3>
@@ -145,20 +153,20 @@
       <div>
         <span class="eyebrow">Real movement</span>
         <h3>Attach existing transaction</h3>
-        <p>Add past expenses that already exist in Transactions.</p>
+        <p>Add past expenses or incomes that already exist in Transactions.</p>
       </div>
     </div>
     <form method="post" class="expense-project-form compact-project-form">
       <input type="hidden" name="action" value="attach_transaction">
       <div class="form-field form-field-wide">
-        <label>Expense transaction</label>
+        <label>Expense or income transaction</label>
         <select name="transaction_key" required>
           <option value="">Choose a transaction...</option>
           {% for tx in transaction_candidates %}
             <option value="{{ tx.key }}">{{ tx.label }}</option>
           {% endfor %}
         </select>
-        <small>Category matches are shown first, then recent expenses.</small>
+        <small>Category/project matches are shown first, then recent expenses and incomes.</small>
       </div>
       <div class="form-field form-field-wide">
         <label>Note</label>
@@ -283,7 +291,7 @@
     <div>
       <span class="eyebrow">Actuals</span>
       <h3>Attached real transactions</h3>
-      <p>These already affect your net balance because they are real expenses.</p>
+      <p>These already affect your net balance because they are real expenses or incomes.</p>
     </div>
   </div>
   {% if actual_movements %}
@@ -291,6 +299,7 @@
     <thead>
       <tr>
         <th>Date</th>
+        <th>Type</th>
         <th>Category</th>
         <th>Description</th>
         <th>Account</th>
@@ -303,10 +312,11 @@
       {% for tx in actual_movements %}
       <tr>
         <td>{{ tx.date }}</td>
+        <td><span class="pill {{ tx.amount_class }}">{{ tx.type_label }}</span></td>
         <td>{{ tx.category }}{% if tx.sub_category %}<br><small>{{ tx.sub_category }}</small>{% endif %}</td>
         <td>{{ tx.description }}{% if tx.note %}<br><small>{{ tx.note }}</small>{% endif %}</td>
         <td>{{ tx.account or 'Main bank' }}</td>
-        <td class="amount expense">€ {{ '%.2f'|format(tx.amount) }}</td>
+        <td class="amount {{ tx.amount_class }}">{{ tx.amount_sign }} € {{ '%.2f'|format(tx.amount) }}</td>
         <td>{{ 'Planned payment' if tx.source == 'planned_payment' else 'Manual link' }}</td>
         <td>
           <form method="post">

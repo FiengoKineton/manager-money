@@ -7,24 +7,32 @@
     <h2>Expense Projects</h2>
     <p>
       Create a separate sheet for a big category of spending, like <strong>Construction 2026</strong>.
-      You can attach real transactions and add future expected costs. Expected costs do not touch
-      your net balance until you pay them.
+      You can attach real expense and income transactions and add future expected costs.
+      Expected costs do not touch your net balance until you pay them.
     </p>
   </div>
 </section>
 
 <section class="summary expense-project-summary">
   <div class="summary-card expense">
-    <h3>Actual spent</h3>
+    <h3>Actual expenses</h3>
     <p>{{ '%.2f'|format(totals.actual_spent) }}</p>
+  </div>
+  <div class="summary-card income">
+    <h3>Income / recoveries</h3>
+    <p>{{ '%.2f'|format(totals.actual_income) }}</p>
+  </div>
+  <div class="summary-card neutral">
+    <h3>Net actual cost</h3>
+    <p>{{ '%.2f'|format(totals.actual_net_cost) }}</p>
   </div>
   <div class="summary-card pending">
     <h3>Still expected</h3>
     <p>{{ '%.2f'|format(totals.remaining_expected) }}</p>
   </div>
-  <div class="summary-card neutral">
-    <h3>Forecast total</h3>
-    <p>{{ '%.2f'|format(totals.forecast_total) }}</p>
+  <div class="summary-card pending">
+    <h3>Forecast net cost</h3>
+    <p>{{ '%.2f'|format(totals.forecast_net_total) }}</p>
   </div>
   <div class="summary-card income">
     <h3>Active sheets</h3>
@@ -79,15 +87,17 @@
     </div>
 
     <div class="expense-project-metrics">
-      <div><span>Spent</span><strong>€ {{ '%.2f'|format(project.actual_spent) }}</strong></div>
+      <div><span>Expenses</span><strong>€ {{ '%.2f'|format(project.actual_spent) }}</strong></div>
+      <div><span>Income</span><strong>€ {{ '%.2f'|format(project.actual_income) }}</strong></div>
+      <div><span>Net cost</span><strong>€ {{ '%.2f'|format(project.actual_net_cost) }}</strong></div>
       <div><span>Expected left</span><strong>€ {{ '%.2f'|format(project.remaining_expected) }}</strong></div>
-      <div><span>Forecast</span><strong>€ {{ '%.2f'|format(project.forecast_total) }}</strong></div>
+      <div><span>Forecast net</span><strong>€ {{ '%.2f'|format(project.forecast_net_total) }}</strong></div>
     </div>
 
     <div class="progress-wrap progress-wrap-expense">
       <div class="progress-bar progress-bar-expense" style="width: {{ project.progress }}%"></div>
     </div>
-    <small>{{ '%.0f'|format(project.progress) }}% already paid against current forecast · {{ project.movement_count }} real movements · {{ project.planned_count }} planned items</small>
+    <small>{{ '%.0f'|format(project.progress) }}% of gross costs already paid · {{ project.expense_movement_count }} expenses · {{ project.income_movement_count }} incomes · {{ project.planned_count }} planned items</small>
 
     <form method="post" class="expense-project-inline-actions">
       <input type="hidden" name="action" value="update_project">

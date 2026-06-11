@@ -204,11 +204,15 @@ def planned_item_by_id(item_id: int) -> dict | None:
 def overview_context() -> dict:
     df = load_transactions()
     projects = [_enrich_project_summary(project, df) for project in load_projects()]
+    active_projects = [project for project in projects if project.get("status") == "active"]
     totals = {
         "actual_spent": sum(project["actual_spent"] for project in projects),
-        "remaining_expected": sum(project["remaining_expected"] for project in projects if project.get("status") == "active"),
-        "forecast_total": sum(project["forecast_total"] for project in projects if project.get("status") == "active"),
-        "active_count": sum(1 for project in projects if project.get("status") == "active"),
+        "actual_income": sum(project["actual_income"] for project in projects),
+        "actual_net_cost": sum(project["actual_net_cost"] for project in projects),
+        "remaining_expected": sum(project["remaining_expected"] for project in active_projects),
+        "forecast_total": sum(project["forecast_total"] for project in active_projects),
+        "forecast_net_total": sum(project["forecast_net_total"] for project in active_projects),
+        "active_count": len(active_projects),
         "count": len(projects),
     }
     return {
@@ -260,18 +264,26 @@ def _enrich_project_summary(project: dict, df: pd.DataFrame) -> dict:
     project_id = _safe_int(project.get("id")) or 0
     actual = _project_actual_movements(project_id, df)
     planned = _project_planned_items(project_id)
-    actual_spent = sum(row["amount"] for row in actual)
+    actual_spent = sum(row["amount"] for row in actual if row.get("transaction_type") == "expense")
+    actual_income = sum(row["amount"] for row in actual if row.get("transaction_type") == "income")
+    actual_net_cost = actual_spent - actual_income
     planned_original = sum(row["original_amount"] for row in planned)
     planned_remaining = sum(row["remaining_amount"] for row in planned if row.get("status") == "active")
     planned_paid = sum(row["paid_amount"] for row in planned)
     forecast_total = actual_spent + planned_remaining
+    forecast_net_total = actual_net_cost + planned_remaining
     project.update({
         "actual_spent": float(actual_spent),
+        "actual_income": float(actual_income),
+        "actual_net_cost": float(actual_net_cost),
         "planned_original": float(planned_original),
         "planned_paid": float(planned_paid),
         "remaining_expected": float(planned_remaining),
         "forecast_total": float(forecast_total),
+        "forecast_net_total": float(forecast_net_total),
         "movement_count": len(actual),
+        "income_movement_count": sum(1 for row in actual if row.get("transaction_type") == "income"),
+        "expense_movement_count": sum(1 for row in actual if row.get("transaction_type") == "expense"),
         "planned_count": len(planned),
         "progress": 0.0 if forecast_total <= 0 else min(100.0, actual_spent / forecast_total * 100.0),
     })
@@ -286,12 +298,19 @@ def _project_actual_movements(project_id: int, df: pd.DataFrame) -> list[dict]:
         if row is None:
             continue
         amount = _amount(row.get("amount"))
-        tx_type = str(row.get("type", movement.get("transaction_type", "")))
-        signed_amount = _amount(row.get("signed_amount")) if "signed_amount" in row else amount
+        tx_type = str(row.get("type", movement.get("transaction_type", ""))).casefold()
+        if tx_type not in {"expense", "income"}:
+            # Expense project sheets track real spending and money coming back in.
+            # Investments/transfers can stay in the main Transactions page.
+            continue
+        signed_amount = amount if tx_type == "income" else -amount
         rows.append({
             "movement_id": movement.get("id"),
             "transaction_id": movement.get("transaction_id"),
             "transaction_type": tx_type,
+            "type_label": "Income" if tx_type == "income" else "Expense",
+            "amount_class": "income" if tx_type == "income" else "expense",
+            "amount_sign": "+" if tx_type == "income" else "-",
             "date": _date_str(row.get("date")),
             "category": _clean(row.get("category", "")),
             "sub_category": _clean(row.get("sub_category", "")),
@@ -330,24 +349,37 @@ def _transaction_candidates(project: dict, df: pd.DataFrame, already_attached: l
         return []
     attached = {(str(row.get("transaction_type")), str(row.get("transaction_id"))) for row in already_attached}
     project_category = str(project.get("category", "")).casefold()
-    expenses = df[df.get("type", pd.Series(dtype=str)).astype(str).str.casefold().eq("expense")].copy()
-    if expenses.empty:
+    project_name = str(project.get("name", "")).casefold()
+    tx_type_series = df.get("type", pd.Series(dtype=str)).astype(str).str.casefold()
+    movements = df[tx_type_series.isin(["expense", "income"])].copy()
+    if movements.empty:
         return []
-    expenses["date_sort"] = pd.to_datetime(expenses["date"], errors="coerce")
+    movements["date_sort"] = pd.to_datetime(movements["date"], errors="coerce")
 
-    # Put category matches first, then newest expenses. This keeps the dropdown useful
-    # for a Construction 2026 page without hiding manual additions from other categories.
-    expenses["category_match"] = expenses["category"].fillna("").astype(str).str.casefold().eq(project_category)
-    expenses = expenses.sort_values(by=["category_match", "date_sort"], ascending=[False, False]).head(150)
+    # Put project/category matches first, then newest movements. This keeps a
+    # Construction 2026 sheet useful while still allowing reimbursements/incomes
+    # from other categories to be attached manually.
+    category_text = movements["category"].fillna("").astype(str).str.casefold()
+    sub_text = movements["sub_category"].fillna("").astype(str).str.casefold()
+    desc_text = movements["description"].fillna("").astype(str).str.casefold()
+    movements["category_match"] = category_text.eq(project_category)
+    movements["project_text_match"] = False
+    if project_name:
+        movements["project_text_match"] = desc_text.str.contains(project_name, regex=False) | sub_text.str.contains(project_name, regex=False)
+    movements = movements.sort_values(
+        by=["category_match", "project_text_match", "date_sort"],
+        ascending=[False, False, False],
+    ).head(200)
 
     candidates = []
-    for _, row in expenses.iterrows():
-        tx_type = str(row.get("type", "expense"))
+    for _, row in movements.iterrows():
+        tx_type = str(row.get("type", "expense")).casefold()
         tx_id = str(row.get("id", ""))
         if (tx_type, tx_id) in attached:
             continue
         amount = _amount(row.get("amount"))
-        label = f"{_date_str(row.get('date'))} · € {amount:.2f} · {_clean(row.get('category', ''))}"
+        label_prefix = "Income +" if tx_type == "income" else "Expense -"
+        label = f"{label_prefix} · {_date_str(row.get('date'))} · € {amount:.2f} · {_clean(row.get('category', ''))}"
         sub = _clean(row.get("sub_category", ""))
         desc = _clean(row.get("description", ""))
         if sub:
@@ -358,7 +390,9 @@ def _transaction_candidates(project: dict, df: pd.DataFrame, already_attached: l
             "key": f"{tx_type}:{tx_id}",
             "label": label,
             "amount": amount,
+            "type": tx_type,
             "category_match": bool(row.get("category_match")),
+            "project_text_match": bool(row.get("project_text_match")),
         })
     return candidates
 

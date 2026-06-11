@@ -2,3 +2,6 @@ id,project_id,transaction_type,transaction_id,source,note,created_at
 1,1,expense,278,manual,,2026-06-11T12:53:23
 2,1,expense,283,manual,,2026-06-11T12:53:49
 3,1,expense,282,manual,,2026-06-11T12:54:42
+4,1,income,21,manual,,2026-06-11T13:02:17
+5,1,income,19,manual,,2026-06-11T13:02:37
+6,1,expense,255,manual,,2026-06-11T13:02:45
