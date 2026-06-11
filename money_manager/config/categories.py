@@ -36,6 +36,8 @@ CATEGORY_OPTIONS = {
         "Housing",
         "Debt",
         "Payable",
+        "Home renovation",
+        "Construction",
     ]),
     "income": sorted([
         "PoliMi",

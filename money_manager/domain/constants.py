@@ -147,6 +147,44 @@ PAYABLE_FIELDS = [
     "closed_at",
 ]
 
+EXPENSE_PROJECT_FIELDS = [
+    "id",
+    "name",
+    "category",
+    "description",
+    "status",
+    "created_at",
+    "closed_at",
+]
+
+EXPENSE_PROJECT_MOVEMENT_FIELDS = [
+    "id",
+    "project_id",
+    "transaction_type",
+    "transaction_id",
+    "source",
+    "note",
+    "created_at",
+]
+
+EXPENSE_PROJECT_PLANNED_ITEM_FIELDS = [
+    "id",
+    "project_id",
+    "name",
+    "vendor",
+    "original_amount",
+    "remaining_amount",
+    "category",
+    "sub_category",
+    "account",
+    "start_date",
+    "due_date",
+    "description",
+    "status",
+    "created_at",
+    "closed_at",
+]
+
 INVESTMENT_ASSET_FIELDS = [
     "id",
     "symbol",

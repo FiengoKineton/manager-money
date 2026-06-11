@@ -1,4 +1,4 @@
-from money_manager.web.routes import accounts, analysis, currencies, dashboard, debts, documents, forecast, investments, parent_support, pending, payables, receivables, sparagnat, transactions
+from money_manager.web.routes import accounts, analysis, currencies, dashboard, debts, documents, expense_projects, forecast, investments, parent_support, pending, payables, receivables, sparagnat, transactions
 from money_manager.web import auth
 
 def register_routes(app):
@@ -15,6 +15,7 @@ def register_routes(app):
     app.register_blueprint(sparagnat.bp)
     app.register_blueprint(debts.bp)
     app.register_blueprint(payables.bp)
+    app.register_blueprint(expense_projects.bp)
     app.register_blueprint(receivables.bp)
     app.register_blueprint(investments.bp)
     app.register_blueprint(parent_support.bp)

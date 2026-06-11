@@ -1,0 +1,137 @@
+ .expense-project-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.detail-summary {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.expense-project-create,
+.expense-project-settings,
+.project-table-card {
+  margin-bottom: 1rem;
+}
+
+.expense-project-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.expense-project-form .form-field-wide,
+.expense-project-form .form-actions,
+.expense-project-form .form-actions-row {
+  grid-column: 1 / -1;
+}
+
+.expense-project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.expense-project-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.expense-project-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.expense-project-card h3 {
+  margin: 0.15rem 0;
+}
+
+.expense-project-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.expense-project-metrics div {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.7rem;
+}
+
+.expense-project-metrics span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.expense-project-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.expense-project-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.compact-project-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.project-table input,
+.project-table select {
+  min-width: 120px;
+}
+
+.project-mini-pay select {
+  min-width: 145px;
+}
+
+.back-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.danger-panel {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+@media (max-width: 1200px) {
+  .expense-project-summary,
+  .detail-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .expense-project-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .expense-project-summary,
+  .detail-summary,
+  .expense-project-form,
+  .compact-project-form {
+    grid-template-columns: 1fr;
+  }
+
+  .expense-project-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .expense-project-card-head,
+  .expense-project-inline-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
