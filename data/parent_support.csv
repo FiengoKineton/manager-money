@@ -1,1 +1,2 @@
 id,date,kind,parent,category,amount,payment_method,description,created_at
+2,2026-06-12,covered_expense,Dad,Other,900.0,Paid directly,Clothing,2026-06-12T20:56:48
