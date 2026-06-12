@@ -276,5 +276,5 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 283,2026-05-21,Payable,Infissi,1780.0,,,,,,,Payable payment to Giuseppe: Infissi,2026-06-11T12:46:21
 284,2026-06-11,Payable,Ceramiche e Pavimenti,4688.3,,,,,,,Payable payment to Spazio 121: Ceramiche e Pavimenti,2026-06-11T13:12:58
 285,2026-06-11,Home renovation,,13.5,,EUR,1.0,0.0,1.0,,,2026-06-11T18:54:51
-286,2026-06-11,Eating in,Glovo,69.5,,EUR,1.00000000,0.00000000,1.00000000,,Sushi leo,2026-06-11T22:06:05
-287,2026-06-12,Eating in,,28.64,,EUR,1.00000000,0.00000000,1.00000000,,Luigi paid back,2026-06-12T21:00:35
+286,2026-06-11,Eating in,Glovo,69.5,,EUR,1.0,0.0,1.0,,Sushi leo,2026-06-11T22:06:05
+287,2026-06-12,Eating in,Glovo,28.64,,EUR,1.0,0.0,1.0,,Luigi paid back but Glovo Robbed me,2026-06-12T21:00:35
