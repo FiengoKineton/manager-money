@@ -97,24 +97,41 @@ def _affects_main_net_mask(df: pd.DataFrame) -> pd.Series:
     raw_account = df.get("account", pd.Series("", index=df.index)).fillna("").astype(str)
     raw_account_clean = raw_account.map(_clean_text)
 
-    # Blank account is the default main bank route.
+    # Blank account is the default main bank route.  Blank-account top-ups to
+    # liquid accounts are intentionally still counted in main net, because money
+    # really left the main bank and became available in Cash Flow / Pre-paid / etc.
     blank_account = raw_account_clean.eq("")
 
     explicit_main = raw_account.map(is_main_account_value)
 
-    # Historical CSVs used account="Cash" for purchases that should still be
-    # treated as main-bank spending. The explicit Cash Flow label remains a
-    # separate liquid account; only the short value "cash" is pulled back into
-    # the main net. Cash mentioned in description/sub-category is also main.
-    sub_category = df.get("sub_category", pd.Series("", index=df.index)).fillna("").astype(str).str.casefold()
-    description = df.get("description", pd.Series("", index=df.index)).fillna("").astype(str).str.casefold()
-    cash_keyword_main = raw_account_clean.eq("cash") | sub_category.str.contains("cash", na=False) | description.str.contains("cash", na=False)
-
     transaction_type = df.get("type", pd.Series("", index=df.index)).fillna("").astype(str).str.casefold()
     account_key = df.get("account_key", pd.Series("", index=df.index)).fillna("").astype(str)
+
+    # Historical CSVs sometimes used account="Cash" for purchases that should
+    # still be treated as main-bank spending. Keep that exact legacy shortcut,
+    # but do not use "cash" words from description/sub-category to pull rows
+    # back into the main net. That broke auxiliary cleanup rows such as
+    # account="Cash Flow" + description="Cash cleanup", making main-bank net
+    # go down even though the movement was only a Cash Flow reconciliation.
+    legacy_cash_main = raw_account_clean.eq("cash")
+
+    # Explicit auxiliary accounts must stay outside main net even when their
+    # description/category contains words like cash, cleanup, PayPal, etc.
+    explicit_auxiliary = (
+        account_key.isin(auxiliary_account_keys())
+        & raw_account_clean.ne("")
+        & raw_account_clean.ne("cash")
+    )
+
+    # Reconciliation / cleanup rows are not spending from the main bank. They are
+    # corrections to a separate liquid-account balance. This also protects rows
+    # that were saved with a blank account but clearly say "Account cleanup",
+    # "reconcile", "cash cleanup", etc.
+    auxiliary_cleanup = account_key.isin(auxiliary_account_keys()) & _cleanup_like_mask(df)
+
     investment_main = transaction_type.eq("investment") & ~account_key.isin(auxiliary_account_keys())
 
-    return blank_account | explicit_main | cash_keyword_main | investment_main
+    return (blank_account | explicit_main | legacy_cash_main | investment_main) & ~explicit_auxiliary & ~auxiliary_cleanup
 
 def auxiliary_account_transactions(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
@@ -355,6 +372,17 @@ def _infer_account_from_row(row) -> AccountInference:
     if account_text:
         return AccountInference(normalize_account_key(account_text), "explicit_account")
 
+    # If a cleanup/reconciliation row was saved with a blank account, try to
+    # recover the intended liquid account from the text before falling back to
+    # the main bank route. Example: description="Cash cleanup" should belong to
+    # Cash Flow, not to the main-bank net.
+    if _is_cleanup_row(row):
+        combined_text = _clean_text(" ".join(str(row.get(field, "") or "") for field in ("category", "sub_category", "description")))
+        for key, aliases in category_aliases_by_key().items():
+            for alias in sorted(aliases, key=len, reverse=True):
+                if alias and alias in combined_text:
+                    return AccountInference(key, "cleanup_account_hint")
+
     for field_name in ("category", "sub_category"):
         value = _clean_text(row.get(field_name, ""))
         if not value:
@@ -376,9 +404,11 @@ def _account_signed_amount(row) -> float:
     if account_key == MAIN_ACCOUNT_KEY:
         return float(row.get("signed_amount", 0.0) or 0.0)
 
-    # A blank-account expense categorized as Pre-paid card is usually a top-up:
-    # money leaves the main bank but becomes available on the pre-paid account.
-    if transaction_type == "expense" and route_source.endswith("_account_hint"):
+    # A blank-account expense categorized as Pre-paid card / Cash Flow is usually
+    # a top-up: money leaves the main bank but becomes available on that liquid
+    # account. Cleanup/reconciliation rows are different: they are corrections to
+    # the liquid account balance only, so an expense must reduce the liquid account.
+    if transaction_type == "expense" and route_source.endswith("_account_hint") and not _is_cleanup_row(row):
         return amount
 
     if transaction_type == "income":
@@ -389,6 +419,47 @@ def _account_signed_amount(row) -> float:
         return amount if category == "dividend" else -amount
     return float(row.get("signed_amount", 0.0) or 0.0)
 
+
+
+
+def _is_cleanup_row(row) -> bool:
+    text = _clean_text(" ".join(str(row.get(field, "") or "") for field in ("category", "sub_category", "description")))
+    return _looks_like_cleanup_text(text)
+
+
+def _cleanup_like_mask(df: pd.DataFrame) -> pd.Series:
+    if df.empty:
+        return pd.Series(dtype=bool, index=df.index)
+
+    category = df.get("category", pd.Series("", index=df.index)).fillna("").astype(str)
+    sub_category = df.get("sub_category", pd.Series("", index=df.index)).fillna("").astype(str)
+    description = df.get("description", pd.Series("", index=df.index)).fillna("").astype(str)
+    combined = (category + " " + sub_category + " " + description).map(_clean_text)
+    return combined.map(_looks_like_cleanup_text)
+
+
+def _looks_like_cleanup_text(text: str) -> bool:
+    value = _clean_text(text)
+    if not value:
+        return False
+    cleanup_markers = (
+        "account cleanup",
+        "clean up",
+        "cleanup",
+        "reconcile",
+        "reconciliation",
+        "manual reconciliation",
+        "manual adjustment",
+        "balance adjustment",
+        "balance correction",
+        "balance cleanup",
+        "adjusted",
+        "correction",
+        "rettifica",
+        "riconcil",
+        "saldo reale",
+    )
+    return any(marker in value for marker in cleanup_markers)
 
 def _source_label_for_transaction(row) -> str:
     transaction_type = str(row.get("type", "")).strip().title()
