@@ -63,6 +63,14 @@ DEFAULT_AUXILIARY_ACCOUNTS = [
         "is_custom": False,
     },
     {
+        "key": "edenred",
+        "label": "EdenRed",
+        "description": "Meal-voucher / EdenRed balance tracked as a separate liquid account.",
+        "aliases": ["edenred", "eden red", "edenred card", "eden red card"],
+        "category_aliases": ["edenred", "eden red", "edenred card", "eden red card"],
+        "is_custom": False,
+    },
+    {
         "key": "other_account",
         "label": "Other account",
         "description": "External liquid account or card, for example Ticket Restaurant.",

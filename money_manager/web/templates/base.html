@@ -24,7 +24,7 @@
       {% set ep = request.endpoint or '' %}
       {% set home_open = ep in ['dashboard.overview', 'dashboard.overview_detailed', 'dashboard.index', 'transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction'] %}
       {% set planning_open = ep in ['pending.pending_page', 'pending.recurring_page', 'debts.debts_page', 'payables.payables_page', 'expense_projects.expense_projects_page', 'expense_projects.expense_project_detail', 'receivables.receivables_page'] %}
-      {% set accounts_open = ep in ['accounts.accounts_page', 'accounts.account_detail', 'currencies.currencies_page', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
+      {% set accounts_open = ep in ['accounts.accounts_page', 'accounts.account_detail', 'currencies.currencies_page', 'internal_transfers.internal_transfers_page', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
       {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'forecast.forecast', 'documents.documents'] %}
       <nav class="sidebar-nav" aria-label="Main navigation">
         <a class="sidebar-mobile-balance-pill" href="{{ url_for('dashboard.overview') }}" aria-label="Open quick overview">
@@ -57,6 +57,7 @@
           <summary class="nav-label">Accounts</summary>
           <div class="nav-items">
             <a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if ep in ['accounts.accounts_page', 'accounts.account_detail'] else '' }}">Liquid Accounts</a>
+            <a href="{{ url_for('internal_transfers.internal_transfers_page') }}" class="{{ 'active' if ep == 'internal_transfers.internal_transfers_page' else '' }}">Internal Transfers</a>
             <a href="{{ url_for('currencies.currencies_page') }}" class="{{ 'active' if ep == 'currencies.currencies_page' else '' }}">Currency Exchange</a>
             <a href="{{ url_for('sparagnat.sparagnat_page') }}" class="{{ 'active' if ep == 'sparagnat.sparagnat_page' else '' }}">Sparagnat e Fottut</a>
             <a href="{{ url_for('parent_support.parent_support_page') }}" class="{{ 'active' if ep == 'parent_support.parent_support_page' else '' }}">Parent Support</a>

@@ -56,6 +56,7 @@ from money_manager.config.paths import (
     EXPENSE_PROJECT_PLANNED_ITEMS_CSV,
     INVESTMENT_ASSETS_CSV,
     INVESTMENT_MARKET_CACHE_JSON,
+    INTERNAL_TRANSFERS_CSV,
     CURRENCIES_JSON,
     TRANSACTION_FILES,
     ensure_runtime_directories,

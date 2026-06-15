@@ -90,11 +90,30 @@ def main_account_transactions(df: pd.DataFrame) -> pd.DataFrame:
     visible year-to-date period.
     """
     if df.empty:
-        return df.copy()
+        try:
+            from money_manager.services.internal_transfer_service import main_account_transfer_movements
+            return main_account_transfer_movements().copy()
+        except Exception:
+            return df.copy()
     if "account_key" not in df.columns:
         df = enrich_transactions_with_accounts(df)
     df = _valid_dated_transactions(df)
-    return df[_affects_main_net_mask(df)].copy()
+    main_rows = df[_affects_main_net_mask(df)].copy()
+
+    # Internal transfers affect the main-bank position but are not income or
+    # expenses. They are synthetic rows with type="transfer", so summaries add
+    # them to net while keeping income/expense totals clean.
+    try:
+        from money_manager.services.internal_transfer_service import main_account_transfer_movements
+        transfer_rows = main_account_transfer_movements()
+    except Exception:
+        transfer_rows = pd.DataFrame()
+
+    if not transfer_rows.empty:
+        main_rows = pd.concat([main_rows, transfer_rows], ignore_index=True, sort=False)
+        if "date" in main_rows.columns:
+            main_rows = main_rows.sort_values(by=["date"], ascending=False)
+    return main_rows.copy()
 
 
 
@@ -191,6 +210,14 @@ def account_movements(
             tx["source_row_index"] = tx.index
             tx["direction"] = tx["account_signed_amount"].map(lambda value: "in" if value >= 0 else "out")
             frames.append(tx)
+
+    try:
+        from money_manager.services.internal_transfer_service import auxiliary_transfer_movements
+        transfer_frame = auxiliary_transfer_movements(account_key=account_key)
+    except Exception:
+        transfer_frame = pd.DataFrame()
+    if not transfer_frame.empty:
+        frames.append(transfer_frame)
 
     if include_sparagnat_cash:
         sparagnat_frame = _sparagnat_cash_movements()

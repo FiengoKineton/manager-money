@@ -9,6 +9,8 @@
   const isMobileCardsViewport = () => mobileCardsMedia.matches;
   const isDesktopDetailViewport = () => desktopDetailMedia.matches;
   const interactiveSelector = "a, button, input, select, textarea, label, form, summary, details, [role='button'], .mobile-row-toggle";
+  const actionContainerSelector = ".transaction-row-actions-source, .table-action-rail, .inline-action-rail, .card-action-rail, .debt-actions, .payment-action-rail, .rule-card-actions";
+  const actionElementSelector = ".row-action-form, .mini-pay-form, .project-mini-pay, .icon-action-btn, .icon-link-btn, .desktop-actions-cell, .desktop-actions-heading";
 
   function selectAllFilters() {
     document.querySelectorAll(".type-checkbox").forEach((box) => {
@@ -154,23 +156,48 @@
       .trim();
   }
 
+  function getFieldValue(field) {
+    if (!field) return "";
+    if (field.tagName === "SELECT") {
+      const selected = field.selectedOptions && field.selectedOptions[0];
+      return (selected ? selected.textContent : field.value || "").replace(/\s+/g, " ").trim();
+    }
+    if (field.type === "checkbox") return field.checked ? "Yes" : "No";
+    return String(field.value || field.getAttribute("value") || "").replace(/\s+/g, " ").trim();
+  }
+
+  function prettifyFieldName(name) {
+    return String(name || "")
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, (match) => match.toUpperCase())
+      .trim();
+  }
+
+  function getFieldLabel(field, fallback) {
+    if (!field) return fallback || "Detail";
+    return (
+      field.getAttribute("aria-label") ||
+      field.getAttribute("data-label") ||
+      prettifyFieldName(field.getAttribute("name")) ||
+      fallback ||
+      "Detail"
+    );
+  }
+
+  function removeActionNodes(root) {
+    if (!root) return;
+    root.querySelectorAll(`${actionContainerSelector}, ${actionElementSelector}`).forEach((node) => node.remove());
+  }
+
   function getReadableCellText(cell) {
     if (!cell) return "";
 
     const clone = cell.cloneNode(true);
-    clone.querySelectorAll("script, style").forEach((node) => node.remove());
+    clone.querySelectorAll("script, style, input[type='hidden'], [hidden]").forEach((node) => node.remove());
+    removeActionNodes(clone);
 
     clone.querySelectorAll("input, select, textarea").forEach((field) => {
-      let value = "";
-      if (field.tagName === "SELECT") {
-        const selected = field.selectedOptions && field.selectedOptions[0];
-        value = selected ? selected.textContent : field.value;
-      } else if (field.type === "checkbox") {
-        value = field.checked ? "Yes" : "No";
-      } else {
-        value = field.value || field.getAttribute("value") || field.placeholder || "";
-      }
-      field.replaceWith(document.createTextNode(value));
+      field.replaceWith(document.createTextNode(getFieldValue(field)));
     });
 
     return clone.textContent.replace(/\s+/g, " ").trim();
@@ -252,11 +279,39 @@
   function isActionLikeCell(cell, header) {
     const normalizedHeader = normalizeLabel(header);
     if (normalizedHeader.includes("action") || normalizedHeader.includes("edit") || normalizedHeader.includes("delete")) return true;
-    return Boolean(
-      cell.querySelector(
-        ".table-action-rail, .inline-action-rail, .card-action-rail, .debt-actions, .row-action-form, .mini-pay-form, .icon-action-btn, .icon-link-btn"
-      )
-    );
+    const hasActions = Boolean(cell.querySelector(`${actionContainerSelector}, ${actionElementSelector}`));
+    if (!hasActions) return false;
+    // Some real data cells contain hidden drawer actions beside the actual data
+    // (for example the Transactions description column). Treat the whole cell as
+    // an action cell only when no readable row data remains after actions are removed.
+    return !getReadableCellText(cell);
+  }
+
+  function collectActionNodes(cell, label) {
+    if (!cell) return [];
+    if (isActionLikeCell(cell, label)) return [cell];
+    return Array.from(cell.querySelectorAll(actionContainerSelector)).filter((node) => node.querySelector("a, button, form, input, select, textarea"));
+  }
+
+  function detailLinesForDataCell(cell, label) {
+    const fields = Array.from(cell.querySelectorAll("input:not([type='hidden']), select, textarea")).filter((field) => !field.closest(`${actionContainerSelector}, ${actionElementSelector}`));
+    if (fields.length > 1) {
+      const lines = [];
+      fields.forEach((field) => {
+        const value = getFieldValue(field);
+        if (!value) return;
+        lines.push({ label: getFieldLabel(field, label), text: value });
+      });
+      const staticClone = cell.cloneNode(true);
+      staticClone.querySelectorAll("input, select, textarea, script, style, [hidden]").forEach((node) => node.remove());
+      removeActionNodes(staticClone);
+      const staticText = staticClone.textContent.replace(/\s+/g, " ").trim();
+      if (staticText) lines.unshift({ label, text: staticText });
+      return lines;
+    }
+
+    const text = getReadableCellText(cell);
+    return text ? [{ label, text }] : [];
   }
 
   function getRowHeaders(row) {
@@ -349,13 +404,9 @@
 
     cells.forEach((cell, index) => {
       const label = headers[index] || cell.getAttribute("data-label") || "Detail";
-      const text = getReadableCellText(cell);
-      if (isActionLikeCell(cell, label)) {
-        actionCells.push(cell);
-        return;
-      }
-      if (!text) return;
-      details.push({ label, text });
+      collectActionNodes(cell, label).forEach((node) => actionCells.push(node));
+      if (isActionLikeCell(cell, label)) return;
+      detailLinesForDataCell(cell, label).forEach((line) => details.push(line));
     });
 
     return { headers, cells, summary, details, actionCells };
@@ -376,10 +427,20 @@
       const clone = cell.cloneNode(true);
       clone.removeAttribute("data-label");
       clone.removeAttribute("aria-hidden");
-      clone.classList.remove("desktop-actions-cell");
-      clone.classList.add("desktop-drawer-action-group");
+      clone.classList.remove("desktop-actions-cell", "mobile-row-summary");
       clone.querySelectorAll("[data-label]").forEach((node) => node.removeAttribute("data-label"));
-      actionsRoot.appendChild(clone);
+      clone.querySelectorAll("[aria-hidden]").forEach((node) => node.removeAttribute("aria-hidden"));
+
+      const group = document.createElement("div");
+      group.className = "desktop-drawer-action-group";
+      if (clone.matches("td, th")) {
+        while (clone.firstChild) group.appendChild(clone.firstChild);
+      } else {
+        group.appendChild(clone);
+      }
+      if (group.textContent.trim() || group.querySelector("a, button, input, select, textarea, form")) {
+        actionsRoot.appendChild(group);
+      }
     });
 
     if (!actionsRoot.children.length) {
@@ -527,10 +588,15 @@
       if (!headers.length) return;
 
       table.classList.add("mobile-card-table");
-      const isInlineEditTable = table.classList.contains("inline-edit-table");
-      if (!isInlineEditTable) {
-        table.classList.add("desktop-detail-table");
-      }
+      table.classList.add("desktop-detail-table");
+
+      headers.forEach((header, index) => {
+        if (normalizeLabel(header).includes("action")) {
+          table.classList.add("desktop-action-drawer-table");
+          const headerCell = table.querySelectorAll("thead th")[index];
+          if (headerCell) headerCell.classList.add("desktop-actions-heading");
+        }
+      });
 
       table.querySelectorAll("tbody tr").forEach((row) => {
         const dataCells = Array.from(row.children).filter((cell) => !cell.classList.contains("mobile-row-summary"));
@@ -540,14 +606,19 @@
           if (!cell.hasAttribute("data-label")) cell.setAttribute("data-label", header);
           const normalizedHeader = normalizeLabel(header);
           if (isMoneyLikeLabel(normalizedHeader)) cell.classList.add("desktop-money-cell");
-          if (isActionLikeCell(cell, header)) cell.classList.add("desktop-actions-cell");
+          if (isActionLikeCell(cell, header)) {
+            cell.classList.add("desktop-actions-cell");
+            table.classList.add("desktop-action-drawer-table");
+            const headerCell = table.querySelectorAll("thead th")[index];
+            if (headerCell) headerCell.classList.add("desktop-actions-heading");
+          }
           if (normalizedHeader.includes("date") || normalizedHeader.includes("due")) cell.classList.add("desktop-date-cell");
           if (["type", "status", "category", "account"].some((label) => normalizedHeader.includes(label))) {
             cell.classList.add("desktop-pill-cell");
           }
         });
         ensureMobileSummaryRow(table, row, headers);
-        if (!isInlineEditTable && !row.classList.contains("desktop-detail-row") && hasMeaningfulRowDetails(row, headers)) {
+        if (!row.classList.contains("desktop-detail-row") && hasMeaningfulRowDetails(row, headers)) {
           row.classList.add("desktop-detail-row");
           row.setAttribute("tabindex", "0");
         }

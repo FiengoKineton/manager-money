@@ -12,6 +12,7 @@ TRANSACTION_FILES = {
 }
 
 PENDING_CSV = DATA_DIR / "pending.csv"
+INTERNAL_TRANSFERS_CSV = DATA_DIR / "internal_transfers.csv"
 RECURRING_CSV = DATA_DIR / "recurring.csv"
 SPARAGNAT_CSV = DATA_DIR / "sparagnat_fottut.csv"
 PARENT_SUPPORT_CSV = DATA_DIR / "parent_support.csv"

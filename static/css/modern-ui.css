@@ -3629,3 +3629,548 @@ a.sidebar-mobile-balance-pill:active {
     overflow: visible !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Drawer actions for editable tables
+   Debts / Payables / Receivables / Project costs / Parent Support /
+   Sparagnat / Currencies keep their edit/pay/delete controls in the row drawer.
+   This removes the bulky Actions column on desktop while preserving the table
+   scrollbar for wide editable data.
+-------------------------------------------------------------------------- */
+
+@media (min-width: 1001px) {
+  table.desktop-action-drawer-table th.desktop-actions-heading,
+  table.desktop-action-drawer-table td.desktop-actions-cell {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table {
+    min-width: 1040px !important;
+  }
+
+  table.desktop-action-drawer-table.project-table {
+    min-width: 1100px !important;
+  }
+
+  table.desktop-action-drawer-table.currency-table {
+    min-width: 980px !important;
+  }
+
+  table.desktop-action-drawer-table tbody tr.desktop-detail-row > td:last-child:not(.desktop-actions-cell) {
+    border-right: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: 0 15px 15px 0;
+  }
+
+  table.desktop-action-drawer-table tbody tr.desktop-detail-row > td:not(.desktop-actions-cell):last-of-type {
+    border-right: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: 0 15px 15px 0;
+  }
+
+  table.desktop-action-drawer-table tbody tr.desktop-detail-row > td:not(.mobile-row-summary):not(.desktop-actions-cell) {
+    cursor: pointer;
+  }
+
+  table.desktop-action-drawer-table tbody tr.desktop-detail-row > td:not(.mobile-row-summary):not(.desktop-actions-cell):hover {
+    background: rgba(37, 99, 235, 0.045) !important;
+  }
+
+  .desktop-detail-actions .desktop-drawer-action-group,
+  .desktop-detail-actions td.desktop-drawer-action-group,
+  .desktop-detail-actions .debt-actions.desktop-drawer-action-group {
+    display: flex !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .desktop-detail-actions .table-action-rail,
+  .desktop-detail-actions .inline-action-rail,
+  .desktop-detail-actions .card-action-rail {
+    display: flex !important;
+    flex: 1 1 100% !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .desktop-detail-actions .table-action-rail:has(.mini-pay-form),
+  .desktop-detail-actions .table-action-rail:has(.project-mini-pay) {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 0.52rem !important;
+  }
+
+  .desktop-detail-actions .mini-pay-form,
+  .desktop-detail-actions .project-mini-pay {
+    display: grid !important;
+    grid-template-columns: minmax(7.5rem, 1fr) minmax(6rem, 0.85fr) auto !important;
+    align-items: center !important;
+    gap: 0.42rem !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .desktop-detail-actions .mini-pay-form input,
+  .desktop-detail-actions .mini-pay-form select,
+  .desktop-detail-actions .project-mini-pay input,
+  .desktop-detail-actions .project-mini-pay select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .desktop-detail-actions .row-action-form .compact-btn,
+  .desktop-detail-actions .mini-pay-form .compact-btn,
+  .desktop-detail-actions .project-mini-pay .compact-btn,
+  .desktop-detail-actions .secondary-btn.compact-btn {
+    min-height: 2.3rem !important;
+    padding: 0.48rem 0.78rem !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Editable-table polish after moving actions to the drawer
+   - Keeps the horizontal scrollbar.
+   - Makes Debts / Payables / Receivables / project tables look like real rows.
+   - Stops drawer action controls from overlapping on narrow side panels.
+-------------------------------------------------------------------------- */
+
+@media (min-width: 1001px) {
+  .transactions:has(table.desktop-action-drawer-table.inline-edit-table),
+  .panel-card:has(table.desktop-action-drawer-table.inline-edit-table),
+  .form-section:has(table.desktop-action-drawer-table.inline-edit-table) {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    padding-bottom: 1rem;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table {
+    width: 100% !important;
+    min-width: 1120px !important;
+    table-layout: auto !important;
+    border-collapse: separate !important;
+    border-spacing: 0 0.5rem !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table th,
+  table.desktop-action-drawer-table.inline-edit-table td {
+    box-sizing: border-box;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table thead th:not(.desktop-actions-heading) {
+    padding: 0.62rem 0.72rem !important;
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table tbody tr.desktop-detail-row > td:not(.mobile-row-summary):not(.desktop-actions-cell) {
+    padding: 0.7rem 0.72rem !important;
+    vertical-align: top !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Name"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Description"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Item"] {
+    min-width: 13rem;
+    width: 18rem;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Creditor"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Person"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Payee"] {
+    min-width: 10rem;
+    width: 12rem;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Original"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Remaining"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Amount"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Total"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Paid"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Collected"] {
+    min-width: 9rem;
+    width: 10rem;
+    text-align: left !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Progress"] {
+    min-width: 10rem;
+    width: 11rem;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Due"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Date"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Dates"] {
+    min-width: 12rem;
+    width: 13rem;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Status"],
+  table.desktop-action-drawer-table.inline-edit-table td[data-label="Type"] {
+    min-width: 9rem;
+    width: 10rem;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table input,
+  table.desktop-action-drawer-table.inline-edit-table select,
+  table.desktop-action-drawer-table.inline-edit-table textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 2.45rem !important;
+    padding: 0.52rem 0.68rem !important;
+    border-radius: 13px !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table input + input,
+  table.desktop-action-drawer-table.inline-edit-table input + select,
+  table.desktop-action-drawer-table.inline-edit-table select + input,
+  table.desktop-action-drawer-table.inline-edit-table textarea + input {
+    margin-top: 0.48rem !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table .progress-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0.25rem 0 0.22rem !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table small {
+    display: inline-block;
+    color: #64748b;
+    font-size: 0.78rem;
+    line-height: 1.1;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table tr.is-closed td:not(.desktop-actions-cell) {
+    opacity: 0.58;
+  }
+
+  /* The old actions column is intentionally hidden on desktop; the drawer owns it. */
+  table.desktop-action-drawer-table.inline-edit-table th.desktop-actions-heading,
+  table.desktop-action-drawer-table.inline-edit-table td.desktop-actions-cell {
+    display: none !important;
+  }
+
+  .desktop-detail-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    gap: 0.7rem !important;
+    max-height: 42vh;
+    overflow: auto;
+  }
+
+  .desktop-detail-actions .desktop-drawer-action-group,
+  .desktop-detail-actions td.desktop-drawer-action-group,
+  .desktop-detail-actions .debt-actions.desktop-drawer-action-group {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .desktop-detail-actions .table-action-rail,
+  .desktop-detail-actions .inline-action-rail,
+  .desktop-detail-actions .card-action-rail {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.62rem !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .desktop-detail-actions .row-action-form,
+  .desktop-detail-actions .mini-pay-form,
+  .desktop-detail-actions .project-mini-pay {
+    display: grid !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    gap: 0.5rem !important;
+  }
+
+  .desktop-detail-actions .row-action-form {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .desktop-detail-actions .mini-pay-form,
+  .desktop-detail-actions .project-mini-pay {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+  }
+
+  .desktop-detail-actions .mini-pay-form input[type="date"],
+  .desktop-detail-actions .mini-pay-form select,
+  .desktop-detail-actions .project-mini-pay input[type="date"],
+  .desktop-detail-actions .project-mini-pay select {
+    grid-column: 1 / -1 !important;
+  }
+
+  .desktop-detail-actions input,
+  .desktop-detail-actions select,
+  .desktop-detail-actions textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .desktop-detail-actions .compact-btn,
+  .desktop-detail-actions .row-action-form .compact-btn,
+  .desktop-detail-actions .mini-pay-form .compact-btn,
+  .desktop-detail-actions .project-mini-pay .compact-btn {
+    width: 100% !important;
+    min-height: 2.45rem !important;
+    padding: 0.52rem 0.9rem !important;
+    white-space: nowrap !important;
+  }
+
+  .desktop-detail-actions .icon-action-btn,
+  .desktop-detail-actions .icon-link-btn {
+    justify-self: start !important;
+    width: 2.8rem !important;
+    height: 2.8rem !important;
+    min-width: 2.8rem !important;
+    min-height: 2.8rem !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Desktop table/log cleanup — actions live in drawer, tables fit the PC width.
+   Phone/tablet card behaviour is unchanged because every rule here starts at
+   1001px.
+-------------------------------------------------------------------------- */
+@media (min-width: 1001px) {
+  .transactions:has(table.inline-edit-table),
+  .transactions:has(table.transactions-table),
+  .panel-card:has(table.inline-edit-table),
+  .panel-card:has(table.transactions-table),
+  .form-section:has(table.inline-edit-table) {
+    overflow-x: hidden !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table,
+  table.inline-edit-table.desktop-action-drawer-table.project-table,
+  table.inline-edit-table.desktop-action-drawer-table.internal-transfer-table,
+  table.currency-table.desktop-action-drawer-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table th,
+  table.desktop-action-drawer-table.inline-edit-table td,
+  table.currency-table.desktop-action-drawer-table th,
+  table.currency-table.desktop-action-drawer-table td {
+    padding: 0.56rem 0.52rem !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    font-size: 0.8rem !important;
+    line-height: 1.18 !important;
+    vertical-align: top !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table thead th,
+  table.currency-table.desktop-action-drawer-table thead th {
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table tbody tr.desktop-detail-row > td:not(.mobile-row-summary):not(.desktop-actions-cell),
+  table.currency-table.desktop-action-drawer-table tbody tr.desktop-detail-row > td:not(.mobile-row-summary):not(.desktop-actions-cell) {
+    background: rgba(255, 255, 255, 0.94) !important;
+    cursor: pointer;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table input,
+  table.desktop-action-drawer-table.inline-edit-table select,
+  table.desktop-action-drawer-table.inline-edit-table textarea,
+  table.currency-table.desktop-action-drawer-table input,
+  table.currency-table.desktop-action-drawer-table select,
+  table.currency-table.desktop-action-drawer-table textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 2.15rem !important;
+    padding: 0.42rem 0.52rem !important;
+    border-radius: 11px !important;
+    font-size: 0.84rem !important;
+    line-height: 1.15 !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table .table-note-input,
+  table.currency-table.desktop-action-drawer-table .table-note-input {
+    margin-top: 0.38rem !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table .progress-wrap {
+    min-width: 0 !important;
+    height: 0.48rem !important;
+    margin: 0.32rem 0 0.2rem !important;
+  }
+
+  table.desktop-action-drawer-table.inline-edit-table small {
+    font-size: 0.72rem !important;
+    line-height: 1.12 !important;
+  }
+
+  table.desktop-action-drawer-table th.desktop-actions-heading,
+  table.desktop-action-drawer-table td.desktop-actions-cell,
+  table.transactions-fit-table .transaction-row-actions-source {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  /* Useful fixed-width hints for the common log tables after actions disappear. */
+  .internal-transfer-table th:nth-child(1),
+  .internal-transfer-table td:nth-child(1),
+  .inline-edit-table th[data-label="Date"],
+  .inline-edit-table td[data-label="Date"] {
+    width: 9rem !important;
+  }
+
+  .desktop-detail-drawer {
+    width: min(560px, calc(100vw - 3rem)) !important;
+  }
+
+  .desktop-detail-body {
+    overflow-x: hidden !important;
+  }
+
+  .desktop-detail-line {
+    grid-template-columns: minmax(7.5rem, 0.75fr) minmax(0, 1.25fr) !important;
+    gap: 0.75rem !important;
+  }
+
+  .desktop-detail-line-value {
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+  }
+
+  .desktop-detail-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
+    max-height: 44vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .desktop-detail-actions .desktop-drawer-action-group {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    gap: 0.55rem !important;
+  }
+
+  .desktop-detail-actions .transaction-row-actions-source,
+  .desktop-detail-actions .table-action-rail,
+  .desktop-detail-actions .inline-action-rail,
+  .desktop-detail-actions .card-action-rail,
+  .desktop-detail-actions .debt-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    gap: 0.55rem !important;
+  }
+
+  .desktop-detail-actions .row-action-form,
+  .desktop-detail-actions .mini-pay-form,
+  .desktop-detail-actions .project-mini-pay,
+  .desktop-detail-actions .delay-row-form {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    gap: 0.48rem !important;
+    margin: 0 !important;
+  }
+
+  .desktop-detail-actions .mini-pay-form,
+  .desktop-detail-actions .project-mini-pay,
+  .desktop-detail-actions .delay-row-form {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto !important;
+    align-items: center !important;
+  }
+
+  .desktop-detail-actions .mini-pay-form select,
+  .desktop-detail-actions .project-mini-pay select {
+    grid-column: 1 / -1 !important;
+  }
+
+  .desktop-detail-actions input,
+  .desktop-detail-actions select,
+  .desktop-detail-actions textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .desktop-detail-actions .compact-btn,
+  .desktop-detail-actions .desktop-drawer-primary-action,
+  .desktop-detail-actions .desktop-drawer-secondary-action {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .desktop-detail-actions .icon-action-btn,
+  .desktop-detail-actions .icon-link-btn {
+    justify-self: start !important;
+  }
+}
+@media (min-width: 1001px) {
+  table.desktop-action-drawer-table.inline-edit-table td[data-label],
+  table.desktop-action-drawer-table.inline-edit-table th[data-label],
+  table.currency-table.desktop-action-drawer-table td[data-label],
+  table.currency-table.desktop-action-drawer-table th[data-label] {
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}

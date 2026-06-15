@@ -14,6 +14,17 @@ TRANSACTION_FIELDS = [
     "created_at",
 ]
 
+
+INTERNAL_TRANSFER_FIELDS = [
+    "id",
+    "date",
+    "from_account",
+    "to_account",
+    "amount",
+    "description",
+    "created_at",
+]
+
 PENDING_FIELDS = [
     "id",
     "type",
