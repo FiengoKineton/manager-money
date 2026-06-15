@@ -282,3 +282,4 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 289,2026-06-15,Credit cards,PayPal,200.0,,,,,,paypal_credit,PayPal payment (2026-06-15),2026-06-15T11:04:21
 290,2026-06-12,Money owed to me,Glovo Thiefs,28.64,,,,,,Other account,Loan/receivable created: Glovo owes me for Glovo Thiefs. Hamburger order,2026-06-15T11:08:11
 291,2026-06-15,Other,Credit card fee,2.0,,EUR,1.00000000,0.00000000,1.00000000,,,2026-06-15T11:34:14
+292,2026-06-15,Account cleanup,Reconcile to € 45.00,59.0,,,,,,Cash Flow,Account cleanup: adjusted Cash Flow from € 104.00 to € 45.00.,2026-06-15T12:23:56
