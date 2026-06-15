@@ -5,7 +5,9 @@
   }
 
   const mobileCardsMedia = window.matchMedia("(max-width: 760px)");
+  const desktopDetailMedia = window.matchMedia("(min-width: 1001px)");
   const isMobileCardsViewport = () => mobileCardsMedia.matches;
+  const isDesktopDetailViewport = () => desktopDetailMedia.matches;
   const interactiveSelector = "a, button, input, select, textarea, label, form, summary, details, [role='button'], .mobile-row-toggle";
 
   function selectAllFilters() {
@@ -48,12 +50,21 @@
 
   function wireClickableRows() {
     document.querySelectorAll(".clickable-row").forEach((row) => {
+      if (row.dataset.clickableWired === "true") return;
+      row.dataset.clickableWired = "true";
+
       row.addEventListener("click", (event) => {
         if (event.target.closest(interactiveSelector)) return;
 
         if (isMobileCardsViewport() && row.classList.contains("mobile-disclosure-row")) {
           event.preventDefault();
           toggleMobileRow(row);
+          return;
+        }
+
+        if (isDesktopDetailViewport() && canUseDesktopDrawer(row)) {
+          event.preventDefault();
+          openDesktopRowDrawer(row);
           return;
         }
 
@@ -232,6 +243,213 @@
     return span;
   }
 
+  function isMoneyLikeLabel(normalizedHeader) {
+    return ["amount", "remaining", "total", "balance", "cash", "value", "paid", "collected", "original", "rate", "monthly", "yearly", "debt", "net"].some((label) =>
+      normalizedHeader.includes(label)
+    );
+  }
+
+  function isActionLikeCell(cell, header) {
+    const normalizedHeader = normalizeLabel(header);
+    if (normalizedHeader.includes("action") || normalizedHeader.includes("edit") || normalizedHeader.includes("delete")) return true;
+    return Boolean(
+      cell.querySelector(
+        ".table-action-rail, .inline-action-rail, .card-action-rail, .debt-actions, .row-action-form, .mini-pay-form, .icon-action-btn, .icon-link-btn"
+      )
+    );
+  }
+
+  function getRowHeaders(row) {
+    const table = row.closest("table");
+    if (!table) return [];
+    return Array.from(table.querySelectorAll("thead th")).map((header) => header.textContent.trim().replace(/\s+/g, " "));
+  }
+
+  function getRowDataCells(row) {
+    return Array.from(row.children).filter((cell) => cell.tagName === "TD" && !cell.classList.contains("mobile-row-summary"));
+  }
+
+  function hasMeaningfulRowDetails(row, headers) {
+    const cells = getRowDataCells(row);
+    if (cells.length < 2) return false;
+    return cells.some((cell, index) => {
+      if (isActionLikeCell(cell, headers[index] || "")) return false;
+      return Boolean(getReadableCellText(cell));
+    });
+  }
+
+  function canUseDesktopDrawer(row) {
+    if (!row || !row.closest("table")) return false;
+    return hasMeaningfulRowDetails(row, getRowHeaders(row));
+  }
+
+  let desktopDrawerElements = null;
+  let desktopDrawerSourceRow = null;
+
+  function ensureDesktopDrawer() {
+    if (desktopDrawerElements) return desktopDrawerElements;
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "desktop-detail-backdrop";
+
+    const drawer = document.createElement("aside");
+    drawer.className = "desktop-detail-drawer";
+    drawer.setAttribute("aria-hidden", "true");
+    drawer.setAttribute("aria-label", "Row details");
+
+    drawer.innerHTML = `
+      <div class="desktop-detail-shell">
+        <button type="button" class="desktop-detail-close" aria-label="Close details">×</button>
+        <div class="desktop-detail-head">
+          <span class="desktop-detail-eyebrow">Selected row</span>
+          <h2 class="desktop-detail-title">Details</h2>
+          <p class="desktop-detail-subtitle"></p>
+          <strong class="desktop-detail-amount"></strong>
+        </div>
+        <div class="desktop-detail-body"></div>
+        <div class="desktop-detail-actions" aria-label="Available actions"></div>
+      </div>`;
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(drawer);
+
+    const close = () => closeDesktopRowDrawer();
+    backdrop.addEventListener("click", close);
+    drawer.querySelector(".desktop-detail-close").addEventListener("click", close);
+
+    desktopDrawerElements = {
+      backdrop,
+      drawer,
+      title: drawer.querySelector(".desktop-detail-title"),
+      subtitle: drawer.querySelector(".desktop-detail-subtitle"),
+      amount: drawer.querySelector(".desktop-detail-amount"),
+      body: drawer.querySelector(".desktop-detail-body"),
+      actions: drawer.querySelector(".desktop-detail-actions"),
+    };
+
+    return desktopDrawerElements;
+  }
+
+  function closeDesktopRowDrawer() {
+    if (!desktopDrawerElements) return;
+    desktopDrawerElements.backdrop.classList.remove("is-visible");
+    desktopDrawerElements.drawer.classList.remove("is-visible");
+    desktopDrawerElements.drawer.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("desktop-detail-open");
+    if (desktopDrawerSourceRow) desktopDrawerSourceRow.classList.remove("is-desktop-selected");
+    desktopDrawerSourceRow = null;
+  }
+
+  function buildDesktopDetail(row) {
+    const headers = getRowHeaders(row);
+    const cells = getRowDataCells(row);
+    const summary = buildMobileSummary(row, headers);
+    const details = [];
+    const actionCells = [];
+
+    cells.forEach((cell, index) => {
+      const label = headers[index] || cell.getAttribute("data-label") || "Detail";
+      const text = getReadableCellText(cell);
+      if (isActionLikeCell(cell, label)) {
+        actionCells.push(cell);
+        return;
+      }
+      if (!text) return;
+      details.push({ label, text });
+    });
+
+    return { headers, cells, summary, details, actionCells };
+  }
+
+  function addDesktopDrawerActions(actionsRoot, row, detail) {
+    actionsRoot.innerHTML = "";
+
+    if (row.dataset.href) {
+      const openLink = document.createElement("a");
+      openLink.href = row.dataset.href;
+      openLink.className = "desktop-drawer-primary-action";
+      openLink.textContent = "Open / edit full page";
+      actionsRoot.appendChild(openLink);
+    }
+
+    detail.actionCells.forEach((cell) => {
+      const clone = cell.cloneNode(true);
+      clone.removeAttribute("data-label");
+      clone.classList.add("desktop-drawer-action-group");
+      clone.querySelectorAll("[data-label]").forEach((node) => node.removeAttribute("data-label"));
+      actionsRoot.appendChild(clone);
+    });
+
+    if (!actionsRoot.children.length) {
+      const closeButton = document.createElement("button");
+      closeButton.type = "button";
+      closeButton.className = "desktop-drawer-secondary-action";
+      closeButton.textContent = "Close";
+      closeButton.addEventListener("click", closeDesktopRowDrawer);
+      actionsRoot.appendChild(closeButton);
+    }
+  }
+
+  function openDesktopRowDrawer(row) {
+    if (!canUseDesktopDrawer(row)) return;
+
+    const elements = ensureDesktopDrawer();
+    const detail = buildDesktopDetail(row);
+
+    if (desktopDrawerSourceRow && desktopDrawerSourceRow !== row) {
+      desktopDrawerSourceRow.classList.remove("is-desktop-selected");
+    }
+
+    desktopDrawerSourceRow = row;
+    row.classList.add("is-desktop-selected");
+
+    elements.title.textContent = detail.summary.title || "Details";
+    elements.subtitle.textContent = detail.summary.meta || "Click actions below to modify this row.";
+    elements.amount.textContent = detail.summary.amount || "";
+    elements.amount.style.display = detail.summary.amount ? "block" : "none";
+
+    elements.body.innerHTML = "";
+    detail.details.forEach((item) => {
+      const line = document.createElement("div");
+      line.className = "desktop-detail-line";
+      line.appendChild(makeSpan("desktop-detail-line-label", item.label));
+      line.appendChild(makeSpan("desktop-detail-line-value", item.text));
+      elements.body.appendChild(line);
+    });
+
+    addDesktopDrawerActions(elements.actions, row, detail);
+
+    elements.backdrop.classList.add("is-visible");
+    elements.drawer.classList.add("is-visible");
+    elements.drawer.setAttribute("aria-hidden", "false");
+    document.body.classList.add("desktop-detail-open");
+  }
+
+  function wireDesktopDetailRows() {
+    document.querySelectorAll("table.desktop-detail-table tbody tr.desktop-detail-row").forEach((row) => {
+      if (row.classList.contains("clickable-row")) return;
+      if (row.dataset.desktopDetailWired === "true") return;
+      row.dataset.desktopDetailWired = "true";
+      row.addEventListener("click", (event) => {
+        if (!isDesktopDetailViewport()) return;
+        if (event.target.closest(interactiveSelector)) return;
+        event.preventDefault();
+        openDesktopRowDrawer(row);
+      });
+      row.addEventListener("keydown", (event) => {
+        if (!isDesktopDetailViewport()) return;
+        if (event.key !== "Enter" && event.key !== " ") return;
+        if (event.target.closest(interactiveSelector)) return;
+        event.preventDefault();
+        openDesktopRowDrawer(row);
+      });
+    });
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeDesktopRowDrawer();
+  });
+
   function ensureMobileSummaryRow(table, row, headers) {
     if (row.querySelector(":scope > .mobile-row-summary")) return;
 
@@ -307,13 +525,30 @@
       if (!headers.length) return;
 
       table.classList.add("mobile-card-table");
+      const isInlineEditTable = table.classList.contains("inline-edit-table");
+      if (!isInlineEditTable) {
+        table.classList.add("desktop-detail-table");
+      }
+
       table.querySelectorAll("tbody tr").forEach((row) => {
         const dataCells = Array.from(row.children).filter((cell) => !cell.classList.contains("mobile-row-summary"));
         dataCells.forEach((cell, index) => {
-          if (cell.tagName !== "TD" || cell.hasAttribute("data-label")) return;
-          cell.setAttribute("data-label", headers[index] || "");
+          if (cell.tagName !== "TD") return;
+          const header = headers[index] || "";
+          if (!cell.hasAttribute("data-label")) cell.setAttribute("data-label", header);
+          const normalizedHeader = normalizeLabel(header);
+          if (isMoneyLikeLabel(normalizedHeader)) cell.classList.add("desktop-money-cell");
+          if (isActionLikeCell(cell, header)) cell.classList.add("desktop-actions-cell");
+          if (normalizedHeader.includes("date") || normalizedHeader.includes("due")) cell.classList.add("desktop-date-cell");
+          if (["type", "status", "category", "account"].some((label) => normalizedHeader.includes(label))) {
+            cell.classList.add("desktop-pill-cell");
+          }
         });
         ensureMobileSummaryRow(table, row, headers);
+        if (!isInlineEditTable && !row.classList.contains("desktop-detail-row") && hasMeaningfulRowDetails(row, headers)) {
+          row.classList.add("desktop-detail-row");
+          row.setAttribute("tabindex", "0");
+        }
       });
     });
   }
@@ -475,9 +710,10 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    wireClickableRows();
     wireMobileNavGroups();
     enhanceResponsiveTables();
+    wireClickableRows();
+    wireDesktopDetailRows();
     enhanceCompactFormCards();
 
     document.querySelectorAll('[data-action="select-all-filters"]').forEach((button) => {
@@ -486,6 +722,12 @@
 
     if (mobileCardsMedia.addEventListener) {
       mobileCardsMedia.addEventListener("change", collapseExpandedRowsWhenLeavingMobile);
+    }
+
+    if (desktopDetailMedia.addEventListener) {
+      desktopDetailMedia.addEventListener("change", () => {
+        if (!isDesktopDetailViewport()) closeDesktopRowDrawer();
+      });
     }
   });
 })();

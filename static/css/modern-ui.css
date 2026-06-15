@@ -1377,3 +1377,1316 @@ tr.row-investment td {
     margin: -0.64rem -0.64rem 0.64rem;
   }
 }
+
+/* =========================
+   Desktop professional workspace refresh
+   - Dense dashboard spacing
+   - Better filter toolbar
+   - Cleaner app tables
+   - Click-to-inspect side drawer
+   ========================= */
+
+.desktop-detail-backdrop,
+.desktop-detail-drawer {
+  display: none;
+}
+
+@media (min-width: 1001px) {
+  :root {
+    --sidebar-width: 292px;
+  }
+
+  body.app-body {
+    background:
+      radial-gradient(circle at 18rem -10rem, rgba(37, 99, 235, 0.15), transparent 30rem),
+      radial-gradient(circle at 100% 10rem, rgba(14, 165, 233, 0.09), transparent 30rem),
+      linear-gradient(135deg, #f8fbff 0%, #edf4fb 48%, #f7fafc 100%);
+  }
+
+  .app-main {
+    min-width: 0;
+  }
+
+  .container {
+    width: min(1520px, 100%);
+    padding: 1.45rem 2rem 3.4rem;
+  }
+
+  .sidebar {
+    padding: 1.05rem;
+  }
+
+  .brand {
+    margin-bottom: 0.15rem;
+    padding: 0.62rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .nav-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 10px;
+    padding: 0.36rem 0.46rem;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+
+  .nav-label:hover {
+    background: rgba(255, 255, 255, 0.055);
+    color: #cbd5e1;
+  }
+
+  .nav-group > summary.nav-label::-webkit-details-marker {
+    display: none;
+  }
+
+  .nav-group > summary.nav-label::after {
+    content: "▾";
+    font-size: 0.68rem;
+    opacity: 0.72;
+    transition: transform 0.16s ease;
+  }
+
+  .nav-group[open] > summary.nav-label::after {
+    transform: rotate(180deg);
+  }
+
+  .sidebar-nav {
+    gap: 0.72rem;
+    padding-right: 0.12rem;
+  }
+
+  .sidebar-nav a {
+    min-height: 2.35rem;
+    padding: 0.58rem 0.68rem;
+    font-size: 0.88rem;
+  }
+
+  .topbar {
+    z-index: 70;
+    min-height: 5.1rem;
+    grid-template-columns: minmax(250px, 1fr) auto minmax(320px, 1fr);
+    padding: 0.85rem 1.75rem;
+    background: rgba(248, 250, 252, 0.80);
+    border-bottom: 1px solid rgba(203, 213, 225, 0.75);
+  }
+
+  .topbar h1 {
+    font-size: 1.2rem;
+  }
+
+  .topbar-balance-pill {
+    min-width: 270px;
+    padding: 0.62rem 1.35rem;
+  }
+
+  .topbar-balance-pill strong {
+    font-size: 1.18rem;
+  }
+
+  .quick-actions {
+    flex-wrap: nowrap;
+  }
+
+  .quick-action {
+    min-height: 2.55rem;
+    padding: 0.58rem 0.9rem;
+    white-space: nowrap;
+  }
+
+  .logout-action {
+    color: #64748b;
+  }
+
+  .page-heading,
+  .professional-heading,
+  .filters,
+  .panel-card,
+  .form-section,
+  .transactions,
+  .pending-card,
+  .chart-card,
+  .card {
+    border-radius: 24px;
+  }
+
+  .panel-card,
+  .form-section,
+  .transactions,
+  .pending-card,
+  .chart-card,
+  .card {
+    padding: 1.15rem;
+  }
+
+  .panel-card:hover,
+  .form-section:hover,
+  .transactions:hover,
+  .pending-card:hover,
+  .chart-card:hover,
+  .card:hover {
+    transform: none;
+  }
+
+  .kpi-grid,
+  .summary,
+  .quick-link-grid,
+  .secondary-metrics-strip,
+  .liquidity-snapshot-grid,
+  .pending-insights-grid,
+  .account-card-grid,
+  .account-directory-grid {
+    gap: 0.9rem;
+  }
+
+  .kpi-card,
+  .summary-card,
+  .mini-priority-card,
+  .liquid-account-card,
+  .pending-insight-card,
+  .account-mini-card {
+    padding: 0.92rem 1rem;
+    border-radius: 20px;
+  }
+
+  .kpi-card strong,
+  .summary-card strong,
+  .mini-priority-card strong,
+  .liquid-account-card strong,
+  .pending-insight-card strong {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Desktop filters become a toolbar instead of a tall form block. */
+  .filters {
+    padding: 0.9rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .filters-form {
+    display: grid;
+    grid-template-columns: minmax(300px, 0.72fr) minmax(0, 1.65fr);
+    gap: 0.9rem 1rem;
+    align-items: end;
+  }
+
+  .filter-date {
+    display: grid;
+    gap: 0.44rem;
+  }
+
+  .date-inputs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.58rem;
+  }
+
+  .filter-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: end;
+  }
+
+  .filter-row {
+    display: grid;
+    grid-template-columns: auto minmax(190px, 0.82fr) minmax(190px, 1fr) minmax(170px, 0.8fr);
+    gap: 0.68rem;
+    align-items: end;
+  }
+
+  .filter-field,
+  .filter-date,
+  .filter-main {
+    min-width: 0;
+  }
+
+  .filter-field label,
+  .block-label {
+    margin-bottom: 0.35rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+  }
+
+  .small-label {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 750;
+  }
+
+  .types-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.38rem;
+    align-items: center;
+  }
+
+  .checkbox-inline {
+    min-height: 2.35rem;
+    padding: 0.36rem 0.62rem;
+    background: rgba(248, 250, 252, 0.92);
+    border: 1px solid rgba(203, 213, 225, 0.82);
+  }
+
+  .filters input,
+  .filters select {
+    min-height: 2.55rem;
+    border-radius: 15px;
+  }
+
+  .filters select[multiple] {
+    min-height: 4.95rem;
+  }
+
+  .filters .hint {
+    margin: 0.22rem 0 0;
+    font-size: 0.72rem;
+  }
+
+  .filters-actions {
+    align-self: end;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 0.46rem;
+  }
+
+  .filters-actions .primary-btn,
+  .filters-actions .secondary-btn,
+  .filters-actions button,
+  .filters-actions a {
+    min-height: 2.55rem;
+    white-space: nowrap;
+  }
+
+  /* Desktop tables are dense and inspectable; mobile cards are untouched. */
+  .transactions {
+    overflow: auto;
+  }
+
+  table.desktop-detail-table {
+    border-collapse: separate;
+    border-spacing: 0 0.42rem;
+    font-size: 0.86rem;
+  }
+
+  table.desktop-detail-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 0.58rem 0.72rem;
+    background: rgba(241, 245, 249, 0.96);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 0;
+    color: #475569;
+    white-space: nowrap;
+  }
+
+  table.desktop-detail-table tbody tr.desktop-detail-row {
+    outline: 0;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  table.desktop-detail-table tbody tr.desktop-detail-row > td:not(.mobile-row-summary) {
+    padding: 0.62rem 0.72rem;
+    border-top: 1px solid rgba(226, 232, 240, 0.92);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.92);
+    background: rgba(255, 255, 255, 0.87);
+    vertical-align: middle;
+  }
+
+  table.desktop-detail-table tbody tr.desktop-detail-row > td.mobile-row-summary + td {
+    border-left: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: 15px 0 0 15px;
+  }
+
+  table.desktop-detail-table tbody tr.desktop-detail-row > td:last-child {
+    border-right: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: 0 15px 15px 0;
+  }
+
+  table.desktop-detail-table tbody tr.desktop-detail-row:hover > td:not(.mobile-row-summary),
+  table.desktop-detail-table tbody tr.desktop-detail-row.is-desktop-selected > td:not(.mobile-row-summary) {
+    background: rgba(248, 250, 252, 0.98);
+    border-color: rgba(96, 165, 250, 0.42);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.055);
+  }
+
+  table.desktop-detail-table tbody tr.desktop-detail-row:hover {
+    cursor: pointer;
+  }
+
+  table.desktop-detail-table tbody tr.row-expense > td.mobile-row-summary + td {
+    box-shadow: inset 4px 0 0 rgba(180, 35, 24, 0.88);
+  }
+
+  table.desktop-detail-table tbody tr.row-income > td.mobile-row-summary + td {
+    box-shadow: inset 4px 0 0 rgba(22, 112, 63, 0.88);
+  }
+
+  table.desktop-detail-table tbody tr.row-investment > td.mobile-row-summary + td {
+    box-shadow: inset 4px 0 0 rgba(37, 99, 235, 0.88);
+  }
+
+  table.desktop-detail-table .desktop-money-cell {
+    text-align: right;
+    font-weight: 850;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  table.desktop-detail-table .desktop-date-cell {
+    white-space: nowrap;
+    color: #475569;
+    font-variant-numeric: tabular-nums;
+  }
+
+  table.desktop-detail-table .desktop-pill-cell .type-badge,
+  table.desktop-detail-table .desktop-pill-cell .soft-badge,
+  table.desktop-detail-table .desktop-pill-cell .status-badge,
+  table.desktop-detail-table .desktop-pill-cell .account-table-badge {
+    display: inline-flex;
+    width: fit-content;
+  }
+
+  table.desktop-detail-table .desktop-actions-cell,
+  table.desktop-detail-table .table-action-rail,
+  table.desktop-detail-table .inline-action-rail,
+  table.desktop-detail-table .card-action-rail,
+  table.desktop-detail-table .debt-actions {
+    min-width: 160px;
+  }
+
+  .inline-edit-table input,
+  .inline-edit-table select,
+  .inline-edit-table textarea,
+  table.desktop-detail-table input,
+  table.desktop-detail-table select,
+  table.desktop-detail-table textarea {
+    min-height: 2.2rem;
+    border-radius: 11px;
+    font-size: 0.82rem;
+  }
+
+  table.desktop-detail-table .icon-action-btn,
+  table.desktop-detail-table .icon-link-btn {
+    width: 2.12rem;
+    height: 2.12rem;
+    min-width: 2.12rem;
+    min-height: 2.12rem;
+    border-radius: 12px;
+  }
+
+  .desktop-detail-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 800;
+    display: block;
+    pointer-events: none;
+    background: rgba(15, 23, 42, 0);
+    transition: background 0.18s ease;
+  }
+
+  .desktop-detail-backdrop.is-visible {
+    pointer-events: auto;
+    background: rgba(15, 23, 42, 0.22);
+  }
+
+  .desktop-detail-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 810;
+    display: block;
+    width: min(470px, 92vw);
+    height: 100vh;
+    padding: 1rem;
+    transform: translateX(105%);
+    transition: transform 0.22s ease;
+    pointer-events: none;
+  }
+
+  .desktop-detail-drawer.is-visible {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .desktop-detail-shell {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid rgba(203, 213, 225, 0.82);
+    border-radius: 28px;
+    background:
+      radial-gradient(circle at 100% 0, rgba(37, 99, 235, 0.15), transparent 18rem),
+      rgba(255, 255, 255, 0.94);
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.22);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .desktop-detail-close {
+    position: absolute;
+    top: 0.88rem;
+    right: 0.88rem;
+    z-index: 2;
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.84);
+    color: #0f172a;
+    font-size: 1.25rem;
+    cursor: pointer;
+  }
+
+  .desktop-detail-head {
+    padding: 1.25rem 1.25rem 1rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.82);
+  }
+
+  .desktop-detail-eyebrow {
+    display: block;
+    margin-bottom: 0.36rem;
+    color: var(--brand);
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .desktop-detail-title {
+    max-width: calc(100% - 3rem);
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.55rem;
+    line-height: 1.03;
+    letter-spacing: -0.05em;
+    overflow-wrap: anywhere;
+  }
+
+  .desktop-detail-subtitle {
+    margin: 0.55rem 0 0;
+    color: #64748b;
+    font-size: 0.92rem;
+    line-height: 1.35;
+  }
+
+  .desktop-detail-amount {
+    display: block;
+    margin-top: 0.72rem;
+    color: #0f172a;
+    font-size: 1.48rem;
+    letter-spacing: -0.045em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .desktop-detail-body {
+    display: grid;
+    align-content: start;
+    gap: 0.55rem;
+    overflow: auto;
+    padding: 1rem 1.25rem;
+  }
+
+  .desktop-detail-line {
+    display: grid;
+    grid-template-columns: minmax(110px, 0.42fr) minmax(0, 1fr);
+    gap: 0.7rem;
+    padding: 0.72rem 0.78rem;
+    border: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: 16px;
+    background: rgba(248, 250, 252, 0.82);
+  }
+
+  .desktop-detail-line-label {
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .desktop-detail-line-value {
+    min-width: 0;
+    color: #0f172a;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+  }
+
+  .desktop-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    align-items: center;
+    padding: 1rem 1.25rem 1.15rem;
+    border-top: 1px solid rgba(226, 232, 240, 0.82);
+    background: rgba(248, 250, 252, 0.9);
+  }
+
+  .desktop-drawer-primary-action,
+  .desktop-drawer-secondary-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.45rem;
+    padding: 0.56rem 0.9rem;
+    border-radius: 999px;
+    font-weight: 850;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .desktop-drawer-primary-action {
+    border: 1px solid rgba(37, 99, 235, 0.25);
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: #ffffff;
+    box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
+  }
+
+  .desktop-drawer-secondary-action {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: #ffffff;
+    color: #334155;
+  }
+
+  .desktop-drawer-action-group {
+    display: inline-flex !important;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    gap: 0.42rem;
+    align-items: center;
+    width: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .desktop-drawer-action-group::before {
+    content: none !important;
+  }
+
+  .desktop-detail-actions form,
+  .desktop-detail-actions .row-action-form,
+  .desktop-detail-actions .mini-pay-form {
+    display: inline-flex !important;
+    flex: 0 1 auto !important;
+    gap: 0.35rem;
+    align-items: center;
+    margin: 0 !important;
+  }
+
+  .desktop-detail-actions input,
+  .desktop-detail-actions select {
+    width: auto;
+    min-width: 0;
+    max-width: 9.6rem;
+    min-height: 2.25rem;
+    border-radius: 12px;
+    font-size: 0.82rem;
+  }
+
+  .desktop-detail-actions .icon-action-btn,
+  .desktop-detail-actions .icon-link-btn {
+    width: 2.35rem;
+    height: 2.35rem;
+    min-width: 2.35rem;
+    min-height: 2.35rem;
+    border-radius: 13px;
+  }
+
+  body.desktop-detail-open .desktop-detail-drawer,
+  body.desktop-detail-open .desktop-detail-backdrop {
+    display: block;
+  }
+}
+
+@media (min-width: 1001px) and (max-width: 1260px) {
+  .filters-form {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-main {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* =========================
+   Dashboard/filter toolbar repair
+   - Keep checkbox controls small.
+   - Prevent desktop filter fields from overlapping.
+   - Make dashboard/transactions filters read like a compact toolbar.
+   ========================= */
+
+.filters input[type="checkbox"],
+.filters .type-checkbox {
+  width: 1rem !important;
+  height: 1rem !important;
+  min-width: 1rem !important;
+  min-height: 1rem !important;
+  max-width: 1rem !important;
+  max-height: 1rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex: 0 0 1rem;
+  border-radius: 0.25rem;
+  box-shadow: none;
+}
+
+@media (min-width: 1001px) {
+  .filters {
+    overflow: visible;
+    padding: 1rem 1.05rem;
+  }
+
+  .filters-form {
+    display: grid;
+    grid-template-columns: minmax(330px, 0.62fr) minmax(0, 1.38fr);
+    gap: 1rem 1.1rem;
+    align-items: end;
+  }
+
+  .filter-date {
+    display: grid;
+    gap: 0.42rem;
+    min-width: 0;
+  }
+
+  .date-inputs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    min-width: 0;
+  }
+
+  .filter-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.8rem;
+    align-items: end;
+    min-width: 0;
+  }
+
+  .filter-row {
+    display: grid;
+    grid-template-columns:
+      minmax(205px, 0.76fr)
+      minmax(210px, 0.9fr)
+      minmax(230px, 1fr)
+      minmax(205px, 0.78fr);
+    gap: 0.75rem;
+    align-items: start;
+    min-width: 0;
+  }
+
+  .filter-field {
+    min-width: 0;
+  }
+
+  .filter-field label,
+  .block-label {
+    display: block;
+    margin: 0 0 0.35rem;
+    line-height: 1.1;
+  }
+
+  .types-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .checkbox-inline {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.42rem;
+    min-height: 2.35rem;
+    width: auto;
+    padding: 0.44rem 0.68rem;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .filters input:not([type="checkbox"]),
+  .filters select {
+    min-height: 2.6rem;
+    border-radius: 15px;
+  }
+
+  .filters select[multiple] {
+    height: 7.25rem;
+    min-height: 7.25rem;
+  }
+
+  .filters .hint {
+    min-height: 1.7rem;
+    margin: 0.24rem 0 0;
+    line-height: 1.25;
+  }
+
+  .amount-range-inputs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.52rem;
+  }
+
+  .filters-actions {
+    align-self: end;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 0.48rem;
+    margin-top: 0;
+  }
+
+  .filters-actions .primary-btn,
+  .filters-actions .secondary-btn,
+  .filters-actions button,
+  .filters-actions a {
+    min-height: 2.6rem;
+    padding-inline: 1rem;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 1001px) and (max-width: 1320px) {
+  .filters-form {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .filter-main {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .filter-row {
+    grid-template-columns:
+      minmax(190px, 0.8fr)
+      minmax(200px, 0.9fr)
+      minmax(220px, 1fr)
+      minmax(190px, 0.8fr);
+  }
+}
+
+@media (min-width: 1001px) and (max-width: 1120px) {
+  .filter-main {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* =========================
+   Inline edit table desktop repair
+   - Keeps the newer dashboard/filter/drawer UI.
+   - Prevents debt/payable/receivable partial-pay controls from overlapping.
+   - Leaves mobile disclosure cards untouched.
+   ========================= */
+
+@media (min-width: 1001px) {
+  .transactions:has(table.inline-edit-table) {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  .transactions table.inline-edit-table,
+  table.inline-edit-table {
+    display: table !important;
+    width: 100% !important;
+    min-width: 1320px !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  .transactions table.inline-edit-table thead,
+  table.inline-edit-table thead {
+    display: table-header-group !important;
+  }
+
+  .transactions table.inline-edit-table tbody,
+  table.inline-edit-table tbody {
+    display: table-row-group !important;
+  }
+
+  .transactions table.inline-edit-table tr,
+  table.inline-edit-table tr {
+    display: table-row !important;
+    height: auto !important;
+    transform: none !important;
+  }
+
+  .transactions table.inline-edit-table th,
+  table.inline-edit-table th {
+    padding: 0.68rem 0.8rem !important;
+    white-space: nowrap;
+  }
+
+  .transactions table.inline-edit-table td,
+  table.inline-edit-table td,
+  .transactions table.inline-edit-table tbody tr > td:not(.mobile-row-summary),
+  table.inline-edit-table tbody tr > td:not(.mobile-row-summary) {
+    display: table-cell !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0.72rem 0.8rem !important;
+    vertical-align: top !important;
+    background: rgba(255, 255, 255, 0.88) !important;
+    border-top: 1px solid rgba(226, 232, 240, 0.9) !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .transactions table.inline-edit-table td::before,
+  table.inline-edit-table td::before {
+    content: none !important;
+  }
+
+  .transactions table.inline-edit-table .mobile-row-summary,
+  table.inline-edit-table .mobile-row-summary {
+    display: none !important;
+  }
+
+  .transactions table.inline-edit-table td:first-child,
+  table.inline-edit-table td:first-child,
+  .transactions table.inline-edit-table td.mobile-row-summary + td,
+  table.inline-edit-table td.mobile-row-summary + td {
+    border-left: 1px solid rgba(226, 232, 240, 0.9) !important;
+    border-radius: 15px 0 0 15px !important;
+  }
+
+  .transactions table.inline-edit-table td:last-child,
+  table.inline-edit-table td:last-child {
+    border-right: 1px solid rgba(226, 232, 240, 0.9) !important;
+    border-radius: 0 15px 15px 0 !important;
+  }
+
+  .transactions table.inline-edit-table input,
+  .transactions table.inline-edit-table select,
+  .transactions table.inline-edit-table textarea,
+  table.inline-edit-table input,
+  table.inline-edit-table select,
+  table.inline-edit-table textarea {
+    display: block;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 2.25rem;
+    padding: 0.45rem 0.58rem;
+    border-radius: 12px;
+    box-sizing: border-box;
+    font-size: 0.86rem;
+  }
+
+  .transactions table.inline-edit-table input + input,
+  .transactions table.inline-edit-table input + select,
+  .transactions table.inline-edit-table select + input,
+  .transactions table.inline-edit-table select + select,
+  .transactions table.inline-edit-table textarea + input,
+  table.inline-edit-table input + input,
+  table.inline-edit-table input + select,
+  table.inline-edit-table select + input,
+  table.inline-edit-table select + select,
+  table.inline-edit-table textarea + input {
+    margin-top: 0.42rem;
+  }
+
+  .transactions table.inline-edit-table .table-note-input,
+  table.inline-edit-table .table-note-input {
+    min-width: 0 !important;
+  }
+
+  .transactions table.inline-edit-table .progress-wrap,
+  table.inline-edit-table .progress-wrap {
+    min-width: 0 !important;
+    margin-top: 0.2rem;
+  }
+
+  .transactions table.inline-edit-table .checkbox-inline,
+  table.inline-edit-table .checkbox-inline {
+    display: inline-flex;
+    width: auto;
+    min-height: 2.15rem;
+    padding: 0.34rem 0.56rem;
+  }
+
+  .transactions table.inline-edit-table .checkbox-inline input[type="checkbox"],
+  table.inline-edit-table .checkbox-inline input[type="checkbox"] {
+    display: inline-block;
+    width: 1rem !important;
+    height: 1rem !important;
+    min-width: 1rem !important;
+    min-height: 1rem !important;
+    margin: 0 !important;
+  }
+
+  .transactions table.inline-edit-table .debt-actions,
+  .transactions table.inline-edit-table .desktop-actions-cell,
+  table.inline-edit-table .debt-actions,
+  table.inline-edit-table .desktop-actions-cell {
+    min-width: 0 !important;
+  }
+
+  .transactions table.inline-edit-table .table-action-rail,
+  .transactions table.inline-edit-table .inline-action-rail,
+  .transactions table.inline-edit-table .card-action-rail,
+  table.inline-edit-table .table-action-rail,
+  table.inline-edit-table .inline-action-rail,
+  table.inline-edit-table .card-action-rail {
+    display: grid !important;
+    grid-template-columns: auto auto;
+    justify-content: start !important;
+    align-items: start !important;
+    gap: 0.42rem !important;
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  .transactions table.inline-edit-table .row-action-form,
+  table.inline-edit-table .row-action-form {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 !important;
+    min-width: 0;
+  }
+
+  .transactions table.inline-edit-table .mini-pay-form,
+  table.inline-edit-table .mini-pay-form {
+    grid-column: 1 / -1;
+    display: grid !important;
+    grid-template-columns: minmax(7.8rem, 1fr) minmax(6.2rem, 0.9fr) auto;
+    align-items: center;
+    gap: 0.42rem;
+    width: 100%;
+    margin: 0 !important;
+    min-width: 0;
+  }
+
+  .transactions table.inline-edit-table .mini-pay-form input[type="date"],
+  .transactions table.inline-edit-table .mini-pay-form input[type="number"],
+  .transactions table.inline-edit-table .mini-pay-form select,
+  table.inline-edit-table .mini-pay-form input[type="date"],
+  table.inline-edit-table .mini-pay-form input[type="number"],
+  table.inline-edit-table .mini-pay-form select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .transactions table.inline-edit-table .compact-btn,
+  table.inline-edit-table .compact-btn {
+    min-height: 2.25rem;
+    padding: 0.42rem 0.72rem;
+    white-space: nowrap;
+  }
+
+  .transactions table.inline-edit-table .icon-action-btn,
+  .transactions table.inline-edit-table .icon-link-btn,
+  table.inline-edit-table .icon-action-btn,
+  table.inline-edit-table .icon-link-btn {
+    width: 2.2rem;
+    height: 2.2rem;
+    min-width: 2.2rem;
+    min-height: 2.2rem;
+    border-radius: 13px;
+  }
+}
+
+@media (min-width: 1001px) and (max-width: 1450px) {
+  .transactions table.inline-edit-table,
+  table.inline-edit-table {
+    min-width: 1450px !important;
+  }
+}
+
+/* =========================
+   Desktop dashboard filter toolbar fit fix
+   - Removes hard minimum widths that pushed the toolbar outside the card.
+   - Keeps the current dashboard/table/drawer/mobile changes.
+   ========================= */
+
+@media (min-width: 1001px) {
+  .filters {
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .filters *,
+  .filters *::before,
+  .filters *::after {
+    box-sizing: border-box;
+  }
+
+  .filters-form {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.9fr);
+    gap: 1rem 1.2rem;
+    align-items: end;
+  }
+
+  .filters-form > *,
+  .filter-date,
+  .filter-main,
+  .filter-row,
+  .filter-field,
+  .date-inputs,
+  .amount-range-inputs {
+    min-width: 0;
+  }
+
+  .filter-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.68rem;
+    align-items: end;
+  }
+
+  .filter-row {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 0.86fr)
+      minmax(0, 0.96fr)
+      minmax(0, 1.1fr)
+      minmax(0, 0.9fr);
+    gap: 0.74rem;
+    align-items: start;
+    width: 100%;
+  }
+
+  .filters-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: 0;
+  }
+
+  .filters input:not([type="checkbox"]),
+  .filters select,
+  .filters textarea {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .amount-range-inputs,
+  .date-inputs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters select[multiple] {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .filters .hint {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (min-width: 1001px) and (max-width: 1480px) {
+  .filters-form {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .filter-row {
+    grid-template-columns:
+      minmax(0, 0.82fr)
+      minmax(0, 0.98fr)
+      minmax(0, 1.1fr)
+      minmax(0, 0.92fr);
+  }
+}
+
+@media (min-width: 1001px) and (max-width: 1180px) {
+  .filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* =========================
+   Inline partial-payment layout repair
+   - Keeps Debts / Payables / Receivables / Project partial-pay forms inside the table.
+   - Does not change routes, forms, or calculation logic.
+   ========================= */
+
+@media (min-width: 1001px) {
+  .transactions:has(table.inline-edit-table),
+  .panel-card:has(table.inline-edit-table),
+  .form-section:has(table.inline-edit-table) {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table.inline-edit-table {
+    width: 100%;
+    min-width: 1180px;
+  }
+
+  table.inline-edit-table th:last-child,
+  table.inline-edit-table td.debt-actions,
+  table.inline-edit-table td:last-child:has(.mini-pay-form) {
+    width: 18rem;
+    min-width: 18rem;
+    max-width: 18rem;
+  }
+
+  table.inline-edit-table .debt-actions,
+  table.inline-edit-table td:has(.mini-pay-form) {
+    overflow: hidden;
+    vertical-align: top;
+  }
+
+  table.inline-edit-table .table-action-rail:has(.mini-pay-form) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    justify-content: stretch;
+    gap: 0.48rem;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  table.inline-edit-table .table-action-rail:has(.mini-pay-form) > .icon-action-btn,
+  table.inline-edit-table .table-action-rail:has(.mini-pay-form) > .icon-link-btn {
+    justify-self: start;
+  }
+
+  table.inline-edit-table .table-action-rail:has(.mini-pay-form) > .row-action-form {
+    min-width: 0;
+    margin: 0;
+    justify-self: stretch;
+  }
+
+  table.inline-edit-table .table-action-rail:has(.mini-pay-form) > .row-action-form .compact-btn {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 0.72rem;
+  }
+
+  table.inline-edit-table .table-action-rail:has(.mini-pay-form) > .row-action-form:last-child {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  table.inline-edit-table .mini-pay-form,
+  table.inline-edit-table .project-mini-pay {
+    grid-column: 1 / -1;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.42rem;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  table.inline-edit-table .mini-pay-form input,
+  table.inline-edit-table .mini-pay-form select,
+  table.inline-edit-table .project-mini-pay input,
+  table.inline-edit-table .project-mini-pay select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  table.inline-edit-table .mini-pay-form input[type="date"],
+  table.inline-edit-table .mini-pay-form select,
+  table.inline-edit-table .project-mini-pay input[type="date"],
+  table.inline-edit-table .project-mini-pay select {
+    grid-column: 1 / -1;
+  }
+
+  table.inline-edit-table .mini-pay-form input[type="number"],
+  table.inline-edit-table .project-mini-pay input[type="number"] {
+    grid-column: 1;
+  }
+
+  table.inline-edit-table .mini-pay-form button,
+  table.inline-edit-table .project-mini-pay button {
+    grid-column: 2;
+    min-width: 3.25rem;
+    width: auto;
+    padding-inline: 0.72rem;
+    white-space: nowrap;
+  }
+
+  table.inline-edit-table .debt-actions .icon-action-delete {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+  }
+}
+
+/* =========================
+   Clickable net balance link
+   ========================= */
+
+a.topbar-balance-pill,
+a.sidebar-mobile-balance-pill {
+  color: inherit !important;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+
+a.topbar-balance-pill:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.38);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
+}
+
+a.topbar-balance-pill:active,
+a.sidebar-mobile-balance-pill:active {
+  transform: translateY(0);
+}
+
+.sidebar-nav a.sidebar-mobile-balance-pill {
+  color: inherit !important;
+  gap: 0;
+  text-decoration: none !important;
+}
+
+.sidebar-nav a.sidebar-mobile-balance-pill:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.14);
+}
