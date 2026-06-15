@@ -6,7 +6,7 @@ from money_manager.services.account_service import main_account_transactions
 from money_manager.services.analytics_service import apply_transaction_filters, build_dashboard_metrics, period_summaries
 from money_manager.services.debt_service import generate_debt_payments
 from money_manager.services.overview_service import build_overview_context
-from money_manager.services.pending_service import pending_total
+from money_manager.services.pending_service import pending_total, process_pending
 from money_manager.services.recurring_service import generate_recurring
 from money_manager.services.transaction_service import load_transactions
 
@@ -18,6 +18,7 @@ def _refresh_automatic_items() -> None:
     # Payments can now be executed or delayed explicitly from the Pending page.
     generate_recurring()
     generate_debt_payments()
+    process_pending(credit_only=True)
 
 
 @bp.route("/")

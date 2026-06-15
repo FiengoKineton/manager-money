@@ -65,6 +65,24 @@
     container.appendChild(input);
   }
 
+  function togglePayPalPanel() {
+    const accountSelect = document.getElementById("account-select");
+    const panel = document.getElementById("paypal-payment-panel");
+    const methodSelect = document.getElementById("paypal-payment-method");
+    const insufficientPanel = document.getElementById("paypal-insufficient-panel");
+
+    if (!accountSelect || !panel) return;
+
+    const selected = accountSelect.options[accountSelect.selectedIndex];
+    const isPayPal = selected && selected.dataset.key === "paypal";
+
+    panel.hidden = !isPayPal;
+
+    if (insufficientPanel && methodSelect) {
+      insufficientPanel.hidden = !isPayPal || methodSelect.value !== "balance";
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".amount-input").forEach((input) => {
       input.addEventListener("input", updateTotal);
@@ -76,6 +94,13 @@
     const currencySelect = document.getElementById("currency-select");
     if (currencySelect) currencySelect.addEventListener("change", updateTotal);
 
+    const accountSelect = document.getElementById("account-select");
+    if (accountSelect) accountSelect.addEventListener("change", togglePayPalPanel);
+
+    const methodSelect = document.getElementById("paypal-payment-method");
+    if (methodSelect) methodSelect.addEventListener("change", togglePayPalPanel);
+
     updateTotal();
+    togglePayPalPanel();
   });
 })();

@@ -66,7 +66,7 @@
   <article class="mini-priority-card tone-warning">
     <span>Credit/debt pressure</span>
     <strong>€ {{ '%.2f'|format(credit_pending_amount + active_debt) }}</strong>
-    <small>Credit/PayPal pending plus active debts</small>
+    <small>Credit/PayPal-credit pending plus active debts</small>
   </article>
   <article class="mini-priority-card tone-income">
     <span>Income</span>
@@ -276,7 +276,7 @@
         <strong>€ {{ '%.2f'|format(pending_debt_payments) }}</strong>
       </div>
       <div>
-        <span>Credit/PayPal pending</span>
+        <span>Credit/PayPal-credit pending</span>
         <strong>€ {{ '%.2f'|format(credit_pending_amount) }}</strong>
       </div>
       <div>

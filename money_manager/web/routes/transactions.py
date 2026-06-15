@@ -13,6 +13,7 @@ from money_manager.services.transaction_service import (
     delete_existing_transaction,
     load_transactions,
     prepare_transactions_for_display,
+    paypal_balance,
     save_new_transaction,
     transaction_detail_context,
     update_existing_transaction,
@@ -59,11 +60,20 @@ def transactions_page():
 
 @bp.route("/add", methods=["GET", "POST"])
 def add_transaction():
-    if request.method == "POST":
-        save_new_transaction(TransactionInput.from_form(request.form))
-        return redirect(url_for("transactions.transactions_page"))
+    form_values = {}
+    form_error = ""
 
-    transaction_type = request.args.get("type", "expense")
+    if request.method == "POST":
+        tx_input = TransactionInput.from_form(request.form)
+        result = save_new_transaction(tx_input)
+        if result.get("ok"):
+            return redirect(url_for("transactions.transactions_page"))
+        form_error = result.get("error", "The transaction was not saved.")
+        form_values = request.form.to_dict()
+        transaction_type = tx_input.type
+    else:
+        transaction_type = request.args.get("type", "expense")
+
     if transaction_type not in TRANSACTION_TYPES:
         transaction_type = "expense"
 
@@ -75,6 +85,9 @@ def add_transaction():
         today=date.today().isoformat(),
         currency_options=currency_options,
         currency_options_json=json.dumps(currency_options),
+        paypal_balance=paypal_balance(),
+        form_error=form_error,
+        form_values=form_values,
     )
 
 

@@ -11,6 +11,8 @@ class TransactionInput:
     account: str
     description: str
     currency: str = "EUR"
+    paypal_payment_method: str = "balance"
+    paypal_insufficient_action: str = "stop"
 
     @classmethod
     def from_form(cls, form) -> "TransactionInput":
@@ -29,6 +31,8 @@ class TransactionInput:
             account=form.get("account", ""),
             description=form.get("description", ""),
             currency=str(form.get("currency", "EUR") or "EUR").upper(),
+            paypal_payment_method=str(form.get("paypal_payment_method", "balance") or "balance").lower(),
+            paypal_insufficient_action=str(form.get("paypal_insufficient_action", "stop") or "stop").lower(),
         )
 
     def as_dict(self) -> dict:

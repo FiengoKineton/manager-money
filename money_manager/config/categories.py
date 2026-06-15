@@ -38,6 +38,7 @@ CATEGORY_OPTIONS = {
         "Payable",
         "Home renovation",
         "Construction",
+        "Friends",
     ]),
     "income": sorted([
         "PoliMi",
@@ -51,6 +52,8 @@ CATEGORY_OPTIONS = {
         "Gift",
         "Cash",
         "Other",
+        "Family",
+        "Friends",
     ]),
     "investment": sorted([
         "Deposit",

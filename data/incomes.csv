@@ -25,3 +25,5 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 24,2026-06-11,Kineton,,1122.6,,EUR,1.0,0.0,1.0,,half month and minus debts,2026-06-11T10:00:06
 25,2026-06-11,Refund,Sopralluogo,6.0,,,,,,,Money collected from Leroy Marlaine: Sopralluogo,2026-06-11T18:54:08
 26,2026-06-11,Refund,Sopralluogo,24.0,,,,,,Cash Flow,Money collected from Leroy Marlaine: Sopralluogo,2026-06-11T18:54:18
+27,2026-06-12,Friends,Luigi Barbato,14.32,,EUR,1.0,0.0,1.0,PayPal,Hamburgers,2026-06-15T10:51:15
+28,2026-06-12,Refund,Glovo Thiefs,4.8,,,,,,Other account,Money collected from Glovo: Glovo Thiefs,2026-06-15T11:08:38

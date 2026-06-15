@@ -135,3 +135,12 @@
     align-items: stretch;
   }
 }
+
+.project-table-card {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.project-table {
+  min-width: 1250px;
+}

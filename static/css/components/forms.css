@@ -162,3 +162,30 @@ select:focus {
     grid-template-columns: 1fr;
   }
 }
+
+.form-alert {
+  grid-column: 1 / -1;
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.form-alert-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.paypal-payment-panel {
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+.paypal-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}

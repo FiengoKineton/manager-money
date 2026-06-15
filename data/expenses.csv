@@ -278,3 +278,6 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 285,2026-06-11,Home renovation,,13.5,,EUR,1.0,0.0,1.0,,,2026-06-11T18:54:51
 286,2026-06-11,Eating in,Glovo,69.5,,EUR,1.0,0.0,1.0,,Sushi leo,2026-06-11T22:06:05
 287,2026-06-12,Eating in,Glovo,28.64,,EUR,1.0,0.0,1.0,,Luigi paid back but Glovo Robbed me,2026-06-12T21:00:35
+288,2026-06-12,Friends,Luigi Barbato,14.32,,EUR,1.0,0.0,1.0,PayPal,Glovo fucked us off [Paid from PayPal balance.],2026-06-15T10:53:33
+289,2026-06-16,Credit cards,PayPal,200.0,,,,,,paypal_credit,PayPal payment (2026-06-15),2026-06-15T11:04:21
+290,2026-06-12,Money owed to me,Glovo Thiefs,28.64,,,,,,Other account,Loan/receivable created: Glovo owes me for Glovo Thiefs. Hamburger order,2026-06-15T11:08:11

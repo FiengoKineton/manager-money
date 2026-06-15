@@ -56,6 +56,7 @@ def pending_page():
 
     generate_recurring()
     generate_debt_payments()
+    process_pending(credit_only=True)
 
     pending_rows = prepare_pending_for_display(load_pending())
 
@@ -89,6 +90,8 @@ def recurring_page():
         return redirect(url_for("pending.recurring_page"))
 
     generate_recurring()
+    process_pending(credit_only=True)
+    
     recurring_rows = prepare_recurring_for_display(load_recurring())
 
     return render_template(

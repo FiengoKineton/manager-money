@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from money_manager.config import CREDIT_ACCOUNT_KEYWORDS, CREDIT_CARD_PAYMENT_CATEGORY, account_label_for_value, is_auxiliary_account
+from money_manager.config import (
+    CREDIT_ACCOUNT_KEYWORDS,
+    CREDIT_CARD_PAYMENT_CATEGORY,
+    PAYPAL_CREDIT_ALIASES,
+    PAYPAL_CREDIT_ACCOUNT_VALUE,
+    account_label_for_value,
+    is_auxiliary_account,
+)
 from money_manager.repositories.pending import load_pending, mark_executed
 from money_manager.repositories.transactions import append_transaction
 
@@ -82,15 +89,15 @@ def execute_pending_by_id(tx_id: int | str, execution_date: str | None = None) -
     return False
 
 
-def process_pending(today: date | None = None) -> None:
-    """Execute all pending rows that are due up to `today`.
+def process_pending(today: date | None = None, credit_only: bool = False) -> int:
+    """Execute pending rows due up to today.
 
-    Use this only from explicit user actions. The page views do not call it
-    automatically anymore, so a delayed real-world payment does not get falsely
-    inserted into the transaction log.
+    If credit_only=True, only Credit Card / PayPal-credit pending rows
+    are executed automatically. Other pending rows stay manual.
     """
     today = today or date.today()
     pending = load_pending()
+    executed_count = 0
 
     credit_group: dict[tuple[str, str], float] = {}
     credit_ids: dict[tuple[str, str], list[int]] = {}
@@ -108,25 +115,36 @@ def process_pending(today: date | None = None) -> None:
         if due > today:
             continue
 
+        account_value = str(tx.get("account", "")).strip().lower()
+        is_credit_payment = account_value in CREDIT_ACCOUNT_KEYWORDS
+
+        if credit_only and not is_credit_payment:
+            continue
+
         try:
             amount = float(tx.get("amount", 0.0))
         except (TypeError, ValueError):
             amount = 0.0
 
-        account_value = str(tx.get("account", "")).strip().lower()
-        if account_value in CREDIT_ACCOUNT_KEYWORDS:
-            group_key = (tx["date_due"], "paypal" if account_value in {"paypal", "pay pal"} else "credit")
+        if is_credit_payment:
+            group_key = (
+                tx["date_due"],
+                PAYPAL_CREDIT_ACCOUNT_VALUE if account_value in PAYPAL_CREDIT_ALIASES else "credit",
+            )
             credit_group[group_key] = credit_group.get(group_key, 0.0) + amount
             credit_ids.setdefault(group_key, []).append(int(tx["id"]))
         else:
             other_to_execute.append(tx)
 
-    for tx in other_to_execute:
-        _execute_pending_row(tx)
-        mark_executed(int(tx["id"]))
+    if not credit_only:
+        for tx in other_to_execute:
+            _execute_pending_row(tx)
+            mark_executed(int(tx["id"]))
+            executed_count += 1
 
     for (due_date, account_value), total in credit_group.items():
-        label = "PayPal" if account_value == "paypal" else "Credit card"
+        label = "PayPal" if account_value == PAYPAL_CREDIT_ACCOUNT_VALUE else "Credit card"
+
         append_transaction({
             "type": "expense",
             "date": due_date,
@@ -139,6 +157,9 @@ def process_pending(today: date | None = None) -> None:
 
         for tx_id in credit_ids.get((due_date, account_value), []):
             mark_executed(tx_id)
+            executed_count += 1
+
+    return executed_count
 
 
 def _execute_pending_row(tx: dict, execution_date: str | None = None) -> None:
@@ -154,14 +175,14 @@ def _execute_pending_row(tx: dict, execution_date: str | None = None) -> None:
         return
 
     if account_value in CREDIT_ACCOUNT_KEYWORDS:
-        label = "PayPal" if account_value in {"paypal", "pay pal"} else "Credit card"
+        label = "PayPal" if account_value in PAYPAL_CREDIT_ALIASES else "Credit card"
         append_transaction({
             "type": "expense",
             "date": execution_date,
             "category": CREDIT_CARD_PAYMENT_CATEGORY,
             "sub_category": label,
             "amount": float(tx.get("amount", 0.0)),
-            "account": "paypal" if label == "PayPal" else "credit",
+            "account": PAYPAL_CREDIT_ACCOUNT_VALUE if label == "PayPal" else "credit",
             "description": f"{label} payment ({execution_date})",
         })
         return

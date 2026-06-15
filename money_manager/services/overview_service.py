@@ -105,7 +105,7 @@ def build_overview_context() -> dict:
 
 
 def _credit_pending_total(rows: list[dict]) -> float:
-    """Open credit-card/PayPal expenses still expected to leave the main route."""
+    """Open credit-card/PayPal-credit expenses still expected to leave the main route."""
     total = 0.0
     for row in rows:
         if str(row.get("status", "pending")).lower() != "pending":
@@ -139,7 +139,7 @@ def _liquidity_snapshot(cash_position: float, visible_liquidity: float, credit_p
         {
             "label": "Committed credit/debt",
             "value": credit_pending + active_debt,
-            "caption": "Credit/PayPal pending plus active debts",
+            "caption": "Credit/PayPal-credit pending plus active debts",
             "tone": "warning",
         },
         {
@@ -210,7 +210,7 @@ def _health_cards(totals: dict, pending_amount: float, active_debt: float, paren
             "label": "Credit pressure",
             "value": f"€{pending_amount:.2f}",
             "tone": "warning",
-            "text": "This credit-card/PayPal amount is already expected to leave your balance.",
+            "text": "This credit-card/PayPal-credit amount is already expected to leave your balance.",
         })
 
     if income > 0 and expenses / income > 0.80:

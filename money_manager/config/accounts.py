@@ -3,6 +3,7 @@
 The app still keeps expenses.csv, incomes.csv and investments.csv as the main
 source of truth. The ``account`` column is a routing tag:
 - blank / Main bank / credit-card settlement rows affect the main account;
+- PayPal is a separate liquid account unless the explicit PayPal-credit route is used;
 - liquid account rows are analysed separately; top-ups can still affect the tracked main net;
 - custom liquid accounts are stored in ``data/accounts.json``.
 """
@@ -21,7 +22,10 @@ CUSTOM_ACCOUNTS_JSON = DATA_DIR / "accounts.json"
 MAIN_ACCOUNT_KEY = "main_bank"
 MAIN_ACCOUNT_LABEL = "Main bank account"
 CREDIT_OPTION_KEY = "credit_card"
-PAYPAL_OPTION_KEY = "paypal"
+PAYPAL_ACCOUNT_KEY = "paypal"
+PAYPAL_CREDIT_ACCOUNT_VALUE = "paypal_credit"
+PAYPAL_CREDIT_ALIASES = {"paypal_credit", "paypal credit", "pay pal credit", "paypal card", "pay pal card"}
+PAYPAL_OPTION_KEY = PAYPAL_ACCOUNT_KEY
 
 # These are the built-in non-main accounts.  The third one intentionally acts as
 # a generic "other account" bucket and also catches old Ticket Restaurant rows.
@@ -86,6 +90,26 @@ DEFAULT_AUXILIARY_ACCOUNTS = [
         ],
         "is_custom": False,
     },
+    {
+        "key": PAYPAL_ACCOUNT_KEY,
+        "label": "PayPal",
+        "description": "PayPal wallet balance tracked as its own liquid account.",
+        "aliases": [
+            "paypal",
+            "pay pal",
+            "paypal balance",
+            "pay pal balance",
+            "paypal wallet",
+            "pay pal wallet",
+        ],
+        "category_aliases": [
+            "paypal",
+            "pay pal",
+            "paypal balance",
+            "pay pal balance",
+        ],
+        "is_custom": False,
+    },
 ]
 
 # Backward compatibility for the previous v3 URL/key.
@@ -113,8 +137,7 @@ MAIN_ACCOUNT_ALIASES = {
     "carta di credito",
     "visa",
     "mastercard",
-    "paypal",
-    "pay pal",
+    *PAYPAL_CREDIT_ALIASES,
 }
 
 CREDIT_ACCOUNT_ALIASES = {
@@ -128,8 +151,7 @@ CREDIT_ACCOUNT_ALIASES = {
     "carta di credito",
     "visa",
     "mastercard",
-    "paypal",
-    "pay pal",
+    *PAYPAL_CREDIT_ALIASES,
 }
 
 
@@ -267,13 +289,6 @@ def account_options_for_forms(include_credit: bool = True) -> list[dict]:
             "value": "credit",
             "kind": "credit",
         })
-        options.append({
-            "key": PAYPAL_OPTION_KEY,
-            "label": "PayPal",
-            "description": "Same main-net logic as credit card: it is scheduled as a pending card-style payment, not as separate liquidity.",
-            "value": "paypal",
-            "kind": "credit",
-        })
     return options
 
 
@@ -311,7 +326,7 @@ def normalize_account_key(value: str | None) -> str:
 
 
 def is_main_account_value(value: str | None) -> bool:
-    """True only for blank/Main/Credit/PayPal aliases, not for unknown accounts."""
+    """True only for blank/Main/Credit aliases, not PayPal balance or unknown accounts."""
     return _clean_text(value) in MAIN_ACCOUNT_ALIASES
 
 
@@ -337,8 +352,8 @@ def account_description_for_key(key: str | None) -> str:
 
 def account_label_for_value(value: str | None) -> str:
     raw = _clean_text(value)
-    if raw in {"paypal", "pay pal"}:
-        return "PayPal"
+    if raw in PAYPAL_CREDIT_ALIASES:
+        return "PayPal credit route"
     if raw in CREDIT_ACCOUNT_ALIASES:
         return "Credit card"
     return account_label_for_key(normalize_account_key(value))
