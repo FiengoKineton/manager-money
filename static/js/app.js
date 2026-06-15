@@ -325,10 +325,160 @@
     });
   }
 
+
+
+  function selectedText(select) {
+    if (!select) return "";
+    const selected = select.selectedOptions && select.selectedOptions[0];
+    return (selected ? selected.textContent : select.value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function inputValue(root, selector) {
+    const field = root.querySelector(selector);
+    return field ? String(field.value || field.getAttribute("value") || "").trim() : "";
+  }
+
+  function textValue(root, selector) {
+    const element = root.querySelector(selector);
+    return element ? element.textContent.replace(/\s+/g, " ").trim() : "";
+  }
+
+  function formatEuroAmount(raw) {
+    const value = Number(String(raw || "").replace(",", "."));
+    if (!Number.isFinite(value)) return raw || "";
+    return `€ ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  function setCompactFormExpanded(card, expanded) {
+    if (!card || !card.classList.contains("mobile-compact-form-card")) return;
+
+    if (expanded) {
+      const list = card.closest(".payment-card-list, .recurring-rule-list, section, main");
+      if (list) {
+        list.querySelectorAll(".mobile-compact-form-card.mobile-form-expanded").forEach((other) => {
+          if (other !== card) setCompactFormExpanded(other, false);
+        });
+      }
+    }
+
+    card.classList.toggle("mobile-form-expanded", expanded);
+    card.setAttribute("aria-expanded", expanded ? "true" : "false");
+
+    const toggle = card.querySelector(":scope > .mobile-form-summary");
+    if (toggle) toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+  }
+
+  function buildPendingSummary(card) {
+    const type = selectedText(card.querySelector('select[name="type"]')) || "Payment";
+    const category = inputValue(card, 'input[name="category"]');
+    const description = inputValue(card, 'input[name="description"]');
+    const amount = formatEuroAmount(inputValue(card, 'input[name="amount"]'));
+    const due = inputValue(card, 'input[name="date_due"]');
+    const account = selectedText(card.querySelector('select[name="account"]'));
+    const status = selectedText(card.querySelector('select[name="status"]')) || "Pending";
+
+    const title = description || category || "Pending payment";
+    const chips = [type, status, due ? `Due ${due}` : "", account].filter(Boolean);
+
+    return {
+      label: card.closest(".payment-card-list-muted") ? "Executed" : "Pending",
+      title,
+      amount,
+      meta: category && description ? category : chips.slice(0, 3).join(" · "),
+      chips: chips.slice(0, 4),
+    };
+  }
+
+  function buildRecurringSummary(card) {
+    const title = inputValue(card, 'input[name="name"]') || "Recurring rule";
+    const amount = textValue(card, ".rule-amount-stack strong") || formatEuroAmount(inputValue(card, 'input[name="amount"]'));
+    const frequency = textValue(card, ".rule-amount-stack span");
+    const next = textValue(card, ".next-badge").replace(/^Next:\s*/i, "");
+    const type = selectedText(card.querySelector('select[name="type"]')) || textValue(card, ".type-badge");
+    const account = selectedText(card.querySelector('select[name="account"]')) || textValue(card, ".account-badge-soft");
+
+    const chips = [type, frequency, next ? `Next ${next}` : "", account].filter(Boolean);
+
+    return {
+      label: "Recurring",
+      title,
+      amount,
+      meta: chips.slice(0, 3).join(" · "),
+      chips: chips.slice(0, 4),
+    };
+  }
+
+  function renderCompactFormSummary(card, builder) {
+    const summary = builder(card);
+    let toggle = card.querySelector(":scope > .mobile-form-summary");
+    if (!toggle) {
+      toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "mobile-form-summary";
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", "Show details");
+      card.insertBefore(toggle, card.firstElementChild);
+
+      toggle.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setCompactFormExpanded(card, !card.classList.contains("mobile-form-expanded"));
+      });
+    }
+
+    toggle.innerHTML = "";
+
+    const main = document.createElement("span");
+    main.className = "mobile-form-summary-main";
+    main.appendChild(makeSpan("mobile-summary-label", summary.label));
+    main.appendChild(makeSpan("mobile-summary-title", summary.title));
+
+    const meta = makeSpan("mobile-summary-meta", summary.meta || "Tap to show details and actions");
+    const amount = makeSpan("mobile-summary-amount", summary.amount || "");
+    const chevron = makeSpan("mobile-summary-chevron mobile-form-chevron", "⌄");
+
+    const chips = document.createElement("span");
+    chips.className = "mobile-form-summary-chips";
+    (summary.chips || []).forEach((chip) => {
+      if (!chip) return;
+      chips.appendChild(makeSpan("mobile-form-chip", chip));
+    });
+
+    toggle.appendChild(main);
+    toggle.appendChild(meta);
+    toggle.appendChild(amount);
+    toggle.appendChild(chevron);
+    toggle.appendChild(chips);
+  }
+
+  function enhanceCompactFormCards() {
+    const compactConfigs = [
+      { selector: ".payment-card", builder: buildPendingSummary },
+      { selector: ".recurring-rule-card", builder: buildRecurringSummary },
+    ];
+
+    compactConfigs.forEach(({ selector, builder }) => {
+      document.querySelectorAll(selector).forEach((card) => {
+        if (card.dataset.mobileCompactEnhanced === "true") return;
+        card.dataset.mobileCompactEnhanced = "true";
+        card.classList.add("mobile-compact-form-card");
+        card.setAttribute("aria-expanded", "false");
+
+        renderCompactFormSummary(card, builder);
+
+        card.querySelectorAll("input, select, textarea").forEach((field) => {
+          field.addEventListener("input", () => renderCompactFormSummary(card, builder));
+          field.addEventListener("change", () => renderCompactFormSummary(card, builder));
+        });
+      });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     wireClickableRows();
     wireMobileNavGroups();
     enhanceResponsiveTables();
+    enhanceCompactFormCards();
 
     document.querySelectorAll('[data-action="select-all-filters"]').forEach((button) => {
       button.addEventListener("click", selectAllFilters);

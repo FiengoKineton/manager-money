@@ -1166,3 +1166,214 @@ tr.row-investment td {
     padding-inline: 0.68rem;
   }
 }
+
+/* =========================
+   Mobile compact cards for pending + recurring forms
+   These sections are forms, not tables, so they need their own disclosure layer.
+   ========================= */
+
+.mobile-form-summary {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .payment-card.mobile-compact-form-card,
+  .recurring-rule-card.mobile-compact-form-card {
+    display: block !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+    overflow: hidden;
+    border-radius: 18px !important;
+    cursor: default;
+  }
+
+  .payment-card.mobile-compact-form-card {
+    box-shadow: inset 4px 0 0 rgba(37, 99, 235, 0.52), 0 8px 22px rgba(15, 23, 42, 0.065) !important;
+  }
+
+  .payment-card.mobile-compact-form-card.row-expense,
+  .payment-card.mobile-compact-form-card.payment-overdue {
+    box-shadow: inset 4px 0 0 rgba(185, 28, 28, 0.72), 0 8px 22px rgba(15, 23, 42, 0.065) !important;
+  }
+
+  .payment-card.mobile-compact-form-card.row-income {
+    box-shadow: inset 4px 0 0 rgba(4, 120, 87, 0.72), 0 8px 22px rgba(15, 23, 42, 0.065) !important;
+  }
+
+  .payment-card.mobile-compact-form-card.row-investment {
+    box-shadow: inset 4px 0 0 rgba(29, 78, 216, 0.72), 0 8px 22px rgba(15, 23, 42, 0.065) !important;
+  }
+
+  .payment-card.mobile-compact-form-card.payment-due-today {
+    border-color: rgba(245, 158, 11, 0.38) !important;
+  }
+
+  .mobile-compact-form-card:not(.mobile-form-expanded) > :not(.mobile-form-summary):not(input[type="hidden"]) {
+    display: none !important;
+  }
+
+  .mobile-form-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 1.35rem;
+    grid-template-areas:
+      "main amount chevron"
+      "meta meta chevron";
+    align-items: center;
+    gap: 0.18rem 0.58rem;
+    width: 100%;
+    min-height: 4rem;
+    padding: 0.68rem 0.82rem 0.68rem 0.95rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-form-summary:active {
+    transform: scale(0.992);
+  }
+
+  .mobile-form-summary:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.24);
+    outline-offset: -3px;
+  }
+
+  .mobile-form-summary-main {
+    grid-area: main;
+    display: grid;
+    gap: 0.12rem;
+    min-width: 0;
+  }
+
+  .mobile-form-summary .mobile-summary-title {
+    max-width: 100%;
+  }
+
+  .mobile-form-summary .mobile-summary-meta {
+    grid-area: meta;
+  }
+
+  .mobile-form-summary .mobile-summary-amount {
+    grid-area: amount;
+  }
+
+  .mobile-form-summary .mobile-form-chevron {
+    grid-area: chevron;
+  }
+
+  .mobile-form-summary-chips {
+    display: none;
+  }
+
+  .mobile-compact-form-card.mobile-form-expanded {
+    border-color: rgba(37, 99, 235, 0.34) !important;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.11) !important;
+  }
+
+  .payment-card.mobile-compact-form-card.mobile-form-expanded,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded {
+    padding: 0.72rem !important;
+    padding-bottom: 4rem !important;
+  }
+
+  .mobile-compact-form-card.mobile-form-expanded > .mobile-form-summary {
+    min-height: 3.8rem;
+    margin: -0.72rem -0.72rem 0.72rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+    background: rgba(37, 99, 235, 0.045);
+  }
+
+  .mobile-compact-form-card.mobile-form-expanded .mobile-form-chevron {
+    background: rgba(37, 99, 235, 0.16);
+    transform: rotate(180deg);
+  }
+
+  .payment-card.mobile-compact-form-card.mobile-form-expanded .payment-date-block,
+  .payment-card.mobile-compact-form-card.mobile-form-expanded .payment-main,
+  .payment-card.mobile-compact-form-card.mobile-form-expanded .payment-side,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded .rule-card-topline,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded .rule-metric-grid,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded .rule-fields-grid {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+
+  .payment-card.mobile-compact-form-card.mobile-form-expanded .payment-date-block,
+  .payment-card.mobile-compact-form-card.mobile-form-expanded .payment-main,
+  .payment-card.mobile-compact-form-card.mobile-form-expanded .payment-side,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded .rule-metric-grid,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded .rule-fields-grid {
+    margin-top: 0.55rem;
+  }
+
+  .payment-card.mobile-compact-form-card.mobile-form-expanded .payment-edit-grid,
+  .payment-card.mobile-compact-form-card.mobile-form-expanded .payment-edit-side,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded .compact-rule-fields {
+    gap: 0.52rem;
+  }
+
+  .payment-card.mobile-compact-form-card.mobile-form-expanded input,
+  .payment-card.mobile-compact-form-card.mobile-form-expanded select,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded input,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded select {
+    min-height: 2.45rem;
+    border-radius: 13px;
+    font-size: 0.94rem;
+  }
+
+  .payment-card.mobile-compact-form-card.mobile-form-expanded .payment-action-rail,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded .rule-action-rail {
+    display: flex !important;
+    height: 3.18rem;
+    padding: 0.52rem 0.62rem;
+    background: rgba(248, 250, 252, 0.84);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .payment-card.mobile-compact-form-card.mobile-form-expanded .payment-action-rail {
+    justify-content: flex-end;
+  }
+
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded .rule-action-rail {
+    justify-content: flex-end;
+    gap: 0.48rem;
+  }
+
+  .payment-card.mobile-compact-form-card.mobile-form-expanded .icon-action-btn,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded .icon-action-btn {
+    width: 2.18rem;
+    height: 2.18rem;
+    min-width: 2.18rem;
+    min-height: 2.18rem;
+  }
+
+  .recurring-rule-card.mobile-compact-form-card:not(.mobile-form-expanded)::before {
+    width: 4px;
+  }
+}
+
+@media (max-width: 560px) {
+  .mobile-form-summary {
+    min-height: 3.72rem;
+    padding: 0.6rem 0.68rem 0.6rem 0.82rem;
+    grid-template-columns: minmax(0, 1fr) auto 1.18rem;
+    gap: 0.14rem 0.42rem;
+  }
+
+  .payment-card.mobile-compact-form-card.mobile-form-expanded,
+  .recurring-rule-card.mobile-compact-form-card.mobile-form-expanded {
+    padding: 0.64rem !important;
+    padding-bottom: 3.9rem !important;
+  }
+
+  .mobile-compact-form-card.mobile-form-expanded > .mobile-form-summary {
+    margin: -0.64rem -0.64rem 0.64rem;
+  }
+}
