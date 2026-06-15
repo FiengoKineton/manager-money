@@ -20,19 +20,23 @@ from money_manager.utils.stats import expenses_by_category, summary_totals
 
 
 def build_overview_context() -> dict:
+    # The visible log/chart period starts on January 1st of the current year.
+    # Money position, balances, stress, and available cash are calculated from
+    # the full CSV history so opening/older rows still count.
     start_default, end_default = default_date_range()
     transactions = load_transactions()
     main_transactions_all = main_account_transactions(transactions)
-    main_transactions = filter_by_date(main_transactions_all, start_default, end_default)
-    totals = summary_totals(main_transactions)
+    main_transactions_display = filter_by_date(main_transactions_all, start_default, end_default)
+    totals = summary_totals(main_transactions_all)
+    display_totals = summary_totals(main_transactions_display)
     stats_this_month, stats_3_months = period_summaries(main_transactions_all)
 
     pending_rows = load_pending()
     pending_amount = pending_total(pending_rows)
     credit_pending_amount = _credit_pending_total(pending_rows)
     debt_context = debt_page_context()
-    sparagnat_context = sparagnat_overview_totals(start_default, end_default)
-    parent_context = parent_support_totals(start_default, end_default)
+    sparagnat_context = sparagnat_overview_totals()
+    parent_context = parent_support_totals()
     receivable_context = receivable_overview_totals()
     investment_context = investment_overview_snapshot(refresh=False)
 
@@ -44,10 +48,10 @@ def build_overview_context() -> dict:
     auxiliary_accounts = account_balance_rows(transactions)
     auxiliary_balance = auxiliary_total(transactions)
 
-    top_categories = expenses_by_category(main_transactions).head(5).to_dict(orient="records")
-    recent_transactions = _recent_transactions(transactions, limit=8)
+    top_categories = expenses_by_category(main_transactions_display).head(5).to_dict(orient="records")
+    recent_transactions = _recent_transactions(filter_by_date(transactions, start_default, end_default), limit=8)
 
-    # Key money definitions:
+    # Key money definitions, all based on full history:
     # - net balance remains the conservative main-bank net.
     # - all_accounts_net adds every tracked liquid account balance.
     # - main_available_position then adds invested capital, but not market P/L.
@@ -66,6 +70,7 @@ def build_overview_context() -> dict:
         "today": date.today().isoformat(),
         "period": {"start": start_default, "end": end_default},
         "totals": totals,
+        "display_totals": display_totals,
         "stats_this_month": stats_this_month,
         "stats_3_months": stats_3_months,
         "pending_amount": pending_amount,
@@ -93,7 +98,7 @@ def build_overview_context() -> dict:
         "total_financial_position": market_adjusted_position,
         "stress_position": stress_position,
         "adjusted_stress_position": adjusted_stress_position,
-        "main_transactions_count": int(len(main_transactions)),
+        "main_transactions_count": int(len(main_transactions_display)),
         "auxiliary_accounts": auxiliary_accounts,
         "auxiliary_balance": auxiliary_balance,
         "combined_visible_liquidity": visible_liquidity,

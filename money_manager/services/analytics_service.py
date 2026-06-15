@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from money_manager.config import default_date_range
 from money_manager.services.account_service import main_account_transactions
 from money_manager.services.investment_service import investment_habit_snapshot
 from money_manager.services.forecast_service import estimate_cashflow_habits
@@ -68,16 +69,18 @@ def build_dashboard_metrics(df: pd.DataFrame, start: str, end: str) -> dict:
 def build_analysis_metrics(df: pd.DataFrame) -> dict:
     """Build a richer, decision-oriented analysis page.
 
-    Main-bank transactions are still the base for spending/income habits because
-    they represent the conservative daily money flow. Investment behaviour is
-    analysed separately and merged into the page so the analysis does not mix
-    normal expenses with portfolio operations.
+    The analysis charts and top lists use the default display period, which is
+    January 1st of the current year through today. The headline money totals use
+    the full CSV history, so older opening rows still count toward the real net.
     """
-    main_df = main_account_transactions(df)
-    totals = summary_totals(main_df)
-    df_wd = weekday_spending(main_df)
-    df_roll = rolling_net_flow(main_df)
-    top_expenses = largest_expenses(main_df, n=10).copy()
+    start_default, end_default = default_date_range()
+    main_df_all = main_account_transactions(df)
+    main_df_display = filter_by_date(main_df_all, start_default, end_default)
+
+    totals = summary_totals(main_df_all)
+    df_wd = weekday_spending(main_df_display)
+    df_roll = rolling_net_flow(main_df_display)
+    top_expenses = largest_expenses(main_df_display, n=10).copy()
 
     if not top_expenses.empty:
         top_expenses["date_str"] = top_expenses["date"].dt.strftime("%Y-%m-%d")
@@ -85,10 +88,12 @@ def build_analysis_metrics(df: pd.DataFrame) -> dict:
             if column in top_expenses.columns:
                 top_expenses[column] = top_expenses[column].fillna("")
 
-    df_month = monthly_summary(main_df)
-    df_cat = expenses_by_category(main_df)
-    df_cum = cumulative_balance(main_df)
-    habits = _spending_habits(main_df, df_month, df_cat, df_wd)
+    df_month = monthly_summary(main_df_display, start=start_default, end=end_default)
+    df_cat = expenses_by_category(main_df_display)
+    df_cum = cumulative_balance(main_df_display)
+
+    habits_month = monthly_summary(main_df_all)
+    habits = _spending_habits(main_df_all, habits_month, df_cat, df_wd)
     investment = investment_habit_snapshot(refresh=False)
     insight_cards = _insight_cards(totals, habits, investment)
 
@@ -99,6 +104,7 @@ def build_analysis_metrics(df: pd.DataFrame) -> dict:
     plot_rolling_net_flow(df_roll)
 
     return {
+        "period": {"start": start_default, "end": end_default},
         "totals": totals,
         "habits": habits,
         "investment": investment,

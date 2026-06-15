@@ -81,14 +81,34 @@ def main_account_transactions(df: pd.DataFrame) -> pd.DataFrame:
     in the separate liquid-account page. Category hints such as ``Pre-paid card``
     can still be used to build the auxiliary account balance, but they no longer
     remove a blank-account row from the main net. This is important for top-ups:
-    money can leave the main bank and also become available in a liquid account.
+    money can leave the main bank and also become available in Cash Flow /
+    Pre-paid / etc.
+
+    Rows with missing or invalid dates are ignored for balance calculations. A
+    corrupted date such as ``0012-04-14`` should not reduce the current net just
+    because the app is now calculating from full CSV history instead of only the
+    visible year-to-date period.
     """
     if df.empty:
         return df.copy()
     if "account_key" not in df.columns:
         df = enrich_transactions_with_accounts(df)
+    df = _valid_dated_transactions(df)
     return df[_affects_main_net_mask(df)].copy()
 
+
+
+
+def _valid_dated_transactions(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep only rows that have a usable transaction date for money-position math.
+
+    ``load_all`` already parses dates with ``errors="coerce"``. Broken CSV
+    values become ``NaT``. Those rows can still exist in the raw transaction log,
+    but they should not affect balances, account totals, or availability.
+    """
+    if df.empty or "date" not in df.columns:
+        return df.copy()
+    return df[df["date"].notna()].copy()
 
 def _affects_main_net_mask(df: pd.DataFrame) -> pd.Series:
     if df.empty:
@@ -138,6 +158,7 @@ def auxiliary_account_transactions(df: pd.DataFrame) -> pd.DataFrame:
         return df.copy()
     if "account_key" not in df.columns:
         df = enrich_transactions_with_accounts(df)
+    df = _valid_dated_transactions(df)
     return df[df["account_key"].isin(auxiliary_account_keys())].copy()
 
 
@@ -157,6 +178,8 @@ def account_movements(
         df = enrich_transactions_with_accounts(df)
     elif "account_key" not in df.columns or "account_signed_amount" not in df.columns:
         df = enrich_transactions_with_accounts(df)
+
+    df = _valid_dated_transactions(df)
 
     frames: list[pd.DataFrame] = []
     if not df.empty:

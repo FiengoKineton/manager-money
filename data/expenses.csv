@@ -206,7 +206,6 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 207,2026-04-05,Transportation,Autogrill,16.0,,,,,,,,2026-04-07T19:04:25
 208,2026-04-07,Transportation,Autogrill,7.19,,,,,,,,2026-04-07T19:04:41
 209,2026-04-11,Other,,10.0,,,,,,,,2026-04-14T18:45:41
-210,0012-04-14,Eating out,Glovo,27.3,,,,,,,,2026-04-14T18:46:05
 211,2026-04-14,Other,,6.0,,,,,,,,2026-04-14T18:47:41
 212,2026-04-12,Charity,Starbucks,13.87,,,,,,,,2026-04-14T18:48:07
 213,2026-04-12,Eating out,Glovo,27.3,,,,,,,,2026-04-14T18:49:42
@@ -281,5 +280,5 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 288,2026-06-12,Friends,Luigi Barbato,14.32,,EUR,1.0,0.0,1.0,PayPal,Glovo fucked us off [Paid from PayPal balance.],2026-06-15T10:53:33
 289,2026-06-15,Credit cards,PayPal,200.0,,,,,,paypal_credit,PayPal payment (2026-06-15),2026-06-15T11:04:21
 290,2026-06-12,Money owed to me,Glovo Thiefs,28.64,,,,,,Other account,Loan/receivable created: Glovo owes me for Glovo Thiefs. Hamburger order,2026-06-15T11:08:11
-291,2026-06-15,Other,Credit card fee,2.0,,EUR,1.00000000,0.00000000,1.00000000,,,2026-06-15T11:34:14
+291,2026-06-15,Other,Credit card fee,2.0,,EUR,1.0,0.0,1.0,,,2026-06-15T11:34:14
 292,2026-06-15,Account cleanup,Reconcile to € 45.00,59.0,,,,,,Cash Flow,Account cleanup: adjusted Cash Flow from € 104.00 to € 45.00.,2026-06-15T12:23:56
