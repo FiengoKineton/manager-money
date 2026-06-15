@@ -375,6 +375,8 @@
     detail.actionCells.forEach((cell) => {
       const clone = cell.cloneNode(true);
       clone.removeAttribute("data-label");
+      clone.removeAttribute("aria-hidden");
+      clone.classList.remove("desktop-actions-cell");
       clone.classList.add("desktop-drawer-action-group");
       clone.querySelectorAll("[data-label]").forEach((node) => node.removeAttribute("data-label"));
       actionsRoot.appendChild(clone);
@@ -809,12 +811,9 @@
   });
 })();
 
-
 /* --------------------------------------------------------------------------
    Mobile Special Log helper
-   Add this at the END of static/js/app.js
 -------------------------------------------------------------------------- */
-
 (function () {
   const mobileSpecialMedia = window.matchMedia("(max-width: 760px)");
 
@@ -829,11 +828,7 @@
 
         const selectedCard = event.target.closest(".quick-mode-card");
         if (selectedCard) {
-          selectedCard.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-            inline: "nearest",
-          });
+          selectedCard.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
         }
 
         window.setTimeout(() => {
@@ -844,10 +839,7 @@
           );
 
           if (firstActiveField) {
-            firstActiveField.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-            });
+            firstActiveField.scrollIntoView({ behavior: "smooth", block: "center" });
           }
         }, 180);
       });
@@ -856,4 +848,3 @@
 
   document.addEventListener("DOMContentLoaded", enhanceMobileSpecialLog);
 })();
-

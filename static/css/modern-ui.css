@@ -3143,12 +3143,10 @@ a.sidebar-mobile-balance-pill:active {
 
 /* --------------------------------------------------------------------------
    Mobile Special Log compact flow
-   Add this at the END of static/css/modern-ui.css
 -------------------------------------------------------------------------- */
-
 @media (max-width: 760px) {
   .quick-special-panel {
-    margin-inline: -0.25rem !important;
+    margin-inline: 0 !important;
     padding: 1rem !important;
     border-radius: 1.35rem !important;
     background:
@@ -3179,12 +3177,10 @@ a.sidebar-mobile-balance-pill:active {
     border-radius: 999px !important;
   }
 
-  /* When Special Log is open on phone, hide the normal transaction form below it */
   .quick-special-panel.is-open + .normal-transaction-panel {
     display: none !important;
   }
 
-  /* "What are you adding?" becomes a compact chooser */
   .quick-special-form > .form-field-wide:first-of-type {
     margin: 0 !important;
   }
@@ -3206,9 +3202,9 @@ a.sidebar-mobile-balance-pill:active {
 
   .quick-mode-card {
     min-height: 0 !important;
-    padding: 0.65rem 0.75rem !important;
-    border-radius: 1rem !important;
-    grid-template-columns: 1.1rem 1fr !important;
+    padding: 0.55rem 0.65rem !important;
+    border-radius: 0.9rem !important;
+    grid-template-columns: 1.1rem minmax(0, 1fr) !important;
     gap: 0.65rem !important;
     align-items: center !important;
     background: rgba(255, 255, 255, 0.86) !important;
@@ -3235,6 +3231,7 @@ a.sidebar-mobile-balance-pill:active {
     grid-template-columns: minmax(0, 1fr) auto !important;
     align-items: center !important;
     gap: 0.2rem 0.5rem !important;
+    min-width: 0 !important;
   }
 
   .quick-mode-card strong {
@@ -3246,7 +3243,6 @@ a.sidebar-mobile-balance-pill:active {
     white-space: nowrap !important;
   }
 
-  /* Hide long explanations on phone */
   .quick-mode-card small {
     display: none !important;
   }
@@ -3266,6 +3262,16 @@ a.sidebar-mobile-balance-pill:active {
     text-overflow: ellipsis !important;
   }
 
+  .quick-special-form,
+  .quick-mode-grid,
+  .quick-special-grid,
+  .quick-special-actions {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
   .quick-special-form {
     gap: 0.8rem !important;
     margin-top: 0.9rem !important;
@@ -3280,7 +3286,10 @@ a.sidebar-mobile-balance-pill:active {
   .quick-special-grid .form-field,
   .quick-special-grid .form-field-wide {
     grid-column: 1 / -1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
     min-width: 0 !important;
+    box-sizing: border-box !important;
     padding: 0.65rem 0.7rem !important;
     border: 1px solid rgba(148, 163, 184, 0.24) !important;
     border-radius: 1rem !important;
@@ -3304,6 +3313,9 @@ a.sidebar-mobile-balance-pill:active {
   .quick-special-grid select,
   .quick-special-grid textarea {
     width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
     min-height: 44px !important;
     padding: 0.65rem 0.8rem !important;
     border-radius: 0.9rem !important;
@@ -3319,6 +3331,10 @@ a.sidebar-mobile-balance-pill:active {
   }
 
   .quick-special-summary {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
     padding: 0.72rem 0.8rem !important;
     border-radius: 1rem !important;
     background: rgba(238, 242, 255, 0.72) !important;
@@ -3336,7 +3352,6 @@ a.sidebar-mobile-balance-pill:active {
     font-size: 0.75rem !important;
   }
 
-  /* Sticky save button, above the mobile action bar */
   .quick-special-actions {
     position: sticky !important;
     bottom: calc(5.7rem + env(safe-area-inset-bottom)) !important;
@@ -3344,7 +3359,7 @@ a.sidebar-mobile-balance-pill:active {
     display: grid !important;
     grid-template-columns: 1fr !important;
     gap: 0.45rem !important;
-    margin-inline: -0.35rem !important;
+    margin-inline: 0 !important;
     padding: 0.65rem !important;
     border: 1px solid rgba(148, 163, 184, 0.24) !important;
     border-radius: 1.15rem !important;
@@ -3364,9 +3379,29 @@ a.sidebar-mobile-balance-pill:active {
     min-height: 2.45rem !important;
     font-size: 0.86rem !important;
   }
+
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .quick-special-panel,
+  .quick-mode-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
 }
 
 @media (max-width: 430px) {
+  .quick-special-panel {
+    padding: 0.85rem !important;
+    border-radius: 1.1rem !important;
+  }
+
   .quick-mode-card span {
     grid-template-columns: 1fr !important;
   }
@@ -3376,83 +3411,6 @@ a.sidebar-mobile-balance-pill:active {
     grid-row: 2 !important;
     width: max-content !important;
     max-width: 100% !important;
-  }
-}
-
-/* --------------------------------------------------------------------------
-   Mobile Special Log width fix
-   Add this at the END of static/css/modern-ui.css
--------------------------------------------------------------------------- */
-
-@media (max-width: 760px) {
-  html,
-  body {
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-
-  .quick-special-panel {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    box-sizing: border-box !important;
-    overflow-x: hidden !important;
-  }
-
-  .quick-special-form,
-  .quick-mode-grid,
-  .quick-special-grid,
-  .quick-special-actions {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  .quick-mode-card,
-  .quick-special-grid .form-field,
-  .quick-special-grid .form-field-wide,
-  .quick-special-summary {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  .quick-mode-card {
-    padding: 0.55rem 0.65rem !important;
-    border-radius: 0.9rem !important;
-  }
-
-  .quick-mode-card span,
-  .quick-mode-card strong,
-  .quick-mode-card em {
-    min-width: 0 !important;
-    max-width: 100% !important;
-  }
-
-  .quick-special-grid input,
-  .quick-special-grid select,
-  .quick-special-grid textarea {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-  }
-
-  .quick-special-actions {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    left: auto !important;
-    right: auto !important;
-  }
-}
-
-@media (max-width: 430px) {
-  .quick-special-panel {
-    padding: 0.85rem !important;
-    border-radius: 1.1rem !important;
   }
 
   .quick-mode-grid {
@@ -3470,5 +3428,204 @@ a.sidebar-mobile-balance-pill:active {
 
   .quick-special-actions {
     padding: 0.55rem !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Transactions table — final clean desktop fit
+
+   Required template shape for the Transactions page:
+   - table classes: transactions-table transactions-actionless-table transactions-fit-table
+   - do NOT use inline-edit-table on this table
+   - optional colgroup classes: tx-col-date/type/category/description/account/amount
+   - amount cells can use: transaction-amount-cell
+   - action controls, if kept for the drawer, should live in .transaction-row-actions-source
+-------------------------------------------------------------------------- */
+
+.transactions-table.transactions-fit-table {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.transactions-table.transactions-fit-table .transaction-row-actions-heading,
+.transactions-table.transactions-fit-table td.transaction-row-actions,
+.transactions-table.transactions-fit-table td.table-action-rail.transaction-row-actions,
+.transactions-table.transactions-fit-table td.desktop-actions-cell.transaction-row-actions {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+}
+
+.transactions-table.transactions-fit-table .transaction-row-actions-source {
+  display: none !important;
+}
+
+@media (min-width: 900px) {
+  .transactions:has(.transactions-table.transactions-fit-table) {
+    overflow-x: hidden !important;
+  }
+
+  .transactions-table.transactions-fit-table {
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    min-width: 0 !important;
+  }
+
+  .transactions-table.transactions-fit-table .tx-col-date {
+    width: 12% !important;
+  }
+
+  .transactions-table.transactions-fit-table .tx-col-type {
+    width: 9% !important;
+  }
+
+  .transactions-table.transactions-fit-table .tx-col-category {
+    width: 15% !important;
+  }
+
+  .transactions-table.transactions-fit-table .tx-col-description {
+    width: 34% !important;
+  }
+
+  .transactions-table.transactions-fit-table .tx-col-account {
+    width: 17% !important;
+  }
+
+  .transactions-table.transactions-fit-table .tx-col-amount {
+    width: 13% !important;
+  }
+
+  .transactions-table.transactions-fit-table th,
+  .transactions-table.transactions-fit-table td {
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 0.86rem 0.92rem !important;
+    vertical-align: middle !important;
+    overflow: hidden !important;
+    border-bottom: 1px solid rgba(203, 213, 225, 0.85) !important;
+  }
+
+  .transactions-table.transactions-fit-table thead th {
+    white-space: nowrap !important;
+  }
+
+  .transactions-table.transactions-fit-table tbody tr:last-child > td {
+    border-bottom: 0 !important;
+  }
+
+  .transactions-table.transactions-fit-table th:nth-child(1),
+  .transactions-table.transactions-fit-table td:nth-child(1) {
+    width: 12% !important;
+    white-space: nowrap !important;
+  }
+
+  .transactions-table.transactions-fit-table th:nth-child(2),
+  .transactions-table.transactions-fit-table td:nth-child(2) {
+    width: 9% !important;
+    white-space: nowrap !important;
+  }
+
+  .transactions-table.transactions-fit-table th:nth-child(3),
+  .transactions-table.transactions-fit-table td:nth-child(3) {
+    width: 15% !important;
+  }
+
+  .transactions-table.transactions-fit-table th:nth-child(4),
+  .transactions-table.transactions-fit-table td:nth-child(4) {
+    width: 34% !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+  }
+
+  .transactions-table.transactions-fit-table th:nth-child(5),
+  .transactions-table.transactions-fit-table td:nth-child(5) {
+    width: 17% !important;
+    white-space: nowrap !important;
+  }
+
+  .transactions-table.transactions-fit-table th:nth-child(6),
+  .transactions-table.transactions-fit-table td:nth-child(6),
+  .transactions-table.transactions-fit-table td.transaction-amount-cell {
+    display: table-cell !important;
+    visibility: visible !important;
+    width: 13% !important;
+    min-width: 6.4rem !important;
+    max-width: none !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    font-variant-numeric: tabular-nums !important;
+    font-weight: 800 !important;
+    border-bottom: 1px solid rgba(203, 213, 225, 0.85) !important;
+  }
+
+  .transactions-table.transactions-fit-table tbody tr:last-child > td.transaction-amount-cell,
+  .transactions-table.transactions-fit-table tbody tr:last-child > td:nth-child(6) {
+    border-bottom: 0 !important;
+  }
+
+  .transactions-table.transactions-fit-table tr.row-expense td.transaction-amount-cell,
+  .transactions-table.transactions-fit-table tr.row-expense td:nth-child(6) {
+    color: #7f1d1d !important;
+  }
+
+  .transactions-table.transactions-fit-table tr.row-income td.transaction-amount-cell,
+  .transactions-table.transactions-fit-table tr.row-income td:nth-child(6) {
+    color: #166534 !important;
+  }
+
+  .transactions-table.transactions-fit-table tr.row-investment td.transaction-amount-cell,
+  .transactions-table.transactions-fit-table tr.row-investment td:nth-child(6) {
+    color: #1e3a8a !important;
+  }
+
+  .transactions-table.transactions-fit-table .transaction-description-text {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  .transactions-table.transactions-fit-table .account-table-badge,
+  .transactions-table.transactions-fit-table .pill,
+  .transactions-table.transactions-fit-table .badge,
+  .transactions-table.transactions-fit-table .account-pill {
+    display: inline-block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .transactions-table.transactions-fit-table tr.clickable-row {
+    cursor: pointer;
+  }
+
+  .transactions-table.transactions-fit-table tr.clickable-row:hover td {
+    background: rgba(37, 99, 235, 0.035) !important;
+  }
+
+  .desktop-detail-actions .transaction-row-actions,
+  .desktop-detail-actions .table-action-rail.transaction-row-actions,
+  .desktop-detail-actions .transaction-row-actions-source {
+    display: flex !important;
+    visibility: visible !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    overflow: visible !important;
   }
 }

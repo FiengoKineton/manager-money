@@ -88,7 +88,16 @@
     <span class="section-count">{{ transactions|length }} shown</span>
   </div>
 
-  <table class="inline-edit-table">
+  <table class="transactions-table transactions-actionless-table transactions-fit-table">
+    <colgroup>
+      <col class="tx-col-date">
+      <col class="tx-col-type">
+      <col class="tx-col-category">
+      <col class="tx-col-description">
+      <col class="tx-col-account">
+      <col class="tx-col-amount">
+    </colgroup>
+
     <thead>
       <tr>
         <th>Date</th>
@@ -97,7 +106,6 @@
         <th>Description</th>
         <th>Account</th>
         <th>Amount (€)</th>
-        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -112,10 +120,44 @@
             <br><small>{{ tx.sub_category }}</small>
           {% endif %}
         </td>
-        <td>
+        <td class="transaction-description-cell">
           {% if tx.description and tx.description != 'nan' %}
-            {{ tx.description }}
+            <span class="transaction-description-text">{{ tx.description }}</span>
           {% endif %}
+
+          <div class="transaction-row-actions transaction-row-actions-source" aria-hidden="true">
+            <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
+              class="icon-link-btn icon-link-edit"
+              title="Edit transaction"
+              aria-label="Edit transaction">✎</a>
+
+            <form method="post"
+                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
+                  class="row-action-form delay-row-form">
+              <input type="date"
+                    name="delay_date"
+                    value="{{ tx.delay_date_default }}"
+                    class="transaction-delay-date">
+              <button type="submit"
+                      name="action"
+                      value="delay"
+                      class="icon-action-btn icon-action-delay"
+                      title="Delay transaction to selected date"
+                      aria-label="Delay transaction to selected date">⏳</button>
+            </form>
+
+            <form method="post"
+                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
+                  class="row-action-form">
+              <button type="submit"
+                      name="action"
+                      value="delete"
+                      class="icon-action-btn icon-action-delete"
+                      title="Delete transaction"
+                      aria-label="Delete transaction"
+                      onclick="return confirm('Delete this transaction?')">×</button>
+            </form>
+          </div>
         </td>
         <td>
           {% if tx.is_auxiliary_account %}
@@ -124,19 +166,7 @@
             {{ tx.account }}
           {% endif %}
         </td>
-        <td>{{ tx.amount_str }}</td>
-        <td class="table-action-rail">
-          <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="icon-link-btn icon-link-edit" title="Edit transaction" aria-label="Edit transaction">✎</a>
-
-          <form method="post" action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="row-action-form delay-row-form">
-            <input type="date" name="delay_date" value="{{ tx.delay_date_default }}" class="transaction-delay-date">
-            <button type="submit" name="action" value="delay" class="icon-action-btn icon-action-delay" title="Delay transaction to selected date" aria-label="Delay transaction to selected date">⏳</button>
-          </form>
-
-          <form method="post" action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="row-action-form">
-            <button type="submit" name="action" value="delete" class="icon-action-btn icon-action-delete" title="Delete transaction" aria-label="Delete transaction" onclick="return confirm('Delete this transaction?')">×</button>
-          </form>
-        </td>
+        <td class="transaction-amount-cell">{{ tx.amount_str }}</td>
       </tr>
     {% endfor %}
     </tbody>
@@ -148,10 +178,48 @@
         <td>{{ tx.date_str }}</td>
         <td>{{ tx.type.capitalize() }}</td>
         <td>{{ tx.category }}</td>
-        <td>{{ tx.description }}</td>
+        <td class="transaction-description-cell">
+          {% if tx.description and tx.description != 'nan' %}
+            <span class="transaction-description-text">{{ tx.description }}</span>
+          {% endif %}
+
+          <div class="transaction-row-actions transaction-row-actions-source" aria-hidden="true">
+            <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
+              class="icon-link-btn icon-link-edit"
+              title="Edit transaction"
+              aria-label="Edit transaction">✎</a>
+
+            <form method="post"
+                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
+                  class="row-action-form delay-row-form">
+              <input type="date"
+                    name="delay_date"
+                    value="{{ tx.delay_date_default }}"
+                    class="transaction-delay-date">
+              <button type="submit"
+                      name="action"
+                      value="delay"
+                      class="icon-action-btn icon-action-delay"
+                      title="Delay transaction to selected date"
+                      aria-label="Delay transaction to selected date">⏳</button>
+            </form>
+
+            <form method="post"
+                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
+                  class="row-action-form">
+              <button type="submit"
+                      name="action"
+                      value="delete"
+                      class="icon-action-btn icon-action-delete"
+                      title="Delete transaction"
+                      aria-label="Delete transaction"
+                      onclick="return confirm('Delete this transaction?')">×</button>
+            </form>
+          </div>
+        </td>
         <td>{% if tx.is_auxiliary_account %}<span class="account-table-badge">{{ tx.account_label }}</span>{% else %}{{ tx.account }}{% endif %}</td>
-        <td>{{ tx.amount_str }}</td>
-        <td class="table-action-rail">
+        <td class="transaction-amount-cell">{{ tx.amount_str }}</td>
+        <td class="table-action-rail transaction-row-actions" aria-hidden="true">
           <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="icon-link-btn icon-link-edit" title="Edit transaction" aria-label="Edit transaction">✎</a>
 
           <form method="post" action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" class="row-action-form delay-row-form">
