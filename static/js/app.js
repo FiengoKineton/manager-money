@@ -709,12 +709,89 @@
     });
   }
 
+
+  function wireQuickSpecialLog() {
+    document.querySelectorAll("[data-quick-special-form]").forEach((form) => {
+      if (form.dataset.quickSpecialWired === "true") return;
+      form.dataset.quickSpecialWired = "true";
+
+      const panel = form.closest(".quick-special-panel");
+      const radios = Array.from(form.querySelectorAll('input[name="quick_mode"]'));
+      const fieldGroups = Array.from(form.querySelectorAll("[data-modes]"));
+      const summary = form.querySelector("[data-quick-special-summary]");
+      const modeCards = Array.from(form.querySelectorAll("[data-mode-card]"));
+
+      function currentMode() {
+        const checked = radios.find((radio) => radio.checked);
+        return checked ? checked.value : "parent_support";
+      }
+
+      function toggleFields() {
+        const mode = currentMode();
+
+        fieldGroups.forEach((group) => {
+          const modes = String(group.dataset.modes || "").split(/\s+/).filter(Boolean);
+          const visible = modes.includes(mode);
+          group.hidden = !visible;
+          group.classList.toggle("is-active", visible);
+          group.querySelectorAll("input, select, textarea, button").forEach((field) => {
+            field.disabled = !visible;
+          });
+        });
+
+        modeCards.forEach((card) => {
+          card.classList.toggle("is-selected", card.dataset.modeCard === mode);
+        });
+
+        if (summary) {
+          const checkedCard = modeCards.find((card) => card.dataset.modeCard === mode);
+          const targetText = checkedCard ? textValue(checkedCard, "em") : "";
+          const description = checkedCard ? textValue(checkedCard, "small") : "";
+          summary.innerHTML = `
+            <strong>${escapeHtml(textValue(checkedCard, "strong") || "Special log")}</strong>
+            <span>${escapeHtml(description)}</span>
+            <small>${escapeHtml(targetText)}</small>
+          `;
+        }
+      }
+
+      radios.forEach((radio) => radio.addEventListener("change", toggleFields));
+      toggleFields();
+
+      if (panel && panel.classList.contains("is-open") && window.location.hash !== "#smart-log") {
+        // Do not force-scroll on initial page load; only make sure the panel is usable.
+      }
+    });
+
+    document.querySelectorAll("[data-quick-special-toggle]").forEach((button) => {
+      if (button.dataset.quickSpecialToggleWired === "true") return;
+      button.dataset.quickSpecialToggleWired = "true";
+
+      button.addEventListener("click", () => {
+        const panel = button.closest(".quick-special-panel");
+        if (!panel) return;
+        const isOpen = panel.classList.toggle("is-open");
+        button.textContent = isOpen ? "Hide special log" : "Debt / Parent / Payable / Project";
+      });
+    });
+  }
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     wireMobileNavGroups();
     enhanceResponsiveTables();
     wireClickableRows();
     wireDesktopDetailRows();
     enhanceCompactFormCards();
+    wireQuickSpecialLog();
 
     document.querySelectorAll('[data-action="select-all-filters"]').forEach((button) => {
       button.addEventListener("click", selectAllFilters);

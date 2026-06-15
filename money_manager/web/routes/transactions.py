@@ -9,6 +9,7 @@ from money_manager.services.account_service import main_account_transactions
 from money_manager.services.analytics_service import apply_transaction_filters
 from money_manager.services.category_service import category_context
 from money_manager.services.currency_service import currency_options_for_forms
+from money_manager.services.quick_log_service import handle_quick_log, quick_log_context
 from money_manager.services.transaction_service import (
     delete_existing_transaction,
     load_transactions,
@@ -63,7 +64,18 @@ def add_transaction():
     form_values = {}
     form_error = ""
 
-    if request.method == "POST":
+    quick_error = ""
+    quick_message = request.args.get("quick_message", "")
+    quick_values = {}
+
+    if request.method == "POST" and request.form.get("action") == "quick_special_log":
+        result = handle_quick_log(request.form)
+        if result.get("ok"):
+            return redirect(url_for("transactions.add_transaction", type=request.args.get("type", "expense"), special="1", quick_message=result.get("message", "Saved.")))
+        quick_error = result.get("error", "The special log was not saved.")
+        quick_values = request.form.to_dict()
+        transaction_type = request.args.get("type", "expense")
+    elif request.method == "POST":
         tx_input = TransactionInput.from_form(request.form)
         result = save_new_transaction(tx_input)
         if result.get("ok"):
@@ -88,6 +100,11 @@ def add_transaction():
         paypal_balance=paypal_balance(),
         form_error=form_error,
         form_values=form_values,
+        quick_error=quick_error,
+        quick_message=quick_message,
+        quick_values=quick_values,
+        show_special_log=request.args.get("special") == "1",
+        **quick_log_context(),
     )
 
 

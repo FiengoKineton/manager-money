@@ -2,8 +2,221 @@
 {% block page_title %}Add Transaction{% endblock %}
 
 {% block content %}
-<section class="form-section">
-  <h2>Add {{ ttype.capitalize() }}</h2>
+
+  <div class="add-mode-stack">
+    <section id="smart-log" class="form-section quick-special-panel {{ 'is-open' if show_special_log else '' }}">
+      <div class="quick-special-header">
+        <div>
+          <span class="eyebrow">Adaptive quick add</span>
+          <h2>Special log</h2>
+          <p>
+            Use this when the movement belongs to Debts, Parent Support, Payables,
+            Projects, Money Owed to Me, or Sparagnat e Fottut. The form changes fields
+            and saves into the right tracker, so you do not need to open that page first.
+          </p>
+        </div>
+        <button type="button" class="secondary-btn quick-special-toggle" data-quick-special-toggle>
+          {{ 'Hide special log' if show_special_log else 'Debt / Parent / Payable / Project' }}
+        </button>
+      </div>
+
+      {% if quick_message %}
+        <div class="form-alert form-alert-success">
+          <strong>Saved.</strong> {{ quick_message }}
+        </div>
+      {% endif %}
+
+      {% if quick_error %}
+        <div class="form-alert form-alert-error">
+          <strong>Not saved.</strong> {{ quick_error }}
+        </div>
+      {% endif %}
+
+      <form method="post" class="quick-special-form" data-quick-special-form>
+        <input type="hidden" name="action" value="quick_special_log">
+
+        <div class="form-field form-field-wide">
+          <label>What are you adding?</label>
+          <div class="quick-mode-grid">
+            {% for mode in quick_log_modes %}
+              <label class="quick-mode-card" data-mode-card="{{ mode.key }}">
+                <input
+                  type="radio"
+                  name="quick_mode"
+                  value="{{ mode.key }}"
+                  {% if (quick_values.quick_mode or 'parent_support') == mode.key %}checked{% endif %}
+                >
+                <span>
+                  <strong>{{ mode.label }}</strong>
+                  <small>{{ mode.description }}</small>
+                  <em>{{ mode.target }} · Net: {{ mode.affects_net }}</em>
+                </span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="quick-special-grid">
+          <div class="form-field quick-date-field" data-modes="parent_support sparagnat debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay">
+            <label>Date</label>
+            <input type="date" name="date" value="{{ quick_values.date or today }}">
+          </div>
+
+          <div class="form-field quick-amount-field" data-modes="parent_support sparagnat debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay">
+            <label>Amount (€)</label>
+            <input type="number" step="0.01" name="amount" value="{{ quick_values.amount or '' }}" placeholder="100.00">
+          </div>
+
+          <div class="form-field" data-modes="debt_pay">
+            <label>Debt to pay</label>
+            <select name="debt_id">
+              <option value="">Select active debt</option>
+              {% for debt in quick_log_context.debts %}
+                <option value="{{ debt.id }}" {% if quick_values.debt_id == debt.id|string %}selected{% endif %}>{{ debt.name }} — {{ debt.creditor }} — € {{ debt.remaining_amount_str }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-field" data-modes="payable_pay">
+            <label>Payable to pay</label>
+            <select name="payable_id">
+              <option value="">Select active payable</option>
+              {% for payable in quick_log_context.payables %}
+                <option value="{{ payable.id }}" {% if quick_values.payable_id == payable.id|string %}selected{% endif %}>{{ payable.name }} — {{ payable.payee }} — € {{ payable.remaining_amount_str }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-field" data-modes="receivable_collect">
+            <label>Receivable to collect</label>
+            <select name="receivable_id">
+              <option value="">Select money owed to you</option>
+              {% for receivable in quick_log_context.receivables %}
+                <option value="{{ receivable.id }}" {% if quick_values.receivable_id == receivable.id|string %}selected{% endif %}>{{ receivable.name }} — {{ receivable.debtor }} — € {{ receivable.remaining_amount_str }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-field" data-modes="project_plan">
+            <label>Project</label>
+            <select name="project_id">
+              <option value="">Select project</option>
+              {% for project in quick_log_context.projects %}
+                <option value="{{ project.id }}" {% if quick_values.project_id == project.id|string %}selected{% endif %}>{{ project.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-field" data-modes="project_pay">
+            <label>Project item to pay</label>
+            <select name="project_item_id">
+              <option value="">Select planned item</option>
+              {% for item in quick_log_context.planned_items %}
+                <option value="{{ item.combined_id }}" {% if quick_values.project_item_id == item.combined_id %}selected{% endif %}>{{ item.project_name }} — {{ item.name }} — € {{ item.remaining_amount_str }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-field" data-modes="debt_create receivable_create payable_create project_plan">
+            <label>Name / item</label>
+            <input type="text" name="name" value="{{ quick_values.name or '' }}" placeholder="CILA, plumber, loan, invoice...">
+          </div>
+
+          <div class="form-field" data-modes="parent_support sparagnat debt_create receivable_create payable_create project_plan">
+            <label>Person / company</label>
+            <input type="text" name="person" value="{{ quick_values.person or '' }}" placeholder="Parent, creditor, debtor, payee, vendor...">
+          </div>
+
+          <div class="form-field" data-modes="parent_support">
+            <label>Support type</label>
+            <select name="support_kind">
+              {% for value, label in quick_log_context.parent_support_kinds.items() %}
+                <option value="{{ value }}" {% if (quick_values.support_kind or 'covered_expense') == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-field" data-modes="parent_support">
+            <label>Support category</label>
+            <select name="support_category">
+              {% for category in quick_log_context.parent_support_categories %}
+                <option value="{{ category }}" {% if (quick_values.support_category or quick_log_context.parent_support_default_category) == category %}selected{% endif %}>{{ category }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-field" data-modes="sparagnat">
+            <label>Sparagnat type</label>
+            <select name="sparagnat_kind">
+              {% for value, label in quick_log_context.sparagnat_kinds.items() %}
+                <option value="{{ value }}" {% if (quick_values.sparagnat_kind or 'saved_expense') == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-field" data-modes="sparagnat payable_create project_plan">
+            <label>Category</label>
+            <select name="category">
+              <option value="">Choose or leave default</option>
+              {% for category in quick_log_context.expense_categories %}
+                <option value="{{ category }}" {% if quick_values.category == category %}selected{% endif %}>{{ category }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-field" data-modes="project_plan">
+            <label>Sub-category</label>
+            <input type="text" name="sub_category" value="{{ quick_values.sub_category or '' }}" placeholder="Bathroom, kitchen, labour...">
+          </div>
+
+          <div class="form-field" data-modes="debt_create receivable_create payable_create project_plan">
+            <label>Remaining amount (€)</label>
+            <input type="number" step="0.01" name="remaining_amount" value="{{ quick_values.remaining_amount or '' }}" placeholder="Leave empty = amount">
+          </div>
+
+          <div class="form-field" data-modes="debt_create receivable_create payable_create project_plan">
+            <label>Due date</label>
+            <input type="date" name="due_date" value="{{ quick_values.due_date or '' }}">
+          </div>
+
+          <div class="form-field" data-modes="parent_support">
+            <label>Payment method</label>
+            <input type="text" name="payment_method" value="{{ quick_values.payment_method or '' }}" placeholder="cash / bank / paid directly">
+          </div>
+
+          <div class="form-field" data-modes="debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay sparagnat">
+            <label>Account</label>
+            <select name="account">
+              {% for account in quick_log_context.account_options %}
+                <option value="{{ account.value }}" {% if quick_values.account == account.value %}selected{% endif %}>{{ account.label }}</option>
+              {% endfor %}
+            </select>
+            <small class="hint">For planned-only items, this is just the expected payment account. It does not create a transaction until you pay.</small>
+          </div>
+
+          <div class="form-field form-field-wide" data-modes="parent_support sparagnat debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay">
+            <label>Description</label>
+            <textarea name="description" rows="2" placeholder="Short note">{{ quick_values.description or '' }}</textarea>
+          </div>
+        </div>
+
+        <div class="quick-special-summary" data-quick-special-summary></div>
+
+        <div class="form-actions quick-special-actions">
+          <button type="submit">Save special log</button>
+          <a href="{{ url_for('transactions.add_transaction', type=ttype) }}" class="secondary-btn">Back to normal add</a>
+        </div>
+      </form>
+    </section>
+
+    <section class="form-section normal-transaction-panel">
+      <div class="quick-special-header normal-add-header">
+        <div>
+          <span class="eyebrow">Normal transaction</span>
+          <h2>Add {{ ttype.capitalize() }}</h2>
+        </div>
+        <a href="{{ url_for('transactions.add_transaction', type=ttype, special='1') }}" class="secondary-btn">Use special log instead</a>
+      </div>
 
   {% if form_error %}
     <div class="form-alert form-alert-error">
@@ -110,7 +323,8 @@
       <button type="submit">Save</button>
     </div>
   </form>
-</section>
+    </section>
+  </div>
 {% endblock %}
 
 {% block scripts %}
