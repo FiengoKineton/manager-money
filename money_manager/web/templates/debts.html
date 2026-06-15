@@ -90,11 +90,10 @@
   <h2>Tracked Debts</h2>
 
   {% if debts %}
-  <table class="inline-edit-table">
+  <table class="inline-edit-table debt-tracked-table">
     <thead>
       <tr>
         <th>Name</th>
-        <th>Creditor</th>
         <th>Original</th>
         <th>Remaining</th>
         <th>Progress</th>
@@ -111,10 +110,12 @@
           <form id="debt-update-{{ debt.id }}" method="post"></form>
           <input form="debt-update-{{ debt.id }}" type="hidden" name="action" value="update_debt">
           <input form="debt-update-{{ debt.id }}" type="hidden" name="id" value="{{ debt.id }}">
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="creditor" value="{{ debt.creditor }}">
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="start_date" value="{{ debt.start_date }}">
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="account" value="{{ debt.account }}">
           <input form="debt-update-{{ debt.id }}" type="text" name="name" value="{{ debt.name }}" required>
           <input form="debt-update-{{ debt.id }}" type="text" name="description" value="{{ debt.description }}" placeholder="Note" class="table-note-input">
         </td>
-        <td><input form="debt-update-{{ debt.id }}" type="text" name="creditor" value="{{ debt.creditor }}"></td>
         <td><input form="debt-update-{{ debt.id }}" type="number" step="0.01" name="original_amount" value="{{ debt.original_amount }}" required></td>
         <td><input form="debt-update-{{ debt.id }}" type="number" step="0.01" name="remaining_amount" value="{{ debt.remaining_amount }}" required></td>
         <td>
@@ -125,8 +126,6 @@
         </td>
         <td>
           <input form="debt-update-{{ debt.id }}" type="date" name="due_date" value="{{ debt.due_date }}">
-          <input form="debt-update-{{ debt.id }}" type="date" name="start_date" value="{{ debt.start_date }}" aria-label="Start date">
-          <input form="debt-update-{{ debt.id }}" type="text" name="account" value="{{ debt.account }}" placeholder="Account" aria-label="Account">
         </td>
         <td>
           <select form="debt-update-{{ debt.id }}" name="status">
@@ -245,7 +244,7 @@
   <h2>Debt Payment Rules</h2>
 
   {% if rules %}
-  <table class="inline-edit-table">
+  <table class="inline-edit-table debt-rules-table">
     <thead>
       <tr>
         <th>Name</th>

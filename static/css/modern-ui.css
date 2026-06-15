@@ -375,6 +375,7 @@ tr.row-investment td {
   .sidebar-mobile-balance-pill strong {
     font-size: 1rem;
     white-space: nowrap;
+    margin-left: 10px;
   }
 
   .nav-group {
@@ -4172,5 +4173,229 @@ a.sidebar-mobile-balance-pill:active {
     min-width: 0 !important;
     width: auto !important;
     max-width: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Debt tables desktop alignment fix
+   Keeps the mobile card layout untouched. The tracked debts table now has the
+   same visible columns in the header and body after actions move to the drawer.
+-------------------------------------------------------------------------- */
+@media (min-width: 1001px) {
+  .transactions:has(table.debt-tracked-table),
+  .transactions:has(table.debt-rules-table) {
+    overflow-x: hidden !important;
+  }
+
+  table.debt-tracked-table.desktop-action-drawer-table,
+  table.debt-rules-table.desktop-action-drawer-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  table.debt-tracked-table.desktop-action-drawer-table th,
+  table.debt-tracked-table.desktop-action-drawer-table td,
+  table.debt-rules-table.desktop-action-drawer-table th,
+  table.debt-rules-table.desktop-action-drawer-table td {
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    vertical-align: top !important;
+  }
+
+  table.debt-tracked-table.desktop-action-drawer-table thead th,
+  table.debt-rules-table.desktop-action-drawer-table thead th {
+    padding: 0.72rem 0.78rem !important;
+    white-space: nowrap !important;
+  }
+
+  table.debt-tracked-table.desktop-action-drawer-table tbody td:not(.mobile-row-summary):not(.desktop-actions-cell),
+  table.debt-rules-table.desktop-action-drawer-table tbody td:not(.mobile-row-summary):not(.desktop-actions-cell) {
+    padding: 0.74rem 0.78rem !important;
+  }
+
+  table.debt-tracked-table.desktop-action-drawer-table th:nth-child(1),
+  table.debt-tracked-table.desktop-action-drawer-table td:nth-child(1) {
+    width: 24% !important;
+  }
+
+  table.debt-tracked-table.desktop-action-drawer-table th:nth-child(2),
+  table.debt-tracked-table.desktop-action-drawer-table td:nth-child(2),
+  table.debt-tracked-table.desktop-action-drawer-table th:nth-child(3),
+  table.debt-tracked-table.desktop-action-drawer-table td:nth-child(3) {
+    width: 13% !important;
+  }
+
+  table.debt-tracked-table.desktop-action-drawer-table th:nth-child(4),
+  table.debt-tracked-table.desktop-action-drawer-table td:nth-child(4) {
+    width: 16% !important;
+  }
+
+  table.debt-tracked-table.desktop-action-drawer-table th:nth-child(5),
+  table.debt-tracked-table.desktop-action-drawer-table td:nth-child(5) {
+    width: 14% !important;
+  }
+
+  table.debt-tracked-table.desktop-action-drawer-table th:nth-child(6),
+  table.debt-tracked-table.desktop-action-drawer-table td:nth-child(6) {
+    width: 20% !important;
+  }
+
+  table.debt-rules-table.desktop-action-drawer-table th:nth-child(1),
+  table.debt-rules-table.desktop-action-drawer-table td:nth-child(1) {
+    width: 18% !important;
+  }
+
+  table.debt-rules-table.desktop-action-drawer-table th:nth-child(2),
+  table.debt-rules-table.desktop-action-drawer-table td:nth-child(2),
+  table.debt-rules-table.desktop-action-drawer-table th:nth-child(3),
+  table.debt-rules-table.desktop-action-drawer-table td:nth-child(3) {
+    width: 17% !important;
+  }
+
+  table.debt-rules-table.desktop-action-drawer-table th:nth-child(4),
+  table.debt-rules-table.desktop-action-drawer-table td:nth-child(4) {
+    width: 10% !important;
+  }
+
+  table.debt-rules-table.desktop-action-drawer-table th:nth-child(5),
+  table.debt-rules-table.desktop-action-drawer-table td:nth-child(5),
+  table.debt-rules-table.desktop-action-drawer-table th:nth-child(6),
+  table.debt-rules-table.desktop-action-drawer-table td:nth-child(6) {
+    width: 14% !important;
+  }
+
+  table.debt-rules-table.desktop-action-drawer-table th:nth-child(7),
+  table.debt-rules-table.desktop-action-drawer-table td:nth-child(7) {
+    width: 10% !important;
+  }
+
+  table.debt-tracked-table.desktop-action-drawer-table input,
+  table.debt-tracked-table.desktop-action-drawer-table select,
+  table.debt-rules-table.desktop-action-drawer-table input,
+  table.debt-rules-table.desktop-action-drawer-table select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  table.debt-tracked-table.desktop-action-drawer-table .progress-wrap,
+  table.debt-rules-table.desktop-action-drawer-table .progress-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Payables desktop table alignment / full-width fit
+   Keeps mobile cards untouched. The hidden Actions column stays in the drawer,
+   while the visible Payables columns expand across the whole desktop card.
+-------------------------------------------------------------------------- */
+@media (min-width: 1001px) {
+  .transactions:has(table.payables-tracked-table) {
+    overflow-x: hidden !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table,
+  table.payables-tracked-table.inline-edit-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table th,
+  table.payables-tracked-table.desktop-action-drawer-table td,
+  table.payables-tracked-table.inline-edit-table th,
+  table.payables-tracked-table.inline-edit-table td {
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    vertical-align: top !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table thead th,
+  table.payables-tracked-table.inline-edit-table thead th {
+    padding: 0.72rem 0.78rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table tbody td:not(.mobile-row-summary):not(.desktop-actions-cell),
+  table.payables-tracked-table.inline-edit-table tbody td:not(.mobile-row-summary):not(.desktop-actions-cell) {
+    padding: 0.74rem 0.78rem !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table th:nth-child(1),
+  table.payables-tracked-table.desktop-action-drawer-table td:nth-child(1),
+  table.payables-tracked-table.inline-edit-table th:nth-child(1),
+  table.payables-tracked-table.inline-edit-table td:nth-child(1) {
+    width: 16% !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table th:nth-child(2),
+  table.payables-tracked-table.desktop-action-drawer-table td:nth-child(2),
+  table.payables-tracked-table.inline-edit-table th:nth-child(2),
+  table.payables-tracked-table.inline-edit-table td:nth-child(2) {
+    width: 13% !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table th:nth-child(3),
+  table.payables-tracked-table.desktop-action-drawer-table td:nth-child(3),
+  table.payables-tracked-table.inline-edit-table th:nth-child(3),
+  table.payables-tracked-table.inline-edit-table td:nth-child(3),
+  table.payables-tracked-table.desktop-action-drawer-table th:nth-child(4),
+  table.payables-tracked-table.desktop-action-drawer-table td:nth-child(4),
+  table.payables-tracked-table.inline-edit-table th:nth-child(4),
+  table.payables-tracked-table.inline-edit-table td:nth-child(4) {
+    width: 10% !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table th:nth-child(5),
+  table.payables-tracked-table.desktop-action-drawer-table td:nth-child(5),
+  table.payables-tracked-table.inline-edit-table th:nth-child(5),
+  table.payables-tracked-table.inline-edit-table td:nth-child(5) {
+    width: 8% !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table th:nth-child(6),
+  table.payables-tracked-table.desktop-action-drawer-table td:nth-child(6),
+  table.payables-tracked-table.inline-edit-table th:nth-child(6),
+  table.payables-tracked-table.inline-edit-table td:nth-child(6) {
+    width: 13% !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table th:nth-child(7),
+  table.payables-tracked-table.desktop-action-drawer-table td:nth-child(7),
+  table.payables-tracked-table.inline-edit-table th:nth-child(7),
+  table.payables-tracked-table.inline-edit-table td:nth-child(7) {
+    width: 19% !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table th:nth-child(8),
+  table.payables-tracked-table.desktop-action-drawer-table td:nth-child(8),
+  table.payables-tracked-table.inline-edit-table th:nth-child(8),
+  table.payables-tracked-table.inline-edit-table td:nth-child(8) {
+    width: 11% !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table input,
+  table.payables-tracked-table.desktop-action-drawer-table select,
+  table.payables-tracked-table.inline-edit-table input,
+  table.payables-tracked-table.inline-edit-table select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  table.payables-tracked-table.desktop-action-drawer-table .progress-wrap,
+  table.payables-tracked-table.inline-edit-table .progress-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 }
