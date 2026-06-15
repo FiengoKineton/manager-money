@@ -8,7 +8,8 @@
     <h2>{{ project.name }}</h2>
     <p>
       Real expense and income transactions are counted in this sheet. Planned items are future expected costs
-      and stay outside your net balance until you pay all or part of them.
+      and stay outside your net balance until you pay all or part of them. Linked Payables mirror the Payables page,
+      so paying a Payable updates project progress without creating a second payment.
     </p>
   </div>
 </section>
@@ -85,7 +86,7 @@
   </form>
 </section>
 
-<section class="expense-project-two-col">
+<section class="expense-project-two-col expense-project-action-grid">
   <article class="panel-card">
     <div class="panel-header">
       <div>
@@ -151,6 +152,40 @@
   <article class="panel-card">
     <div class="panel-header">
       <div>
+        <span class="eyebrow">Payables link</span>
+        <h3>Link existing payable</h3>
+        <p>This only links the Payable. Payments still happen from the Payables page.</p>
+      </div>
+    </div>
+    {% if payable_candidates %}
+    <form method="post" class="expense-project-form compact-project-form">
+      <input type="hidden" name="action" value="link_payable">
+      <div class="form-field form-field-wide">
+        <label>Active or old payable</label>
+        <select name="payable_id" required>
+          <option value="">Choose a payable...</option>
+          {% for payable in payable_candidates %}
+            <option value="{{ payable.id }}">{{ payable.label }}</option>
+          {% endfor %}
+        </select>
+        <small>It will appear in Forecast and its payments will appear in Actuals as linked transactions.</small>
+      </div>
+      <div class="form-field form-field-wide">
+        <label>Project sub-category label</label>
+        <input type="text" name="sub_category" value="Linked payable" placeholder="Linked payable">
+      </div>
+      <div class="form-actions-row form-field-wide">
+        <button type="submit" class="primary-btn">Link payable</button>
+      </div>
+    </form>
+    {% else %}
+      <p class="project-link-helper">No unlinked payables found. Create or update them from <a href="{{ url_for('payables.payables_page') }}">Payables</a>.</p>
+    {% endif %}
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
         <span class="eyebrow">Real movement</span>
         <h3>Attach existing transaction</h3>
         <p>Add past expenses or incomes that already exist in Transactions.</p>
@@ -209,6 +244,9 @@
           <input form="planned-update-{{ item.id }}" type="hidden" name="item_id" value="{{ item.id }}">
           <input form="planned-update-{{ item.id }}" type="text" name="name" value="{{ item.name }}" required>
           <input form="planned-update-{{ item.id }}" type="text" name="description" value="{{ item.description }}" placeholder="Note" class="table-note-input">
+          {% if item.linked_payable %}
+            <small class="linked-payable-note">Linked Payable #{{ item.payable_id }} · edit/pay it from Payables</small>
+          {% endif %}
           <input form="planned-update-{{ item.id }}" type="hidden" name="start_date" value="{{ item.start_date }}">
         </td>
         <td><input form="planned-update-{{ item.id }}" type="text" name="vendor" value="{{ item.vendor }}"></td>
@@ -218,7 +256,7 @@
           <div class="progress-wrap progress-wrap-expense">
             <div class="progress-bar progress-bar-expense" style="width: {{ item.progress }}%"></div>
           </div>
-          <small>Paid € {{ '%.2f'|format(item.paid_amount) }} · {{ '%.0f'|format(item.progress) }}%</small>
+          <small>Paid € {{ '%.2f'|format(item.paid_amount) }} · {{ '%.0f'|format(item.progress) }}%{% if item.linked_payable %} · Payable link{% endif %}</small>
         </td>
         <td>
           <input form="planned-update-{{ item.id }}" list="expense-project-categories-3" type="text" name="category" value="{{ item.category or project.category }}" aria-label="Category">
@@ -239,9 +277,13 @@
         </td>
         <td class="debt-actions">
           <div class="table-action-rail">
+            {% if not item.linked_payable %}
             <button form="planned-update-{{ item.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update item" aria-label="Update item">✎</button>
+            {% else %}
+            <a href="{{ url_for('payables.payables_page') }}" class="secondary-btn compact-btn">Open Payables</a>
+            {% endif %}
 
-            {% if item.status == 'active' and item.remaining_amount > 0 %}
+            {% if item.status == 'active' and item.remaining_amount > 0 and not item.linked_payable %}
             <form method="post" class="row-action-form">
               <input type="hidden" name="action" value="pay_planned_item">
               <input type="hidden" name="item_id" value="{{ item.id }}">
@@ -282,7 +324,7 @@
     {% endfor %}
   </datalist>
   {% else %}
-    <p>No future costs yet. Add expected items like 15k for works or 3k for furniture.</p>
+    <p>No future costs yet. Add expected items like 15k for works or link an existing Payable from the form above.</p>
   {% endif %}
 </section>
 
@@ -317,7 +359,7 @@
         <td>{{ tx.description }}{% if tx.note %}<br><small>{{ tx.note }}</small>{% endif %}</td>
         <td>{{ tx.account or 'Main bank' }}</td>
         <td class="amount {{ tx.amount_class }}">{{ tx.amount_sign }} € {{ '%.2f'|format(tx.amount) }}</td>
-        <td>{{ 'Planned payment' if tx.source == 'planned_payment' else 'Manual link' }}</td>
+        <td>{{ tx.source_label }}</td>
         <td>
           <form method="post">
             <input type="hidden" name="action" value="detach_movement">

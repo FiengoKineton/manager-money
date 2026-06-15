@@ -7,5 +7,5 @@ id,type,date_due,amount,category,account,description,status,source,source_id
 8,expense,2026-06-10,100.0,Debt,auto,Debt instalment: Phone Payments,executed,debt,3
 9,expense,2026-06-10,41.6,Debt,auto,Debt extinguishment: Payoff,executed,debt,4
 10,income,2026-06-10,200.0,Kineton,EdenRed,Ticket Restaurants,executed,,
-11,expense,2026-07-15,200.0,Housing,,month 2 [PayPal checkout scheduled through PayPal credit/card route.],pending,,
 12,expense,2026-06-15,200.0,Housing,paypal_credit,month 1 [PayPal checkout scheduled through PayPal credit/card route.],executed,,
+13,expense,2026-07-15,200.0,Housing,paypal_credit,Parking Spot,pending,recurring,8

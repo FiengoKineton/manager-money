@@ -1,6 +1,6 @@
 from datetime import date
 
-from money_manager.config import account_label_for_value, is_auxiliary_account
+from money_manager.config import CREDIT_ACCOUNT_KEYWORDS, CREDIT_CARD_DUE_DAY, account_label_for_value, is_auxiliary_account
 
 from money_manager.repositories.pending import append_pending, delete_pending_for_source, load_pending
 from money_manager.repositories.recurring import (
@@ -102,6 +102,47 @@ def next_due_date_for_rule(row: dict, today: date | None = None) -> date:
     return first_due_date(row, today)
 
 
+def _is_credit_style_recurring(row: dict) -> bool:
+    account = str(row.get("account", "")).strip().lower()
+    tx_type = str(row.get("type", "expense")).strip().lower()
+
+    return tx_type == "expense" and account in {
+        *CREDIT_ACCOUNT_KEYWORDS,
+        "paypal",
+        "pay pal",
+        "paypal_credit",
+        "paypal credit",
+        "pay pal credit",
+    }
+
+
+def _credit_due_date_from_charge_date(charge_date: date) -> date:
+    """Credit-card style settlement: charge this month, pay next month."""
+    if charge_date.month == 12:
+        return date(charge_date.year + 1, 1, CREDIT_CARD_DUE_DAY)
+
+    return date(charge_date.year, charge_date.month + 1, CREDIT_CARD_DUE_DAY)
+
+
+def _pending_due_date_for_rule(row: dict, scheduled_date: date) -> date:
+    if _is_credit_style_recurring(row):
+        return _credit_due_date_from_charge_date(scheduled_date)
+
+    return scheduled_date
+
+
+def _pending_account_for_rule(row: dict) -> str:
+    account = str(row.get("account", "auto")).strip().lower()
+
+    if account in {"paypal", "pay pal", "paypal_credit", "paypal credit", "pay pal credit"}:
+        return "paypal_credit"
+
+    if _is_credit_style_recurring(row):
+        return "credit"
+
+    return row.get("account", "auto")
+
+
 def generate_recurring(today: date | None = None) -> int:
     today = today or date.today()
     rows = load_recurring()
@@ -110,9 +151,11 @@ def generate_recurring(today: date | None = None) -> int:
     created = 0
 
     for row in rows:
-        for due_date in _iter_due_dates_to_generate(row, today):
-            if _matching_pending_exists(row, due_date):
-                row["last_generated"] = due_date.isoformat()
+        for scheduled_date in _iter_due_dates_to_generate(row, today):
+            pending_due_date = _pending_due_date_for_rule(row, scheduled_date)
+
+            if _matching_pending_exists(row, scheduled_date):
+                row["last_generated"] = scheduled_date.isoformat()
                 changed = True
                 continue
 
@@ -121,14 +164,15 @@ def generate_recurring(today: date | None = None) -> int:
                     "type": row.get("type", "expense"),
                     "amount": normalize_amount(row.get("amount", 0)),
                     "category": row.get("category", ""),
-                    "account": row.get("account", "auto"),
+                    "account": _pending_account_for_rule(row),
                     "description": row.get("name", ""),
                     "source": "recurring",
                     "source_id": row.get("id", ""),
                 },
-                due_date,
+                pending_due_date,
             )
-            row["last_generated"] = due_date.isoformat()
+
+            row["last_generated"] = scheduled_date.isoformat()
             changed = True
             created += 1
 
@@ -158,12 +202,14 @@ def _iter_due_dates_to_generate(row: dict, today: date):
         due_date = add_months(due_date, frequency_months, desired_day)
 
 
-def _matching_pending_exists(row: dict, due_date: date) -> bool:
-    due = due_date.isoformat()
+def _matching_pending_exists(row: dict, scheduled_date: date) -> bool:
+    pending_due_date = _pending_due_date_for_rule(row, scheduled_date)
+    due = pending_due_date.isoformat()
+
     name = str(row.get("name", ""))
     transaction_type = str(row.get("type", ""))
     category = str(row.get("category", ""))
-    account = str(row.get("account", "auto"))
+    account = str(_pending_account_for_rule(row))
     amount = normalize_amount(row.get("amount", 0))
 
     for tx in load_pending():

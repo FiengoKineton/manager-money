@@ -98,7 +98,7 @@ def register_payable_payment(payable_id, amount: float, payment_date: str, accou
         return
 
     payment_account = account if account is not None else item.get("account", "")
-    append_transaction({
+    tx_id = append_transaction({
         "type": "expense",
         "date": payment_date or date.today().isoformat(),
         "category": item.get("category") or DEFAULT_PAYABLE_EXPENSE_CATEGORY,
@@ -107,6 +107,16 @@ def register_payable_payment(payable_id, amount: float, payment_date: str, accou
         "account": payment_account,
         "description": description or f"Payable payment to {item.get('payee', '')}: {item.get('name', '')}",
     })
+
+    # If this payable is linked to an Expense Project, attach this existing
+    # transaction to the project Actuals. This is only a link, not a second payment.
+    from money_manager.services.expense_project_service import attach_payable_payment_to_linked_projects
+
+    attach_payable_payment_to_linked_projects(
+        payable_id=payable_id,
+        transaction_id=tx_id,
+        note=f"Payable payment: {item.get('name', '')}",
+    )
 
     remaining = max(0.0, _amount(item.get("remaining_amount")) - amount)
     updates = {"remaining_amount": remaining, "account": payment_account}

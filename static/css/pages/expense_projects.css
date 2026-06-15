@@ -142,5 +142,47 @@
 }
 
 .project-table {
-  min-width: 1250px;
+  min-width: 1350px;
+}
+
+.project-table-card table {
+  width: 100%;
+}
+
+.expense-project-two-col.expense-project-action-grid,
+.expense-project-action-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.linked-payable-note {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  color: var(--brand);
+  background: var(--surface);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.project-link-helper {
+  margin: 0;
+  color: var(--muted);
+}
+
+.warning-text {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+@media (max-width: 1200px) {
+  .expense-project-two-col.expense-project-action-grid,
+  .expense-project-action-grid {
+    grid-template-columns: 1fr;
+  }
 }

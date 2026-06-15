@@ -113,6 +113,14 @@ def load_planned_items(project_id: int | None = None) -> list[dict]:
     return [row for row in rows if str(row.get("project_id")) == str(project_id)]
 
 
+def linked_payable_exists(project_id: int, payable_id: int) -> bool:
+    return any(
+        str(row.get("project_id")) == str(project_id)
+        and str(row.get("payable_id", "")) == str(payable_id)
+        for row in load_planned_items(project_id)
+    )
+
+
 def append_planned_item(data: dict) -> int:
     rows = load_planned_items()
     item_id = next_numeric_id(rows)
@@ -130,6 +138,7 @@ def append_planned_item(data: dict) -> int:
         "due_date": data.get("due_date", ""),
         "description": data.get("description", ""),
         "status": data.get("status", "active") or "active",
+        "payable_id": data.get("payable_id", ""),
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "closed_at": data.get("closed_at", ""),
     }

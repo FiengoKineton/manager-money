@@ -8,6 +8,7 @@ from money_manager.services.expense_project_service import (
     delete_project_from_form,
     detach_movement_from_form,
     detail_context,
+    link_payable_to_project_from_form,
     overview_context,
     pay_planned_item_from_form,
     update_planned_item_from_form,
@@ -48,6 +49,8 @@ def expense_project_detail(project_id: int):
             delete_planned_item_from_form(request.form)
         elif action == "pay_planned_item":
             pay_planned_item_from_form(project_id, request.form)
+        elif action == "link_payable":
+            link_payable_to_project_from_form(project_id, request.form)
         elif action == "attach_transaction":
             attach_transaction_from_form(project_id, request.form)
         elif action == "detach_movement":
