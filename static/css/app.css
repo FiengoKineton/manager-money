@@ -24,6 +24,7 @@
 @import url("pages/investments.css");
 @import url("pages/parent_support.css");
 @import url("responsive.css");
+@import url("modern-ui.css");
 
 .logout-form {
   display: inline-flex;

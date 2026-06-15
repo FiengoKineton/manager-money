@@ -45,7 +45,18 @@
 
   function wireMobileNavGroups() {
     const groups = Array.from(document.querySelectorAll(".nav-group"));
-    const isMobile = () => window.matchMedia("(max-width: 1000px)").matches;
+    const media = window.matchMedia("(max-width: 1000px)");
+    const isMobile = () => media.matches;
+
+    function syncInitialStateForViewport() {
+      groups.forEach((group) => {
+        if (isMobile()) {
+          group.removeAttribute("open");
+        } else if (group.querySelector(".nav-items a.active")) {
+          group.setAttribute("open", "");
+        }
+      });
+    }
 
     groups.forEach((group) => {
       const summary = group.querySelector("summary");
@@ -80,10 +91,40 @@
         group.removeAttribute("open");
       });
     });
+
+    syncInitialStateForViewport();
+    if (media.addEventListener) {
+      media.addEventListener("change", syncInitialStateForViewport);
+    }
+  }
+
+  function enhanceResponsiveTables() {
+    document.querySelectorAll("table").forEach((table) => {
+      if (table.dataset.noMobileCards === "true") return;
+
+      const headers = Array.from(table.querySelectorAll("thead th")).map((header) =>
+        header.textContent.trim().replace(/\s+/g, " ")
+      );
+
+      if (!headers.length) return;
+
+      table.classList.add("mobile-card-table");
+      table.querySelectorAll("tbody tr").forEach((row) => {
+        Array.from(row.children).forEach((cell, index) => {
+          if (cell.tagName !== "TD" || cell.hasAttribute("data-label")) return;
+          cell.setAttribute("data-label", headers[index] || "");
+        });
+      });
+    });
   }
 
   document.addEventListener("DOMContentLoaded", () => {
     wireClickableRows();
     wireMobileNavGroups();
+    enhanceResponsiveTables();
+
+    document.querySelectorAll('[data-action="select-all-filters"]').forEach((button) => {
+      button.addEventListener("click", selectAllFilters);
     });
+  });
 })();

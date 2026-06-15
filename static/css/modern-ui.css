@@ -1,0 +1,796 @@
+/*
+  Modern UI refresh layer.
+  This file is intentionally visual-only: it does not change routes, forms,
+  POST targets, CSV schemas, or service logic.
+*/
+
+:root {
+  --bg: #eef3f8;
+  --surface: #ffffff;
+  --surface-soft: #f7f9fc;
+  --surface-muted: #eef2f7;
+  --ink: #0f172a;
+  --ink-soft: #334155;
+  --muted: #64748b;
+  --line: rgba(148, 163, 184, 0.28);
+  --line-strong: rgba(100, 116, 139, 0.36);
+  --brand: #2563eb;
+  --brand-dark: #1d4ed8;
+  --brand-soft: #dbeafe;
+  --radius-sm: 10px;
+  --radius: 18px;
+  --radius-lg: 30px;
+  --shadow-sm: 0 3px 10px rgba(15, 23, 42, 0.055);
+  --shadow: 0 18px 45px rgba(15, 23, 42, 0.09);
+  --shadow-lg: 0 30px 80px rgba(15, 23, 42, 0.16);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body.app-body {
+  background:
+    radial-gradient(circle at 0 0, rgba(59, 130, 246, 0.18), transparent 31rem),
+    radial-gradient(circle at 100% 8rem, rgba(16, 185, 129, 0.12), transparent 28rem),
+    linear-gradient(135deg, #f8fbff 0%, #eef5ff 45%, #f9fafb 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.sidebar {
+  background:
+    radial-gradient(circle at top left, rgba(96, 165, 250, 0.24), transparent 18rem),
+    linear-gradient(180deg, #111827 0%, #0f172a 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brand,
+.sidebar-nav a,
+.quick-action,
+.primary-btn,
+.secondary-btn,
+.danger-btn,
+.mobile-action-item,
+.icon-action-btn,
+.icon-link-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.brand-avatar,
+.brand-mark {
+  border-radius: 16px;
+}
+
+.sidebar-nav a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-nav a:hover {
+  transform: translateX(2px);
+}
+
+.sidebar-nav a.active {
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 3px 0 0 #93c5fd, 0 10px 26px rgba(37, 99, 235, 0.12);
+}
+
+.topbar {
+  background: rgba(248, 250, 252, 0.78);
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+}
+
+.topbar h1,
+.page-heading h2,
+.panel-header h2,
+.panel-header h3,
+.form-section h2,
+.transactions h2 {
+  letter-spacing: -0.045em;
+}
+
+.topbar-balance-pill,
+.sidebar-mobile-balance-pill {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.quick-action,
+.primary-btn,
+.secondary-btn,
+.danger-btn,
+.transaction-form button,
+.recurring-form button,
+.debt-form button,
+.entry-form button,
+.form-actions button {
+  min-height: 40px;
+}
+
+.primary-btn,
+.transaction-form button,
+.recurring-form button,
+.debt-form button,
+.entry-form button,
+.form-actions button {
+  background: linear-gradient(135deg, var(--brand), #3b82f6);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
+}
+
+.secondary-btn,
+.quick-action {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.quick-action:hover,
+.primary-btn:hover,
+.secondary-btn:hover,
+.danger-btn:hover {
+  transform: translateY(-2px);
+}
+
+.panel-card,
+.card,
+.summary-card,
+.filters,
+.form-section,
+.transactions,
+.chart-card,
+.pending-card,
+.account-directory-card,
+.analysis-preview-card,
+.priority-card,
+.hero-copy,
+.hero-balance-card,
+.mini-priority-card,
+.liquid-account-card,
+.kpi-card,
+.professional-heading,
+.payment-card,
+.rule-card,
+.asset-card,
+.document-card {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.panel-card,
+.card,
+.filters,
+.form-section,
+.transactions,
+.chart-card,
+.pending-card,
+.account-directory-card,
+.analysis-preview-card,
+.priority-card,
+.hero-copy,
+.hero-balance-card,
+.mini-priority-card,
+.liquid-account-card,
+.kpi-card,
+.payment-card,
+.rule-card,
+.asset-card,
+.document-card {
+  border-radius: var(--radius-lg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .panel-card,
+  .card,
+  .summary-card,
+  .filters,
+  .form-section,
+  .transactions,
+  .chart-card,
+  .pending-card,
+  .account-directory-card,
+  .analysis-preview-card,
+  .priority-card,
+  .hero-balance-card,
+  .mini-priority-card,
+  .liquid-account-card,
+  .kpi-card,
+  .payment-card,
+  .rule-card,
+  .asset-card,
+  .document-card {
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+
+  .panel-card:hover,
+  .card:hover,
+  .summary-card:hover,
+  .chart-card:hover,
+  .pending-card:hover,
+  .priority-card:hover,
+  .hero-balance-card:hover,
+  .mini-priority-card:hover,
+  .liquid-account-card:hover,
+  .kpi-card:hover,
+  .payment-card:hover,
+  .rule-card:hover,
+  .asset-card:hover,
+  .document-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+    border-color: rgba(96, 165, 250, 0.34);
+  }
+}
+
+input[type="text"],
+input[type="date"],
+input[type="number"],
+input[type="password"],
+textarea,
+select {
+  min-height: 42px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(37, 99, 235, 0.72);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.13);
+}
+
+.checkbox-inline,
+.type-badge,
+.soft-badge,
+.status-badge,
+.date-pill,
+.account-table-badge,
+.auxiliary-inline-badge {
+  border-radius: 999px;
+}
+
+.table-action-rail,
+.inline-action-rail,
+.card-action-rail {
+  gap: 0.42rem;
+}
+
+.icon-action-btn,
+.icon-link-btn {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+}
+
+.transactions {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.45) transparent;
+}
+
+.transactions::-webkit-scrollbar,
+.sidebar-nav::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.transactions::-webkit-scrollbar-thumb,
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.35);
+  border-radius: 999px;
+}
+
+tr.row-expense td,
+tr.row-income td,
+tr.row-investment td {
+  background-clip: padding-box;
+}
+
+.clickable-row:hover td {
+  filter: none;
+}
+
+/* =========================
+   Phone and tablet refresh
+   ========================= */
+
+@media (max-width: 1000px) {
+  body.app-body {
+    background:
+      radial-gradient(circle at 0 -4rem, rgba(59, 130, 246, 0.24), transparent 24rem),
+      linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+  }
+
+  .app-shell {
+    display: block;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 300;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.65rem;
+    min-height: 68px;
+    height: auto;
+    padding: 0.62rem 0.72rem;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.18);
+  }
+
+  .brand {
+    min-width: 0;
+    padding: 0.3rem;
+  }
+
+  .brand span:not(.brand-avatar-wrap):not(.brand-mark):not(.brand-mark-fallback) {
+    display: none;
+  }
+
+  .brand-avatar-wrap,
+  .brand-avatar,
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 0.15rem 0.15rem 0.2rem;
+    scroll-snap-type: x proximity;
+  }
+
+  .sidebar-mobile-balance-pill {
+    order: -1;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 150px;
+    margin: 0;
+    padding: 0.54rem 0.74rem;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.10);
+  }
+
+  .sidebar-mobile-balance-pill strong {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .nav-group {
+    position: relative;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+
+  .nav-group > summary.nav-label {
+    min-height: 42px;
+    padding: 0.56rem 0.78rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .nav-group[open] > summary.nav-label {
+    background: rgba(96, 165, 250, 0.26);
+    border-color: rgba(147, 197, 253, 0.32);
+  }
+
+  .nav-group[open] .nav-items {
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .nav-group[open] .nav-items a {
+    min-height: 44px;
+  }
+
+  .topbar {
+    position: static;
+    padding: 0.95rem 0.95rem 0;
+    border-bottom: 0;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .topbar-title {
+    padding: 0.15rem 0.2rem;
+  }
+
+  .topbar h1 {
+    font-size: clamp(1.28rem, 4.4vw, 1.75rem);
+  }
+
+  .container {
+    padding: 0.95rem 0.85rem 2rem;
+  }
+}
+
+@media (max-width: 760px) {
+  body {
+    padding-bottom: calc(102px + env(safe-area-inset-bottom));
+  }
+
+  .container {
+    padding-inline: 0.72rem;
+  }
+
+  .page-heading,
+  .panel-header,
+  .account-directory-head,
+  .analysis-preview-head,
+  .payment-group-heading {
+    gap: 0.65rem;
+  }
+
+  .page-heading p,
+  .panel-header p,
+  .hero-copy p,
+  .pending-hero-copy p {
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .hero-copy,
+  .hero-balance-card,
+  .priority-card,
+  .panel-card,
+  .filters,
+  .form-section,
+  .transactions,
+  .pending-card,
+  .card,
+  .account-directory-card,
+  .analysis-preview-card,
+  .mini-priority-card,
+  .summary-card,
+  .chart-card,
+  .payment-card,
+  .rule-card,
+  .asset-card,
+  .document-card {
+    border-radius: 24px;
+    padding: 1rem;
+  }
+
+  .secondary-metrics-strip,
+  .liquidity-snapshot-grid,
+  .pending-insights-grid,
+  .rule-metric-grid,
+  .balance-subgrid,
+  .account-footer-strip,
+  .mini-metrics,
+  .kpi-grid,
+  .summary,
+  .charts-grid,
+  .account-flow-line,
+  .pending-hero-metrics,
+  .debt-form,
+  .recurring-form,
+  .transaction-form,
+  .entry-form,
+  .designer-form,
+  .filters-form,
+  .compact-filters,
+  .filter-row,
+  .date-inputs,
+  .money-priority-grid,
+  .overview-hero,
+  .dashboard-grid-large-left,
+  .dashboard-grid-even,
+  .analysis-grid,
+  .analysis-preview-grid {
+    gap: 0.72rem;
+  }
+
+  input[type="text"],
+  input[type="date"],
+  input[type="number"],
+  input[type="password"],
+  textarea,
+  select {
+    min-height: 46px;
+    font-size: 16px;
+    border-radius: 16px;
+  }
+
+  .checkbox-inline {
+    min-height: 42px;
+    padding: 0.55rem 0.72rem;
+  }
+
+  .primary-btn,
+  .secondary-btn,
+  .danger-btn,
+  .transaction-form button,
+  .recurring-form button,
+  .debt-form button,
+  .entry-form button,
+  .form-actions button,
+  .quick-action {
+    min-height: 46px;
+    border-radius: 16px;
+  }
+
+  .form-actions,
+  .filters-actions,
+  .form-actions-row {
+    gap: 0.5rem;
+  }
+
+  .mobile-action-bar {
+    left: 0.72rem;
+    right: 0.72rem;
+    bottom: calc(0.62rem + env(safe-area-inset-bottom));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.48rem;
+    padding: 0.52rem;
+    border-radius: 28px;
+    background:
+      linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.94));
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 26px 62px rgba(15, 23, 42, 0.38);
+  }
+
+  .mobile-action-item {
+    min-height: 58px;
+    border-radius: 21px;
+    background: rgba(255, 255, 255, 0.09);
+  }
+
+  .mobile-action-item span {
+    font-size: 1.25rem;
+  }
+
+  .mobile-action-item small {
+    color: currentColor;
+    opacity: 0.9;
+  }
+
+  /* Turn ordinary data tables into readable mobile cards. Labels are added by static/js/app.js. */
+  .transactions {
+    overflow-x: visible;
+  }
+
+  table.mobile-card-table,
+  .transactions table.mobile-card-table,
+  .inline-edit-table.mobile-card-table {
+    display: block;
+    width: 100%;
+    min-width: 0 !important;
+    border-spacing: 0;
+    font-size: 0.9rem;
+  }
+
+  table.mobile-card-table thead {
+    display: none;
+  }
+
+  table.mobile-card-table tbody {
+    display: block;
+  }
+
+  table.mobile-card-table tbody.is-hidden {
+    display: none !important;
+  }
+
+  table.mobile-card-table tbody.is-visible-table {
+    display: block !important;
+  }
+
+  table.mobile-card-table tr {
+    display: block;
+    margin: 0 0 0.78rem;
+    padding: 0.74rem;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.075);
+    overflow: hidden;
+  }
+
+  table.mobile-card-table tr:last-child {
+    margin-bottom: 0;
+  }
+
+  table.mobile-card-table tr.row-expense,
+  table.mobile-card-table tr.row-income,
+  table.mobile-card-table tr.row-investment {
+    border-left-width: 5px;
+  }
+
+  table.mobile-card-table tr.row-expense { border-left-color: var(--bad); }
+  table.mobile-card-table tr.row-income { border-left-color: var(--good); }
+  table.mobile-card-table tr.row-investment { border-left-color: #111827; }
+
+  table.mobile-card-table td {
+    display: grid;
+    grid-template-columns: minmax(96px, 0.42fr) minmax(0, 1fr);
+    gap: 0.7rem;
+    align-items: start;
+    padding: 0.52rem 0.2rem;
+    border-bottom: 1px dashed rgba(148, 163, 184, 0.26);
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  table.mobile-card-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.69rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.075em;
+  }
+
+  table.mobile-card-table td:empty {
+    display: none;
+  }
+
+  table.mobile-card-table td:last-child {
+    border-bottom: 0;
+  }
+
+  table.mobile-card-table td.table-action-rail,
+  table.mobile-card-table td.inline-action-rail,
+  table.mobile-card-table td.card-action-rail {
+    display: flex !important;
+    flex-flow: row nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.45rem !important;
+    padding-top: 0.65rem;
+    overflow-x: auto;
+  }
+
+  table.mobile-card-table td.table-action-rail::before,
+  table.mobile-card-table td.inline-action-rail::before,
+  table.mobile-card-table td.card-action-rail::before {
+    content: none;
+  }
+
+  .transaction-delay-date {
+    width: 9.5rem !important;
+    min-width: 9.5rem !important;
+  }
+
+  .inline-edit-table input,
+  .inline-edit-table select,
+  .inline-edit-table textarea {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .sidebar {
+    padding-inline: 0.62rem;
+    gap: 0.5rem;
+  }
+
+  .sidebar-nav {
+    gap: 0.38rem;
+  }
+
+  .nav-group > summary.nav-label {
+    min-height: 40px;
+    padding: 0.52rem 0.68rem;
+    font-size: 0.71rem;
+    letter-spacing: 0.075em;
+  }
+
+  .nav-group[open] .nav-items {
+    left: 0.62rem;
+    right: 0.62rem;
+    top: 4.45rem;
+    border-radius: 22px;
+  }
+
+  .sidebar-mobile-balance-pill {
+    min-width: 130px;
+    padding: 0.48rem 0.62rem;
+  }
+
+  .sidebar-mobile-balance-pill span {
+    font-size: 0.58rem;
+  }
+
+  .sidebar-mobile-balance-pill strong {
+    font-size: 0.92rem;
+  }
+
+  .topbar {
+    padding-inline: 0.72rem;
+  }
+
+  table.mobile-card-table td {
+    grid-template-columns: 1fr;
+    gap: 0.24rem;
+  }
+
+  table.mobile-card-table td::before {
+    font-size: 0.66rem;
+  }
+
+  .mobile-action-bar {
+    left: 0.55rem;
+    right: 0.55rem;
+    border-radius: 24px;
+  }
+
+  .mobile-action-item {
+    min-height: 54px;
+    border-radius: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Fix: keep the main available position hero card dark and readable.
+   The generic glass-card refresh above made this card too bright while its
+   original typography stayed light. This restores proper contrast only here. */
+.hero-balance-card {
+  background:
+    radial-gradient(circle at 100% 100%, rgba(96, 165, 250, 0.34), transparent 14rem),
+    radial-gradient(circle at 0 0, rgba(59, 130, 246, 0.18), transparent 16rem),
+    linear-gradient(135deg, #0f172a 0%, #111827 52%, #1e293b 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(147, 197, 253, 0.30) !important;
+  box-shadow: 0 24px 58px rgba(15, 23, 42, 0.22) !important;
+}
+
+.hero-balance-card::after {
+  background: rgba(96, 165, 250, 0.30) !important;
+}
+
+.hero-balance-card .metric-label,
+.hero-balance-card small,
+.hero-balance-card span,
+.hero-balance-card p {
+  color: rgba(226, 232, 240, 0.88) !important;
+}
+
+.hero-balance-card strong,
+.hero-balance-card b {
+  color: #ffffff !important;
+}
+
+.hero-balance-card .balance-subgrid div {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
