@@ -808,3 +808,52 @@
     }
   });
 })();
+
+
+/* --------------------------------------------------------------------------
+   Mobile Special Log helper
+   Add this at the END of static/js/app.js
+-------------------------------------------------------------------------- */
+
+(function () {
+  const mobileSpecialMedia = window.matchMedia("(max-width: 760px)");
+
+  function enhanceMobileSpecialLog() {
+    document.querySelectorAll("[data-quick-special-form]").forEach((form) => {
+      if (form.dataset.mobileSpecialEnhanced === "true") return;
+      form.dataset.mobileSpecialEnhanced = "true";
+
+      form.addEventListener("change", (event) => {
+        if (!event.target.matches('input[name="quick_mode"]')) return;
+        if (!mobileSpecialMedia.matches) return;
+
+        const selectedCard = event.target.closest(".quick-mode-card");
+        if (selectedCard) {
+          selectedCard.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "nearest",
+          });
+        }
+
+        window.setTimeout(() => {
+          const firstActiveField = form.querySelector(
+            ".quick-special-grid .form-field.is-active:not([hidden]) input:not([type='hidden']):not([disabled]), " +
+            ".quick-special-grid .form-field.is-active:not([hidden]) select:not([disabled]), " +
+            ".quick-special-grid .form-field.is-active:not([hidden]) textarea:not([disabled])"
+          );
+
+          if (firstActiveField) {
+            firstActiveField.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+        }, 180);
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", enhanceMobileSpecialLog);
+})();
+
