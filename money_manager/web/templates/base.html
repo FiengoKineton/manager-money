@@ -74,6 +74,12 @@
         </details>
       </nav>
 
+      <div class="sidebar-footer">
+        <form method="post" action="{{ url_for('auth.logout') }}" class="sidebar-logout-form">
+          <button type="submit" class="sidebar-logout-action">Logout</button>
+        </form>
+      </div>
+
     </aside>
 
     <main class="app-main">
@@ -93,10 +99,6 @@
           <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="quick-action income-action">+ Income</a>
           <a href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}" class="quick-action special-action">+ Special log</a>
           <a href="{{ url_for('transactions.add_transaction', type='investment') }}" class="quick-action investment-action">+ Investment</a>
-
-          <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
-            <button type="submit" class="quick-action logout-action">Logout</button>
-          </form>
         </div>
       </header>
 
@@ -120,11 +122,6 @@
     <a href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}" class="mobile-action-item mobile-special">
       <span>◆</span>
       <small>Special</small>
-    </a>
-
-    <a href="{{ url_for('pending.pending_payments_page') if endpoint_exists('pending.pending_payments_page') else url_for('pending.pending_page') }}" class="mobile-action-item mobile-pending">
-      <span>⏳</span>
-      <small>Pending</small>
     </a>
 
     <a href="{{ url_for('transactions.add_transaction', type='investment') }}" class="mobile-action-item mobile-investment">
