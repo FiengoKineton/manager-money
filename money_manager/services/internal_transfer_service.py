@@ -13,6 +13,8 @@ from money_manager.config import (
     normalize_account_key,
 )
 from money_manager.repositories.internal_transfers import append_transfer, delete_transfer, load_all, update_transfer
+from money_manager.repositories.transactions import append_transaction
+from money_manager.services.transaction_service import account_balance, main_net_for_preview
 
 
 def account_choices() -> list[dict]:
@@ -34,24 +36,68 @@ def _normalise_form_account(value: str) -> str:
     return account_label_for_key(key)
 
 
+def _parse_date(value: str) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return date.today().isoformat()
+    try:
+        return date.fromisoformat(text).isoformat()
+    except ValueError:
+        pass
+    for sep in ("/", "-"):
+        parts = text.split(sep)
+        if len(parts) == 3 and len(parts[2]) == 4:
+            day, month, year = parts
+            try:
+                return date(int(year), int(month), int(day)).isoformat()
+            except ValueError:
+                break
+    return text
+
+
+def _available_balance_for_key(account_key: str) -> float:
+    key = normalize_account_key(account_key)
+    if key == MAIN_ACCOUNT_KEY:
+        return round(main_net_for_preview(), 2)
+    return round(account_balance(key), 2)
+
+
+def account_balances_for_form() -> dict:
+    balances = {MAIN_ACCOUNT_KEY: _available_balance_for_key(MAIN_ACCOUNT_KEY)}
+    for key in auxiliary_account_keys():
+        balances[key] = _available_balance_for_key(key)
+    return balances
+
+
 def _account_key_from_saved(value: str) -> str:
     return normalize_account_key(value)
 
 
-def validate_transfer(form) -> tuple[dict | None, str]:
+def validate_transfer(form, check_balance: bool = True) -> tuple[dict | None, str]:
     amount = _parse_amount(form.get("amount", "0"))
     from_account = _normalise_form_account(form.get("from_account", ""))
     to_account = _normalise_form_account(form.get("to_account", ""))
     from_key = _account_key_from_saved(from_account)
     to_key = _account_key_from_saved(to_account)
 
+    if str(form.get("move_all", "")).strip():
+        amount = _available_balance_for_key(from_key)
+
     if amount <= 0:
         return None, "Amount must be greater than zero."
     if from_key == to_key:
         return None, "Choose two different accounts for the transfer."
 
+    if check_balance:
+        available = _available_balance_for_key(from_key)
+        if amount > available + 0.005:
+            return None, (
+                f"Not enough money in {account_label_for_key(from_key)}: "
+                f"available € {available:.2f}, trying to move € {amount:.2f}."
+            )
+
     return {
-        "date": form.get("date") or date.today().isoformat(),
+        "date": _parse_date(form.get("date", "")),
         "from_account": from_account,
         "to_account": to_account,
         "amount": amount,
@@ -63,12 +109,37 @@ def create_transfer(form) -> dict:
     data, error = validate_transfer(form)
     if error:
         return {"ok": False, "error": error}
-    append_transfer(data)
-    return {"ok": True, "message": "Internal transfer saved."}
+    transfer_id = append_transfer(data)
+    fee_id = _append_prepaid_topup_fee(data, transfer_id)
+    message = "Internal transfer saved."
+    if fee_id is not None:
+        message += " A €1.00 pre-paid top-up fee was added as an expense transaction."
+    return {"ok": True, "message": message}
+
+
+def _append_prepaid_topup_fee(data: dict, transfer_id: int) -> int | None:
+    from_key = _account_key_from_saved(data.get("from_account", ""))
+    to_key = _account_key_from_saved(data.get("to_account", ""))
+    if from_key != MAIN_ACCOUNT_KEY or to_key != "pre_paid_card":
+        return None
+    return append_transaction({
+        "type": "expense",
+        "date": data.get("date") or date.today().isoformat(),
+        "category": "Bank fees",
+        "sub_category": "Pre-paid card top-up fee",
+        "amount": 1.0,
+        "original_amount": "",
+        "original_currency": "EUR",
+        "exchange_rate_to_eur": "1.00000000",
+        "exchange_correction_to_eur": "0.00000000",
+        "exchange_effective_rate_to_eur": "1.00000000",
+        "account": "",
+        "description": f"Automatic €1 fee for internal transfer #{transfer_id} from Main bank to Pre-paid card.",
+    })
 
 
 def update_transfer_from_form(form) -> dict:
-    data, error = validate_transfer(form)
+    data, error = validate_transfer(form, check_balance=False)
     if error:
         return {"ok": False, "error": error}
     try:
@@ -145,6 +216,7 @@ def page_context(error: str = "", message: str = "") -> dict:
     return {
         "today": date.today().isoformat(),
         "account_options": account_choices(),
+        "account_balances": account_balances_for_form(),
         "transfers": transfer_rows_for_display(),
         "totals": totals(),
         "error": error,

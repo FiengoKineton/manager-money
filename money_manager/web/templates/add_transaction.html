@@ -11,7 +11,7 @@
           <h2>Special log</h2>
           <p>
             Use this when the movement belongs to Debts, Parent Support, Payables,
-            Projects, Money Owed to Me, or Sparagnat e Fottut. The form changes fields
+            Projects, Money Owed to Me, Internal Transfers, or Sparagnat e Fottut. The form changes fields
             and saves into the right tracker, so you do not need to open that page first.
           </p>
         </div>
@@ -57,14 +57,39 @@
         </div>
 
         <div class="quick-special-grid">
-          <div class="form-field quick-date-field" data-modes="parent_support sparagnat debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay">
+          <div class="form-field quick-date-field" data-modes="parent_support sparagnat debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay internal_transfer">
             <label>Date</label>
             <input type="date" name="date" value="{{ quick_values.date or today }}">
           </div>
 
-          <div class="form-field quick-amount-field" data-modes="parent_support sparagnat debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay">
+          <div class="form-field quick-amount-field" data-modes="parent_support sparagnat debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay internal_transfer">
             <label>Amount (€)</label>
             <input type="number" step="0.01" name="amount" value="{{ quick_values.amount or '' }}" placeholder="100.00">
+          </div>
+
+          <div class="form-field" data-modes="internal_transfer">
+            <label>From</label>
+            <select name="from_account">
+              {% for account in quick_log_context.transfer_account_options %}
+                <option value="{{ account.key }}">{{ account.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-field" data-modes="internal_transfer">
+            <label>To</label>
+            <select name="to_account">
+              {% for account in quick_log_context.transfer_account_options %}
+                <option value="{{ account.key }}" {% if account.key == 'pre_paid_card' %}selected{% endif %}>{{ account.label }}</option>
+              {% endfor %}
+            </select>
+            <small class="hint">Main → Pre-paid automatically records a €1.00 fee.</small>
+          </div>
+
+          <div class="form-field" data-modes="internal_transfer">
+            <label class="inline-checkbox">
+              <input type="checkbox" name="move_all" value="1"> Move all available balance from the selected source
+            </label>
           </div>
 
           <div class="form-field" data-modes="debt_pay">
@@ -194,7 +219,7 @@
             <small class="hint">For planned-only items, this is just the expected payment account. It does not create a transaction until you pay.</small>
           </div>
 
-          <div class="form-field form-field-wide" data-modes="parent_support sparagnat debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay">
+          <div class="form-field form-field-wide" data-modes="parent_support sparagnat debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay internal_transfer">
             <label>Description</label>
             <textarea name="description" rows="2" placeholder="Short note">{{ quick_values.description or '' }}</textarea>
           </div>

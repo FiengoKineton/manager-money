@@ -37,7 +37,7 @@
 
 <section class="form-section internal-transfer-card">
   <h2>Add transfer</h2>
-  <form method="post" class="internal-transfer-form">
+  <form method="post" class="internal-transfer-form" data-transfer-form>
     <input type="hidden" name="action" value="add_transfer">
 
     <div class="form-field">
@@ -47,25 +47,30 @@
 
     <div class="form-field">
       <label>From</label>
-      <select name="from_account" required>
+      <select name="from_account" required data-transfer-from>
         {% for account in account_options %}
-          <option value="{{ account.value }}">{{ account.label }}</option>
+          <option value="{{ account.key }}" data-key="{{ account.key }}" data-balance="{{ account_balances.get(account.key, 0) }}">{{ account.label }}</option>
         {% endfor %}
       </select>
+      <small class="hint">Available: € <span data-transfer-from-balance>0.00</span></small>
     </div>
 
     <div class="form-field">
       <label>To</label>
       <select name="to_account" required>
         {% for account in account_options %}
-          <option value="{{ account.value }}" {% if account.key == 'cash_flow' %}selected{% endif %}>{{ account.label }}</option>
+          <option value="{{ account.key }}" {% if account.key == 'pre_paid_card' %}selected{% endif %}>{{ account.label }}</option>
         {% endfor %}
       </select>
+      <small class="hint">Main → Pre-paid automatically records a €1.00 fee.</small>
     </div>
 
     <div class="form-field">
       <label>Amount (€)</label>
-      <input type="number" step="0.01" name="amount" required>
+      <input type="number" step="0.01" name="amount" required data-transfer-amount>
+      <label class="inline-checkbox transfer-all-toggle">
+        <input type="checkbox" name="move_all" value="1" data-transfer-move-all> Move all available balance
+      </label>
     </div>
 
     <div class="form-field form-field-wide">
@@ -112,14 +117,14 @@
         <td>
           <select form="transfer-update-{{ transfer.id }}" name="from_account">
             {% for account in account_options %}
-              <option value="{{ account.value }}" {% if account.label == transfer.from_label %}selected{% endif %}>{{ account.label }}</option>
+              <option value="{{ account.key }}" {% if account.label == transfer.from_label %}selected{% endif %}>{{ account.label }}</option>
             {% endfor %}
           </select>
         </td>
         <td>
           <select form="transfer-update-{{ transfer.id }}" name="to_account">
             {% for account in account_options %}
-              <option value="{{ account.value }}" {% if account.label == transfer.to_label %}selected{% endif %}>{{ account.label }}</option>
+              <option value="{{ account.key }}" {% if account.label == transfer.to_label %}selected{% endif %}>{{ account.label }}</option>
             {% endfor %}
           </select>
         </td>
@@ -143,4 +148,29 @@
     <p class="empty">No transfers yet.</p>
   {% endif %}
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const form = document.querySelector('[data-transfer-form]');
+  if (!form) return;
+  const from = form.querySelector('[data-transfer-from]');
+  const balanceText = form.querySelector('[data-transfer-from-balance]');
+  const amount = form.querySelector('[data-transfer-amount]');
+  const moveAll = form.querySelector('[data-transfer-move-all]');
+  function balance() {
+    const selected = from.options[from.selectedIndex];
+    return Number.parseFloat(selected && selected.dataset.balance ? selected.dataset.balance : '0') || 0;
+  }
+  function refresh() {
+    const value = balance();
+    balanceText.textContent = value.toFixed(2);
+    if (moveAll.checked) amount.value = value.toFixed(2);
+  }
+  from.addEventListener('change', refresh);
+  moveAll.addEventListener('change', refresh);
+  refresh();
+})();
+</script>
 {% endblock %}

@@ -18,6 +18,13 @@ from money_manager.services.sparagnat_service import add_entry_from_form as add_
 
 QUICK_LOG_MODES = [
     {
+        "key": "internal_transfer",
+        "label": "Internal transfer",
+        "description": "Moves money between Main Bank, Pre-paid, Cash Flow, PayPal, EdenRed, or custom liquid accounts.",
+        "target": "Internal Transfers + account balances",
+        "affects_net": "No income/expense; Main → Pre-paid adds €1 fee",
+    },
+    {
         "key": "parent_support",
         "label": "Parent support",
         "description": "Money given to you or expenses covered by your parents. Stored in Parent Support, not in the main net.",
@@ -125,6 +132,7 @@ def quick_log_context() -> dict:
             "sparagnat_kinds": SPARAGNAT_KIND_LABELS,
             "expense_categories": categories_for("expense"),
             "account_options": account_options_for_forms(include_credit=True),
+            "transfer_account_options": account_options_for_forms(include_credit=False),
         },
     }
 
@@ -135,6 +143,19 @@ def handle_quick_log(form) -> dict:
         return {"ok": False, "error": "Choose what kind of special log you want to create."}
 
     payload = _base_payload(form)
+
+    if mode == "internal_transfer":
+        result = create_transfer({
+            "date": form.get("date") or date.today().isoformat(),
+            "from_account": form.get("from_account", ""),
+            "to_account": form.get("to_account", ""),
+            "amount": form.get("amount", "0"),
+            "description": form.get("description", ""),
+            "move_all": form.get("move_all", ""),
+        })
+        if not result.get("ok"):
+            return result
+        return _ok(result.get("message", "Internal transfer saved."))
 
     if mode == "parent_support":
         payload.update({
