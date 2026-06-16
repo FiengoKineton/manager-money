@@ -286,3 +286,4 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 296,2026-06-16,Transportation,EasyPark,3.05,,EUR,1.0,0.0,1.0,Pre-paid card,Paid from Pre-paid card balance.,2026-06-16T17:13:43
 297,2026-06-16,Lost,,4.15,,EUR,1.00000000,0.00000000,1.00000000,,,2026-06-16T17:16:15
 298,2026-06-16,Bank fees,Pre-paid card top-up fee,1.0,,EUR,1.00000000,0.00000000,1.00000000,,Automatic €1 fee for internal transfer #1 from Main bank to Pre-paid card.,2026-06-16T17:58:54
+299,2026-06-16,Family,Amzn,19.85,,EUR,1.00000000,0.00000000,1.00000000,,Coso capelli per Sofia,2026-06-16T18:09:34
