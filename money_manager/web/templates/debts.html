@@ -232,6 +232,44 @@
   {% endif %}
 </section>
 
+<section class="transactions debts-card creditor-summary-card">
+  <h2>Totals by Creditor</h2>
+
+  {% if creditor_summaries %}
+  <div class="creditor-summary-list">
+    {% for item in creditor_summaries %}
+    <div class="creditor-summary-row">
+      <div class="creditor-summary-main">
+        <strong>{{ item.creditor }}</strong>
+        <span>
+          {{ item.debt_count }} debt{% if item.debt_count != 1 %}s{% endif %} still open
+        </span>
+      </div>
+
+      <div class="creditor-summary-amount">
+        €{{ '%.2f'|format(item.total_remaining) }}
+      </div>
+
+      <form method="post" class="creditor-payoff-form">
+        <input type="hidden" name="action" value="pay_creditor_debts">
+        <input type="hidden" name="creditor" value="{{ item.creditor }}">
+        <input type="hidden" name="date" value="{{ today }}">
+
+        <button
+          type="submit"
+          class="secondary-btn compact-btn"
+          onclick="return confirm('Extinguish all active debts owed to {{ item.creditor }} for €{{ '%.2f'|format(item.total_remaining) }}?')">
+          Extinguish debts
+        </button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p>No active creditor balances.</p>
+  {% endif %}
+</section>
+
 <section class="form-section debts-card">
   <h2>Add Debt Payment Rule</h2>
 

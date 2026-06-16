@@ -4804,3 +4804,304 @@ a.sidebar-mobile-balance-pill:active {
   }
 }
 
+.creditor-summary-card {
+  margin-top: 1.25rem;
+}
+
+.creditor-summary-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.creditor-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.creditor-summary-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.creditor-summary-main strong {
+  font-size: 1rem;
+  color: var(--text-strong, #111827);
+}
+
+.creditor-summary-main span {
+  font-size: 0.82rem;
+  color: var(--text-muted, #64748b);
+}
+
+.creditor-summary-amount {
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--text-strong, #111827);
+  white-space: nowrap;
+}
+
+.creditor-payoff-form {
+  margin: 0;
+}
+
+.creditor-payoff-form button {
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .creditor-summary-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .creditor-summary-amount {
+    font-size: 1.2rem;
+  }
+
+  .creditor-payoff-form button {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   Money owed to me table - desktop fit fix
+   ========================================================= */
+
+@media (min-width: 1001px) {
+  .money-owed-table-card,
+  .transactions:has(.money-owed-table) {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+  }
+
+  .money-owed-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+  }
+
+  .money-owed-table th,
+  .money-owed-table td {
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
+    padding: 0.75rem 0.55rem !important;
+    vertical-align: top !important;
+  }
+
+  .money-owed-table thead th {
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    font-size: 0.78rem !important;
+  }
+
+  /* Name */
+  .money-owed-table th:nth-child(1),
+  .money-owed-table td:nth-child(1) {
+    width: 13% !important;
+  }
+
+  /* Person */
+  .money-owed-table th:nth-child(2),
+  .money-owed-table td:nth-child(2) {
+    width: 13% !important;
+  }
+
+  /* Original */
+  .money-owed-table th:nth-child(3),
+  .money-owed-table td:nth-child(3) {
+    width: 12% !important;
+  }
+
+  /* Remaining */
+  .money-owed-table th:nth-child(4),
+  .money-owed-table td:nth-child(4) {
+    width: 12% !important;
+  }
+
+  /* Collected */
+  .money-owed-table th:nth-child(5),
+  .money-owed-table td:nth-child(5) {
+    width: 11% !important;
+  }
+
+  /* Progress */
+  .money-owed-table th:nth-child(6),
+  .money-owed-table td:nth-child(6) {
+    width: 14% !important;
+  }
+
+  /* Due / Account */
+  .money-owed-table th:nth-child(7),
+  .money-owed-table td:nth-child(7) {
+    width: 15% !important;
+  }
+
+  /* Status */
+  .money-owed-table th:nth-child(8),
+  .money-owed-table td:nth-child(8) {
+    width: 10% !important;
+  }
+
+  /* Hide actions column if present */
+  .money-owed-table th:nth-child(9),
+  .money-owed-table td:nth-child(9),
+  .money-owed-table .desktop-actions-heading,
+  .money-owed-table .desktop-actions-cell,
+  .money-owed-table .owed-actions {
+    display: none !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .money-owed-table input,
+  .money-owed-table select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 2.25rem !important;
+    padding: 0.35rem 0.45rem !important;
+    border-radius: 12px !important;
+    font-size: 0.86rem !important;
+  }
+
+  .money-owed-table .progress-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 0.45rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .money-owed-table small {
+    display: block !important;
+    font-size: 0.72rem !important;
+    line-height: 1.1 !important;
+  }
+}
+
+/* =========================================================
+   Money owed to me table - desktop fit fix
+   ========================================================= */
+
+@media (min-width: 1001px) {
+  .money-owed-table-card {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+  }
+
+  .money-owed-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+  }
+
+  .money-owed-table th,
+  .money-owed-table td {
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
+    padding: 0.7rem 0.5rem !important;
+    vertical-align: top !important;
+  }
+
+  .money-owed-table thead th {
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    font-size: 0.76rem !important;
+  }
+
+  .money-owed-table th:nth-child(1),
+  .money-owed-table td:nth-child(1) {
+    width: 12% !important;
+  }
+
+  .money-owed-table th:nth-child(2),
+  .money-owed-table td:nth-child(2) {
+    width: 12% !important;
+  }
+
+  .money-owed-table th:nth-child(3),
+  .money-owed-table td:nth-child(3) {
+    width: 11% !important;
+  }
+
+  .money-owed-table th:nth-child(4),
+  .money-owed-table td:nth-child(4) {
+    width: 11% !important;
+  }
+
+  .money-owed-table th:nth-child(5),
+  .money-owed-table td:nth-child(5) {
+    width: 10% !important;
+  }
+
+  .money-owed-table th:nth-child(6),
+  .money-owed-table td:nth-child(6) {
+    width: 13% !important;
+  }
+
+  .money-owed-table th:nth-child(7),
+  .money-owed-table td:nth-child(7) {
+    width: 16% !important;
+  }
+
+  .money-owed-table th:nth-child(8),
+  .money-owed-table td:nth-child(8) {
+    width: 15% !important;
+  }
+
+  /* Hide actions from desktop table, keep them for the popup/action drawer */
+  .money-owed-table th:nth-child(9),
+  .money-owed-table td:nth-child(9),
+  .money-owed-table .owed-actions {
+    display: none !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .money-owed-table input,
+  .money-owed-table select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 2.25rem !important;
+    padding: 0.35rem 0.45rem !important;
+    border-radius: 12px !important;
+    font-size: 0.84rem !important;
+  }
+
+  .money-owed-table .table-note-input {
+    margin-top: 0.45rem !important;
+  }
+
+  .money-owed-table .progress-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 0.45rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .money-owed-table small {
+    display: block !important;
+    font-size: 0.72rem !important;
+    line-height: 1.1 !important;
+  }
+}

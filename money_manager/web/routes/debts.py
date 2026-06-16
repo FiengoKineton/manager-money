@@ -8,6 +8,7 @@ from money_manager.services.debt_service import (
     generate_debt_payments,
     page_context,
     pay_debt_from_form,
+    pay_creditor_debts_from_form,
     pay_rule_now_from_form,
     update_debt_from_form,
     update_rule_from_form,
@@ -28,6 +29,8 @@ def debts_page():
             update_debt_from_form(request.form)
         elif action == "pay_debt":
             pay_debt_from_form(request.form)
+        elif action == "pay_creditor_debts":
+            pay_creditor_debts_from_form(request.form)
         elif action == "add_rule":
             add_rule_from_form(request.form)
         elif action == "delete_rule":

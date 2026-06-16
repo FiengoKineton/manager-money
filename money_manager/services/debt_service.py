@@ -89,6 +89,33 @@ def pay_debt_from_form(form) -> None:
         description=form.get("description", ""),
     )
 
+def pay_creditor_debts_from_form(form) -> None:
+    creditor = str(form.get("creditor", "")).strip()
+    if not creditor:
+        return
+
+    payment_date = form.get("date", date.today().isoformat())
+    account = form.get("account", "")
+    description = form.get("description", "")
+
+    active_debts = [
+        debt for debt in load_debts()
+        if debt.get("status") == "active"
+        and _amount(debt.get("remaining_amount")) > 0
+        and str(debt.get("creditor", "")).strip().lower() == creditor.lower()
+    ]
+
+    for debt in active_debts:
+        remaining = _amount(debt.get("remaining_amount"))
+
+        register_debt_payment(
+            debt_id=debt.get("id"),
+            amount=remaining,
+            payment_date=payment_date,
+            account=account or debt.get("account", ""),
+            description=description or f"Full debt payoff to {creditor}: {debt.get('name', '')}",
+        )
+
 
 def add_rule_from_form(form) -> None:
     debt_id = form.get("debt_id", "")
@@ -373,6 +400,8 @@ def page_context() -> dict:
         rule["status_label"] = "Active" if rule["is_payable"] else "Completed / inactive"
 
     active_debts = [row for row in debts if row.get("status") == "active" and _amount(row.get("remaining_amount")) > 0]
+    creditor_summaries = creditor_summaries_from_debts(active_debts)
+
     totals = {
         "active_remaining": sum(_amount(row.get("remaining_amount")) for row in active_debts),
         "original_active": sum(_amount(row.get("original_amount")) for row in active_debts),
@@ -388,6 +417,7 @@ def page_context() -> dict:
         "pending_debt_payments": pending,
         "totals": totals,
         "today": date.today().isoformat(),
+        "creditor_summaries": creditor_summaries,
     }
 
 
@@ -489,6 +519,36 @@ def _safe_int(value):
     except (TypeError, ValueError):
         return None
 
+def creditor_summaries_from_debts(debts: list[dict]) -> list[dict]:
+    grouped = {}
+
+    for debt in debts:
+        if debt.get("status") != "active":
+            continue
+
+        remaining = _amount(debt.get("remaining_amount"))
+        if remaining <= 0:
+            continue
+
+        creditor = str(debt.get("creditor", "")).strip() or "Unknown creditor"
+
+        if creditor not in grouped:
+            grouped[creditor] = {
+                "creditor": creditor,
+                "total_remaining": 0.0,
+                "debt_count": 0,
+                "debts": [],
+            }
+
+        grouped[creditor]["total_remaining"] += remaining
+        grouped[creditor]["debt_count"] += 1
+        grouped[creditor]["debts"].append(debt)
+
+    return sorted(
+        grouped.values(),
+        key=lambda row: row["total_remaining"],
+        reverse=True,
+    )
 
 def _amount(value) -> float:
     try:
