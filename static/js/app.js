@@ -241,7 +241,7 @@
     if (amount) skipIndexes.add(amount.index);
 
     const metaPieces = [];
-    ["date", "type", "account", "status", "due", "source", "parent", "method"].forEach((label) => {
+    ["creditor", "debtor", "person", "payee", "date", "type", "account", "status", "due", "source", "parent", "method"].forEach((label) => {
       const piece = findCellByLabels(cells, headers, [label]);
       if (piece && piece.text && !metaPieces.some((item) => item.text === piece.text)) {
         metaPieces.push(piece);
@@ -322,6 +322,35 @@
 
   function getRowDataCells(row) {
     return Array.from(row.children).filter((cell) => cell.tagName === "TD" && !cell.classList.contains("mobile-row-summary"));
+  }
+
+  function labelFromDetailDatasetKey(key) {
+    return prettifyFieldName(
+      String(key || "")
+        .replace(/^detail/, "")
+        .replace(/([A-Z])/g, " $1")
+        .trim()
+    );
+  }
+
+  function collectRowExtraDetails(row, existingLines) {
+    const seenLabels = new Set((existingLines || []).map((line) => normalizeLabel(line.label)));
+    const lines = [];
+
+    Object.entries(row.dataset || {}).forEach(([key, rawValue]) => {
+      if (!key.startsWith("detail")) return;
+      const value = String(rawValue || "").replace(/\s+/g, " ").trim();
+      if (!value) return;
+
+      const label = labelFromDetailDatasetKey(key);
+      const normalizedLabel = normalizeLabel(label);
+      if (!normalizedLabel || seenLabels.has(normalizedLabel)) return;
+
+      seenLabels.add(normalizedLabel);
+      lines.push({ label, text: value });
+    });
+
+    return lines;
   }
 
   function hasMeaningfulRowDetails(row, headers) {
@@ -408,6 +437,8 @@
       if (isActionLikeCell(cell, label)) return;
       detailLinesForDataCell(cell, label).forEach((line) => details.push(line));
     });
+
+    collectRowExtraDetails(row, details).forEach((line) => details.push(line));
 
     return { headers, cells, summary, details, actionCells };
   }

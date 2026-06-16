@@ -86,7 +86,7 @@
   </form>
 </section>
 
-<section class="transactions debts-card">
+<section class="transactions debts-card debts-table-card">
   <h2>Tracked Debts</h2>
 
   {% if debts %}
@@ -105,38 +105,93 @@
 
     <tbody>
       {% for debt in debts %}
-      <tr class="{{ 'is-closed' if debt.status != 'active' else '' }}">
-        <td>
+      <tr class="{{ 'is-closed' if debt.status != 'active' else '' }}"
+          data-detail-creditor="{{ debt.creditor }}"
+          data-detail-description="{{ debt.description }}"
+          data-detail-account="{{ debt.account }}"
+          data-detail-start-date="{{ debt.start_date }}"
+          data-detail-category="{{ debt.category }}"
+          data-detail-created-at="{{ debt.created_at }}"
+          data-detail-closed-at="{{ debt.closed_at }}">
+
+        <td data-label="Name">
           <form id="debt-update-{{ debt.id }}" method="post"></form>
+
           <input form="debt-update-{{ debt.id }}" type="hidden" name="action" value="update_debt">
           <input form="debt-update-{{ debt.id }}" type="hidden" name="id" value="{{ debt.id }}">
-          <input form="debt-update-{{ debt.id }}" type="hidden" name="creditor" value="{{ debt.creditor }}">
           <input form="debt-update-{{ debt.id }}" type="hidden" name="start_date" value="{{ debt.start_date }}">
           <input form="debt-update-{{ debt.id }}" type="hidden" name="account" value="{{ debt.account }}">
-          <input form="debt-update-{{ debt.id }}" type="text" name="name" value="{{ debt.name }}" required>
-          <input form="debt-update-{{ debt.id }}" type="text" name="description" value="{{ debt.description }}" placeholder="Note" class="table-note-input">
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="creditor" value="{{ debt.creditor }}">
+
+          <input
+            form="debt-update-{{ debt.id }}"
+            type="text"
+            name="name"
+            value="{{ debt.name }}"
+            required
+            aria-label="Debt name">
         </td>
-        <td><input form="debt-update-{{ debt.id }}" type="number" step="0.01" name="original_amount" value="{{ debt.original_amount }}" required></td>
-        <td><input form="debt-update-{{ debt.id }}" type="number" step="0.01" name="remaining_amount" value="{{ debt.remaining_amount }}" required></td>
-        <td>
+
+
+
+        <td data-label="Original">
+          <input
+            form="debt-update-{{ debt.id }}"
+            type="number"
+            step="0.01"
+            name="original_amount"
+            value="{{ debt.original_amount }}"
+            required
+            aria-label="Original amount">
+        </td>
+
+        <td data-label="Remaining">
+          <input
+            form="debt-update-{{ debt.id }}"
+            type="number"
+            step="0.01"
+            name="remaining_amount"
+            value="{{ debt.remaining_amount }}"
+            required
+            aria-label="Remaining amount">
+        </td>
+
+        <td data-label="Progress">
           <div class="progress-wrap">
             <div class="progress-bar" style="width: {{ debt.progress }}%"></div>
           </div>
           <small>{{ '%.0f'|format(debt.progress) }}%</small>
         </td>
-        <td>
-          <input form="debt-update-{{ debt.id }}" type="date" name="due_date" value="{{ debt.due_date }}">
+
+        <td data-label="Due">
+          <input
+            form="debt-update-{{ debt.id }}"
+            type="date"
+            name="due_date"
+            value="{{ debt.due_date }}"
+            aria-label="Due date">
         </td>
-        <td>
-          <select form="debt-update-{{ debt.id }}" name="status">
+
+        <td data-label="Status">
+          <select
+            form="debt-update-{{ debt.id }}"
+            name="status"
+            class="debt-status-select"
+            aria-label="Debt status">
             <option value="active" {% if debt.status == 'active' %}selected{% endif %}>Active</option>
             <option value="paid" {% if debt.status == 'paid' %}selected{% endif %}>Paid</option>
             <option value="cancelled" {% if debt.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
           </select>
         </td>
-        <td class="debt-actions">
+
+        <td data-label="Actions" class="debt-actions">
           <div class="table-action-rail">
-            <button form="debt-update-{{ debt.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update debt" aria-label="Update debt">✎</button>
+            <button
+              form="debt-update-{{ debt.id }}"
+              type="submit"
+              class="icon-action-btn icon-action-update"
+              title="Update debt"
+              aria-label="Update debt">✎</button>
 
             {% if debt.status == 'active' and debt.remaining_amount > 0 %}
             <form method="post" class="row-action-form">
@@ -159,7 +214,12 @@
             <form method="post" class="row-action-form">
               <input type="hidden" name="action" value="delete_debt">
               <input type="hidden" name="id" value="{{ debt.id }}">
-              <button type="submit" class="icon-action-btn icon-action-delete" title="Delete debt" aria-label="Delete debt" onclick="return confirm('Delete this debt and its open pending payments?')">×</button>
+              <button
+                type="submit"
+                class="icon-action-btn icon-action-delete"
+                title="Delete debt"
+                aria-label="Delete debt"
+                onclick="return confirm('Delete this debt and its open pending payments?')">×</button>
             </form>
           </div>
         </td>

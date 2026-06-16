@@ -4399,3 +4399,408 @@ a.sidebar-mobile-balance-pill:active {
     min-width: 0 !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Tracked debts fit + creditor visibility
+   - The debt table must fit the desktop card without horizontal dragging.
+   - The creditor is now a real column and extra hidden CSV fields are exposed
+     in the desktop row drawer through data-detail-* attributes.
+   - Mobile card behaviour is unchanged because this only applies above 1001px.
+-------------------------------------------------------------------------- */
+@media (min-width: 1001px) {
+  .transactions.debts-table-card:has(table.debt-tracked-table),
+  .transactions:has(table.debt-tracked-table) {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+  }
+
+  table.debt-tracked-table.inline-edit-table,
+  table.debt-tracked-table.desktop-action-drawer-table,
+  table.debt-tracked-table.desktop-action-drawer-table.inline-edit-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  table.debt-tracked-table .debt-col-name { width: 18% !important; }
+  table.debt-tracked-table .debt-col-creditor { width: 15% !important; }
+  table.debt-tracked-table .debt-col-original { width: 11% !important; }
+  table.debt-tracked-table .debt-col-remaining { width: 11% !important; }
+  table.debt-tracked-table .debt-col-progress { width: 14% !important; }
+  table.debt-tracked-table .debt-col-due { width: 15% !important; }
+  table.debt-tracked-table .debt-col-status { width: 16% !important; }
+  table.debt-tracked-table .debt-col-actions { width: 0 !important; }
+
+  table.debt-tracked-table.desktop-action-drawer-table th.desktop-actions-heading,
+  table.debt-tracked-table.desktop-action-drawer-table td.desktop-actions-cell,
+  table.debt-tracked-table th:last-child,
+  table.debt-tracked-table td.debt-actions {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  table.debt-tracked-table th,
+  table.debt-tracked-table td,
+  table.debt-tracked-table tbody tr > td:not(.mobile-row-summary):not(.desktop-actions-cell) {
+    min-width: 0 !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    vertical-align: middle !important;
+  }
+
+  table.debt-tracked-table thead th {
+    padding: 0.66rem 0.66rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  table.debt-tracked-table tbody td:not(.mobile-row-summary):not(.desktop-actions-cell) {
+    padding: 0.66rem 0.66rem !important;
+  }
+
+  table.debt-tracked-table input,
+  table.debt-tracked-table select,
+  table.debt-tracked-table textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 2.05rem !important;
+    padding: 0.38rem 0.52rem !important;
+    border-radius: 11px !important;
+    font-size: 0.84rem !important;
+    line-height: 1.12 !important;
+  }
+
+  table.debt-tracked-table .debt-status-select {
+    min-height: 2rem !important;
+    padding-inline: 0.55rem !important;
+  }
+
+  table.debt-tracked-table .progress-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 0.45rem !important;
+    margin: 0.18rem 0 0.18rem !important;
+  }
+
+  table.debt-tracked-table small {
+    display: block;
+    font-size: 0.72rem !important;
+    line-height: 1.1 !important;
+  }
+}
+
+@media (min-width: 1001px) {
+  table.debt-tracked-table th:nth-child(1),
+  table.debt-tracked-table td[data-label="Name"] { width: 18% !important; }
+
+  table.debt-tracked-table th:nth-child(2),
+  table.debt-tracked-table td[data-label="Creditor"] { width: 15% !important; }
+
+  table.debt-tracked-table th:nth-child(3),
+  table.debt-tracked-table td[data-label="Original"] { width: 11% !important; }
+
+  table.debt-tracked-table th:nth-child(4),
+  table.debt-tracked-table td[data-label="Remaining"] { width: 11% !important; }
+
+  table.debt-tracked-table th:nth-child(5),
+  table.debt-tracked-table td[data-label="Progress"] { width: 14% !important; }
+
+  table.debt-tracked-table th:nth-child(6),
+  table.debt-tracked-table td[data-label="Due"] { width: 15% !important; }
+
+  table.debt-tracked-table th:nth-child(7),
+  table.debt-tracked-table td[data-label="Status"] { width: 16% !important; }
+
+  table.debt-tracked-table th:nth-child(8),
+  table.debt-tracked-table td[data-label="Actions"],
+  table.debt-tracked-table td.desktop-actions-cell,
+  table.debt-tracked-table td.debt-actions { width: 0 !important; }
+}
+
+
+/* =========================================================
+   Debts table alignment fix
+   - Header and body have the same columns
+   - Actions stay hidden in the desktop drawer
+   - No horizontal scroll on desktop
+   ========================================================= */
+
+@media (min-width: 1001px) {
+  .transactions.debts-table-card,
+  .transactions:has(table.debt-tracked-table) {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+  }
+
+  table.debt-tracked-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  table.debt-tracked-table th,
+  table.debt-tracked-table td {
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    vertical-align: middle !important;
+  }
+
+  table.debt-tracked-table thead th {
+    padding: 0.65rem 0.65rem !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+  }
+
+  table.debt-tracked-table tbody td {
+    padding: 0.7rem 0.65rem !important;
+  }
+
+  /* visible columns */
+  table.debt-tracked-table th:nth-child(1),
+  table.debt-tracked-table td[data-label="Name"] {
+    width: 20% !important;
+  }
+
+  table.debt-tracked-table th:nth-child(2),
+  table.debt-tracked-table td[data-label="Creditor"] {
+    width: 14% !important;
+  }
+
+  table.debt-tracked-table th:nth-child(3),
+  table.debt-tracked-table td[data-label="Original"] {
+    width: 10% !important;
+  }
+
+  table.debt-tracked-table th:nth-child(4),
+  table.debt-tracked-table td[data-label="Remaining"] {
+    width: 10% !important;
+  }
+
+  table.debt-tracked-table th:nth-child(5),
+  table.debt-tracked-table td[data-label="Progress"] {
+    width: 16% !important;
+  }
+
+  table.debt-tracked-table th:nth-child(6),
+  table.debt-tracked-table td[data-label="Due"] {
+    width: 16% !important;
+  }
+
+  table.debt-tracked-table th:nth-child(7),
+  table.debt-tracked-table td[data-label="Status"] {
+    width: 14% !important;
+  }
+
+  /* hide Actions column on desktop, but keep it available for the drawer */
+  table.debt-tracked-table th:nth-child(8),
+  table.debt-tracked-table td[data-label="Actions"],
+  table.debt-tracked-table td.debt-actions,
+  table.debt-tracked-table th.desktop-actions-heading,
+  table.debt-tracked-table td.desktop-actions-cell {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  table.debt-tracked-table input,
+  table.debt-tracked-table select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 2.25rem !important;
+    padding: 0.35rem 0.55rem !important;
+    border-radius: 12px !important;
+    font-size: 0.9rem !important;
+  }
+
+  table.debt-tracked-table .debt-status-select {
+    height: 2.25rem !important;
+    padding-inline: 0.55rem !important;
+  }
+
+  table.debt-tracked-table .progress-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 0.42rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  table.debt-tracked-table small {
+    display: block !important;
+    font-size: 0.72rem !important;
+    line-height: 1.1 !important;
+  }
+}
+
+/* QUICK FIX - tracked debts desktop alignment */
+
+@media (min-width: 1001px) {
+  .transactions:has(.debt-tracked-table) {
+    overflow-x: hidden !important;
+  }
+
+  .debt-tracked-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    min-width: 0 !important;
+  }
+
+  .debt-tracked-table th,
+  .debt-tracked-table td {
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    vertical-align: top !important;
+    padding: 0.75rem 0.6rem !important;
+  }
+
+  /* 7 visible columns: Name, Original, Remaining, Progress, Due, Status, Actions hidden */
+  .debt-tracked-table th:nth-child(1),
+  .debt-tracked-table td:nth-child(1) {
+    width: 24% !important;
+  }
+
+  .debt-tracked-table th:nth-child(2),
+  .debt-tracked-table td:nth-child(2) {
+    width: 13% !important;
+  }
+
+  .debt-tracked-table th:nth-child(3),
+  .debt-tracked-table td:nth-child(3) {
+    width: 13% !important;
+  }
+
+  .debt-tracked-table th:nth-child(4),
+  .debt-tracked-table td:nth-child(4) {
+    width: 18% !important;
+  }
+
+  .debt-tracked-table th:nth-child(5),
+  .debt-tracked-table td:nth-child(5) {
+    width: 20% !important;
+  }
+
+  .debt-tracked-table th:nth-child(6),
+  .debt-tracked-table td:nth-child(6) {
+    width: 12% !important;
+  }
+
+  /* Hide ONLY the actions column, not Status */
+  .debt-tracked-table th:nth-child(7),
+  .debt-tracked-table td:nth-child(7) {
+    display: none !important;
+  }
+
+  .debt-tracked-table input,
+  .debt-tracked-table select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 2.35rem !important;
+    padding: 0.35rem 0.55rem !important;
+    border-radius: 12px !important;
+    font-size: 0.9rem !important;
+  }
+
+  .debt-tracked-table .progress-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 0.45rem !important;
+    margin-top: 0.2rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+}
+
+@media (min-width: 1001px) {
+  .debts-table-card {
+    overflow-x: hidden !important;
+  }
+
+  .debt-tracked-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+  }
+
+  .debt-tracked-table th,
+  .debt-tracked-table td {
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    padding: 0.75rem 0.6rem !important;
+    vertical-align: top !important;
+  }
+
+  .debt-tracked-table th:nth-child(1),
+  .debt-tracked-table td:nth-child(1) {
+    width: 25% !important;
+  }
+
+  .debt-tracked-table th:nth-child(2),
+  .debt-tracked-table td:nth-child(2) {
+    width: 13% !important;
+  }
+
+  .debt-tracked-table th:nth-child(3),
+  .debt-tracked-table td:nth-child(3) {
+    width: 13% !important;
+  }
+
+  .debt-tracked-table th:nth-child(4),
+  .debt-tracked-table td:nth-child(4) {
+    width: 18% !important;
+  }
+
+  .debt-tracked-table th:nth-child(5),
+  .debt-tracked-table td:nth-child(5) {
+    width: 16% !important;
+  }
+
+  .debt-tracked-table th:nth-child(6),
+  .debt-tracked-table td:nth-child(6) {
+    width: 15% !important;
+  }
+
+  .debt-tracked-table th:nth-child(7),
+  .debt-tracked-table td:nth-child(7) {
+    display: none !important;
+  }
+
+  .debt-tracked-table input,
+  .debt-tracked-table select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 2.35rem !important;
+    padding: 0.35rem 0.55rem !important;
+    border-radius: 12px !important;
+    font-size: 0.9rem !important;
+  }
+
+  .debt-tracked-table .progress-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 0.45rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+}
+
