@@ -4,7 +4,7 @@
       "symbol": "VWCE.MI",
       "label": "Default ETF proxy - edit me",
       "currency": "EUR",
-      "fetched_at": "2026-06-16T09:14:29+00:00",
+      "fetched_at": "2026-06-16T09:16:37+00:00",
       "prices": [
         {
           "date": "2024-06-17",
@@ -2012,11 +2012,11 @@
         },
         {
           "date": "2026-06-16",
-          "close": 164.63999938964844
+          "close": 164.6699981689453
         }
       ],
       "error": ""
     }
   },
-  "last_refresh_attempt": "2026-06-16T09:14:29+00:00"
+  "last_refresh_attempt": "2026-06-16T09:16:37+00:00"
 }
