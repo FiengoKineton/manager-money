@@ -283,3 +283,5 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 291,2026-06-15,Other,Credit card fee,2.0,,EUR,1.0,0.0,1.0,,,2026-06-15T11:34:14
 292,2026-06-15,Account cleanup,Reconcile to € 45.00,59.0,,,,,,Cash Flow,Account cleanup: adjusted Cash Flow from € 104.00 to € 45.00.,2026-06-15T12:23:56
 293,2026-06-15,Other,,5.5,,EUR,1.00000000,0.00000000,1.00000000,,,2026-06-15T19:35:12
+294,2026-06-16,Other,,7.0,,EUR,1.00000000,0.00000000,1.00000000,,,2026-06-16T15:07:30
+295,2026-06-16,Transportation,EasyPark,1.99,,EUR,1.00000000,0.00000000,1.00000000,,,2026-06-16T15:08:17

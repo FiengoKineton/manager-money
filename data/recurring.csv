@@ -7,3 +7,4 @@ id,name,type,amount,frequency,day_of_month,category,account,start_date,last_gene
 6,NordVPN,expense,200.0,24,26,Subscriptions,,2025-05-26,2025-05-26
 7,Ticket Restaurants,income,200.0,1,10,Kineton,EdenRed,2026-06-01,2026-06-10
 8,Parking Spot,expense,200.0,1,3,Housing,PayPal,2026-06-01,2026-06-03
+9,Cedolino Kineton,income,1950.0,1,10,Kineton,,2026-06-16,
