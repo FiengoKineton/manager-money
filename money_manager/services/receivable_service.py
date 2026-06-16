@@ -10,6 +10,7 @@ from money_manager.repositories.receivables import (
     update_receivable,
 )
 from money_manager.repositories.transactions import append_transaction, delete_transaction, update_transaction
+from money_manager.services.transaction_service import save_transaction_payload
 
 DEFAULT_RECEIVABLE_INCOME_CATEGORY = "Refund"
 DEFAULT_RECEIVABLE_EXPENSE_CATEGORY = "Money owed to me"
@@ -29,7 +30,7 @@ def add_receivable_from_form(form) -> None:
     # Register the money leaving the selected account immediately.  If the
     # account is blank/main/credit/PayPal it affects the main net; if it is a
     # liquid account it affects that account balance instead.
-    linked_expense_id = append_transaction({
+    save_result = save_transaction_payload({
         "type": "expense",
         "date": start_date,
         "category": DEFAULT_RECEIVABLE_EXPENSE_CATEGORY,
@@ -38,6 +39,8 @@ def add_receivable_from_form(form) -> None:
         "account": account,
         "description": _loan_expense_description(name, debtor, description),
     })
+    linked_ids = save_result.get("transaction_ids", []) if isinstance(save_result, dict) else []
+    linked_expense_id = linked_ids[0] if linked_ids else ""
 
     append_receivable({
         "name": name,

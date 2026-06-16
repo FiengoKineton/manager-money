@@ -189,3 +189,14 @@ select:focus {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
 }
+
+.future-balance-preview {
+  border: 1px solid rgba(36, 84, 214, 0.18);
+  background: rgba(36, 84, 214, 0.06);
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  color: #0f172a;
+}
+
+.future-balance-preview strong { display:block; margin-bottom:0.25rem; }
+.future-balance-preview small { color:#64748b; }

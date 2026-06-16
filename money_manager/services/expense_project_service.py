@@ -22,6 +22,7 @@ from money_manager.repositories.expense_projects import (
 )
 from money_manager.repositories.payables import load_payables
 from money_manager.repositories.transactions import append_transaction
+from money_manager.services.transaction_service import save_transaction_payload
 from money_manager.services.account_service import auxiliary_total, main_account_transactions
 from money_manager.services.transaction_service import load_transactions
 from money_manager.utils.stats import summary_totals
@@ -228,7 +229,7 @@ def pay_planned_item_from_form(project_id: int, form) -> None:
     if amount <= 0:
         return
 
-    tx_id = append_transaction({
+    save_result = save_transaction_payload({
         "type": "expense",
         "date": form.get("date") or date.today().isoformat(),
         "category": item.get("category") or _project_category(project_id),
@@ -237,13 +238,14 @@ def pay_planned_item_from_form(project_id: int, form) -> None:
         "account": form.get("account", item.get("account", "")),
         "description": form.get("description") or f"Project payment: {item.get('name', '')}",
     })
-    append_movement({
-        "project_id": project_id,
-        "transaction_type": "expense",
-        "transaction_id": tx_id,
-        "source": "planned_payment",
-        "note": item.get("name", ""),
-    })
+    for tx_id in (save_result.get("transaction_ids", []) if isinstance(save_result, dict) else []):
+        append_movement({
+            "project_id": project_id,
+            "transaction_type": "expense",
+            "transaction_id": tx_id,
+            "source": "planned_payment",
+            "note": item.get("name", ""),
+        })
 
     remaining = max(0.0, _amount(item.get("remaining_amount")) - amount)
     updates = {"remaining_amount": remaining, "account": form.get("account", item.get("account", ""))}

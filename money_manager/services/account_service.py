@@ -9,6 +9,7 @@ from money_manager.config import (
     account_description_for_key,
     account_label_for_key,
     account_options_for_analysis,
+    account_parent_key,
     auxiliary_account_keys,
     category_aliases_by_key,
     normalize_account_key,
@@ -267,9 +268,13 @@ def account_balance_rows(df: pd.DataFrame) -> list[dict]:
                 last_date = last.strftime("%Y-%m-%d")
                 last_movement_label = f"Last movement: {last_date}"
 
+        option_parent = option.get("parent_key", "")
         rows.append({
             "key": key,
             "label": account_label_for_key(key),
+            "display_label": option.get("display_label") or account_label_for_key(key),
+            "parent_key": option_parent,
+            "is_other_child": option_parent == "other_account",
             "description": account_description_for_key(key),
             "balance": balance,
             "income": incoming,
@@ -301,16 +306,61 @@ def auxiliary_total(df: pd.DataFrame) -> float:
 
 def accounts_page_context(df: pd.DataFrame) -> dict:
     rows = account_balance_rows(df)
-    total_balance = sum(row["balance"] for row in rows)
-    total_in = sum(row["incoming"] for row in rows)
-    total_out = sum(row["outgoing"] for row in rows)
+
+    # Show Other account as a parent bucket with custom/small accounts below it.
+    children_by_parent: dict[str, list[dict]] = {}
+    for row in rows:
+        parent_key = row.get("parent_key")
+        if parent_key:
+            children_by_parent.setdefault(parent_key, []).append(row)
+
+    display_rows: list[dict] = []
+    for row in rows:
+        if row.get("parent_key"):
+            continue
+        row = dict(row)
+        children = children_by_parent.get(row["key"], [])
+        row["children"] = children
+        if children:
+            child_balance = sum(float(child.get("balance", 0.0) or 0.0) for child in children)
+            child_incoming = sum(float(child.get("incoming", 0.0) or 0.0) for child in children)
+            child_outgoing = sum(float(child.get("outgoing", 0.0) or 0.0) for child in children)
+            child_count = sum(int(child.get("count", 0) or 0) for child in children)
+            row["own_balance"] = row["balance"]
+            row["own_incoming"] = row["incoming"]
+            row["own_outgoing"] = row["outgoing"]
+            row["own_count"] = row["count"]
+            row["balance"] = row["balance"] + child_balance
+            row["incoming"] = row["incoming"] + child_incoming
+            row["outgoing"] = row["outgoing"] + child_outgoing
+            row["count"] = row["count"] + child_count
+            row["child_count"] = len(children)
+            row["child_balance"] = child_balance
+            row["child_incoming"] = child_incoming
+            row["child_outgoing"] = child_outgoing
+            row["balance_tone"] = "positive" if row["balance"] >= 0 else "negative"
+        else:
+            row["own_balance"] = row["balance"]
+            row["own_incoming"] = row["incoming"]
+            row["own_outgoing"] = row["outgoing"]
+            row["own_count"] = row["count"]
+            row["child_count"] = 0
+            row["child_balance"] = 0.0
+            row["child_incoming"] = 0.0
+            row["child_outgoing"] = 0.0
+            row["children"] = []
+        display_rows.append(row)
+
+    total_balance = sum(row["balance"] for row in display_rows)
+    total_in = sum(row["incoming"] for row in display_rows)
+    total_out = sum(row["outgoing"] for row in display_rows)
     return {
-        "accounts": rows,
+        "accounts": display_rows,
         "totals": {
             "balance": float(total_balance),
             "incoming": float(total_in),
             "outgoing": float(total_out),
-            "movements": int(sum(row["count"] for row in rows)),
+            "movements": int(sum(row["count"] for row in display_rows)),
         },
     }
 
@@ -433,13 +483,18 @@ def _infer_account_from_row(row) -> AccountInference:
                 if alias and alias in combined_text:
                     return AccountInference(key, "cleanup_account_hint")
 
-    for field_name in ("category", "sub_category"):
-        value = _clean_text(row.get(field_name, ""))
-        if not value:
-            continue
+    # Only top-level liquid accounts may be inferred from the category when the
+    # explicit account field is blank. Do not infer child accounts such as Glovo
+    # or EasyPark from sub-category text: ordinary main-bank expenses often use
+    # those words as a sub-category, and routing them to the auxiliary account
+    # changes the main net incorrectly.
+    category_value = _clean_text(row.get("category", ""))
+    if category_value:
         for key, aliases in category_aliases_by_key().items():
-            if value in aliases:
-                return AccountInference(key, f"{field_name}_account_hint")
+            if account_parent_key(key):
+                continue
+            if category_value in aliases:
+                return AccountInference(key, "category_account_hint")
 
     return AccountInference(MAIN_ACCOUNT_KEY, "main")
 

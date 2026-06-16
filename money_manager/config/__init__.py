@@ -13,6 +13,7 @@ from money_manager.config.accounts import (
     account_label_for_value,
     account_options_for_analysis,
     account_options_for_forms,
+    account_parent_key,
     all_auxiliary_accounts,
     auxiliary_account_keys,
     category_aliases_by_key,

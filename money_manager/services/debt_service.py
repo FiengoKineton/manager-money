@@ -15,6 +15,7 @@ from money_manager.repositories.debts import (
 from money_manager.repositories.pending import append_pending, delete_pending_for_source, delete_pending_for_source_description, load_pending
 from money_manager.repositories.recurring import add_months, first_due_date, normalize_amount, parse_date, parse_frequency_months
 from money_manager.repositories.transactions import append_transaction
+from money_manager.services.transaction_service import save_transaction_payload
 
 
 def add_debt_from_form(form) -> None:
@@ -225,7 +226,7 @@ def register_debt_payment(debt_id, amount: float, payment_date: str, account: st
     if amount <= 0:
         return
 
-    append_transaction({
+    save_transaction_payload({
         "type": "expense",
         "date": payment_date or date.today().isoformat(),
         "category": DEBT_PAYMENT_CATEGORY,

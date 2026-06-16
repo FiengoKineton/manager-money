@@ -78,7 +78,6 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 78,2025-12-05,Coffe,,3.6,,,,,,,,
 79,2025-12-05,Eating out,,19.62,,,,,,Card,w Carlo,
 80,2025-12-06,Going out,,19.5,,,,,,,,
-81,2025-12-06,Transportation,,2.16,,,,,,EasyPark,,
 82,2025-12-07,Coffe,,2.0,,,,,,Card,,
 83,2025-12-08,Groceries,,75.85,,,,,,Card,,
 84,2025-12-10,Other,,15.0,,,,,,,,
@@ -282,6 +281,7 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 290,2026-06-12,Money owed to me,Glovo Thiefs,28.64,,,,,,Other account,Loan/receivable created: Glovo owes me for Glovo Thiefs. Hamburger order,2026-06-15T11:08:11
 291,2026-06-15,Other,Credit card fee,2.0,,EUR,1.0,0.0,1.0,,,2026-06-15T11:34:14
 292,2026-06-15,Account cleanup,Reconcile to € 45.00,59.0,,,,,,Cash Flow,Account cleanup: adjusted Cash Flow from € 104.00 to € 45.00.,2026-06-15T12:23:56
-293,2026-06-15,Other,,5.5,,EUR,1.00000000,0.00000000,1.00000000,,,2026-06-15T19:35:12
-294,2026-06-16,Other,,7.0,,EUR,1.00000000,0.00000000,1.00000000,,,2026-06-16T15:07:30
-295,2026-06-16,Transportation,EasyPark,1.99,,EUR,1.00000000,0.00000000,1.00000000,,,2026-06-16T15:08:17
+293,2026-06-15,Other,,5.5,,EUR,1.0,0.0,1.0,,,2026-06-15T19:35:12
+294,2026-06-16,Other,,7.0,,EUR,1.0,0.0,1.0,,,2026-06-16T15:07:30
+296,2026-06-16,Transportation,EasyPark,3.05,,EUR,1.0,0.0,1.0,Pre-paid card,Paid from Pre-paid card balance.,2026-06-16T17:13:43
+297,2026-06-16,Lost,,4.15,,EUR,1.00000000,0.00000000,1.00000000,,,2026-06-16T17:16:15

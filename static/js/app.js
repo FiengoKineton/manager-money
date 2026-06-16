@@ -851,15 +851,42 @@
           const checkedCard = modeCards.find((card) => card.dataset.modeCard === mode);
           const targetText = checkedCard ? textValue(checkedCard, "em") : "";
           const description = checkedCard ? textValue(checkedCard, "small") : "";
+          const amountInput = form.querySelector('input[name="amount"]:not(:disabled)');
+          const amount = Number.parseFloat(amountInput ? amountInput.value : "0") || 0;
+          const accountSelect = form.querySelector('select[name="account"]:not(:disabled)');
+          const selectedAccount = accountSelect ? accountSelect.options[accountSelect.selectedIndex] : null;
+          const accountKind = selectedAccount ? selectedAccount.dataset.kind : "main";
+          const accountKey = selectedAccount ? selectedAccount.dataset.key : "main_bank";
+          const accountLabel = selectedAccount ? ((selectedAccount.dataset.displayLabel || selectedAccount.textContent || "").trim()) : "Main bank account";
+          const balances = window.moneyManagerAccountBalances || {};
+          const mainNet = Number(window.moneyManagerMainNet || 0);
+          let preview = "";
+          if (amount > 0 && ["debt_pay", "payable_pay", "project_pay", "receivable_create", "receivable_collect"].includes(mode)) {
+            if (accountKind === "auxiliary") {
+              const current = Number(balances[accountKey] || 0);
+              const after = mode === "receivable_collect" ? current + amount : current - amount;
+              preview = `Selected account preview: ${accountLabel} € ${current.toFixed(2)} → € ${after.toFixed(2)}.`;
+            } else if (accountKind === "credit") {
+              preview = `Credit route preview: main net now is unchanged; future main net after execution/payment ≈ € ${(mainNet - amount).toFixed(2)}.`;
+            } else {
+              const after = mode === "receivable_collect" ? mainNet + amount : mainNet - amount;
+              preview = `Main net preview: € ${mainNet.toFixed(2)} → € ${after.toFixed(2)}.`;
+            }
+          }
           summary.innerHTML = `
             <strong>${escapeHtml(textValue(checkedCard, "strong") || "Special log")}</strong>
             <span>${escapeHtml(description)}</span>
             <small>${escapeHtml(targetText)}</small>
+            ${preview ? `<small>${escapeHtml(preview)}</small>` : ""}
           `;
         }
       }
 
       radios.forEach((radio) => radio.addEventListener("change", toggleFields));
+      form.querySelectorAll("input, select, textarea").forEach((field) => {
+        field.addEventListener("input", toggleFields);
+        field.addEventListener("change", toggleFields);
+      });
       toggleFields();
 
       if (panel && panel.classList.contains("is-open") && window.location.hash !== "#smart-log") {

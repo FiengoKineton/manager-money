@@ -5,9 +5,12 @@ import pandas as pd
 from money_manager.config import (
     CREDIT_ACCOUNT_KEYWORDS,
     CREDIT_CARD_DUE_DAY,
+    MAIN_ACCOUNT_KEY,
     PAYPAL_ACCOUNT_KEY,
     PAYPAL_CREDIT_ACCOUNT_VALUE,
     TRANSACTION_TYPES,
+    account_label_for_key,
+    auxiliary_account_keys,
     normalize_account_key,
 )
 from money_manager.domain.transaction import TransactionInput
@@ -20,12 +23,20 @@ from money_manager.repositories.transactions import (
     update_transaction,
 )
 
-PAYPAL_METHOD_BALANCE = "balance"
-PAYPAL_METHOD_CREDIT = "credit"
-PAYPAL_METHOD_ANOTHER_CARD = "another_card"
-PAYPAL_INSUFFICIENT_STOP = "stop"
-PAYPAL_INSUFFICIENT_ANOTHER_CARD = "use_another_card_for_remaining"
-PAYPAL_INSUFFICIENT_CREDIT = "use_credit_for_remaining"
+BALANCE_METHOD_BALANCE = "balance"
+BALANCE_METHOD_CREDIT = "credit"
+BALANCE_METHOD_ANOTHER_CARD = "another_card"
+BALANCE_INSUFFICIENT_STOP = "stop"
+BALANCE_INSUFFICIENT_ANOTHER_CARD = "use_another_card_for_remaining"
+BALANCE_INSUFFICIENT_CREDIT = "use_credit_for_remaining"
+
+# Backwards-compatible names used by templates/forms.
+PAYPAL_METHOD_BALANCE = BALANCE_METHOD_BALANCE
+PAYPAL_METHOD_CREDIT = BALANCE_METHOD_CREDIT
+PAYPAL_METHOD_ANOTHER_CARD = BALANCE_METHOD_ANOTHER_CARD
+PAYPAL_INSUFFICIENT_STOP = BALANCE_INSUFFICIENT_STOP
+PAYPAL_INSUFFICIENT_ANOTHER_CARD = BALANCE_INSUFFICIENT_ANOTHER_CARD
+PAYPAL_INSUFFICIENT_CREDIT = BALANCE_INSUFFICIENT_CREDIT
 
 
 def next_credit_due(payment_date=None, due_day: int = CREDIT_CARD_DUE_DAY) -> date:
@@ -40,102 +51,180 @@ def next_credit_due(payment_date=None, due_day: int = CREDIT_CARD_DUE_DAY) -> da
 def save_new_transaction(tx_input: TransactionInput) -> dict:
     """Save a new transaction and return a small UI-friendly result.
 
-    PayPal now has two layers:
-    - account="PayPal" means the PayPal wallet balance;
-    - paypal_payment_method="credit" creates a pending PayPal-credit row;
-    - paypal_payment_method="another_card" records a main-bank/card outflow.
+    PayPal and every Other/custom balance account share the same logic:
+    - balance method spends from that tracked auxiliary balance;
+    - credit method creates a pending credit-card/PayPal-credit row;
+    - another_card method records a main-bank/card outflow;
+    - when the auxiliary balance is too small, the remaining amount can be sent
+      either to main bank/card or to pending credit.
     """
     tx = _transaction_payload_in_eur(tx_input)
-    account = str(tx.get("account", "")).strip().lower()
+    return save_transaction_payload(
+        tx,
+        payment_method=tx_input.paypal_payment_method,
+        insufficient_action=tx_input.paypal_insufficient_action,
+        due_date=_due_date_from_input(tx_input),
+    )
 
-    if tx_input.type == "expense" and normalize_account_key(account) == PAYPAL_ACCOUNT_KEY:
-        return _save_paypal_expense(tx, tx_input)
 
-    if account in CREDIT_ACCOUNT_KEYWORDS:
+def save_transaction_payload(
+    tx: dict,
+    payment_method: str = BALANCE_METHOD_BALANCE,
+    insufficient_action: str = BALANCE_INSUFFICIENT_STOP,
+    due_date: date | None = None,
+) -> dict:
+    """Save an already-normalized transaction dict using the shared account router.
+
+    This is intentionally reusable by debts, payables, projects, receivables and
+    any future form that records an expense. It avoids the old bug where only the
+    normal Add Transaction page understood PayPal/credit split payments.
+    """
+    tx = dict(tx)
+    account_raw = str(tx.get("account", "") or "").strip()
+    account_key = normalize_account_key(account_raw)
+    tx_type = str(tx.get("type", "") or "").casefold()
+    due_date = due_date or _due_date_from_payload(tx)
+
+    if tx_type == "expense" and account_key in auxiliary_account_keys():
+        return _save_balance_account_expense(
+            tx,
+            account_key=account_key,
+            method=(payment_method or BALANCE_METHOD_BALANCE),
+            insufficient_action=(insufficient_action or BALANCE_INSUFFICIENT_STOP),
+            due=due_date,
+        )
+
+    if tx_type == "expense" and account_raw.casefold() in CREDIT_ACCOUNT_KEYWORDS:
         tx["account"] = "credit"
-        append_pending(tx, _due_date_from_input(tx_input))
-        return {"ok": True, "message": "Credit-card payment added to pending."}
+        pending_id = append_pending(tx, due_date)
+        return {"ok": True, "message": "Credit-card payment added to pending.", "transaction_ids": [], "pending_ids": [pending_id] if pending_id is not None else []}
 
-    append_transaction(tx)
-    return {"ok": True, "message": "Transaction saved."}
+    tx_id = append_transaction(tx)
+    return {"ok": True, "message": "Transaction saved.", "transaction_ids": [tx_id], "pending_ids": []}
 
 
-def paypal_balance() -> float:
-    """Current balance of the PayPal auxiliary account."""
+def account_balance(account_key: str) -> float:
+    """Current balance of any auxiliary account."""
     from money_manager.services.account_service import account_balance_rows
 
+    key = normalize_account_key(account_key)
     rows = account_balance_rows(load_all())
     for row in rows:
-        if row.get("key") == PAYPAL_ACCOUNT_KEY:
+        if row.get("key") == key:
             return float(row.get("balance", 0.0) or 0.0)
     return 0.0
 
 
-def _save_paypal_expense(tx: dict, tx_input: TransactionInput) -> dict:
-    method = tx_input.paypal_payment_method or PAYPAL_METHOD_BALANCE
+def account_balances_for_preview() -> dict:
+    from money_manager.services.account_service import account_balance_rows
 
-    if method == PAYPAL_METHOD_CREDIT:
-        _append_paypal_credit_pending(tx, _due_date_from_input(tx_input))
-        return {"ok": True, "message": "PayPal credit payment added to pending."}
+    return {row.get("key"): float(row.get("balance", 0.0) or 0.0) for row in account_balance_rows(load_all())}
 
-    if method == PAYPAL_METHOD_ANOTHER_CARD:
-        main_tx = _with_note(tx, "PayPal checkout paid with another card/main bank route.")
+
+def main_net_for_preview() -> float:
+    from money_manager.services.account_service import main_account_transactions
+
+    df = main_account_transactions(load_all())
+    if df.empty:
+        return 0.0
+    return float(df.get("signed_amount", 0).sum())
+
+
+def paypal_balance() -> float:
+    """Current balance of the PayPal auxiliary account."""
+    return account_balance(PAYPAL_ACCOUNT_KEY)
+
+
+def _save_balance_account_expense(tx: dict, account_key: str, method: str, insufficient_action: str, due: date) -> dict:
+    account_label = account_label_for_key(account_key)
+    method = str(method or BALANCE_METHOD_BALANCE).casefold()
+
+    if method == BALANCE_METHOD_CREDIT:
+        pending_id = _append_balance_credit_pending(tx, due, account_label=account_label, account_key=account_key)
+        return {"ok": True, "message": f"{account_label} checkout added to pending credit.", "transaction_ids": [], "pending_ids": [pending_id] if pending_id is not None else []}
+
+    if method == BALANCE_METHOD_ANOTHER_CARD:
+        main_tx = _with_note(tx, f"{account_label} checkout paid with another card/main bank route.")
         main_tx["account"] = ""
-        append_transaction(main_tx)
-        return {"ok": True, "message": "PayPal checkout saved as a main-bank/card expense."}
+        tx_id = append_transaction(main_tx)
+        return {"ok": True, "message": f"{account_label} checkout saved as a main-bank/card expense.", "transaction_ids": [tx_id], "pending_ids": []}
 
-    # Default: spend from the PayPal wallet balance.
     amount = float(tx.get("amount", 0.0) or 0.0)
-    balance = paypal_balance()
+    balance = account_balance(account_key)
     if amount <= balance + 0.005:
-        balance_tx = _with_note(tx, "Paid from PayPal balance.")
-        balance_tx["account"] = "PayPal"
-        append_transaction(balance_tx)
-        return {"ok": True, "message": "PayPal balance expense saved."}
+        balance_tx = _with_note(tx, f"Paid from {account_label} balance.")
+        balance_tx["account"] = account_label
+        tx_id = append_transaction(balance_tx)
+        return {"ok": True, "message": f"{account_label} balance expense saved.", "transaction_ids": [tx_id], "pending_ids": []}
 
-    remaining = max(0.0, amount - max(balance, 0.0))
-    action = tx_input.paypal_insufficient_action or PAYPAL_INSUFFICIENT_STOP
+    usable_balance = max(balance, 0.0)
+    remaining = max(0.0, amount - usable_balance)
+    action = str(insufficient_action or BALANCE_INSUFFICIENT_STOP).casefold()
+    tx_ids: list[int] = []
+    pending_ids: list[int] = []
 
-    if action == PAYPAL_INSUFFICIENT_ANOTHER_CARD:
-        if balance > 0.005:
-            append_transaction(_paypal_balance_part(tx, balance, amount))
+    if action == BALANCE_INSUFFICIENT_ANOTHER_CARD:
+        if usable_balance > 0.005:
+            tx_ids.append(append_transaction(_balance_account_part(tx, usable_balance, amount, account_label)))
         main_tx = _with_amount(tx, remaining)
-        main_tx = _with_note(main_tx, f"Remaining PayPal checkout paid with another card/main bank route after using € {max(balance, 0.0):.2f} PayPal balance.")
+        main_tx = _with_note(main_tx, f"Remaining {account_label} checkout paid with another card/main bank route after using € {usable_balance:.2f} {account_label} balance.")
         main_tx["account"] = ""
-        append_transaction(main_tx)
-        return {"ok": True, "message": "PayPal balance used and remaining amount saved as main-bank/card expense."}
+        tx_ids.append(append_transaction(main_tx))
+        return {"ok": True, "message": f"{account_label} balance used and remaining amount saved as main-bank/card expense.", "transaction_ids": tx_ids, "pending_ids": []}
 
-    if action == PAYPAL_INSUFFICIENT_CREDIT:
-        if balance > 0.005:
-            append_transaction(_paypal_balance_part(tx, balance, amount))
+    if action == BALANCE_INSUFFICIENT_CREDIT:
+        if usable_balance > 0.005:
+            tx_ids.append(append_transaction(_balance_account_part(tx, usable_balance, amount, account_label)))
         pending_tx = _with_amount(tx, remaining)
-        pending_tx = _with_note(pending_tx, f"Remaining PayPal checkout scheduled on credit after using € {max(balance, 0.0):.2f} PayPal balance.")
-        _append_paypal_credit_pending(pending_tx, _due_date_from_input(tx_input))
-        return {"ok": True, "message": "PayPal balance used and remaining amount added to pending credit."}
+        pending_tx = _with_note(pending_tx, f"Remaining {account_label} checkout scheduled on credit after using € {usable_balance:.2f} {account_label} balance.")
+        pending_id = _append_balance_credit_pending(pending_tx, due, account_label=account_label, account_key=account_key)
+        if pending_id is not None:
+            pending_ids.append(pending_id)
+        return {"ok": True, "message": f"{account_label} balance used and remaining amount added to pending credit.", "transaction_ids": tx_ids, "pending_ids": pending_ids}
 
     return {
         "ok": False,
         "error": (
-            f"PayPal balance is not enough: available € {balance:.2f}, "
+            f"{account_label} balance is not enough: available € {balance:.2f}, "
             f"expense € {amount:.2f}, missing € {remaining:.2f}. "
-            "Choose another PayPal method or choose how to split the remaining amount."
+            "Choose another payment method or choose how to split the remaining amount."
         ),
-        "paypal_balance": balance,
-        "paypal_missing": remaining,
+        "account_key": account_key,
+        "account_balance": balance,
+        "account_missing": remaining,
     }
 
 
+def _append_balance_credit_pending(tx: dict, due: date, account_label: str, account_key: str) -> int | None:
+    pending_tx = _with_note(tx, f"{account_label} checkout scheduled through credit/card route.")
+    pending_tx["account"] = PAYPAL_CREDIT_ACCOUNT_VALUE if account_key == PAYPAL_ACCOUNT_KEY else "credit"
+    return append_pending(pending_tx, due)
+
+
+def _balance_account_part(tx: dict, balance: float, original_amount: float, account_label: str) -> dict:
+    part = _with_amount(tx, max(balance, 0.0))
+    part = _with_note(part, f"Partial {account_label} balance payment for € {original_amount:.2f} checkout.")
+    part["account"] = account_label
+    return part
+
+
+# Backwards-compatible helpers kept for older imports/tests.
+def _save_paypal_expense(tx: dict, tx_input: TransactionInput) -> dict:
+    return _save_balance_account_expense(
+        tx,
+        account_key=PAYPAL_ACCOUNT_KEY,
+        method=tx_input.paypal_payment_method or BALANCE_METHOD_BALANCE,
+        insufficient_action=tx_input.paypal_insufficient_action or BALANCE_INSUFFICIENT_STOP,
+        due=_due_date_from_input(tx_input),
+    )
+
+
 def _append_paypal_credit_pending(tx: dict, due: date) -> None:
-    pending_tx = _with_note(tx, "PayPal checkout scheduled through PayPal credit/card route.")
-    pending_tx["account"] = PAYPAL_CREDIT_ACCOUNT_VALUE
-    append_pending(pending_tx, due)
+    _append_balance_credit_pending(tx, due, account_label="PayPal", account_key=PAYPAL_ACCOUNT_KEY)
 
 
 def _paypal_balance_part(tx: dict, balance: float, original_amount: float) -> dict:
-    part = _with_amount(tx, max(balance, 0.0))
-    part = _with_note(part, f"Partial PayPal balance payment for € {original_amount:.2f} checkout.")
-    part["account"] = "PayPal"
-    return part
+    return _balance_account_part(tx, balance, original_amount, "PayPal")
 
 
 def _with_amount(tx: dict, amount: float) -> dict:
@@ -179,6 +268,14 @@ def _transaction_payload_in_eur(tx_input: TransactionInput) -> dict:
         tx["exchange_effective_rate_to_eur"] = "1.00000000"
     tx.pop("currency", None)
     return tx
+
+
+def _due_date_from_payload(tx: dict) -> date:
+    try:
+        payment_date = date.fromisoformat(str(tx.get("date", "") or ""))
+    except (TypeError, ValueError):
+        payment_date = date.today()
+    return next_credit_due(payment_date)
 
 
 def load_transactions() -> pd.DataFrame:

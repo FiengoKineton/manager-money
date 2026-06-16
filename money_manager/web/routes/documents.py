@@ -4,7 +4,7 @@ import html
 import mimetypes
 from pathlib import Path
 
-from flask import Blueprint, Response, abort, jsonify, render_template, send_file, send_from_directory, url_for
+from flask import Blueprint, Response, abort, jsonify, make_response, render_template, send_file, send_from_directory, url_for
 
 from money_manager.config import ALLOWED_DOCUMENT_EXTENSIONS, DOCUMENTS_DIR
 from money_manager.repositories.documents import (
@@ -61,7 +61,12 @@ def serve_document(folder, filename):
 
     path = _safe_document_path(folder, filename)
     mimetype = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
-    return send_file(path, mimetype=mimetype, as_attachment=False, download_name=path.name, conditional=True)
+    response = make_response(send_file(path, mimetype=mimetype, as_attachment=False, download_name=path.name, conditional=True))
+    # Force browser/app viewers to render supported documents inline instead of
+    # treating PDFs as attachments/downloads.
+    response.headers["Content-Disposition"] = f'inline; filename="{path.name}"'
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @bp.route("/document-preview/<folder>/<path:filename>")

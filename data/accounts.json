@@ -1,16 +1,17 @@
 {
   "accounts": [
     {
-      "key": "edenred",
-      "label": "EdenRed",
-      "description": "Ticket restaurants",
+      "key": "lost",
+      "label": "Lost",
+      "description": "lost track of money movements",
       "aliases": [
-        "edenred"
+        "lost"
       ],
       "category_aliases": [
-        "ticket restaurants"
+        "lost"
       ],
-      "is_custom": true
+      "is_custom": true,
+      "parent_key": "other_account"
     }
   ]
 }

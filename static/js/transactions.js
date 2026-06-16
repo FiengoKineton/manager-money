@@ -19,23 +19,39 @@
   }
 
   function formatMoney(value) {
-    return value.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  function updateTotal() {
+  function currentEurTotal() {
     const inputs = document.querySelectorAll(".amount-input");
     let total = 0;
-
     inputs.forEach((input) => {
       const value = Number.parseFloat(input.value);
       if (!Number.isNaN(value)) total += value;
     });
+    return total * selectedCurrency().effective_rate_to_eur;
+  }
 
+  function selectedAccountMeta() {
+    const accountSelect = document.getElementById("account-select");
+    if (!accountSelect) return { key: "main_bank", kind: "main", label: "Main bank account" };
+    const selected = accountSelect.options[accountSelect.selectedIndex];
+    return {
+      key: (selected && selected.dataset.key) || "main_bank",
+      kind: (selected && selected.dataset.kind) || "main",
+      label: (selected && (selected.dataset.displayLabel || selected.textContent) ? (selected.dataset.displayLabel || selected.textContent).trim() : "Main bank account"),
+    };
+  }
+
+  function updateTotal() {
     const currency = selectedCurrency();
-    const eurTotal = total * currency.effective_rate_to_eur;
+    const eurTotal = currentEurTotal();
+    let rawTotal = 0;
+
+    document.querySelectorAll(".amount-input").forEach((input) => {
+      const value = Number.parseFloat(input.value);
+      if (!Number.isNaN(value)) rawTotal += value;
+    });
 
     const totalLabel = document.getElementById("total-amount");
     const totalCurrencyCode = document.getElementById("total-currency-code");
@@ -43,13 +59,14 @@
     const ratePreview = document.getElementById("currency-rate-preview");
     const hiddenAmount = document.getElementById("amount-hidden");
 
-    if (totalLabel) totalLabel.innerText = formatMoney(total);
+    if (totalLabel) totalLabel.innerText = formatMoney(rawTotal);
     if (totalCurrencyCode) totalCurrencyCode.innerText = currency.code;
     if (eurTotalLabel) eurTotalLabel.innerText = formatMoney(eurTotal);
     if (ratePreview) {
       ratePreview.innerText = `Rate: ${currency.rate_to_eur.toFixed(6)} + correction ${currency.correction_to_eur.toFixed(6)} = ${currency.effective_rate_to_eur.toFixed(6)} EUR per unit.`;
     }
-    if (hiddenAmount) hiddenAmount.value = total.toFixed(2);
+    if (hiddenAmount) hiddenAmount.value = rawTotal.toFixed(2);
+    updateFuturePreview();
   }
 
   function addAmountField() {
@@ -66,27 +83,91 @@
   }
 
   function togglePayPalPanel() {
-    const accountSelect = document.getElementById("account-select");
     const panel = document.getElementById("paypal-payment-panel");
     const methodSelect = document.getElementById("paypal-payment-method");
     const insufficientPanel = document.getElementById("paypal-insufficient-panel");
+    const nameLabels = document.querySelectorAll("[data-balance-account-name]");
+    const balanceLabels = document.querySelectorAll("[data-selected-account-balance]");
+    const meta = selectedAccountMeta();
+    const balances = window.moneyManagerAccountBalances || {};
+    const isBalanceAccount = meta.kind === "auxiliary";
 
-    if (!accountSelect || !panel) return;
+    if (!panel) return;
+    panel.hidden = !isBalanceAccount;
 
-    const selected = accountSelect.options[accountSelect.selectedIndex];
-    const isPayPal = selected && selected.dataset.key === "paypal";
-
-    panel.hidden = !isPayPal;
+    nameLabels.forEach((node) => { node.textContent = meta.label; });
+    balanceLabels.forEach((node) => { node.textContent = formatMoney(Number(balances[meta.key] || 0)); });
 
     if (insufficientPanel && methodSelect) {
-      insufficientPanel.hidden = !isPayPal || methodSelect.value !== "balance";
+      insufficientPanel.hidden = !isBalanceAccount || methodSelect.value !== "balance";
     }
+    updateFuturePreview();
+  }
+
+  function updateFuturePreview() {
+    const box = document.getElementById("future-balance-preview");
+    if (!box) return;
+
+    const form = document.querySelector(".transaction-form");
+    const txType = (form && form.dataset.transactionType) || "expense";
+    const amount = currentEurTotal();
+    const meta = selectedAccountMeta();
+    const balances = window.moneyManagerAccountBalances || {};
+    const mainNet = Number(window.moneyManagerMainNet || 0);
+    const methodSelect = document.getElementById("paypal-payment-method");
+    const insufficientSelect = document.getElementById("paypal-insufficient-action");
+    const method = methodSelect ? methodSelect.value : "balance";
+    const insufficient = insufficientSelect ? insufficientSelect.value : "stop";
+
+    if (!amount) {
+      box.innerHTML = "<strong>Future preview</strong><small>Add an amount to preview the future main net or selected account balance.</small>";
+      return;
+    }
+
+    const sign = txType === "income" ? 1 : -1;
+
+    if (meta.kind === "credit") {
+      const future = txType === "expense" ? mainNet - amount : mainNet + amount;
+      box.innerHTML = `<strong>Future preview</strong><small>Credit route: main net now is unchanged. Future main net after execution/payment: € ${formatMoney(future)}.</small>`;
+      return;
+    }
+
+    if (meta.kind === "auxiliary") {
+      const balance = Number(balances[meta.key] || 0);
+      if (txType !== "expense") {
+        box.innerHTML = `<strong>Future preview</strong><small>${meta.label} balance: € ${formatMoney(balance)} → € ${formatMoney(balance + amount)}. Main net preview is not changed by this auxiliary movement.</small>`;
+        return;
+      }
+
+      if (method === "another_card") {
+        box.innerHTML = `<strong>Future preview</strong><small>${meta.label} balance unchanged at € ${formatMoney(balance)}. Main net after this main/card route: € ${formatMoney(mainNet - amount)}.</small>`;
+        return;
+      }
+
+      if (method === "credit") {
+        box.innerHTML = `<strong>Future preview</strong><small>${meta.label} balance unchanged at € ${formatMoney(balance)}. Future main net after credit payment: € ${formatMoney(mainNet - amount)}.</small>`;
+        return;
+      }
+
+      const used = Math.min(Math.max(balance, 0), amount);
+      const remaining = Math.max(0, amount - used);
+      const afterBalance = balance - used;
+      let remainingText = "";
+      if (remaining > 0) {
+        if (insufficient === "use_credit_for_remaining") remainingText = ` Remaining € ${formatMoney(remaining)} will go to credit; future main net: € ${formatMoney(mainNet - remaining)}.`;
+        else if (insufficient === "use_another_card_for_remaining") remainingText = ` Remaining € ${formatMoney(remaining)} will go to main/card route; main net after saving: € ${formatMoney(mainNet - remaining)}.`;
+        else remainingText = ` Missing € ${formatMoney(remaining)}; saving will stop unless you choose a split option.`;
+      }
+      box.innerHTML = `<strong>Future preview</strong><small>${meta.label} balance: € ${formatMoney(balance)} → € ${formatMoney(afterBalance)}.${remainingText}</small>`;
+      return;
+    }
+
+    const futureMain = mainNet + (sign * amount);
+    box.innerHTML = `<strong>Future preview</strong><small>Main net: € ${formatMoney(mainNet)} → € ${formatMoney(futureMain)}.</small>`;
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(".amount-input").forEach((input) => {
-      input.addEventListener("input", updateTotal);
-    });
+    document.querySelectorAll(".amount-input").forEach((input) => input.addEventListener("input", updateTotal));
 
     const addButton = document.getElementById("add-amount-btn");
     if (addButton) addButton.addEventListener("click", addAmountField);
@@ -99,6 +180,9 @@
 
     const methodSelect = document.getElementById("paypal-payment-method");
     if (methodSelect) methodSelect.addEventListener("change", togglePayPalPanel);
+
+    const insufficientSelect = document.getElementById("paypal-insufficient-action");
+    if (insufficientSelect) insufficientSelect.addEventListener("change", updateFuturePreview);
 
     updateTotal();
     togglePayPalPanel();

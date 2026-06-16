@@ -73,7 +73,7 @@ DEFAULT_AUXILIARY_ACCOUNTS = [
     {
         "key": "other_account",
         "label": "Other account",
-        "description": "External liquid account or card, for example Ticket Restaurant.",
+        "description": "Parent bucket for smaller external credit/balance accounts such as Glovo or EasyPark.",
         "aliases": [
             "other account",
             "other card",
@@ -97,6 +97,25 @@ DEFAULT_AUXILIARY_ACCOUNTS = [
             "meal voucher",
         ],
         "is_custom": False,
+    },
+
+    {
+        "key": "glovo",
+        "label": "Glovo",
+        "description": "Small balance/credit account collected inside Other account.",
+        "aliases": ["glovo", "glovo balance", "glovo credit"],
+        "category_aliases": ["glovo", "glovo balance", "glovo credit"],
+        "is_custom": False,
+        "parent_key": "other_account",
+    },
+    {
+        "key": "easypark",
+        "label": "EasyPark",
+        "description": "Small parking balance/credit account collected inside Other account.",
+        "aliases": ["easypark", "easy park", "easypark balance", "parking credit"],
+        "category_aliases": ["easypark", "easy park", "easypark balance", "parking credit"],
+        "is_custom": False,
+        "parent_key": "other_account",
     },
     {
         "key": PAYPAL_ACCOUNT_KEY,
@@ -138,7 +157,6 @@ MAIN_ACCOUNT_ALIASES = {
     "credit",
     "card",
     "debit card",
-    "easypark",
     "credit card",
     "card credit",
     "carta credito",
@@ -152,7 +170,6 @@ CREDIT_ACCOUNT_ALIASES = {
     "credit",
     "card",
     "debit card",
-    "easypark",
     "credit card",
     "card credit",
     "carta credito",
@@ -206,13 +223,18 @@ def _normalise_account_record(raw: dict) -> dict | None:
     aliases = _split_aliases(raw.get("aliases"))
     category_aliases = _split_aliases(raw.get("category_aliases") or raw.get("categories"))
 
+    parent_key = str(raw.get("parent_key") or raw.get("parent") or "other_account").strip() or "other_account"
+    if parent_key != "other_account":
+        parent_key = "other_account"
+
     return {
         "key": key,
         "label": label,
-        "description": str(raw.get("description") or "Custom liquid account.").strip(),
+        "description": str(raw.get("description") or "Small balance account inside Other account.").strip(),
         "aliases": aliases,
         "category_aliases": category_aliases or aliases,
         "is_custom": bool(raw.get("is_custom", True)),
+        "parent_key": parent_key,
     }
 
 
@@ -246,7 +268,8 @@ def save_custom_account(label: str, description: str = "", aliases: str = "", ca
     """Create or update a custom auxiliary account in data/accounts.json."""
     record = _normalise_account_record({
         "label": label,
-        "description": description or "Custom liquid account.",
+        "description": description or "Small balance account inside Other account.",
+        "parent_key": "other_account",
         "aliases": _split_aliases(aliases),
         "category_aliases": _split_aliases(category_aliases),
         "is_custom": True,
@@ -284,8 +307,13 @@ def account_options_for_forms(include_credit: bool = True) -> list[dict]:
         }
     ]
     for account in all_auxiliary_accounts():
+        display_label = account["label"]
+        if account.get("parent_key") == "other_account":
+            display_label = f"Other account / {display_label}"
         options.append({
             **account,
+            "label": display_label,
+            "display_label": account["label"],
             "value": account["label"],
             "kind": "auxiliary",
         })
@@ -336,6 +364,14 @@ def normalize_account_key(value: str | None) -> str:
 def is_main_account_value(value: str | None) -> bool:
     """True only for blank/Main/Credit aliases, not PayPal balance or unknown accounts."""
     return _clean_text(value) in MAIN_ACCOUNT_ALIASES
+
+
+def account_parent_key(key: str | None) -> str:
+    canonical = LEGACY_KEY_ALIASES.get(str(key or ""), str(key or ""))
+    for account in all_auxiliary_accounts():
+        if account["key"] == canonical:
+            return str(account.get("parent_key") or "")
+    return ""
 
 
 def account_label_for_key(key: str | None) -> str:
