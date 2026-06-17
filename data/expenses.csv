@@ -278,13 +278,13 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 287,2026-06-12,Eating in,Glovo,28.64,,EUR,1.0,0.0,1.0,,Luigi paid back but Glovo Robbed me,2026-06-12T21:00:35
 288,2026-06-12,Friends,Luigi Barbato,14.32,,EUR,1.0,0.0,1.0,PayPal,Glovo fucked us off [Paid from PayPal balance.],2026-06-15T10:53:33
 289,2026-06-15,Credit cards,PayPal,200.0,,,,,,paypal_credit,PayPal payment (2026-06-15),2026-06-15T11:04:21
-290,2026-06-12,Money owed to me,Glovo Thiefs,28.64,,,,,,Other account,Loan/receivable created: Glovo owes me for Glovo Thiefs. Hamburger order,2026-06-15T11:08:11
+290,2026-06-12,Account cleanup,Glovo Thiefs,28.64,,,,,,Glovo,Loan/receivable created: Glovo owes me for Glovo Thiefs. Hamburger order,2026-06-15T11:08:11
 291,2026-06-15,Other,Credit card fee,2.0,,EUR,1.0,0.0,1.0,,,2026-06-15T11:34:14
 292,2026-06-15,Account cleanup,Reconcile to € 45.00,59.0,,,,,,Cash Flow,Account cleanup: adjusted Cash Flow from € 104.00 to € 45.00.,2026-06-15T12:23:56
 293,2026-06-15,Other,,5.5,,EUR,1.0,0.0,1.0,,,2026-06-15T19:35:12
 294,2026-06-16,Other,,7.0,,EUR,1.0,0.0,1.0,,,2026-06-16T15:07:30
 296,2026-06-16,Transportation,EasyPark,3.05,,EUR,1.0,0.0,1.0,Pre-paid card,Paid from Pre-paid card balance.,2026-06-16T17:13:43
-297,2026-06-16,Lost,,4.15,,EUR,1.00000000,0.00000000,1.00000000,,,2026-06-16T17:16:15
-298,2026-06-16,Bank fees,Pre-paid card top-up fee,1.0,,EUR,1.00000000,0.00000000,1.00000000,,Automatic €1 fee for internal transfer #1 from Main bank to Pre-paid card.,2026-06-16T17:58:54
-299,2026-06-16,Family,Amzn,19.85,,EUR,1.00000000,0.00000000,1.00000000,,Coso capelli per Sofia,2026-06-16T18:09:34
+297,2026-06-16,Lost,,4.15,,EUR,1.0,0.0,1.0,,,2026-06-16T17:16:15
+298,2026-06-16,Bank fees,Pre-paid card top-up fee,1.0,,EUR,1.0,0.0,1.0,,Automatic €1 fee for internal transfer #1 from Main bank to Pre-paid card.,2026-06-16T17:58:54
+299,2026-06-16,Family,Amzn,19.85,,EUR,1.0,0.0,1.0,,Coso capelli per Sofia,2026-06-16T18:09:34
 300,2026-06-17,Payable,Condominio 2nd rata,259.83,,,,,,,Payable payment to Condominio: Condominio 2nd rata,2026-06-17T13:19:21
