@@ -83,7 +83,7 @@
 
       <div class="filters-actions">
         <button type="submit" class="primary-btn">Apply</button>
-        <button type="submit" name="reset_filters" value="1" class="secondary-btn">All</button>
+        <button type="submit" name="reset_filters" value="1" class="secondary-btn">Current year</button>
       </div>
     </div>
   </form>
@@ -91,7 +91,7 @@
 
 <section class="panel-card dashboard-calculation-note">
   <span class="eyebrow">Calculation scope</span>
-  <p>Default charts/tables show {{ start }} → {{ end }}, but money totals use {{ money_calculation_label|default('full history') }}. Changing filters switches the calculation to the selected scope.</p>
+  <p>Charts/tables show {{ start }} → {{ end }} by default. Money totals use {{ money_calculation_label|default('full history') }}. The cumulative balance chart carries forward the opening balance from older logs unless you apply non-date filters.</p>
 </section>
 
 <section class="dashboard-kpi-grid">

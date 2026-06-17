@@ -54,6 +54,7 @@ def index():
     amount_min = filter_state["amount_min"]
     amount_max = filter_state["amount_max"]
     has_effective_filters = bool(filter_state.get("has_effective_filters"))
+    has_non_date_filters = bool(filter_state.get("has_non_date_filters"))
 
     # Display rows/charts use the active visual filters. By default that means
     # Jan-1st→today, because the dashboard should stay readable.
@@ -65,7 +66,14 @@ def index():
     # calculation source when the user actually narrows filters/date range.
     calculation_main = filtered_main if has_effective_filters else main_df
     display_totals = summary_totals(filtered_main)
-    metrics = build_dashboard_metrics(filtered_main, start, end, totals_df=calculation_main)
+    metrics = build_dashboard_metrics(
+        filtered_main,
+        start,
+        end,
+        totals_df=calculation_main,
+        opening_source_df=main_df,
+        include_opening_balance=not has_non_date_filters,
+    )
 
     all_categories = sorted(main_df["category"].dropna().unique().tolist()) if not main_df.empty else []
     pending_rows = load_pending()
@@ -91,6 +99,9 @@ def index():
         pending_this_month=current_pending_total,
         charts=metrics["charts"],
         has_effective_filters=has_effective_filters,
+        has_non_date_filters=has_non_date_filters,
         uses_full_history_for_calculations=not has_effective_filters,
         money_calculation_label=money_calculation_label,
+        visual_scope_label=filter_state.get("display_scope_label", "current year"),
+        cumulative_balance_uses_opening=not has_non_date_filters,
     )

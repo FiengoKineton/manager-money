@@ -5,6 +5,7 @@ from typing import Any, Iterable
 from flask import session
 
 SESSION_KEY = "transaction_filter_state"
+SESSION_VERSION = 2
 FILTER_PARAM_NAMES = {"from", "to", "types", "category", "q", "amount_min", "amount_max"}
 RESET_PARAM_NAMES = {"reset_filters", "clear_filters"}
 
@@ -20,6 +21,7 @@ def _clean_list(values: Iterable[Any]) -> list[str]:
 
 def _default_state(start_default: str, end_default: str, all_types: Iterable[str]) -> dict[str, Any]:
     return {
+        "version": SESSION_VERSION,
         "start": start_default,
         "end": end_default,
         "types": list(all_types),
@@ -41,6 +43,14 @@ def _should_reset(args: Any) -> bool:
 def _state_from_session(start_default: str, end_default: str, all_types: Iterable[str]) -> dict[str, Any] | None:
     saved = session.get(SESSION_KEY)
     if not isinstance(saved, dict):
+        return None
+
+    # Ignore old sessions created by previous versions of the filter logic.
+    # This fixes stale browser sessions where the saved date range was the first
+    # transaction ever, which made Dashboard/Transactions open in all-history
+    # mode even though the default display should be the current year.
+    if int(saved.get("version") or 0) != SESSION_VERSION:
+        session.pop(SESSION_KEY, None)
         return None
 
     defaults = _default_state(start_default, end_default, all_types)
@@ -66,6 +76,7 @@ def _state_from_args(args: Any, start_default: str, end_default: str, all_types:
     submitted_categories = args.getlist("category") if hasattr(args, "getlist") else []
 
     return {
+        "version": SESSION_VERSION,
         "start": str(args.get("from", defaults["start"]) or defaults["start"]),
         "end": str(args.get("to", defaults["end"]) or defaults["end"]),
         "types": _clean_list(submitted_types) or defaults["types"],
@@ -74,6 +85,26 @@ def _state_from_args(args: Any, start_default: str, end_default: str, all_types:
         "amount_min": str(args.get("amount_min", "") or "").strip(),
         "amount_max": str(args.get("amount_max", "") or "").strip(),
     }
+
+
+def has_date_transaction_filter(state: dict[str, Any], start_default: str, end_default: str) -> bool:
+    return str(state.get("start") or "") != str(start_default) or str(state.get("end") or "") != str(end_default)
+
+
+def has_non_date_transaction_filters(
+    state: dict[str, Any],
+    all_types: Iterable[str],
+) -> bool:
+    default_types = sorted(_clean_list(all_types))
+    active_types = sorted(_clean_list(state.get("types") or [])) or default_types
+
+    return any([
+        active_types != default_types,
+        bool(_clean_list(state.get("categories") or [])),
+        bool(str(state.get("query") or "").strip()),
+        bool(str(state.get("amount_min") or "").strip()),
+        bool(str(state.get("amount_max") or "").strip()),
+    ])
 
 
 def has_effective_transaction_filters(
@@ -89,18 +120,7 @@ def has_effective_transaction_filters(
     for a real money-calculation filter, otherwise opening balances and older
     transactions disappear from the tracked net.
     """
-    default_types = sorted(_clean_list(all_types))
-    active_types = sorted(_clean_list(state.get("types") or [])) or default_types
-
-    return any([
-        str(state.get("start") or "") != str(start_default),
-        str(state.get("end") or "") != str(end_default),
-        active_types != default_types,
-        bool(_clean_list(state.get("categories") or [])),
-        bool(str(state.get("query") or "").strip()),
-        bool(str(state.get("amount_min") or "").strip()),
-        bool(str(state.get("amount_max") or "").strip()),
-    ])
+    return has_date_transaction_filter(state, start_default, end_default) or has_non_date_transaction_filters(state, all_types)
 
 
 def _with_calculation_metadata(
@@ -110,26 +130,28 @@ def _with_calculation_metadata(
     all_types: Iterable[str],
 ) -> dict[str, Any]:
     state = dict(state)
-    has_filters = has_effective_transaction_filters(state, start_default, end_default, all_types)
+    has_date_filters = has_date_transaction_filter(state, start_default, end_default)
+    has_non_date_filters = has_non_date_transaction_filters(state, all_types)
+    has_filters = has_date_filters or has_non_date_filters
     state["has_effective_filters"] = has_filters
+    state["has_date_filters"] = has_date_filters
+    state["has_non_date_filters"] = has_non_date_filters
     state["uses_full_history_for_calculations"] = not has_filters
     state["calculation_scope_label"] = "selected filters" if has_filters else "full history"
+    state["display_scope_label"] = "selected filters" if has_filters else "current year"
     return state
 
 
 def resolve_transaction_filter_state(args: Any, start_default: str, end_default: str, all_types: Iterable[str]) -> dict[str, Any]:
     """Return the active transaction filter state for Dashboard/Transactions.
 
-    The filter form still uses normal GET parameters, but the latest submitted
-    values are also stored in the Flask session. This lets the same filtered set
-    survive navigation to transaction details, edits, deletes, and switching
-    between Dashboard and Transactions. The state is cleared only when the user
-    explicitly presses the All button.
+    Default behavior is deliberately split:
+    - visual scope: current year, so tables/charts stay readable;
+    - money scope: full history, so older opening rows still count.
 
-    The returned metadata separates visual filtering from money calculations:
-    the default Jan-1st→today display window is not treated as a calculation
-    filter. Real balances use all historical rows unless the user actually
-    changes date/type/category/search/amount filters.
+    If the user submits filters/date range, both visual scope and money scope
+    follow the selected filters. Reset returns to current-year visuals plus
+    full-history money calculations.
     """
     if _should_reset(args):
         session.pop(SESSION_KEY, None)

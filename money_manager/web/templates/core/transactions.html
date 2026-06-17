@@ -40,7 +40,7 @@
 
 <section class="panel-card transactions-calculation-note">
   <span class="eyebrow">Calculation scope</span>
-  <p>The table is shown for {{ start }} → {{ end }}. Money totals use {{ transaction_summary.scope_label if transaction_summary is defined else 'full history' }} so the default yearly view does not hide older opening rows.</p>
+  <p>The transaction list shows {{ start }} → {{ end }}. Money totals use {{ transaction_summary.scope_label if transaction_summary is defined else 'full history' }} so the default yearly view does not hide older opening rows.</p>
 </section>
 
 <section class="filters app-filter-bar transactions-filter-bar">
@@ -104,7 +104,7 @@
 
       <div class="filters-actions">
         <button type="submit" class="primary-btn">Apply</button>
-        <button type="submit" name="reset_filters" value="1" class="secondary-btn">All</button>
+        <button type="submit" name="reset_filters" value="1" class="secondary-btn">Current year</button>
       </div>
     </div>
   </form>

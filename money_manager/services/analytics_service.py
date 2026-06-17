@@ -48,17 +48,31 @@ def build_dashboard_metrics(
     start: str,
     end: str,
     totals_df: pd.DataFrame | None = None,
+    opening_source_df: pd.DataFrame | None = None,
+    include_opening_balance: bool = True,
 ) -> dict:
     """Build dashboard charts and totals with separate display/calculation scopes.
 
     ``df`` is the visible/chart source. ``totals_df`` is optional and is used
     for money-position cards. This prevents the default Jan-1st display window
     from hiding older rows in the tracked net while still keeping charts compact.
+
+    ``opening_source_df`` is the full-history source used only to calculate the
+    opening balance before the visible date window. This is the important part
+    for the cumulative balance chart: the chart still shows only the visible
+    period, but it starts from the real balance carried forward from older rows
+    instead of pretending January 1st was zero.
     """
-    totals = summary_totals(totals_df if totals_df is not None else df)
+    totals_source = totals_df if totals_df is not None else df
+    totals = summary_totals(totals_source)
     df_month = monthly_summary(df, start=start, end=end)
     df_cat = expenses_by_category(df)
-    df_cum = cumulative_balance(df)
+    df_cum = cumulative_balance_with_opening(
+        df,
+        start=start,
+        opening_source_df=opening_source_df,
+        include_opening_balance=include_opening_balance,
+    )
 
     plot_monthly_summary(df_month)
     plot_expenses_by_category(df_cat)
@@ -75,6 +89,65 @@ def build_dashboard_metrics(
             "cumulative_balance": chart_cumulative_balance(df_cum),
         },
     }
+
+
+def cumulative_balance_with_opening(
+    visible_df: pd.DataFrame,
+    start: str | None = None,
+    opening_source_df: pd.DataFrame | None = None,
+    include_opening_balance: bool = True,
+) -> pd.DataFrame:
+    """Return cumulative balance for visible rows, optionally with carried balance.
+
+    This avoids creating fake year-closing transactions. Older rows stay in the
+    background as an initial condition; the chart/table can still show only the
+    current year or selected date window.
+    """
+    if visible_df.empty:
+        if include_opening_balance and opening_source_df is not None and start:
+            opening_balance = _opening_balance_before(opening_source_df, start)
+            if abs(opening_balance) > 1e-9:
+                return pd.DataFrame([{
+                    "date": pd.to_datetime(start, errors="coerce"),
+                    "balance": float(opening_balance),
+                }]).dropna(subset=["date"])
+        return pd.DataFrame(columns=["date", "balance"])
+
+    df_cum = cumulative_balance(visible_df)
+    if not include_opening_balance or opening_source_df is None or not start:
+        return df_cum
+
+    opening_balance = _opening_balance_before(opening_source_df, start)
+    if abs(opening_balance) <= 1e-9:
+        return df_cum
+
+    df_cum = df_cum.copy()
+    df_cum["balance"] = pd.to_numeric(df_cum["balance"], errors="coerce").fillna(0.0) + opening_balance
+
+    start_dt = pd.to_datetime(start, errors="coerce")
+    if pd.isna(start_dt):
+        return df_cum
+
+    first_visible_date = pd.to_datetime(df_cum["date"], errors="coerce").min()
+    if pd.isna(first_visible_date) or start_dt <= first_visible_date:
+        opening_row = pd.DataFrame([{"date": start_dt, "balance": float(opening_balance)}])
+        df_cum = pd.concat([opening_row, df_cum], ignore_index=True, sort=False)
+
+    return df_cum.sort_values("date").reset_index(drop=True)
+
+
+def _opening_balance_before(df: pd.DataFrame, start: str | None) -> float:
+    if df is None or df.empty or not start or "date" not in df.columns or "signed_amount" not in df.columns:
+        return 0.0
+    start_dt = pd.to_datetime(start, errors="coerce")
+    if pd.isna(start_dt):
+        return 0.0
+    dated = df.copy()
+    dated["date"] = pd.to_datetime(dated["date"], errors="coerce")
+    dated = dated[dated["date"].notna() & (dated["date"] < start_dt)]
+    if dated.empty:
+        return 0.0
+    return float(pd.to_numeric(dated["signed_amount"], errors="coerce").fillna(0.0).sum())
 
 
 def build_analysis_metrics(df: pd.DataFrame) -> dict:

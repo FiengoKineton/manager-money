@@ -82,7 +82,9 @@ def transactions_page():
         amount_min=amount_min,
         amount_max=amount_max,
         has_effective_filters=has_effective_filters,
+        has_non_date_filters=bool(filter_state.get("has_non_date_filters")),
         uses_full_history_for_calculations=not has_effective_filters,
+        visual_scope_label=filter_state.get("display_scope_label", "current year"),
     )
 
 
