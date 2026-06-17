@@ -9,6 +9,7 @@ from money_manager.services.overview_service import build_overview_context
 from money_manager.services.pending_service import pending_total, process_pending
 from money_manager.services.recurring_service import generate_recurring
 from money_manager.services.transaction_service import load_transactions
+from money_manager.web.transaction_filter_state import resolve_transaction_filter_state
 
 bp = Blueprint("dashboard", __name__)
 
@@ -43,14 +44,14 @@ def index():
     stats_this_month, stats_3_months = period_summaries(main_df)
 
     start_default, end_default = default_date_range()
-    start = request.args.get("from", start_default)
-    end = request.args.get("to", end_default)
-
-    types = request.args.getlist("types") or TRANSACTION_TYPES[:]
-    categories = request.args.getlist("category")
-    query = request.args.get("q", "").strip()
-    amount_min = request.args.get("amount_min", "").strip()
-    amount_max = request.args.get("amount_max", "").strip()
+    filter_state = resolve_transaction_filter_state(request.args, start_default, end_default, TRANSACTION_TYPES)
+    start = filter_state["start"]
+    end = filter_state["end"]
+    types = filter_state["types"]
+    categories = filter_state["categories"]
+    query = filter_state["query"]
+    amount_min = filter_state["amount_min"]
+    amount_max = filter_state["amount_max"]
 
     filtered = apply_transaction_filters(df, start, end, types, categories, query, amount_min, amount_max)
     filtered_main = main_account_transactions(filtered)

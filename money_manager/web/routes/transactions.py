@@ -10,6 +10,7 @@ from money_manager.services.analytics_service import apply_transaction_filters
 from money_manager.services.category_service import category_context
 from money_manager.services.currency_service import currency_options_for_forms
 from money_manager.services.quick_log_service import handle_quick_log, quick_log_context
+from money_manager.web.transaction_filter_state import resolve_transaction_filter_state
 from money_manager.services.transaction_service import (
     delete_existing_transaction,
     load_transactions,
@@ -32,14 +33,14 @@ def transactions_page():
     main_df = main_account_transactions(df)
 
     start_default, end_default = default_date_range()
-    start = request.args.get("from", start_default)
-    end = request.args.get("to", end_default)
-
-    types = request.args.getlist("types") or TRANSACTION_TYPES[:]
-    categories = request.args.getlist("category")
-    query = request.args.get("q", "").strip()
-    amount_min = request.args.get("amount_min", "").strip()
-    amount_max = request.args.get("amount_max", "").strip()
+    filter_state = resolve_transaction_filter_state(request.args, start_default, end_default, TRANSACTION_TYPES)
+    start = filter_state["start"]
+    end = filter_state["end"]
+    types = filter_state["types"]
+    categories = filter_state["categories"]
+    query = filter_state["query"]
+    amount_min = filter_state["amount_min"]
+    amount_max = filter_state["amount_max"]
 
     filtered = apply_transaction_filters(df, start, end, types, categories, query, amount_min, amount_max)
     filtered = prepare_transactions_for_display(filtered)
