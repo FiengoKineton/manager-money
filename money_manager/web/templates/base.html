@@ -22,7 +22,7 @@
       </a>
 
       {% set ep = request.endpoint or '' %}
-      {% set home_open = ep in ['dashboard.overview', 'dashboard.overview_detailed', 'dashboard.index', 'transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction'] %}
+      {% set home_open = ep in ['dashboard.overview', 'dashboard.overview_detailed', 'dashboard.index', 'transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction', 'net_explanation.net_explanation'] %}
       {% set planning_open = ep in ['pending.pending_page', 'pending.recurring_page', 'debts.debts_page', 'payables.payables_page', 'expense_projects.expense_projects_page', 'expense_projects.expense_project_detail', 'receivables.receivables_page'] %}
       {% set accounts_open = ep in ['accounts.accounts_page', 'accounts.account_detail', 'currencies.currencies_page', 'internal_transfers.internal_transfers_page', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
       {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'forecast.forecast', 'documents.documents'] %}
@@ -38,6 +38,7 @@
             <a href="{{ url_for('dashboard.overview_detailed') }}" class="{{ 'active' if ep == 'dashboard.overview_detailed' else '' }}">Detailed Overview</a>
             <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if ep == 'dashboard.index' else '' }}">Dashboard</a>
             <a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if ep in ['transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction'] else '' }}">Transactions</a>
+            <a href="{{ url_for('net_explanation.net_explanation') }}" class="{{ 'active' if ep == 'net_explanation.net_explanation' else '' }}">Why this net?</a>
           </div>
         </details>
 
@@ -46,9 +47,9 @@
           <div class="nav-items">
             <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}">Pending Payments</a>
             <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}">Recurring Rules</a>
-            <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}">Debts I Owe</a>
             <a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if ep == 'payables.payables_page' else '' }}">Payables</a>
             <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if ep in ['expense_projects.expense_projects_page', 'expense_projects.expense_project_detail'] else '' }}">Expense Projects</a>
+            <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}">Debts I Owe</a>            
             <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}">Money Owed to Me</a>
           </div>
         </details>

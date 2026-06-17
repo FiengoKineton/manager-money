@@ -101,3 +101,9 @@ def describe_runtime_paths() -> list[dict[str, str]]:
             "exists": "yes" if path.exists() else "no",
         })
     return rows
+
+
+# Feature-level architecture registry.  Imported lazily by tools/admin pages, not
+# by the normal calculation flow.
+FEATURE_REGISTRY = "money_manager.config.feature_registry.FEATURES"
+FEATURE_GROUP_REGISTRY = "money_manager.config.feature_registry.FEATURE_GROUPS"

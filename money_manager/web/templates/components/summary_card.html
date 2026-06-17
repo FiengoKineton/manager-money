@@ -1,0 +1,5 @@
+<article class="mini-priority-card {{ tone|default('') }}">
+  <span>{{ label }}</span>
+  <strong>€ {{ '%.2f'|format(value|float) }}</strong>
+  {% if caption %}<small>{{ caption }}</small>{% endif %}
+</article>

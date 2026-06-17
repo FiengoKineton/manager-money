@@ -1,0 +1,26 @@
+<div class="table-shell">
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Category</th>
+        <th>Account</th>
+        <th>Description</th>
+        <th class="amount-cell">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.date_str }}</td>
+        <td>{{ row.type|title }}</td>
+        <td>{{ row.category }}{% if row.sub_category %}<small>{{ row.sub_category }}</small>{% endif %}</td>
+        <td>{{ row.account_display }}</td>
+        <td>{{ row.description }}</td>
+        <td class="amount-cell">€ {{ row.amount_str }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
