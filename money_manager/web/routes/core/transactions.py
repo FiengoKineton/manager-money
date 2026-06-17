@@ -10,6 +10,7 @@ from money_manager.services.analytics_service import apply_transaction_filters
 from money_manager.services.category_service import category_context
 from money_manager.services.currency_service import currency_options_for_forms
 from money_manager.services.quick_log_service import handle_quick_log, quick_log_context
+from money_manager.utils.stats import summary_totals
 from money_manager.web.transaction_filter_state import resolve_transaction_filter_state
 from money_manager.services.transaction_service import (
     delete_existing_transaction,
@@ -42,18 +43,29 @@ def transactions_page():
     amount_min = filter_state["amount_min"]
     amount_max = filter_state["amount_max"]
 
+    has_effective_filters = bool(filter_state.get("has_effective_filters"))
+
+    # The table is visual and follows the active window/filters. The money
+    # summary uses full historical main-net rows by default, so older opening
+    # transactions still count. When the user actually changes filters, the
+    # summary switches to that selected scope.
     filtered = apply_transaction_filters(df, start, end, types, categories, query, amount_min, amount_max)
-    summary_source = filtered.copy()
+    display_rows = filtered.copy()
+    calculation_main = main_account_transactions(filtered) if has_effective_filters else main_df
+    calculation_totals = summary_totals(calculation_main)
     filtered = prepare_transactions_for_display(filtered)
     all_categories = sorted(main_df["category"].dropna().unique().tolist()) if not main_df.empty else []
 
     transaction_summary = {
-        "count": int(len(summary_source)),
-        "income": float(summary_source.loc[summary_source.get("type") == "income", "amount"].sum()) if not summary_source.empty else 0.0,
-        "expenses": float(summary_source.loc[summary_source.get("type") == "expense", "amount"].sum()) if not summary_source.empty else 0.0,
-        "investments": float(summary_source.loc[summary_source.get("type") == "investment", "amount"].sum()) if not summary_source.empty else 0.0,
+        "count": int(len(display_rows)),
+        "income": calculation_totals["income"],
+        "expenses": calculation_totals["expenses"],
+        "investments": calculation_totals["investments"],
+        "net": calculation_totals["net"],
+        "savings_rate": calculation_totals["savings_rate"],
+        "scope_label": "selected filters" if has_effective_filters else "full history",
+        "uses_full_history_for_calculations": not has_effective_filters,
     }
-    transaction_summary["net"] = transaction_summary["income"] - transaction_summary["expenses"] - transaction_summary["investments"]
 
     return render_template(
         "core/transactions.html",
@@ -69,6 +81,8 @@ def transactions_page():
         q=query,
         amount_min=amount_min,
         amount_max=amount_max,
+        has_effective_filters=has_effective_filters,
+        uses_full_history_for_calculations=not has_effective_filters,
     )
 
 

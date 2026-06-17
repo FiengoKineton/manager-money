@@ -55,18 +55,40 @@ def _parse_date(value: str) -> str:
     return text
 
 
+def _balance_snapshot_for_form() -> dict:
+    """Calculate every account balance from one shared transaction snapshot.
+
+    The Internal Transfers page needs all balances for the "From" dropdown.
+    The old implementation called ``load_all()`` once for the main account and
+    once for every auxiliary account, which made this page slow even when the
+    cache folder existed.  This version reads the cached transaction snapshot
+    once, then derives all balances from it in one pass.
+    """
+    from money_manager.services.account_service import account_balance_rows, main_account_transactions
+    from money_manager.services.transaction_service import load_transactions
+
+    df = load_transactions()
+
+    main_rows = main_account_transactions(df)
+    main_balance = 0.0
+    if not main_rows.empty and "signed_amount" in main_rows.columns:
+        main_balance = float(main_rows["signed_amount"].sum())
+
+    rows_by_key = {row.get("key"): row for row in account_balance_rows(df)}
+    balances = {MAIN_ACCOUNT_KEY: round(main_balance, 2)}
+    for key in auxiliary_account_keys():
+        row = rows_by_key.get(key, {})
+        balances[key] = round(float(row.get("balance", 0.0) or 0.0), 2)
+    return balances
+
+
 def _available_balance_for_key(account_key: str) -> float:
     key = normalize_account_key(account_key)
-    if key == MAIN_ACCOUNT_KEY:
-        return round(main_net_for_preview(), 2)
-    return round(account_balance(key), 2)
+    return float(_balance_snapshot_for_form().get(key, 0.0) or 0.0)
 
 
 def account_balances_for_form() -> dict:
-    balances = {MAIN_ACCOUNT_KEY: _available_balance_for_key(MAIN_ACCOUNT_KEY)}
-    for key in auxiliary_account_keys():
-        balances[key] = _available_balance_for_key(key)
-    return balances
+    return _balance_snapshot_for_form()
 
 
 def _account_key_from_saved(value: str) -> str:

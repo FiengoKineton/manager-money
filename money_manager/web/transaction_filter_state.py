@@ -76,6 +76,47 @@ def _state_from_args(args: Any, start_default: str, end_default: str, all_types:
     }
 
 
+def has_effective_transaction_filters(
+    state: dict[str, Any],
+    start_default: str,
+    end_default: str,
+    all_types: Iterable[str],
+) -> bool:
+    """Return True only when the user narrowed the calculation scope.
+
+    The app intentionally uses a January-1st default date window for display so
+    tables/charts do not become huge. That default window must not be mistaken
+    for a real money-calculation filter, otherwise opening balances and older
+    transactions disappear from the tracked net.
+    """
+    default_types = sorted(_clean_list(all_types))
+    active_types = sorted(_clean_list(state.get("types") or [])) or default_types
+
+    return any([
+        str(state.get("start") or "") != str(start_default),
+        str(state.get("end") or "") != str(end_default),
+        active_types != default_types,
+        bool(_clean_list(state.get("categories") or [])),
+        bool(str(state.get("query") or "").strip()),
+        bool(str(state.get("amount_min") or "").strip()),
+        bool(str(state.get("amount_max") or "").strip()),
+    ])
+
+
+def _with_calculation_metadata(
+    state: dict[str, Any],
+    start_default: str,
+    end_default: str,
+    all_types: Iterable[str],
+) -> dict[str, Any]:
+    state = dict(state)
+    has_filters = has_effective_transaction_filters(state, start_default, end_default, all_types)
+    state["has_effective_filters"] = has_filters
+    state["uses_full_history_for_calculations"] = not has_filters
+    state["calculation_scope_label"] = "selected filters" if has_filters else "full history"
+    return state
+
+
 def resolve_transaction_filter_state(args: Any, start_default: str, end_default: str, all_types: Iterable[str]) -> dict[str, Any]:
     """Return the active transaction filter state for Dashboard/Transactions.
 
@@ -84,18 +125,23 @@ def resolve_transaction_filter_state(args: Any, start_default: str, end_default:
     survive navigation to transaction details, edits, deletes, and switching
     between Dashboard and Transactions. The state is cleared only when the user
     explicitly presses the All button.
+
+    The returned metadata separates visual filtering from money calculations:
+    the default Jan-1st→today display window is not treated as a calculation
+    filter. Real balances use all historical rows unless the user actually
+    changes date/type/category/search/amount filters.
     """
     if _should_reset(args):
         session.pop(SESSION_KEY, None)
-        return _default_state(start_default, end_default, all_types)
+        return _with_calculation_metadata(_default_state(start_default, end_default, all_types), start_default, end_default, all_types)
 
     if _has_filter_args(args):
         state = _state_from_args(args, start_default, end_default, all_types)
         session[SESSION_KEY] = state
-        return state
+        return _with_calculation_metadata(state, start_default, end_default, all_types)
 
     saved_state = _state_from_session(start_default, end_default, all_types)
     if saved_state is not None:
-        return saved_state
+        return _with_calculation_metadata(saved_state, start_default, end_default, all_types)
 
-    return _default_state(start_default, end_default, all_types)
+    return _with_calculation_metadata(_default_state(start_default, end_default, all_types), start_default, end_default, all_types)

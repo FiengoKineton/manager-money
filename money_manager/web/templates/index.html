@@ -109,7 +109,7 @@
   <div class="summary-card net summary-card-flex summary-card-center">
     <h3>Main availability</h3>
     <p>{{ '%.2f'|format(totals.total_availability) }}</p>
-    <small>Tracked net + investment cash out.</small>
+    <small>Uses {{ money_calculation_label|default('full history') }}.</small>
   </div>
 </section>
 

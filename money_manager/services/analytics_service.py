@@ -43,8 +43,19 @@ def apply_transaction_filters(df: pd.DataFrame, start, end, types, categories, q
     return filtered
 
 
-def build_dashboard_metrics(df: pd.DataFrame, start: str, end: str) -> dict:
-    totals = summary_totals(df)
+def build_dashboard_metrics(
+    df: pd.DataFrame,
+    start: str,
+    end: str,
+    totals_df: pd.DataFrame | None = None,
+) -> dict:
+    """Build dashboard charts and totals with separate display/calculation scopes.
+
+    ``df`` is the visible/chart source. ``totals_df`` is optional and is used
+    for money-position cards. This prevents the default Jan-1st display window
+    from hiding older rows in the tracked net while still keeping charts compact.
+    """
+    totals = summary_totals(totals_df if totals_df is not None else df)
     df_month = monthly_summary(df, start=start, end=end)
     df_cat = expenses_by_category(df)
     df_cum = cumulative_balance(df)

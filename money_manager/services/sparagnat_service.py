@@ -3,9 +3,10 @@ from datetime import date
 import pandas as pd
 
 from money_manager.repositories.sparagnat import append_entry, delete_entry, load_entries, update_entry
-from money_manager.services.analytics_service import apply_transaction_filters, build_dashboard_metrics
 from money_manager.services.account_service import main_account_transactions
 from money_manager.services.transaction_service import load_transactions
+from money_manager.utils.filters import filter_by_date
+from money_manager.utils.stats import summary_totals
 
 KIND_SAVED_EXPENSE = "saved_expense"
 KIND_CASH_COLLECTED = "cash_collected"
@@ -67,7 +68,7 @@ def delete_entry_from_form(form) -> None:
         return
 
 
-def page_context(start: str, end: str) -> dict:
+def page_context(start: str, end: str, use_full_history_for_net: bool = True) -> dict:
     df = _entries_frame()
     filtered = _filter_by_date(df, start, end)
 
@@ -75,12 +76,14 @@ def page_context(start: str, end: str) -> dict:
     cash_total = _sum_kind(filtered, KIND_CASH_COLLECTED)
 
     transactions = load_transactions()
-    filtered_transactions = apply_transaction_filters(
-        transactions, start, end, ["expense", "income", "investment"], [], ""
-    )
-    filtered_transactions = main_account_transactions(filtered_transactions)
-    dashboard_metrics = build_dashboard_metrics(filtered_transactions, start, end)
-    current_net = dashboard_metrics["totals"]["net"]
+    main_transactions = main_account_transactions(transactions)
+    if use_full_history_for_net:
+        net_source = main_transactions
+        net_scope_label = "full history"
+    else:
+        net_source = filter_by_date(main_transactions, start, end)
+        net_scope_label = "selected period"
+    current_net = summary_totals(net_source)["net"]
 
     monthly = _monthly_summary(filtered)
 
@@ -91,6 +94,7 @@ def page_context(start: str, end: str) -> dict:
             "cash_collected": cash_total,
             "current_net": current_net,
             "net_if_you_paid": current_net - saved_total,
+            "net_scope_label": net_scope_label,
         },
         "monthly": monthly,
         "kind_labels": KIND_LABELS,

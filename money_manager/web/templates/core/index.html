@@ -18,6 +18,7 @@
     <span>Tracked net</span>
     <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
     <small>After open pending: € {{ '%.2f'|format(net_after_pending) }}</small>
+    <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
   </div>
 </section>
 
@@ -88,29 +89,34 @@
   </form>
 </section>
 
+<section class="panel-card dashboard-calculation-note">
+  <span class="eyebrow">Calculation scope</span>
+  <p>Default charts/tables show {{ start }} → {{ end }}, but money totals use {{ money_calculation_label|default('full history') }}. Changing filters switches the calculation to the selected scope.</p>
+</section>
+
 <section class="dashboard-kpi-grid">
   <article class="summary-card dashboard-kpi tone-income">
     <span>Income</span>
     <strong>€ {{ '%.2f'|format(totals.income) }}</strong>
-    <small>In selected filters.</small>
+    <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
   </article>
 
   <article class="summary-card dashboard-kpi tone-expense">
     <span>Expenses</span>
     <strong>€ {{ '%.2f'|format(totals.expenses) }}</strong>
-    <small>Cash out in selected filters.</small>
+    <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
   </article>
 
   <article class="summary-card dashboard-kpi tone-investment">
     <span>Investments</span>
     <strong>€ {{ '%.2f'|format(totals.investments) }}</strong>
-    <small>Investment cash out.</small>
+    <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
   </article>
 
   <article class="summary-card dashboard-kpi tone-net">
     <span>Savings rate</span>
     <strong>{{ '%.1f'|format(totals.savings_rate) }}%</strong>
-    <small>Net divided by income.</small>
+    <small>Based on {{ money_calculation_label|default('full history') }}.</small>
   </article>
 
   <article class="summary-card dashboard-kpi tone-pending">
@@ -122,7 +128,7 @@
   <article class="summary-card dashboard-kpi tone-availability">
     <span>Main availability</span>
     <strong>€ {{ '%.2f'|format(totals.total_availability) }}</strong>
-    <small>Tracked net + investment cash out.</small>
+    <small>Uses {{ money_calculation_label|default('full history') }}.</small>
   </article>
 </section>
 

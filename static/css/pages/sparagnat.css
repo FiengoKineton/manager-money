@@ -17,3 +17,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+.sparagnat-calculation-note {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+}
+
+.sparagnat-calculation-note p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}

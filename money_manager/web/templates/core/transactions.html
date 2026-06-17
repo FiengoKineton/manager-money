@@ -19,23 +19,28 @@
   <article class="summary-card transaction-stat-card tone-net">
     <span>Shown rows</span>
     <strong>{{ transaction_summary.count if transaction_summary is defined else transactions|length }}</strong>
-    <small>Filtered transaction rows.</small>
+    <small>Rows shown by the visual filters.</small>
   </article>
   <article class="summary-card transaction-stat-card tone-income">
     <span>Income</span>
     <strong>€ {{ '%.2f'|format(transaction_summary.income if transaction_summary is defined else 0) }}</strong>
-    <small>Income in current filter.</small>
+    <small>Calculated from {{ transaction_summary.scope_label if transaction_summary is defined else 'full history' }}.</small>
   </article>
   <article class="summary-card transaction-stat-card tone-expense">
     <span>Expenses</span>
     <strong>€ {{ '%.2f'|format(transaction_summary.expenses if transaction_summary is defined else 0) }}</strong>
-    <small>Expenses in current filter.</small>
+    <small>Calculated from {{ transaction_summary.scope_label if transaction_summary is defined else 'full history' }}.</small>
   </article>
   <article class="summary-card transaction-stat-card tone-investment">
-    <span>Net movement</span>
+    <span>Tracked net movement</span>
     <strong>€ {{ '%.2f'|format(transaction_summary.net if transaction_summary is defined else 0) }}</strong>
-    <small>Income minus expenses and investments.</small>
+    <small>Calculated from {{ transaction_summary.scope_label if transaction_summary is defined else 'full history' }}.</small>
   </article>
+</section>
+
+<section class="panel-card transactions-calculation-note">
+  <span class="eyebrow">Calculation scope</span>
+  <p>The table is shown for {{ start }} → {{ end }}. Money totals use {{ transaction_summary.scope_label if transaction_summary is defined else 'full history' }} so the default yearly view does not hide older opening rows.</p>
 </section>
 
 <section class="filters app-filter-bar transactions-filter-bar">

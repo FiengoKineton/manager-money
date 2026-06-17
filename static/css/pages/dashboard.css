@@ -170,3 +170,13 @@
     width: 100%;
   }
 }
+
+.dashboard-calculation-note {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+}
+
+.dashboard-calculation-note p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}

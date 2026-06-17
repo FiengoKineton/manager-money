@@ -9,6 +9,7 @@ from money_manager.services.overview_service import build_overview_context
 from money_manager.services.pending_service import pending_total, process_pending
 from money_manager.services.recurring_service import generate_recurring
 from money_manager.services.transaction_service import load_transactions
+from money_manager.utils.stats import summary_totals
 from money_manager.web.transaction_filter_state import resolve_transaction_filter_state
 
 bp = Blueprint("dashboard", __name__)
@@ -52,18 +53,29 @@ def index():
     query = filter_state["query"]
     amount_min = filter_state["amount_min"]
     amount_max = filter_state["amount_max"]
+    has_effective_filters = bool(filter_state.get("has_effective_filters"))
 
+    # Display rows/charts use the active visual filters. By default that means
+    # Jan-1st→today, because the dashboard should stay readable.
     filtered = apply_transaction_filters(df, start, end, types, categories, query, amount_min, amount_max)
     filtered_main = main_account_transactions(filtered)
-    metrics = build_dashboard_metrics(filtered_main, start, end)
+
+    # Money-position cards must not accidentally ignore old/opening rows just
+    # because the default display window starts on Jan 1st. Only switch the
+    # calculation source when the user actually narrows filters/date range.
+    calculation_main = filtered_main if has_effective_filters else main_df
+    display_totals = summary_totals(filtered_main)
+    metrics = build_dashboard_metrics(filtered_main, start, end, totals_df=calculation_main)
 
     all_categories = sorted(main_df["category"].dropna().unique().tolist()) if not main_df.empty else []
     pending_rows = load_pending()
     current_pending_total = pending_total(pending_rows)
+    money_calculation_label = "selected filters" if has_effective_filters else "full history"
 
     return render_template(
         "core/index.html",
         totals=metrics["totals"],
+        display_totals=display_totals,
         start=start,
         end=end,
         active_types=types,
@@ -78,4 +90,7 @@ def index():
         net_after_pending=metrics["totals"]["net"] - current_pending_total,
         pending_this_month=current_pending_total,
         charts=metrics["charts"],
+        has_effective_filters=has_effective_filters,
+        uses_full_history_for_calculations=not has_effective_filters,
+        money_calculation_label=money_calculation_label,
     )

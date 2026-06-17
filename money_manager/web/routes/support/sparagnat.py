@@ -23,7 +23,11 @@ def sparagnat_page():
     start_default, end_default = default_date_range()
     start = request.args.get("from", start_default)
     end = request.args.get("to", end_default)
-    context = page_context(start, end)
+
+    # Default period is only for the visible Sparagnat table. The current net
+    # remains full-history unless the user changes the date range.
+    use_full_history_for_net = (start == start_default and end == end_default)
+    context = page_context(start, end, use_full_history_for_net=use_full_history_for_net)
 
     return render_template(
         "support/sparagnat.html",
@@ -31,4 +35,5 @@ def sparagnat_page():
         start=start,
         end=end,
         today=date.today().isoformat(),
+        uses_full_history_for_calculations=use_full_history_for_net,
     )

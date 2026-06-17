@@ -28,6 +28,11 @@
   </form>
 </section>
 
+<section class="panel-card sparagnat-calculation-note">
+  <span class="eyebrow">Calculation scope</span>
+  <p>The table uses the selected period. Current net uses {{ totals.net_scope_label|default('full history') }} so the default yearly view does not hide older opening rows.</p>
+</section>
+
 <section class="summary sparagnat-summary">
   <div class="summary-card expense">
     <h3>Saved expenses</h3>
@@ -42,12 +47,12 @@
   <div class="summary-card net">
     <h3>Current net</h3>
     <p>{{ '%.2f'|format(totals.current_net) }}</p>
-    <small>Based on real transactions in this period.</small>
+    <small>Based on {{ totals.net_scope_label|default('full history') }}.</small>
   </div>
   <div class="summary-card pending">
     <h3>Net if you had paid</h3>
     <p>{{ '%.2f'|format(totals.net_if_you_paid) }}</p>
-    <small>Current net minus saved expenses.</small>
+    <small>{{ totals.net_scope_label|default('full history')|capitalize }} net minus saved expenses shown above.</small>
   </div>
 </section>
 
