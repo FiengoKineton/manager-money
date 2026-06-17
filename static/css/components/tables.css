@@ -77,3 +77,45 @@ tr.row-investment td:first-child { box-shadow: inset 4px 0 0 #111827; }
 .transactions select {
   min-width: 120px;
 }
+
+/* Shared table component layer: every table routed through the reorganized
+   templates uses .standard-table. The app.js enhancer then adds mobile cards
+   and the desktop row detail drawer consistently. */
+.standard-table {
+  table-layout: auto;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.standard-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.standard-table tbody tr {
+  transition: background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.standard-table td,
+.standard-table th {
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.standard-table .desktop-money-cell,
+.standard-table td:last-child {
+  white-space: nowrap;
+}
+
+.table-component,
+.standard-table-panel {
+  overflow-x: auto;
+}
+
+.table-action-rail,
+.inline-action-rail,
+.card-action-rail,
+.desktop-actions-cell {
+  white-space: nowrap;
+}

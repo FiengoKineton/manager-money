@@ -43,7 +43,7 @@ def parent_support_page():
     end = request.args.get("to", end_default)
 
     return render_template(
-        "parent_support.html",
+        "support/parent_support.html",
         **page_context(start, end),
         start=start,
         end=end,

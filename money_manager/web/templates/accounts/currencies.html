@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block page_title %}Currency Exchange{% endblock %}
+
+{% block content %}
+<section class="page-heading currency-heading">
+  <div>
+    <h2>Currency Exchange</h2>
+    <p>
+      EUR is the base currency. Transaction amounts are saved in EUR, while the original foreign amount and rate are written into the transaction description.
+    </p>
+  </div>
+  <form method="post" class="inline-form">
+    <input type="hidden" name="action" value="refresh_rates">
+    <button type="submit" class="secondary-btn">Refresh exchange rates</button>
+  </form>
+</section>
+
+<section class="summary currency-summary">
+  <div class="summary-card income">
+    <h3>Base currency</h3>
+    <p>{{ base_currency }}</p>
+    <small>All transaction amounts are stored as EUR.</small>
+  </div>
+  <div class="summary-card net">
+    <h3>Active currencies</h3>
+    <p>{{ active_count }}</p>
+    <small>Shown in the Add Transaction currency dropdown.</small>
+  </div>
+  <div class="summary-card pending">
+    <h3>Last successful refresh</h3>
+    <p class="currency-small-value">{{ last_successful_refresh or 'Never' }}</p>
+  </div>
+  <div class="summary-card expense">
+    <h3>Last issue</h3>
+    <p class="currency-small-value">{{ last_error or 'None' }}</p>
+  </div>
+</section>
+
+<section class="dashboard-grid dashboard-grid-even">
+  <article class="panel-card currency-table-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Conversion table</span>
+        <h3>EUR rate table with correction factor</h3>
+        <p>
+          <strong>Rate to EUR</strong> means 1 unit of that currency is worth this many EUR.
+          <strong>Correction</strong> is added to the rate, so you can manually compensate small exchange differences.
+        </p>
+      </div>
+    </div>
+
+    <div class="transactions currency-table-wrap">
+      <table class="standard-table currency-table">
+        <thead>
+          <tr>
+            <th>Currency</th>
+            <th>Name</th>
+            <th>Rate to EUR</th>
+            <th>Correction</th>
+            <th>Effective rate</th>
+            <th>€ for 100</th>
+            <th>Active</th>
+            <th>Source</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in currencies %}
+          <tr>
+            <td>
+              <form id="currency-form-{{ row.code }}" method="post"></form>
+              <input form="currency-form-{{ row.code }}" type="hidden" name="action" value="update_currency">
+              <input form="currency-form-{{ row.code }}" type="hidden" name="code" value="{{ row.code }}">
+              <strong>{{ row.code }}</strong>
+            </td>
+            <td>
+              <input form="currency-form-{{ row.code }}" type="text" name="name" value="{{ row.name }}" {% if row.code == base_currency %}readonly{% endif %}>
+            </td>
+            <td>
+              <input form="currency-form-{{ row.code }}" type="number" step="0.000001" name="rate_to_eur" value="{{ '%.8f'|format(row.rate_to_eur) }}" {% if row.code == base_currency %}readonly{% endif %}>
+            </td>
+            <td>
+              <input form="currency-form-{{ row.code }}" type="number" step="0.000001" name="correction_to_eur" value="{{ '%.8f'|format(row.correction_to_eur) }}" {% if row.code == base_currency %}readonly{% endif %}>
+            </td>
+            <td>{{ '%.8f'|format(row.effective_rate_to_eur) }}</td>
+            <td>{{ '%.2f'|format(row.eur_for_100) }}</td>
+            <td>
+              {% if row.code == base_currency %}
+                <span class="soft-badge">Always</span>
+              {% else %}
+                <label class="checkbox-inline">
+                  <input form="currency-form-{{ row.code }}" type="checkbox" name="active" value="1" {% if row.active %}checked{% endif %}>
+                  Use
+                </label>
+              {% endif %}
+            </td>
+            <td>
+              {{ row.source }}
+              {% if row.updated_at %}<br><small>{{ row.updated_at }}</small>{% endif %}
+            </td>
+            <td>
+              <button form="currency-form-{{ row.code }}" type="submit" class="icon-action-btn icon-action-update" title="Update currency" aria-label="Update currency">✎</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Add currency</span>
+        <h3>Add a manual currency</h3>
+        <p>Use a 3-letter code. You can refresh rates later; the correction factor stays manual.</p>
+      </div>
+    </div>
+
+    <form method="post" class="currency-add-form">
+      <input type="hidden" name="action" value="add_currency">
+      <div class="form-field">
+        <label>Currency code</label>
+        <input type="text" name="code" maxlength="3" placeholder="USD" required>
+      </div>
+      <div class="form-field">
+        <label>Name</label>
+        <input type="text" name="name" placeholder="US Dollar">
+      </div>
+      <div class="form-field">
+        <label>Rate to EUR</label>
+        <input type="number" step="0.000001" name="rate_to_eur" value="1.000000">
+      </div>
+      <div class="form-field">
+        <label>Correction to EUR</label>
+        <input type="number" step="0.000001" name="correction_to_eur" value="0.000000">
+      </div>
+      <button type="submit" class="primary-btn">Add currency</button>
+    </form>
+
+    <div class="currency-help-box">
+      <h4>How it is applied</h4>
+      <p>If you input <strong>100 USD</strong> and the effective rate is <strong>0.920000</strong>, the transaction is saved as <strong>€ 92.00</strong>.</p>
+      <p>The description will include the original amount, the web/manual rate, the correction, and the final effective rate.</p>
+    </div>
+  </article>
+</section>
+{% endblock %}

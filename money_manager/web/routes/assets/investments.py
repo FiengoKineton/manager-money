@@ -25,4 +25,4 @@ def investments_page():
             refresh_market_data(force=True)
         return redirect(url_for("investments.investments_page"))
 
-    return render_template("investments.html", **page_context())
+    return render_template("assets/investments.html", **page_context())

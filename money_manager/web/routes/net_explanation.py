@@ -7,4 +7,4 @@ bp = Blueprint("net_explanation", __name__)
 
 @bp.route("/net-explanation")
 def net_explanation():
-    return render_template("net_explanation.html", **build_net_explanation_context())
+    return render_template("core/net_explanation.html", **build_net_explanation_context())

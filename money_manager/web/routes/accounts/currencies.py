@@ -22,4 +22,4 @@ def currencies_page():
             add_currency_from_form(request.form)
         return redirect(url_for("currencies.currencies_page"))
 
-    return render_template("currencies.html", **page_context())
+    return render_template("accounts/currencies.html", **page_context())

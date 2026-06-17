@@ -26,7 +26,7 @@ def sparagnat_page():
     context = page_context(start, end)
 
     return render_template(
-        "sparagnat.html",
+        "support/sparagnat.html",
         **context,
         start=start,
         end=end,

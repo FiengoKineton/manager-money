@@ -44,13 +44,24 @@
 
         <details class="nav-group" {% if planning_open %}open{% endif %}>
           <summary class="nav-label">Planning</summary>
-          <div class="nav-items">
-            <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}">Pending Payments</a>
-            <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}">Recurring Rules</a>
-            <a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if ep == 'payables.payables_page' else '' }}">Payables</a>
-            <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if ep in ['expense_projects.expense_projects_page', 'expense_projects.expense_project_detail'] else '' }}">Expense Projects</a>
-            <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}">Debts I Owe</a>            
-            <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}">Money Owed to Me</a>
+          <div class="nav-items nav-items-grouped">
+            <div class="nav-cluster">
+              <span class="nav-cluster-label">Payment queue</span>
+              <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}">Pending Payments</a>
+              <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}">Recurring Rules</a>
+            </div>
+
+            <div class="nav-cluster">
+              <span class="nav-cluster-label">Project liabilities</span>
+              <a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if ep == 'payables.payables_page' else '' }}">Payables</a>
+              <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if ep in ['expense_projects.expense_projects_page', 'expense_projects.expense_project_detail'] else '' }}">Expense Projects</a>
+            </div>
+
+            <div class="nav-cluster nav-cluster-soft">
+              <span class="nav-cluster-label">People</span>
+              <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}">Debts I Owe</a>
+              <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}">Money Owed to Me</a>
+            </div>
           </div>
         </details>
 

@@ -1,0 +1,18 @@
+{# Shared table shell for new/refactored pages. Usage:
+   {% from "components/table_panel.html" import table_panel %}
+   {% call table_panel("Title", "Eyebrow", count) %}<table class="standard-table">...</table>{% endcall %}
+#}
+{% macro table_panel(title, eyebrow='', count='', class_name='') %}
+<section class="transactions table-component {{ class_name }}">
+  <div class="panel-header">
+    <div>
+      {% if eyebrow %}<span class="eyebrow">{{ eyebrow }}</span>{% endif %}
+      <h2>{{ title }}</h2>
+    </div>
+    {% if count != '' %}<span class="section-count">{{ count }}</span>{% endif %}
+  </div>
+  <div class="standard-table-panel">
+    {{ caller() }}
+  </div>
+</section>
+{% endmacro %}

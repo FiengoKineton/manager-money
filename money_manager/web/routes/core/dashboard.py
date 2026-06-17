@@ -25,14 +25,14 @@ def _refresh_automatic_items() -> None:
 @bp.route("/")
 def overview():
     _refresh_automatic_items()
-    return render_template("overview_simple.html", **build_overview_context())
+    return render_template("core/overview_simple.html", **build_overview_context())
 
 
 @bp.route("/overview")
 @bp.route("/overview/detailed")
 def overview_detailed():
     _refresh_automatic_items()
-    return render_template("overview.html", **build_overview_context())
+    return render_template("core/overview.html", **build_overview_context())
 
 
 @bp.route("/dashboard")
@@ -62,7 +62,7 @@ def index():
     current_pending_total = pending_total(pending_rows)
 
     return render_template(
-        "index.html",
+        "core/index.html",
         totals=metrics["totals"],
         start=start,
         end=end,

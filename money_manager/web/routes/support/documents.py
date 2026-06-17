@@ -38,7 +38,7 @@ def documents():
     allowed_extensions = sorted(ALLOWED_DOCUMENT_EXTENSIONS)
 
     return render_template(
-        "documents.html",
+        "support/documents.html",
         allowed_extensions=allowed_extensions,
     )
 

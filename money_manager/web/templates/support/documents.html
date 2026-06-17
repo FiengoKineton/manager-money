@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block page_title %}Documents{% endblock %}
+
+{% block content %}
+<section class="documents-hero">
+  <div>
+    <span class="eyebrow">Document workspace</span>
+    <h2>Read documents inside the app</h2>
+    <p>Pick a folder and select a file. PDFs, images and text files open directly in the preview area without needing to download first.</p>
+  </div>
+  <div class="documents-extension-pill">
+    <span>Allowed files</span>
+    <strong>{{ allowed_extensions | join(" · ") }}</strong>
+  </div>
+</section>
+
+<section class="documents-layout">
+  <aside class="documents-sidebar-card">
+    <h3>Folders</h3>
+    <div class="folder-button-stack">
+      <button class="folder-btn active" data-folder="Cedolini">Cedolini</button>
+      <button class="folder-btn" data-folder="Tasse - Detrazioni Fiscali">Tasse - Detrazioni Fiscali</button>
+    </div>
+
+    <div class="document-current-folder">
+      <span>Viewing</span>
+      <strong id="current-folder-label">Cedolini</strong>
+    </div>
+
+    <div class="document-file-list" id="document-file-list">
+      <p class="empty">Loading files...</p>
+    </div>
+  </aside>
+
+  <main class="documents-viewer-card">
+    <div class="documents-viewer-toolbar">
+      <button class="nav-btn" data-doc-action="previous" title="Previous document" aria-label="Previous document">←</button>
+      <span id="file-indicator">Loading files...</span>
+      <button class="nav-btn" data-doc-action="next" title="Next document" aria-label="Next document">→</button>
+    </div>
+
+    <iframe id="file-viewer" class="viewer-window" title="Document viewer"></iframe>
+  </main>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/documents.js') }}"></script>
+{% endblock %}

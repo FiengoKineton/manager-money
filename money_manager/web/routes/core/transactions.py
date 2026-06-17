@@ -43,13 +43,23 @@ def transactions_page():
     amount_max = filter_state["amount_max"]
 
     filtered = apply_transaction_filters(df, start, end, types, categories, query, amount_min, amount_max)
+    summary_source = filtered.copy()
     filtered = prepare_transactions_for_display(filtered)
     all_categories = sorted(main_df["category"].dropna().unique().tolist()) if not main_df.empty else []
 
+    transaction_summary = {
+        "count": int(len(summary_source)),
+        "income": float(summary_source.loc[summary_source.get("type") == "income", "amount"].sum()) if not summary_source.empty else 0.0,
+        "expenses": float(summary_source.loc[summary_source.get("type") == "expense", "amount"].sum()) if not summary_source.empty else 0.0,
+        "investments": float(summary_source.loc[summary_source.get("type") == "investment", "amount"].sum()) if not summary_source.empty else 0.0,
+    }
+    transaction_summary["net"] = transaction_summary["income"] - transaction_summary["expenses"] - transaction_summary["investments"]
+
     return render_template(
-        "transactions.html",
+        "core/transactions.html",
         transactions=filtered.to_dict(orient="records"),
         transactions_initial=filtered.head(50).to_dict(orient="records"),
+        transaction_summary=transaction_summary,
         start=start,
         end=end,
         active_types=types,
@@ -95,7 +105,7 @@ def add_transaction():
     context = category_context(transaction_type)
     currency_options = currency_options_for_forms()
     return render_template(
-        "add_transaction.html",
+        "core/add_transaction.html",
         **context,
         today=date.today().isoformat(),
         currency_options=currency_options,
@@ -135,4 +145,4 @@ def transaction_detail(row_index: int):
     except LookupError:
         return f"Transaction {row_index} not found", 404
 
-    return render_template("transaction_detail.html", tx=tx, categories=categories, account_options=account_options_for_forms())
+    return render_template("core/transaction_detail.html", tx=tx, categories=categories, account_options=account_options_for_forms())

@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+{% block page_title %}Debts{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <h2>Debts</h2>
+    <p>
+      Track debts, extinguish them with one click, create recurring instalment rules,
+      or schedule a final payoff date. Paid debts automatically deactivate their rules.
+    </p>
+  </div>
+
+  <form method="post" class="inline-form">
+    <input type="hidden" name="action" value="generate_due">
+    <button type="submit" class="secondary-btn">Generate due payments</button>
+  </form>
+</section>
+
+<section class="summary debts-summary">
+  <div class="summary-card expense">
+    <h3>Active remaining</h3>
+    <p>{{ '%.2f'|format(totals.active_remaining) }}</p>
+  </div>
+
+  <div class="summary-card pending">
+    <h3>Pending debt payments</h3>
+    <p>{{ '%.2f'|format(totals.pending_debt_payments) }}</p>
+  </div>
+
+  <div class="summary-card income">
+    <h3>Paid tracked</h3>
+    <p>{{ '%.2f'|format(totals.paid_tracked) }}</p>
+  </div>
+</section>
+
+<section class="form-section debts-card">
+  <h2>Add Debt</h2>
+
+  <form method="post" class="debt-form">
+    <input type="hidden" name="action" value="add_debt">
+
+    <div class="form-field form-field-wide">
+      <label>Name</label>
+      <input type="text" name="name" placeholder="Phone, loan, money owed..." required>
+    </div>
+
+    <div class="form-field">
+      <label>Creditor</label>
+      <input type="text" name="creditor" placeholder="Person / company">
+    </div>
+
+    <div class="form-field">
+      <label>Original amount (€)</label>
+      <input type="number" step="0.01" name="original_amount" required>
+    </div>
+
+    <div class="form-field">
+      <label>Remaining amount (€)</label>
+      <input type="number" step="0.01" name="remaining_amount" placeholder="Leave empty = original">
+    </div>
+
+    <div class="form-field">
+      <label>Start date</label>
+      <input type="date" name="start_date" value="{{ today }}">
+    </div>
+
+    <div class="form-field">
+      <label>Due date</label>
+      <input type="date" name="due_date">
+    </div>
+
+    <div class="form-field">
+      <label>Account</label>
+      <input type="text" name="account" placeholder="bank / cash / card">
+    </div>
+
+    <div class="form-field form-field-wide">
+      <label>Description</label>
+      <input type="text" name="description" placeholder="Optional note">
+    </div>
+
+    <div class="form-actions">
+      <button type="submit">Add debt</button>
+    </div>
+  </form>
+</section>
+
+<section class="transactions debts-card debts-table-card">
+  <h2>Tracked Debts</h2>
+
+  {% if debts %}
+  <table class="standard-table inline-edit-table debt-tracked-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Original</th>
+        <th>Remaining</th>
+        <th>Progress</th>
+        <th>Due</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for debt in debts %}
+      <tr class="{{ 'is-closed' if debt.status != 'active' else '' }}"
+          data-detail-creditor="{{ debt.creditor }}"
+          data-detail-description="{{ debt.description }}"
+          data-detail-account="{{ debt.account }}"
+          data-detail-start-date="{{ debt.start_date }}"
+          data-detail-category="{{ debt.category }}"
+          data-detail-created-at="{{ debt.created_at }}"
+          data-detail-closed-at="{{ debt.closed_at }}">
+
+        <td data-label="Name">
+          <form id="debt-update-{{ debt.id }}" method="post"></form>
+
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="action" value="update_debt">
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="id" value="{{ debt.id }}">
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="start_date" value="{{ debt.start_date }}">
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="account" value="{{ debt.account }}">
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="creditor" value="{{ debt.creditor }}">
+
+          <input
+            form="debt-update-{{ debt.id }}"
+            type="text"
+            name="name"
+            value="{{ debt.name }}"
+            required
+            aria-label="Debt name">
+        </td>
+
+
+
+        <td data-label="Original">
+          <input
+            form="debt-update-{{ debt.id }}"
+            type="number"
+            step="0.01"
+            name="original_amount"
+            value="{{ debt.original_amount }}"
+            required
+            aria-label="Original amount">
+        </td>
+
+        <td data-label="Remaining">
+          <input
+            form="debt-update-{{ debt.id }}"
+            type="number"
+            step="0.01"
+            name="remaining_amount"
+            value="{{ debt.remaining_amount }}"
+            required
+            aria-label="Remaining amount">
+        </td>
+
+        <td data-label="Progress">
+          <div class="progress-wrap">
+            <div class="progress-bar" style="width: {{ debt.progress }}%"></div>
+          </div>
+          <small>{{ '%.0f'|format(debt.progress) }}%</small>
+        </td>
+
+        <td data-label="Due">
+          <input
+            form="debt-update-{{ debt.id }}"
+            type="date"
+            name="due_date"
+            value="{{ debt.due_date }}"
+            aria-label="Due date">
+        </td>
+
+        <td data-label="Status">
+          <select
+            form="debt-update-{{ debt.id }}"
+            name="status"
+            class="debt-status-select"
+            aria-label="Debt status">
+            <option value="active" {% if debt.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="paid" {% if debt.status == 'paid' %}selected{% endif %}>Paid</option>
+            <option value="cancelled" {% if debt.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+          </select>
+        </td>
+
+        <td data-label="Actions" class="debt-actions">
+          <div class="table-action-rail">
+            <button
+              form="debt-update-{{ debt.id }}"
+              type="submit"
+              class="icon-action-btn icon-action-update"
+              title="Update debt"
+              aria-label="Update debt">✎</button>
+
+            {% if debt.status == 'active' and debt.remaining_amount > 0 %}
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="pay_debt">
+              <input type="hidden" name="id" value="{{ debt.id }}">
+              <input type="hidden" name="amount" value="{{ debt.remaining_amount }}">
+              <input type="hidden" name="date" value="{{ today }}">
+              <button type="submit" class="secondary-btn compact-btn">Pay all</button>
+            </form>
+
+            <form method="post" class="mini-pay-form">
+              <input type="hidden" name="action" value="pay_debt">
+              <input type="hidden" name="id" value="{{ debt.id }}">
+              <input type="date" name="date" value="{{ today }}" aria-label="Payment date">
+              <input type="number" step="0.01" name="amount" placeholder="Partial" required>
+              <button type="submit" class="secondary-btn compact-btn">Pay</button>
+            </form>
+            {% endif %}
+
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="delete_debt">
+              <input type="hidden" name="id" value="{{ debt.id }}">
+              <button
+                type="submit"
+                class="icon-action-btn icon-action-delete"
+                title="Delete debt"
+                aria-label="Delete debt"
+                onclick="return confirm('Delete this debt and its open pending payments?')">×</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>No debts yet.</p>
+  {% endif %}
+</section>
+
+<section class="transactions debts-card creditor-summary-card">
+  <h2>Totals by Creditor</h2>
+
+  {% if creditor_summaries %}
+  <div class="creditor-summary-list">
+    {% for item in creditor_summaries %}
+    <div class="creditor-summary-row">
+      <div class="creditor-summary-main">
+        <strong>{{ item.creditor }}</strong>
+        <span>
+          {{ item.debt_count }} debt{% if item.debt_count != 1 %}s{% endif %} still open
+        </span>
+      </div>
+
+      <div class="creditor-summary-amount">
+        €{{ '%.2f'|format(item.total_remaining) }}
+      </div>
+
+      <form method="post" class="creditor-payoff-form">
+        <input type="hidden" name="action" value="pay_creditor_debts">
+        <input type="hidden" name="creditor" value="{{ item.creditor }}">
+        <input type="hidden" name="date" value="{{ today }}">
+
+        <button
+          type="submit"
+          class="secondary-btn compact-btn"
+          onclick="return confirm('Extinguish all active debts owed to {{ item.creditor }} for €{{ '%.2f'|format(item.total_remaining) }}?')">
+          Extinguish debts
+        </button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p>No active creditor balances.</p>
+  {% endif %}
+</section>
+
+<section class="form-section debts-card">
+  <h2>Add Debt Payment Rule</h2>
+
+  {% if active_debts %}
+  <form method="post" class="debt-form">
+    <input type="hidden" name="action" value="add_rule">
+
+    <div class="form-field">
+      <label>Debt</label>
+      <select name="debt_id" required>
+        {% for debt in active_debts %}
+          <option value="{{ debt.id }}">
+            {{ debt.name }} — remaining {{ '%.2f'|format(debt.remaining_amount) }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-field form-field-wide">
+      <label>Rule name</label>
+      <input type="text" name="name" placeholder="Example: phone instalment / final payoff">
+    </div>
+
+    <div class="form-field">
+      <label>Rule type</label>
+      <select name="rule_type" id="debt-rule-type" required>
+        <option value="monthly_instalment">Monthly instalment</option>
+        <option value="payoff_date">Extinguish on date</option>
+      </select>
+    </div>
+
+    <div class="form-field monthly-rule-field">
+      <label>Amount (€)</label>
+      <input type="number" step="0.01" name="amount" placeholder="300">
+    </div>
+
+    <div class="form-field monthly-rule-field">
+      <label>Repeat every</label>
+      <div class="frequency-input">
+        <input type="number" name="frequency" min="1" max="120" value="1">
+        <span>month(s)</span>
+      </div>
+    </div>
+
+    <div class="form-field monthly-rule-field">
+      <label>Day of month</label>
+      <input type="number" name="day_of_month" min="1" max="31" value="1">
+    </div>
+
+    <div class="form-field monthly-rule-field">
+      <label>Start date</label>
+      <input type="date" name="start_date" value="{{ today }}">
+    </div>
+
+    <div class="form-field payoff-rule-field hidden-debt-rule-field">
+      <label>Extinguish date</label>
+      <input type="date" name="payoff_date" value="{{ today }}">
+    </div>
+
+    <div class="form-actions">
+      <button type="submit">Add rule</button>
+    </div>
+  </form>
+  {% else %}
+    <p>Add an active debt first.</p>
+  {% endif %}
+</section>
+
+<section class="transactions debts-card">
+  <h2>Debt Payment Rules</h2>
+
+  {% if rules %}
+  <table class="standard-table inline-edit-table debt-rules-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Debt</th>
+        <th>Amount</th>
+        <th>Frequency</th>
+        <th>Start / Payoff</th>
+        <th>Status / next</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for rule in rules %}
+      <tr class="{{ 'is-closed' if not rule.is_payable else '' }}">
+        <td>
+          <form id="rule-update-{{ rule.id }}" method="post"></form>
+          <input form="rule-update-{{ rule.id }}" type="hidden" name="action" value="update_rule">
+          <input form="rule-update-{{ rule.id }}" type="hidden" name="id" value="{{ rule.id }}">
+          <input form="rule-update-{{ rule.id }}" type="text" name="name" value="{{ rule.name }}" required>
+        </td>
+        <td>
+          <select form="rule-update-{{ rule.id }}" name="rule_type">
+            <option value="monthly_instalment" {% if rule.rule_type == 'monthly_instalment' %}selected{% endif %}>Monthly instalment</option>
+            <option value="payoff_date" {% if rule.rule_type == 'payoff_date' %}selected{% endif %}>Extinguish on date</option>
+          </select>
+        </td>
+        <td>
+          <select form="rule-update-{{ rule.id }}" name="debt_id">
+            {% for debt in debt_options %}
+              <option value="{{ debt.id }}" {% if debt.id|string == rule.debt_id|string %}selected{% endif %}>{{ debt.name }}{% if debt.status != 'active' %} · {{ debt.status }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td><input form="rule-update-{{ rule.id }}" type="number" step="0.01" name="amount" value="{{ rule.amount }}"></td>
+        <td>
+          <input form="rule-update-{{ rule.id }}" type="number" name="frequency" min="1" max="120" value="{{ rule.frequency }}" aria-label="Frequency months">
+          <input form="rule-update-{{ rule.id }}" type="number" name="day_of_month" min="1" max="31" value="{{ rule.day_of_month }}" aria-label="Day of month">
+        </td>
+        <td>
+          <input form="rule-update-{{ rule.id }}" type="date" name="start_date" value="{{ rule.start_date }}" aria-label="Start date">
+          <input form="rule-update-{{ rule.id }}" type="date" name="payoff_date" value="{{ rule.payoff_date }}" aria-label="Payoff date">
+        </td>
+        <td>
+          <label class="checkbox-inline">
+            <input form="rule-update-{{ rule.id }}" type="checkbox" name="active" value="1" {% if rule.is_active %}checked{% endif %} {% if not rule.linked_debt_active %}disabled{% endif %}>
+            {{ rule.status_label }}
+          </label>
+          <br><small>{{ rule.next_payment or 'Completed' }}</small>
+        </td>
+        <td>
+          <div class="table-action-rail">
+            <button form="rule-update-{{ rule.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update rule" aria-label="Update rule">✎</button>
+
+            {% if rule.is_payable %}
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="pay_rule_now">
+              <input type="hidden" name="id" value="{{ rule.id }}">
+              <button type="submit" class="icon-action-btn icon-action-execute" title="{% if rule.rule_type == 'payoff_date' %}Pay all remaining debt{% else %}Pay this instalment now{% endif %}" aria-label="{% if rule.rule_type == 'payoff_date' %}Pay all remaining debt{% else %}Pay this instalment now{% endif %}" onclick="return confirm('Create the debt payment transaction now?')">✓</button>
+            </form>
+            {% else %}
+              <span class="soft-badge">No active payment</span>
+            {% endif %}
+
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="delete_rule">
+              <input type="hidden" name="id" value="{{ rule.id }}">
+              <button type="submit" class="icon-action-btn icon-action-delete" title="Delete rule" aria-label="Delete rule" onclick="return confirm('Delete this debt payment rule?')">×</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>No debt payment rules yet.</p>
+  {% endif %}
+</section>
+
+<section class="transactions debts-card">
+  <h2>Pending Debt Payments</h2>
+
+  {% if pending_debt_payments %}
+  <table class="standard-table">
+    <thead>
+      <tr>
+        <th>Due date</th>
+        <th>Description</th>
+        <th>Amount</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for tx in pending_debt_payments %}
+      <tr>
+        <td>{{ tx.date_due }}</td>
+        <td>{{ tx.description }}</td>
+        <td>{{ tx.amount }}</td>
+        <td>{{ tx.status }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>No pending debt payments.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/debts.js') }}"></script>
+{% endblock %}

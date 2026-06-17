@@ -25,3 +25,29 @@
     grid-template-columns: 1fr;
   }
 }
+
+.workflow-heading {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: var(--shadow-sm);
+}
+
+.workflow-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+  .workflow-heading {
+    flex-direction: column;
+  }
+
+  .workflow-actions,
+  .workflow-actions a {
+    width: 100%;
+  }
+}

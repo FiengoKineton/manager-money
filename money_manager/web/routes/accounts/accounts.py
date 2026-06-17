@@ -20,7 +20,7 @@ def accounts_page():
         return redirect(url_for("accounts.accounts_page"))
 
     df = load_transactions()
-    return render_template("accounts.html", **accounts_page_context(df))
+    return render_template("accounts/accounts.html", **accounts_page_context(df))
 
 
 @bp.route("/<account_key>", methods=["GET", "POST"])
@@ -46,4 +46,4 @@ def account_detail(account_key: str):
     context = account_detail_context(df, account_key)
     if context is None:
         abort(404)
-    return render_template("account_detail.html", **context)
+    return render_template("accounts/account_detail.html", **context)

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block page_title %}Analysis{% endblock %}
+
+{% block content %}
+<section class="analysis-hero">
+  <div>
+    <span class="eyebrow">Professional finance review</span>
+    <h2>Spending, income and investment behaviour</h2>
+    <p>
+      This page separates daily money habits from portfolio behaviour: income received,
+      spending pressure, average investment flow, dividends, buys/sells and estimated market P/L.
+    </p>
+  </div>
+  <div class="analysis-hero-score">
+    <span>Monthly net habit</span>
+    <strong>€ {{ '%.2f'|format(habits.avg_monthly_net) }}</strong>
+    <small>Smart estimate, not a plain average</small>
+  </div>
+</section>
+
+<section class="analysis-kpi-grid">
+  <article class="analysis-kpi tone-income">
+    <span>Income habit / month</span>
+    <strong>€ {{ '%.2f'|format(habits.avg_monthly_income) }}</strong>
+    <small>{{ habits.income_method }}</small>
+  </article>
+  <article class="analysis-kpi tone-expense">
+    <span>Spending habit / month</span>
+    <strong>€ {{ '%.2f'|format(habits.avg_monthly_expenses) }}</strong>
+    <small>{{ '%.0f'|format(habits.burn_ratio) }}% of estimated income habit</small>
+  </article>
+  <article class="analysis-kpi tone-investment">
+    <span>Net invested / month</span>
+    <strong>€ {{ '%.2f'|format(investment.monthly_net_investment) }}</strong>
+    <small>Smart habit. Raw average: € {{ '%.2f'|format(investment.average_monthly_net_investment) }}/mo</small>
+  </article>
+  <article class="analysis-kpi tone-profit {{ 'positive' if investment.profit_loss >= 0 else 'negative' }}">
+    <span>Investment P/L</span>
+    <strong>€ {{ '%.2f'|format(investment.profit_loss) }}</strong>
+    <small>{{ '%.2f'|format(investment.profit_loss_pct) }}% estimated market move</small>
+  </article>
+</section>
+
+<section class="analysis-insight-grid">
+  {% for card in insight_cards %}
+    <article class="analysis-insight-card tone-{{ card.tone }}">
+      <span>{{ card.label }}</span>
+      <strong>{{ card.value }}</strong>
+      <p>{{ card.text }}</p>
+    </article>
+  {% endfor %}
+</section>
+
+<section class="analysis-section-heading">
+  <div>
+    <span class="eyebrow">Visual summary</span>
+    <h2>Main-bank money flow</h2>
+  </div>
+</section>
+
+<div class="analysis-plots-grid professional-grid">
+  <div class="chart-card chart-wide">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.monthly_summary|safe }}
+  </div>
+
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.rolling_net_flow|safe }}
+  </div>
+
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.expenses_by_category|safe }}
+  </div>
+
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.weekday_spending|safe }}
+  </div>
+
+  <div class="chart-card chart-wide">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.cumulative_balance|safe }}
+  </div>
+</div>
+
+<section class="analysis-section-heading split-heading">
+  <div>
+    <span class="eyebrow">Portfolio behaviour</span>
+    <h2>Investments, dividends and buy/sell habits</h2>
+  </div>
+  <a class="secondary-btn" href="{{ url_for('forecast.forecast') }}">Open smart forecast</a>
+</section>
+
+<section class="investment-analysis-grid">
+  <article class="investment-behaviour-card">
+    <h3>Investment behaviour</h3>
+    <dl>
+      <div><dt>Deposits + buys</dt><dd>€ {{ '%.2f'|format(investment.deposits_buys) }}</dd></div>
+      <div><dt>Withdrawals + sells</dt><dd>€ {{ '%.2f'|format(investment.withdrawals_sells) }}</dd></div>
+      <div><dt>Dividends received</dt><dd>€ {{ '%.2f'|format(investment.dividends) }}</dd></div>
+      <div><dt>Smart monthly investment habit</dt><dd>€ {{ '%.2f'|format(investment.monthly_net_investment) }}</dd></div>
+      <div><dt>Raw monthly investment average</dt><dd>€ {{ '%.2f'|format(investment.average_monthly_net_investment) }}</dd></div>
+      <div><dt>Auto annual return assumption</dt><dd>{{ '%.2f'|format(investment.annual_return_pct) }}%</dd></div>
+    </dl>
+    <p class="muted small-text">The forecast page uses these values as defaults, but you can override them before running a scenario.</p>
+  </article>
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.investment_cashflows|safe }}
+  </div>
+</section>
+
+<section class="transactions professional-table-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Risk check</span>
+      <h2>Top expenses</h2>
+      <p>The largest expenses are usually where the fastest corrections are possible.</p>
+    </div>
+  </div>
+  {% if top_expenses %}
+    <table class="standard-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in top_expenses %}
+          <tr>
+            <td>{{ tx.date_str }}</td>
+            <td>{{ tx.category }}</td>
+            <td>{{ tx.description }}</td>
+            <td>€ {{ '%.2f'|format(tx.amount) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty">No expenses yet.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

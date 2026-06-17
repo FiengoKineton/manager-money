@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block page_title %}Net explanation{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">Money logic</span>
+    <h2>Why is my net € {{ '%.2f'|format(overview.totals.net) }}?</h2>
+    <p>This page does not use new accounting rules. It explains the same numbers already used by the overview and top bar.</p>
+  </div>
+</section>
+
+<section class="quick-overview-grid">
+  {% for item in headline %}
+    {% with label=item.label, value=item.value, caption=item.caption, tone='tone-net' %}
+      {% include "components/summary_card.html" %}
+    {% endwith %}
+  {% endfor %}
+</section>
+
+<section class="panel-card">
+  <div class="section-heading compact-heading">
+    <div>
+      <span class="eyebrow">Formulas</span>
+      <h3>How the positions are built</h3>
+    </div>
+  </div>
+  <div class="explanation-list">
+    {% for row in formulas %}
+      <article class="explanation-card">
+        <div>
+          <strong>{{ row.name }}</strong>
+          <small>{{ row.formula }}</small>
+        </div>
+        <div class="formula-parts">
+          {% for part in row.parts %}
+            <span>{{ part.label }}: <b>€ {{ '%.2f'|format(part.value) }}</b></span>
+          {% endfor %}
+        </div>
+        <strong class="formula-result">= € {{ '%.2f'|format(row.result) }}</strong>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel-card">
+  <div class="section-heading compact-heading">
+    <div>
+      <span class="eyebrow">Included rows</span>
+      <h3>Main-bank rows counted in the net</h3>
+      <p>Showing up to {{ counted_rows|length }} of {{ counted_count }} counted rows.</p>
+    </div>
+  </div>
+  {% if counted_rows %}
+    {% with rows=counted_rows %}
+      {% include "components/money_rows_table.html" %}
+    {% endwith %}
+  {% else %}
+    {% with title='No counted rows', text='No transaction rows currently affect the main-bank net.' %}
+      {% include "components/empty_state.html" %}
+    {% endwith %}
+  {% endif %}
+</section>
+
+<section class="panel-card">
+  <div class="section-heading compact-heading">
+    <div>
+      <span class="eyebrow">Separate accounts</span>
+      <h3>Rows tracked outside the conservative main-bank net</h3>
+      <p>Showing up to {{ excluded_rows|length }} of {{ excluded_count }} separate liquid-account rows.</p>
+    </div>
+  </div>
+  {% if excluded_rows %}
+    {% with rows=excluded_rows %}
+      {% include "components/money_rows_table.html" %}
+    {% endwith %}
+  {% else %}
+    {% with title='No separate account rows', text='There are no separate liquid-account rows to show.' %}
+      {% include "components/empty_state.html" %}
+    {% endwith %}
+  {% endif %}
+</section>
+
+<section class="panel-card">
+  <div class="section-heading compact-heading">
+    <div>
+      <span class="eyebrow">Notes</span>
+      <h3>Why this page is safe</h3>
+    </div>
+  </div>
+  <ul class="simple-list">
+    {% for note in notes %}
+      <li>{{ note }}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block page_title %}Overview{% endblock %}
+
+{% block content %}
+<section class="overview-hero overview-simple-hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Quick view</span>
+    <h2>Overview</h2>
+    <p>The fast version: available position, stress position, recoverable money, investment P/L, and the main shortcuts.</p>
+    <div class="hero-actions">
+      <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Add expense</a>
+      <a class="secondary-btn" href="{{ url_for('dashboard.overview_detailed') }}">Detailed overview</a>
+    </div>
+  </div>
+
+  <div class="hero-balance-card">
+    <div>
+      <span class="metric-label">Main available position</span>
+      <strong>€ {{ '%.2f'|format(cash_position) }}</strong>
+      <small>All account nets + invested capital. Market P/L is shown separately.</small>
+    </div>
+    <div class="balance-subgrid">
+      <div>
+        <span>Stress position</span>
+        <b>€ {{ '%.2f'|format(stress_position) }}</b>
+      </div>
+      <div>
+        <span>Adjusted stress</span>
+        <b>€ {{ '%.2f'|format(adjusted_stress_position) }}</b>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="quick-overview-grid">
+  <article class="mini-priority-card tone-net">
+    <span>Net balance</span>
+    <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
+    <small>Main bank net only.</small>
+  </article>
+  <article class="mini-priority-card tone-aux">
+    <span>Separate liquid</span>
+    <strong>€ {{ '%.2f'|format(auxiliary_balance) }}</strong>
+    <small>Cash Flow, EdenRed, Pre-paid, Other/custom.</small>
+  </article>
+  <article class="mini-priority-card tone-warning">
+    <span>Credit pending</span>
+    <strong>€ {{ '%.2f'|format(credit_pending_amount) }}</strong>
+    <small>Credit card / PayPal-credit still to settle.</small>
+  </article>
+  <article class="mini-priority-card tone-expense">
+    <span>Active debts</span>
+    <strong>€ {{ '%.2f'|format(active_debt) }}</strong>
+    <small>Debt still to pay.</small>
+  </article>
+  <article class="mini-priority-card tone-income">
+    <span>Owed to me</span>
+    <strong>€ {{ '%.2f'|format(receivable_active_remaining) }}</strong>
+    <small>Net if repaid: € {{ '%.2f'|format(net_if_receivables_repaid) }}</small>
+  </article>
+  <article class="mini-priority-card tone-investment">
+    <span>Adjusted stress</span>
+    <strong>€ {{ '%.2f'|format(adjusted_stress_position) }}</strong>
+    <small>Stress + owed to me + investment P/L.</small>
+  </article>
+</section>
+
+<section class="quick-link-grid">
+  <a href="{{ url_for('transactions.transactions_page') }}" class="quick-link-card">
+    <span>Transactions</span>
+    <strong>Open transaction log</strong>
+    <small>Search, edit, delete, and review every saved movement.</small>
+  </a>
+  <a href="{{ url_for('pending.pending_page') }}" class="quick-link-card">
+    <span>Pending</span>
+    <strong>Pay or delay scheduled items</strong>
+    <small>Generated items stay pending until you execute them.</small>
+  </a>
+  <a href="{{ url_for('pending.recurring_page') }}" class="quick-link-card">
+    <span>Recurring</span>
+    <strong>Manage automatic rules</strong>
+    <small>Rules generate the queue, but do not silently pay it.</small>
+  </a>
+  <a href="{{ url_for('accounts.accounts_page') }}" class="quick-link-card">
+    <span>Accounts</span>
+    <strong>Separate liquid accounts</strong>
+    <small>Cash Flow, EdenRed, cards and other custom accounts.</small>
+  </a>
+  <a href="{{ url_for('investments.investments_page') }}" class="quick-link-card">
+    <span>Investments</span>
+    <strong>Market and deposits</strong>
+    <small>Deposits, buy/sell, withdrawals and profit/loss analysis.</small>
+  </a>
+  <a href="{{ url_for('dashboard.index') }}" class="quick-link-card">
+    <span>Dashboard</span>
+    <strong>Charts and filtered totals</strong>
+    <small>Detailed plots without crowding the transaction list.</small>
+  </a>
+</section>
+{% endblock %}

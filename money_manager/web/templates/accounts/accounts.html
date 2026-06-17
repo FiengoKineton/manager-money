@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block page_title %}Liquid Accounts{% endblock %}
+
+{% block content %}
+<section class="accounts-hero panel-card">
+  <div>
+    <span class="eyebrow">Separate liquid accounts</span>
+    <h2>Cash Flow, Pre-paid card and Other/custom accounts</h2>
+    <p>
+      Use these for cash, pre-paid cards, Ticket Restaurant, or any extra liquid balance.
+      They can be matched by the <strong>account</strong> field or by clear category names.
+      They stay out of the main net balance and main category charts.
+    </p>
+  </div>
+  <div class="accounts-hero-metrics">
+    <div>
+      <span>Total balance</span>
+      <strong>€ {{ '%.2f'|format(totals.balance) }}</strong>
+    </div>
+    <div>
+      <span>Total in</span>
+      <strong>€ {{ '%.2f'|format(totals.incoming) }}</strong>
+    </div>
+    <div>
+      <span>Total out</span>
+      <strong>€ {{ '%.2f'|format(totals.outgoing) }}</strong>
+    </div>
+  </div>
+</section>
+
+<section class="custom-account-panel panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Custom account</span>
+      <h3>Add a small account inside Other account</h3>
+      <p>Saved in <strong>data/accounts.json</strong>. These accounts appear under <strong>Other account</strong> but keep their own balances and movement analysis.</p>
+    </div>
+  </div>
+
+  <form method="post" class="custom-account-form">
+    <input type="hidden" name="action" value="add_custom_account">
+    <div>
+      <label>Name</label>
+      <input type="text" name="label" placeholder="Example: Glovo, EasyPark, Satispay" required>
+    </div>
+    <div>
+      <label>Description</label>
+      <input type="text" name="description" placeholder="What this balance represents">
+    </div>
+    <div>
+      <label>Account aliases</label>
+      <input type="text" name="aliases" placeholder="glovo, easypark, satispay">
+      <small>Matched against the account column.</small>
+    </div>
+    <div>
+      <label>Category aliases</label>
+      <input type="text" name="category_aliases" placeholder="glovo top-up, easypark, parking credit">
+      <small>Optional. Only top-level accounts are inferred from blank-account categories; small Other-account children are used when selected in the Account field.</small>
+    </div>
+    <div class="form-actions-row form-field-wide">
+      <button type="submit" class="primary-btn">+ Add custom account</button>
+    </div>
+  </form>
+</section>
+
+<section class="account-directory-grid">
+  {% for account in accounts %}
+  <article class="account-directory-card account-{{ account.balance_tone }}">
+    <div class="account-directory-head">
+      <div>
+        <span>{{ account.label }}</span>
+        <h3>€ {{ '%.2f'|format(account.balance) }}</h3>
+      </div>
+      <a href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Open</a>
+    </div>
+    <p>{{ account.description }}</p>
+
+    <div class="account-flow-line">
+      <div>
+        <span>In</span>
+        <strong>€ {{ '%.2f'|format(account.incoming) }}</strong>
+      </div>
+      <div>
+        <span>Out</span>
+        <strong>€ {{ '%.2f'|format(account.outgoing) }}</strong>
+      </div>
+      <div>
+        <span>Movements</span>
+        <strong>{{ account.count }}</strong>
+      </div>
+    </div>
+
+    {% if account.children %}
+    <div class="other-account-children">
+      <strong>Inside Other account: {{ account.child_count }} small account{{ '' if account.child_count == 1 else 's' }}</strong>
+      <div class="other-account-total-line">
+        <span>Other bucket only</span>
+        <b>€ {{ '%.2f'|format(account.own_balance) }}</b>
+      </div>
+      <div class="other-account-total-line">
+        <span>Small accounts total</span>
+        <b>€ {{ '%.2f'|format(account.child_balance) }}</b>
+      </div>
+      {% for child in account.children %}
+        <a class="other-account-child" href="{{ url_for('accounts.account_detail', account_key=child.key) }}">
+          <span>{{ child.display_label or child.label }}</span>
+          <b>€ {{ '%.2f'|format(child.balance) }}</b>
+        </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if account.monthly_preview %}
+    <div class="mini-month-chart spacious-mini-chart">
+      {% for month in account.monthly_preview %}
+      <div class="mini-month-row">
+        <span>{{ month.month }}</span>
+        <div>
+          <i class="mini-in" style="width: {{ (month.incoming / (account.incoming if account.incoming else 1) * 100) if account.incoming else 0 }}%"></i>
+          <i class="mini-out" style="width: {{ (month.outgoing / (account.outgoing if account.outgoing else 1) * 100) if account.outgoing else 0 }}%"></i>
+        </div>
+        <b>€ {{ '%.2f'|format(month.net) }}</b>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="empty">No movements yet.</p>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}

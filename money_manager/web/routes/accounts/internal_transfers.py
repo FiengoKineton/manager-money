@@ -30,4 +30,4 @@ def internal_transfers_page():
             return redirect(url_for("internal_transfers.internal_transfers_page", message=result.get("message", "Saved.")))
         error = result.get("error", "Transfer was not saved.")
 
-    return render_template("internal_transfers.html", **page_context(error=error, message=message))
+    return render_template("accounts/internal_transfers.html", **page_context(error=error, message=message))

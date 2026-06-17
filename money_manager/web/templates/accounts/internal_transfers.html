@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block page_title %}Internal Transfers{% endblock %}
+
+{% block content %}
+<section class="page-heading internal-transfer-heading">
+  <div>
+    <span class="eyebrow">Account movement</span>
+    <h2>Internal Transfers</h2>
+    <p>
+      Move money between Main Bank, Cash Flow, Pre-paid, EdenRed, PayPal, or custom liquid accounts
+      without counting it as income or expense.
+    </p>
+  </div>
+</section>
+
+{% if error %}<section class="alert-card alert-error">{{ error }}</section>{% endif %}
+{% if message %}<section class="alert-card alert-success">{{ message }}</section>{% endif %}
+
+<section class="summary internal-transfer-summary">
+  <div class="summary-card expense">
+    <h3>Main moved out</h3>
+    <p>{{ '%.2f'|format(totals.main_out) }}</p>
+  </div>
+  <div class="summary-card income">
+    <h3>Main moved in</h3>
+    <p>{{ '%.2f'|format(totals.main_in) }}</p>
+  </div>
+  <div class="summary-card neutral">
+    <h3>Auxiliary moved</h3>
+    <p>{{ '%.2f'|format(totals.auxiliary_moved) }}</p>
+  </div>
+  <div class="summary-card pending">
+    <h3>Transfers</h3>
+    <p>{{ totals.count }}</p>
+  </div>
+</section>
+
+<section class="form-section internal-transfer-card">
+  <h2>Add transfer</h2>
+  <form method="post" class="internal-transfer-form" data-transfer-form>
+    <input type="hidden" name="action" value="add_transfer">
+
+    <div class="form-field">
+      <label>Date</label>
+      <input type="date" name="date" value="{{ today }}" required>
+    </div>
+
+    <div class="form-field">
+      <label>From</label>
+      <select name="from_account" required data-transfer-from>
+        {% for account in account_options %}
+          <option value="{{ account.key }}" data-key="{{ account.key }}" data-balance="{{ account_balances.get(account.key, 0) }}">{{ account.label }}</option>
+        {% endfor %}
+      </select>
+      <small class="hint">Available: € <span data-transfer-from-balance>0.00</span></small>
+    </div>
+
+    <div class="form-field">
+      <label>To</label>
+      <select name="to_account" required>
+        {% for account in account_options %}
+          <option value="{{ account.key }}" {% if account.key == 'pre_paid_card' %}selected{% endif %}>{{ account.label }}</option>
+        {% endfor %}
+      </select>
+      <small class="hint">Main → Pre-paid automatically records a €1.00 fee.</small>
+    </div>
+
+    <div class="form-field">
+      <label>Amount (€)</label>
+      <input type="number" step="0.01" name="amount" required data-transfer-amount>
+      <label class="inline-checkbox transfer-all-toggle">
+        <input type="checkbox" name="move_all" value="1" data-transfer-move-all> Move all available balance
+      </label>
+    </div>
+
+    <div class="form-field form-field-wide">
+      <label>Description</label>
+      <input type="text" name="description" placeholder="Example: ATM withdrawal, top up prepaid card, moved money to PayPal">
+    </div>
+
+    <div class="form-actions form-field-wide">
+      <button type="submit" class="primary-btn">Save transfer</button>
+    </div>
+  </form>
+</section>
+
+<section class="transactions internal-transfer-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Saved movements</span>
+      <h2>Transfer log</h2>
+      <p>Click a row on desktop to edit/delete in the side window.</p>
+    </div>
+  </div>
+
+  {% if transfers %}
+  <table class="standard-table inline-edit-table internal-transfer-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>From</th>
+        <th>To</th>
+        <th>Amount</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for transfer in transfers %}
+      <tr>
+        <td>
+          <form id="transfer-update-{{ transfer.id }}" method="post"></form>
+          <input form="transfer-update-{{ transfer.id }}" type="hidden" name="action" value="update_transfer">
+          <input form="transfer-update-{{ transfer.id }}" type="hidden" name="id" value="{{ transfer.id }}">
+          <input form="transfer-update-{{ transfer.id }}" type="date" name="date" value="{{ transfer.date_str }}" required>
+        </td>
+        <td>
+          <select form="transfer-update-{{ transfer.id }}" name="from_account">
+            {% for account in account_options %}
+              <option value="{{ account.key }}" {% if account.label == transfer.from_label %}selected{% endif %}>{{ account.label }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td>
+          <select form="transfer-update-{{ transfer.id }}" name="to_account">
+            {% for account in account_options %}
+              <option value="{{ account.key }}" {% if account.label == transfer.to_label %}selected{% endif %}>{{ account.label }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td><input form="transfer-update-{{ transfer.id }}" type="number" step="0.01" name="amount" value="{{ transfer.amount }}" required></td>
+        <td><input form="transfer-update-{{ transfer.id }}" type="text" name="description" value="{{ transfer.description }}" class="table-note-input"></td>
+        <td>
+          <div class="table-action-rail">
+            <button form="transfer-update-{{ transfer.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update transfer" aria-label="Update transfer">✎</button>
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="delete_transfer">
+              <input type="hidden" name="id" value="{{ transfer.id }}">
+              <button type="submit" class="icon-action-btn icon-action-delete" title="Delete transfer" aria-label="Delete transfer" onclick="return confirm('Delete this internal transfer?')">×</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="empty">No transfers yet.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const form = document.querySelector('[data-transfer-form]');
+  if (!form) return;
+  const from = form.querySelector('[data-transfer-from]');
+  const balanceText = form.querySelector('[data-transfer-from-balance]');
+  const amount = form.querySelector('[data-transfer-amount]');
+  const moveAll = form.querySelector('[data-transfer-move-all]');
+  function balance() {
+    const selected = from.options[from.selectedIndex];
+    return Number.parseFloat(selected && selected.dataset.balance ? selected.dataset.balance : '0') || 0;
+  }
+  function refresh() {
+    const value = balance();
+    balanceText.textContent = value.toFixed(2);
+    if (moveAll.checked) amount.value = value.toFixed(2);
+  }
+  from.addEventListener('change', refresh);
+  moveAll.addEventListener('change', refresh);
+  refresh();
+})();
+</script>
+{% endblock %}

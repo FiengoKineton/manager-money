@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+{% block page_title %}{{ project.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading expense-project-heading">
+  <div>
+    <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="back-link">← Expense Projects</a>
+    <h2>{{ project.name }}</h2>
+    <p>
+      Real expense and income transactions are counted in this sheet. Planned items are future expected costs
+      and stay outside your net balance until you pay all or part of them. Linked Payables mirror the Payables page,
+      so paying a Payable updates project progress without creating a second payment.
+    </p>
+  </div>
+</section>
+
+<section class="summary expense-project-summary detail-summary">
+  <div class="summary-card expense">
+    <h3>Actual expenses</h3>
+    <p>{{ '%.2f'|format(project.actual_spent) }}</p>
+  </div>
+  <div class="summary-card income">
+    <h3>Income / recoveries</h3>
+    <p>{{ '%.2f'|format(project.actual_income) }}</p>
+  </div>
+  <div class="summary-card neutral">
+    <h3>Net project cost</h3>
+    <p>{{ '%.2f'|format(project.actual_net_cost) }}</p>
+  </div>
+  <div class="summary-card pending">
+    <h3>Expected left</h3>
+    <p>{{ '%.2f'|format(project.remaining_expected) }}</p>
+  </div>
+  <div class="summary-card pending">
+    <h3>Forecast net cost</h3>
+    <p>{{ '%.2f'|format(project.forecast_net_total) }}</p>
+  </div>
+  <div class="summary-card neutral">
+    <h3>Main net now</h3>
+    <p>{{ '%.2f'|format(totals.main_net_now) }}</p>
+  </div>
+  <div class="summary-card pending">
+    <h3>Main net if expected paid</h3>
+    <p>{{ '%.2f'|format(totals.main_net_if_remaining_paid) }}</p>
+  </div>
+</section>
+
+<section class="panel-card expense-project-settings">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Sheet settings</span>
+      <h3>Edit manager sheet</h3>
+    </div>
+  </div>
+  <form method="post" class="expense-project-form">
+    <input type="hidden" name="action" value="update_project">
+    <input type="hidden" name="project_id" value="{{ project.id }}">
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" name="name" value="{{ project.name }}" required>
+    </div>
+    <div class="form-field">
+      <label>Main category</label>
+      <input list="expense-project-categories" type="text" name="category" value="{{ project.category }}" required>
+      <datalist id="expense-project-categories">
+        {% for category in expense_categories %}
+          <option value="{{ category }}"></option>
+        {% endfor %}
+      </datalist>
+    </div>
+    <div class="form-field">
+      <label>Status</label>
+      <select name="status">
+        <option value="active" {% if project.status == 'active' %}selected{% endif %}>Active</option>
+        <option value="closed" {% if project.status == 'closed' %}selected{% endif %}>Closed</option>
+        <option value="cancelled" {% if project.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+      </select>
+    </div>
+    <div class="form-field form-field-wide">
+      <label>Description</label>
+      <input type="text" name="description" value="{{ project.description }}">
+    </div>
+    <div class="form-actions-row form-field-wide">
+      <button type="submit" class="primary-btn">Save sheet</button>
+    </div>
+  </form>
+</section>
+
+<section class="expense-project-two-col expense-project-action-grid">
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Future cost</span>
+        <h3>Add expected item</h3>
+        <p>This will not touch net balance until you pay it.</p>
+      </div>
+    </div>
+    <form method="post" class="expense-project-form compact-project-form">
+      <input type="hidden" name="action" value="add_planned_item">
+      <div class="form-field">
+        <label>Name</label>
+        <input type="text" name="name" placeholder="Tiles, electrician, kitchen deposit" required>
+      </div>
+      <div class="form-field">
+        <label>Vendor / person</label>
+        <input type="text" name="vendor" placeholder="Company / person">
+      </div>
+      <div class="form-field">
+        <label>Expected amount (€)</label>
+        <input type="number" step="0.01" name="original_amount" placeholder="15000" required>
+      </div>
+      <div class="form-field">
+        <label>Remaining (€)</label>
+        <input type="number" step="0.01" name="remaining_amount" placeholder="Leave empty = expected">
+      </div>
+      <div class="form-field">
+        <label>Category</label>
+        <input list="expense-project-categories-2" type="text" name="category" value="{{ project.category }}">
+        <datalist id="expense-project-categories-2">
+          {% for category in expense_categories %}
+            <option value="{{ category }}"></option>
+          {% endfor %}
+        </datalist>
+      </div>
+      <div class="form-field">
+        <label>Sub-category</label>
+        <input type="text" name="sub_category" placeholder="Materials / labour / furniture">
+      </div>
+      <div class="form-field">
+        <label>Account to pay from</label>
+        <select name="account">
+          {% for account in account_options %}
+            <option value="{{ account.value }}">{{ account.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Due date</label>
+        <input type="date" name="due_date">
+      </div>
+      <input type="hidden" name="start_date" value="{{ today }}">
+      <div class="form-field form-field-wide">
+        <label>Description</label>
+        <input type="text" name="description" placeholder="Optional details">
+      </div>
+      <div class="form-actions-row form-field-wide">
+        <button type="submit" class="primary-btn">+ Add expected cost</button>
+      </div>
+    </form>
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Payables link</span>
+        <h3>Link existing payable</h3>
+        <p>This only links the Payable. Payments still happen from the Payables page.</p>
+      </div>
+    </div>
+    {% if payable_candidates %}
+    <form method="post" class="expense-project-form compact-project-form">
+      <input type="hidden" name="action" value="link_payable">
+      <div class="form-field form-field-wide">
+        <label>Active or old payable</label>
+        <select name="payable_id" required>
+          <option value="">Choose a payable...</option>
+          {% for payable in payable_candidates %}
+            <option value="{{ payable.id }}">{{ payable.label }}</option>
+          {% endfor %}
+        </select>
+        <small>It will appear in Forecast and its payments will appear in Actuals as linked transactions.</small>
+      </div>
+      <div class="form-field form-field-wide">
+        <label>Project sub-category label</label>
+        <input type="text" name="sub_category" value="Linked payable" placeholder="Linked payable">
+      </div>
+      <div class="form-actions-row form-field-wide">
+        <button type="submit" class="primary-btn">Link payable</button>
+      </div>
+    </form>
+    {% else %}
+      <p class="project-link-helper">No unlinked payables found. Create or update them from <a href="{{ url_for('payables.payables_page') }}">Payables</a>.</p>
+    {% endif %}
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Real movement</span>
+        <h3>Attach existing transaction</h3>
+        <p>Add past expenses or incomes that already exist in Transactions.</p>
+      </div>
+    </div>
+    <form method="post" class="expense-project-form compact-project-form">
+      <input type="hidden" name="action" value="attach_transaction">
+      <div class="form-field form-field-wide">
+        <label>Expense or income transaction</label>
+        <select name="transaction_key" required>
+          <option value="">Choose a transaction...</option>
+          {% for tx in transaction_candidates %}
+            <option value="{{ tx.key }}">{{ tx.label }}</option>
+          {% endfor %}
+        </select>
+        <small>Category/project matches are shown first, then recent expenses and incomes.</small>
+      </div>
+      <div class="form-field form-field-wide">
+        <label>Note</label>
+        <input type="text" name="note" placeholder="Why this belongs to the project">
+      </div>
+      <div class="form-actions-row form-field-wide">
+        <button type="submit" class="primary-btn">Attach transaction</button>
+      </div>
+    </form>
+  </article>
+</section>
+
+<section class="panel-card project-table-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Forecast</span>
+      <h3>Planned / expected costs</h3>
+    </div>
+  </div>
+  {% if planned_items %}
+  <table class="standard-table inline-edit-table project-table">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Vendor</th>
+        <th>Expected</th>
+        <th>Remaining</th>
+        <th>Progress</th>
+        <th>Category / account</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in planned_items %}
+      <tr class="{{ 'is-closed' if item.status != 'active' else '' }}">
+        <td>
+          <form id="planned-update-{{ item.id }}" method="post"></form>
+          <input form="planned-update-{{ item.id }}" type="hidden" name="action" value="update_planned_item">
+          <input form="planned-update-{{ item.id }}" type="hidden" name="item_id" value="{{ item.id }}">
+          <input form="planned-update-{{ item.id }}" type="text" name="name" value="{{ item.name }}" required>
+          <input form="planned-update-{{ item.id }}" type="text" name="description" value="{{ item.description }}" placeholder="Note" class="table-note-input">
+          {% if item.linked_payable %}
+            <small class="linked-payable-note">Linked Payable #{{ item.payable_id }} · edit/pay it from Payables</small>
+          {% endif %}
+          <input form="planned-update-{{ item.id }}" type="hidden" name="start_date" value="{{ item.start_date }}">
+        </td>
+        <td><input form="planned-update-{{ item.id }}" type="text" name="vendor" value="{{ item.vendor }}"></td>
+        <td><input form="planned-update-{{ item.id }}" type="number" step="0.01" name="original_amount" value="{{ item.original_amount }}" required></td>
+        <td><input form="planned-update-{{ item.id }}" type="number" step="0.01" name="remaining_amount" value="{{ item.remaining_amount }}" required></td>
+        <td>
+          <div class="progress-wrap progress-wrap-expense">
+            <div class="progress-bar progress-bar-expense" style="width: {{ item.progress }}%"></div>
+          </div>
+          <small>Paid € {{ '%.2f'|format(item.paid_amount) }} · {{ '%.0f'|format(item.progress) }}%{% if item.linked_payable %} · Payable link{% endif %}</small>
+        </td>
+        <td>
+          <input form="planned-update-{{ item.id }}" list="expense-project-categories-3" type="text" name="category" value="{{ item.category or project.category }}" aria-label="Category">
+          <input form="planned-update-{{ item.id }}" type="text" name="sub_category" value="{{ item.sub_category }}" placeholder="Sub-category" aria-label="Sub-category">
+          <select form="planned-update-{{ item.id }}" name="account" aria-label="Payment account">
+            {% for account in account_options %}
+              <option value="{{ account.value }}" {% if account.value == item.account or account.key == item.account or account.label == item.account %}selected{% endif %}>{{ account.label }}</option>
+            {% endfor %}
+          </select>
+          <input form="planned-update-{{ item.id }}" type="date" name="due_date" value="{{ item.due_date }}" aria-label="Due date">
+        </td>
+        <td>
+          <select form="planned-update-{{ item.id }}" name="status">
+            <option value="active" {% if item.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="paid" {% if item.status == 'paid' %}selected{% endif %}>Paid</option>
+            <option value="cancelled" {% if item.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+          </select>
+        </td>
+        <td class="debt-actions">
+          <div class="table-action-rail">
+            {% if not item.linked_payable %}
+            <button form="planned-update-{{ item.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update item" aria-label="Update item">✎</button>
+            {% else %}
+            <a href="{{ url_for('payables.payables_page') }}" class="secondary-btn compact-btn">Open Payables</a>
+            {% endif %}
+
+            {% if item.status == 'active' and item.remaining_amount > 0 and not item.linked_payable %}
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="pay_planned_item">
+              <input type="hidden" name="item_id" value="{{ item.id }}">
+              <input type="hidden" name="amount" value="{{ item.remaining_amount }}">
+              <input type="hidden" name="date" value="{{ today }}">
+              <input type="hidden" name="account" value="{{ item.account }}">
+              <button type="submit" class="secondary-btn compact-btn" onclick="return confirm('Create the expense transaction and mark this item as paid?')">Pay all</button>
+            </form>
+
+            <form method="post" class="mini-pay-form project-mini-pay">
+              <input type="hidden" name="action" value="pay_planned_item">
+              <input type="hidden" name="item_id" value="{{ item.id }}">
+              <input type="date" name="date" value="{{ today }}" aria-label="Payment date">
+              <input type="number" step="0.01" name="amount" placeholder="Partial" required>
+              <select name="account" aria-label="Payment account">
+                {% for account in account_options %}
+                  <option value="{{ account.value }}" {% if account.value == item.account or account.key == item.account or account.label == item.account %}selected{% endif %}>{{ account.label }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="secondary-btn compact-btn">Pay</button>
+            </form>
+            {% endif %}
+
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="delete_planned_item">
+              <input type="hidden" name="item_id" value="{{ item.id }}">
+              <button type="submit" class="icon-action-btn icon-action-delete" title="Delete item" aria-label="Delete item" onclick="return confirm('Delete this expected item?')">×</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <datalist id="expense-project-categories-3">
+    {% for category in expense_categories %}
+      <option value="{{ category }}"></option>
+    {% endfor %}
+  </datalist>
+  {% else %}
+    <p>No future costs yet. Add expected items like 15k for works or link an existing Payable from the form above.</p>
+  {% endif %}
+</section>
+
+<section class="panel-card project-table-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Actuals</span>
+      <h3>Attached real transactions</h3>
+      <p>These already affect your net balance because they are real expenses or incomes.</p>
+    </div>
+  </div>
+  {% if actual_movements %}
+  <table class="standard-table transactions-table project-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Category</th>
+        <th>Description</th>
+        <th>Account</th>
+        <th>Amount</th>
+        <th>Source</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tx in actual_movements %}
+      <tr>
+        <td>{{ tx.date }}</td>
+        <td><span class="pill {{ tx.amount_class }}">{{ tx.type_label }}</span></td>
+        <td>{{ tx.category }}{% if tx.sub_category %}<br><small>{{ tx.sub_category }}</small>{% endif %}</td>
+        <td>{{ tx.description }}{% if tx.note %}<br><small>{{ tx.note }}</small>{% endif %}</td>
+        <td>{{ tx.account or 'Main bank' }}</td>
+        <td class="amount {{ tx.amount_class }}">{{ tx.amount_sign }} € {{ '%.2f'|format(tx.amount) }}</td>
+        <td>{{ tx.source_label }}</td>
+        <td>
+          <form method="post">
+            <input type="hidden" name="action" value="detach_movement">
+            <input type="hidden" name="movement_id" value="{{ tx.movement_id }}">
+            <button type="submit" class="icon-action-btn icon-action-delete" title="Detach from project" aria-label="Detach from project" onclick="return confirm('Detach this transaction from the project? The transaction itself will not be deleted.')">×</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>No real transactions attached yet.</p>
+  {% endif %}
+</section>
+
+<section class="panel-card danger-panel">
+  <h3>Delete sheet</h3>
+  <p>This removes only the project sheet, attached links and future expected items. It does not delete real transactions already saved in Transactions.</p>
+  <form method="post">
+    <input type="hidden" name="action" value="delete_project">
+    <input type="hidden" name="project_id" value="{{ project.id }}">
+    <button type="submit" class="danger-btn" onclick="return confirm('Delete this entire project sheet?')">Delete project sheet</button>
+  </form>
+</section>
+{% endblock %}

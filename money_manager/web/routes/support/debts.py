@@ -45,4 +45,4 @@ def debts_page():
         return redirect(url_for("debts.debts_page"))
 
     generate_debt_payments()
-    return render_template("debts.html", **page_context())
+    return render_template("support/debts.html", **page_context())

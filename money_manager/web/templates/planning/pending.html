@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block page_title %}Pending Payments{% endblock %}
+
+{% block content %}
+<section class="form-section pending-card pending-hero-card">
+  <div class="pending-hero-copy">
+    <span class="eyebrow">Queue</span>
+    <h2>Pending payments</h2>
+    <p>
+      These rows are not auto-executed just because the due date arrived. Confirm a payment with ✓,
+      delay it with ⏳, edit it with ✎, or delete it with ×.
+    </p>
+    <div class="hero-actions">
+      <a class="secondary-btn compact-btn" href="{{ url_for('pending.recurring_page') }}">Recurring rules</a>
+    </div>
+  </div>
+  <div class="pending-hero-metrics">
+    <div>
+      <span>Main pending impact</span>
+      <strong>€ {{ '%.2f'|format(main_pending_total) }}</strong>
+      <small>Excludes separate liquid accounts.</small>
+    </div>
+    <div>
+      <span>All pending impact</span>
+      <strong>€ {{ '%.2f'|format(pending_total) }}</strong>
+      <small>Includes Cash Flow, EdenRed, Pre-paid and custom accounts.</small>
+    </div>
+  </div>
+</section>
+
+<section class="pending-insights-grid">
+  <article class="pending-insight-card tone-outflow">
+    <span>Expected outflow</span>
+    <strong>€ {{ '%.2f'|format(pending_outflow) }}</strong>
+    <small>Expenses and investments still open.</small>
+  </article>
+  <article class="pending-insight-card tone-income">
+    <span>Expected income</span>
+    <strong>€ {{ '%.2f'|format(pending_income) }}</strong>
+    <small>Open income movements.</small>
+  </article>
+  <article class="pending-insight-card tone-calendar">
+    <span>Next pending date</span>
+    <strong>{{ next_pending_date }}</strong>
+    <small>Sorted automatically by due date.</small>
+  </article>
+  <article class="pending-insight-card tone-auxiliary">
+    <span>Separate accounts</span>
+    <strong>€ {{ '%.2f'|format(auxiliary_pending) }}</strong>
+    <small>Pending movements outside main net.</small>
+  </article>
+</section>
+
+<section class="transactions pending-card recurring-forecast-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Recurring forecast</span>
+      <h2>Expected recurring payments for {{ recurring_forecast.window_label }}</h2>
+      <p>These rows come from recurring rules. They are a forecast only and are not added to the pending totals above until the app actually queues them.</p>
+    </div>
+    <div class="forecast-total-pill">
+      <span>Expected outflow</span>
+      <strong>€ {{ '%.2f'|format(recurring_forecast.expected_outflow) }}</strong>
+    </div>
+  </div>
+
+  {% if recurring_forecast['items'] %}
+    <div class="forecast-summary-strip">
+      <div>
+        <span>Expenses</span>
+        <strong>€ {{ '%.2f'|format(recurring_forecast.expected_expenses) }}</strong>
+      </div>
+      <div>
+        <span>Investments</span>
+        <strong>€ {{ '%.2f'|format(recurring_forecast.expected_investments) }}</strong>
+      </div>
+      <div>
+        <span>Income</span>
+        <strong>€ {{ '%.2f'|format(recurring_forecast.expected_income) }}</strong>
+      </div>
+      <div>
+        <span>Net impact</span>
+        <strong>€ {{ '%.2f'|format(recurring_forecast.net_impact) }}</strong>
+      </div>
+    </div>
+
+    <div class="forecast-list compact-forecast-list">
+      {% for item in recurring_forecast['items'] %}
+      <article class="forecast-item row-{{ item.type|lower }} {% if item.is_auxiliary_account %}payment-auxiliary{% endif %}">
+        <div class="forecast-date">
+          <span>{{ item.payment_due_date }}</span>
+          <small>Due date</small>
+        </div>
+        <div class="forecast-main">
+          <strong>{{ item.name }}</strong>
+          <small>{{ item.category }} · {{ item.account_label }} · {{ item.status_label }}</small>
+        </div>
+        <div class="forecast-amount">
+          <span class="type-badge type-{{ item.type|lower }}">{{ item.type|capitalize }}</span>
+          <strong>{{ item.amount_str }}</strong>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">No expected recurring payments for {{ recurring_forecast.window_label }}.</p>
+  {% endif %}
+</section>
+
+<section class="transactions pending-card pending-payments-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Open items</span>
+      <h2>Credits to be paid</h2>
+      <p>Nothing is executed automatically: use this section only when the real payment has actually happened.</p>
+    </div>
+    <form method="post" class="inline-form">
+      <button type="submit" name="action" value="process_due" class="secondary-btn compact-btn" onclick="return confirm('Execute every pending item due up to today?')">✓ Manually execute due today</button>
+    </form>
+  </div>
+
+  {% if pending_open %}
+    <div class="payment-card-list">
+      {% for tx in pending_open %}
+      <form method="post" class="payment-card payment-{{ tx.status }} row-{{ tx.type|lower }} {% if tx.is_auxiliary_account %}payment-auxiliary{% endif %} {% if tx.is_overdue %}payment-overdue{% elif tx.is_due_today %}payment-due-today{% endif %}">
+        <input type="hidden" name="id" value="{{ tx.id }}">
+        <div class="payment-date-block">
+          <label>Due date</label>
+          <input type="date" name="date_due" value="{{ tx.date_due_str }}" required>
+          {% if tx.is_overdue %}<small class="warning-text">Overdue</small>{% elif tx.is_due_today %}<small>Due today</small>{% endif %}
+        </div>
+        <div class="payment-main payment-edit-grid">
+          <div>
+            <label>Type</label>
+            <select name="type">
+              <option value="expense" {% if tx.type == 'expense' %}selected{% endif %}>Expense</option>
+              <option value="income" {% if tx.type == 'income' %}selected{% endif %}>Income</option>
+              <option value="investment" {% if tx.type == 'investment' %}selected{% endif %}>Investment</option>
+            </select>
+          </div>
+          <div>
+            <label>Category</label>
+            <input type="text" name="category" value="{{ tx.category }}" required>
+          </div>
+          <div class="payment-description-field">
+            <label>Description</label>
+            <input type="text" name="description" value="{{ tx.description }}" placeholder="Scheduled payment">
+          </div>
+        </div>
+        <div class="payment-side payment-edit-side">
+          <label>Amount</label>
+          <input type="number" step="0.01" name="amount" value="{{ tx.amount_value }}" required>
+          <label>Status</label>
+          <select name="status">
+            <option value="pending" selected>Pending</option>
+            <option value="executed">Executed</option>
+          </select>
+          <label>Account</label>
+          <select name="account">
+            {% for account in account_options %}
+              <option value="{{ account.value }}" {% if tx.account == account.value or tx.account == account.key or tx.account == account.label %}selected{% endif %}>{{ account.label }}</option>
+            {% endfor %}
+          </select>
+          <label>Delay to</label>
+          <input type="date" name="delay_date" value="{{ tx.delay_date_default }}">
+        </div>
+        <div class="payment-action-rail payment-action-rail-wide" aria-label="Payment actions">
+          <button type="submit" name="action" value="update_pending" class="icon-action-btn icon-action-save" title="Update pending payment" aria-label="Update pending payment">✎</button>
+          <button type="submit" name="action" value="delay_pending" class="icon-action-btn icon-action-delay" title="Delay to selected date" aria-label="Delay pending payment">⏳</button>
+          <button type="submit" name="action" value="execute_pending" class="icon-action-btn icon-action-execute" title="Execute this payment" aria-label="Execute this payment" onclick="return confirm('Create the real transaction for this payment?')">✓</button>
+          <button type="submit" name="action" value="delete_pending" class="icon-action-btn icon-action-delete" title="Delete pending payment" aria-label="Delete pending payment" onclick="return confirm('Delete this pending payment?')">×</button>
+        </div>
+      </form>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">No open pending payments.</p>
+  {% endif %}
+</section>
+
+<section class="transactions pending-card pending-payments-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">History</span>
+      <h2>Executed pending rows</h2>
+      <p>These are the pending records that were manually executed. The real transaction is already in the transaction log.</p>
+    </div>
+    <span class="section-count">{{ pending_executed|length }} executed</span>
+  </div>
+
+  {% if pending_executed %}
+    <div class="payment-card-list payment-card-list-muted">
+      {% for tx in pending_executed %}
+      <form method="post" class="payment-card payment-{{ tx.status }} row-{{ tx.type|lower }} {% if tx.is_auxiliary_account %}payment-auxiliary{% endif %}">
+        <input type="hidden" name="id" value="{{ tx.id }}">
+        <div class="payment-date-block">
+          <label>Paid date</label>
+          <input type="date" name="date_due" value="{{ tx.date_due_str }}" required>
+        </div>
+        <div class="payment-main payment-edit-grid">
+          <div>
+            <label>Type</label>
+            <select name="type">
+              <option value="expense" {% if tx.type == 'expense' %}selected{% endif %}>Expense</option>
+              <option value="income" {% if tx.type == 'income' %}selected{% endif %}>Income</option>
+              <option value="investment" {% if tx.type == 'investment' %}selected{% endif %}>Investment</option>
+            </select>
+          </div>
+          <div>
+            <label>Category</label>
+            <input type="text" name="category" value="{{ tx.category }}" required>
+          </div>
+          <div class="payment-description-field">
+            <label>Description</label>
+            <input type="text" name="description" value="{{ tx.description }}">
+          </div>
+        </div>
+        <div class="payment-side payment-edit-side">
+          <label>Amount</label>
+          <input type="number" step="0.01" name="amount" value="{{ tx.amount_value }}" required>
+          <label>Status</label>
+          <select name="status">
+            <option value="pending" {% if tx.status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="executed" {% if tx.status != 'pending' %}selected{% endif %}>Executed</option>
+          </select>
+          <label>Account</label>
+          <select name="account">
+            {% for account in account_options %}
+              <option value="{{ account.value }}" {% if tx.account == account.value or tx.account == account.key or tx.account == account.label %}selected{% endif %}>{{ account.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="payment-action-rail" aria-label="Payment actions">
+          <button type="submit" name="action" value="update_pending" class="icon-action-btn icon-action-save" title="Update payment history row" aria-label="Update payment history row">✎</button>
+          <button type="submit" name="action" value="delete_pending" class="icon-action-btn icon-action-delete" title="Delete payment history row" aria-label="Delete payment history row" onclick="return confirm('Delete this payment history row?')">×</button>
+        </div>
+      </form>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">No executed pending rows yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

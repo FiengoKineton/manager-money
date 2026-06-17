@@ -1,0 +1,118 @@
+.transactions-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.16), transparent 22rem),
+    rgba(255, 255, 255, 0.9);
+}
+
+.transactions-hero h2 {
+  margin: 0.2rem 0 0;
+  font-size: clamp(1.65rem, 3vw, 2.3rem);
+  letter-spacing: -0.06em;
+}
+
+.transactions-hero p {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  max-width: 62ch;
+}
+
+.transactions-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.transactions-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.transaction-stat-card {
+  padding: 1rem;
+}
+
+.transaction-stat-card span,
+.dashboard-kpi span,
+.dashboard-hero-balance span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.transaction-stat-card strong,
+.dashboard-kpi strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  letter-spacing: -0.05em;
+}
+
+.transaction-stat-card small,
+.dashboard-kpi small {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--muted);
+}
+
+.transactions-filter-row {
+  grid-template-columns: 1.25fr minmax(190px, 0.9fr) minmax(190px, 1fr) minmax(200px, 0.9fr);
+}
+
+.transactions .panel-header {
+  align-items: center;
+}
+
+.transactions .section-count {
+  padding: 0.42rem 0.7rem;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  font-weight: 850;
+  font-size: 0.78rem;
+}
+
+.transactions-table.transactions-fit-table {
+  min-width: 920px;
+}
+
+@media (max-width: 1100px) {
+  .transactions-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .transactions-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .transactions-hero {
+    flex-direction: column;
+  }
+
+  .transactions-hero-actions,
+  .transactions-hero-actions a {
+    width: 100%;
+  }
+
+  .transactions-summary-grid,
+  .transactions-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .transactions-table.transactions-fit-table {
+    min-width: 0;
+  }
+}

@@ -49,7 +49,7 @@ def login():
         else:
             error = "Wrong password."
 
-    return render_template("login.html", error=error)
+    return render_template("auth/login.html", error=error)
 
 
 @bp.post("/logout")

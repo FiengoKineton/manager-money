@@ -433,3 +433,38 @@ body.app-body::after {
 .sidebar-nav .nav-items a {
   margin-left: 0.15rem;
 }
+
+/* Grouped sidebar clusters for related workflows. */
+.nav-items-grouped {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.nav-cluster {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.45rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.nav-cluster-soft {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.nav-cluster-label {
+  display: block;
+  padding: 0.1rem 0.35rem 0.25rem;
+  color: #93c5fd;
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.nav-cluster .sidebar-nav a,
+.sidebar-nav .nav-cluster a {
+  padding: 0.62rem 0.65rem;
+}

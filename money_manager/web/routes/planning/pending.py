@@ -63,7 +63,7 @@ def pending_page():
     recurring_forecast = recurring_forecast_for_next_month()
 
     return render_template(
-        "pending.html",
+        "planning/pending.html",
         pending=pending_rows["all"],
         pending_open=pending_rows["pending"],
         pending_executed=pending_rows["executed"],
@@ -98,7 +98,7 @@ def recurring_page():
     recurring_sections = prepare_recurring_sections(load_recurring())
 
     return render_template(
-        "recurring.html",
+        "planning/recurring.html",
         recurring=recurring_sections["active"],
         recurring_finished=recurring_sections["finished"],
         recurring_all=recurring_sections["all"],

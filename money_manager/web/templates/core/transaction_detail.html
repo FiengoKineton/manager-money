@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block page_title %}Transaction Detail{% endblock %}
+
+{% block content %}
+<section class="form-section">
+  <h2>Transaction #{{ tx.id }} ({{ tx.type|capitalize }})</h2>
+
+  <form method="post" class="transaction-form">
+    <div>
+      <label>Date</label>
+      <input type="date" name="date" value="{{ tx.date }}">
+    </div>
+
+    <div>
+      <label>Category</label>
+      <select name="category">
+        {% for cat in categories %}
+          <option value="{{ cat }}" {% if cat == tx.category %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>Sub-category</label>
+      <input type="text" name="sub_category" value="{{ tx.sub_category }}">
+    </div>
+
+    <div>
+      <label>Amount</label>
+      <input type="number" step="0.01" name="amount" value="{{ tx.amount }}">
+    </div>
+
+
+    {% if tx.original_currency and tx.original_currency != 'EUR' %}
+    <div class="form-field-wide currency-total-box">
+      <strong>Original foreign input</strong>
+      <p>{{ tx.original_amount }} {{ tx.original_currency }} saved as € {{ tx.amount }}.</p>
+      <small>Rate {{ tx.exchange_rate_to_eur }} + correction {{ tx.exchange_correction_to_eur }} = {{ tx.exchange_effective_rate_to_eur }} EUR per unit.</small>
+    </div>
+    {% endif %}
+
+    <div>
+      <label>Account</label>
+      <select name="account">
+        {% for account in account_options %}
+          {% set account_value = account.value %}
+          <option value="{{ account_value }}"
+            {% if (tx.account_key == account.key) or (tx.account == account.label) or (tx.account == account.key) or (tx.account == account.value) or (not tx.account and account.key == 'main_bank') %}selected{% endif %}>
+            {{ account.label }}
+          </option>
+        {% endfor %}
+      </select>
+      <small class="hint">Blank = main bank. Separate liquid accounts, including PayPal balance, stay out of main net/category charts. Credit card and PayPal-credit pending rows impact the main account when executed.</small>
+    </div>
+
+    <div class="form-field-wide">
+      <label>Description</label>
+      <textarea name="description" rows="2">{{ tx.description }}</textarea>
+    </div>
+
+    <div class="form-actions-row form-field-wide inline-action-rail">
+      <button type="submit" name="action" value="update" class="icon-action-btn icon-action-update" title="Update transaction" aria-label="Update transaction">✎</button>
+      <button type="submit" name="action" value="delete" class="icon-action-btn icon-action-delete" title="Delete transaction" aria-label="Delete transaction" onclick="return confirm('Delete this transaction?')">×</button>
+      <a href="{{ url_for('transactions.transactions_page') }}" class="form-back-link">Back to list</a>
+    </div>
+
+    <div class="form-field-wide delay-detail-box">
+      <label>Delay transaction</label>
+      <div class="delay-row-form">
+        <input type="date" name="delay_date" value="{{ tx.delay_date_default }}">
+        <button type="submit" name="action" value="delay" class="icon-action-btn icon-action-delay" title="Delay transaction to selected date" aria-label="Delay transaction to selected date">⏳</button>
+      </div>
+      <small class="hint">This changes the saved transaction date. Use it when the transaction was logged for today but actually happens later.</small>
+    </div>
+  </form>
+</section>
+{% endblock %}

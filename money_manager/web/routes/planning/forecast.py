@@ -8,4 +8,4 @@ bp = Blueprint("forecast", __name__)
 @bp.route("/forecast", methods=["GET", "POST"])
 def forecast():
     context = build_forecast_page_context(request.form if request.method == "POST" else None)
-    return render_template("forecast.html", **context)
+    return render_template("planning/forecast.html", **context)

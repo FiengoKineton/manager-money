@@ -32,7 +32,7 @@ def expense_projects_page():
             delete_project_from_form(request.form)
         return redirect(url_for("expense_projects.expense_projects_page"))
 
-    return render_template("expense_projects.html", **overview_context())
+    return render_template("planning/expense_projects.html", **overview_context())
 
 
 @bp.route("/<int:project_id>", methods=["GET", "POST"])
@@ -63,4 +63,4 @@ def expense_project_detail(project_id: int):
     context = detail_context(project_id)
     if context is None:
         return f"Expense project {project_id} not found", 404
-    return render_template("expense_project_detail.html", **context)
+    return render_template("planning/expense_project_detail.html", **context)

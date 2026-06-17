@@ -31,4 +31,4 @@ def payables_page():
     transactions = load_transactions()
     totals = summary_totals(main_account_transactions(transactions))
     visible_liquidity = totals["net"] + auxiliary_total(transactions)
-    return render_template("payables.html", **page_context(totals["net"], visible_liquidity))
+    return render_template("planning/payables.html", **page_context(totals["net"], visible_liquidity))

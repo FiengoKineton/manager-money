@@ -1,0 +1,9 @@
+{# Shared filter shell. It keeps spacing/visual behavior consistent while allowing
+   each page to provide its own form fields. #}
+{% macro filter_toolbar(action, method='get', class_name='') %}
+<section class="filters app-filter-bar {{ class_name }}">
+  <form method="{{ method }}" action="{{ action }}" class="filters-form">
+    {{ caller() }}
+  </form>
+</section>
+{% endmacro %}
