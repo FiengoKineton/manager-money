@@ -20,6 +20,12 @@ from money_manager.utils.stats import expenses_by_category, summary_totals
 
 
 def build_overview_context() -> dict:
+    from money_manager.services.cache_service import cached_calculation
+
+    return cached_calculation("overview.context", _build_overview_context_uncached)
+
+
+def _build_overview_context_uncached() -> dict:
     # The visible log/chart period starts on January 1st of the current year.
     # Money position, balances, stress, and available cash are calculated from
     # the full CSV history so opening/older rows still count.

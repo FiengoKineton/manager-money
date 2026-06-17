@@ -362,6 +362,12 @@ def _write_payload(payload: dict) -> None:
     path.parent.mkdir(exist_ok=True, parents=True)
     payload["currencies"] = _merge_with_defaults(payload.get("currencies", []))
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    try:
+        from money_manager.services.cache_service import notify_data_changed
+
+        notify_data_changed()
+    except Exception:
+        pass
 
 
 def _clean_code(value) -> str:

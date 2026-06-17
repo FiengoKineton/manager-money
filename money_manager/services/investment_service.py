@@ -137,6 +137,15 @@ def page_context() -> dict:
 
 
 def overview_snapshot(refresh: bool = False) -> dict:
+    if refresh:
+        return _overview_snapshot_uncached(refresh=True)
+
+    from money_manager.services.cache_service import cached_calculation
+
+    return cached_calculation("investment.overview_snapshot", lambda: _overview_snapshot_uncached(refresh=False))
+
+
+def _overview_snapshot_uncached(refresh: bool = False) -> dict:
     """Small, safe investment snapshot for the overview pages.
 
     It does not crash without internet.  By default it reuses the local market
@@ -159,6 +168,15 @@ def overview_snapshot(refresh: bool = False) -> dict:
 
 
 def investment_habit_snapshot(refresh: bool = False) -> dict:
+    if refresh:
+        return _investment_habit_snapshot_uncached(refresh=True)
+
+    from money_manager.services.cache_service import cached_calculation
+
+    return cached_calculation("investment.habit_snapshot", lambda: _investment_habit_snapshot_uncached(refresh=False))
+
+
+def _investment_habit_snapshot_uncached(refresh: bool = False) -> dict:
     """Return compact investment behaviour metrics for Analysis and Forecast.
 
     Deposits and buys are treated as invested cash. Withdrawals and sells are
@@ -729,6 +747,12 @@ def _write_cache(cache: dict) -> None:
     path = Path(INVESTMENT_MARKET_CACHE_JSON)
     path.parent.mkdir(exist_ok=True, parents=True)
     path.write_text(json.dumps(cache, indent=2), encoding="utf-8")
+    try:
+        from money_manager.services.cache_service import notify_data_changed
+
+        notify_data_changed()
+    except Exception:
+        pass
 
 
 def _empty_chart(title: str) -> str:

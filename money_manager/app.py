@@ -48,4 +48,12 @@ def create_app() -> Flask:
 
     register_context_processors(app)
     register_routes(app)
+
+    try:
+        from money_manager.services.cache_service import warm_app_cache_async
+
+        warm_app_cache_async()
+    except Exception:
+        pass
+
     return app

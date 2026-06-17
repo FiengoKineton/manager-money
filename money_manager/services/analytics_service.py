@@ -122,6 +122,16 @@ def build_analysis_metrics(df: pd.DataFrame) -> dict:
     }
 
 
+def build_analysis_metrics_cached() -> dict:
+    from money_manager.services.cache_service import cached_calculation
+    from money_manager.services.transaction_service import load_transactions
+
+    return cached_calculation(
+        "analysis.metrics",
+        lambda: build_analysis_metrics(load_transactions()),
+    )
+
+
 def period_summaries(df: pd.DataFrame) -> tuple[dict, dict]:
     today = pd.Timestamp.today()
     start_this_month = today.replace(day=1)

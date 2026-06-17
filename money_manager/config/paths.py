@@ -4,6 +4,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
 DOCUMENTS_DIR = PROJECT_ROOT / "documents"
 PLOTS_DIR = PROJECT_ROOT / "static" / "plots"
+CACHE_DIR = DATA_DIR / "cache"
 
 TRANSACTION_FILES = {
     "expense": DATA_DIR / "expenses.csv",
@@ -51,6 +52,7 @@ def ensure_runtime_directories() -> None:
     DATA_DIR.mkdir(exist_ok=True, parents=True)
     DOCUMENTS_DIR.mkdir(exist_ok=True, parents=True)
     PLOTS_DIR.mkdir(exist_ok=True, parents=True)
+    CACHE_DIR.mkdir(exist_ok=True, parents=True)
 
     for folder in DOCUMENT_FOLDERS:
         (DOCUMENTS_DIR / folder).mkdir(exist_ok=True, parents=True)

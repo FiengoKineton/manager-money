@@ -279,7 +279,9 @@ def _due_date_from_payload(tx: dict) -> date:
 
 
 def load_transactions() -> pd.DataFrame:
-    return load_all()
+    from money_manager.services.cache_service import cached_calculation
+
+    return cached_calculation("transactions.load_all", load_all)
 
 
 def prepare_transactions_for_display(df: pd.DataFrame) -> pd.DataFrame:

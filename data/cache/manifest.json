@@ -1,0 +1,35 @@
+{
+  "format": 1,
+  "updated_at": 1781701204.1336887,
+  "cache_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\cache",
+  "input_files": [
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\accounts.json",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\currencies.json",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\expenses.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\incomes.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\investments.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\pending.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\internal_transfers.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\recurring.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\sparagnat_fottut.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\parent_support.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\parent_support_rules.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\debts.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\debt_rules.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\receivables.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\payables.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\expense_projects.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\expense_project_movements.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\expense_project_planned_items.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\investment_assets.csv",
+    "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\investment_market_cache.json"
+  ],
+  "calculation_entrypoints": {
+    "transactions.load_all": "money_manager.services.transaction_service.load_transactions",
+    "overview.context": "money_manager.services.overview_service.build_overview_context",
+    "analysis.metrics": "money_manager.services.analytics_service.build_analysis_metrics_cached",
+    "forecast.defaults": "money_manager.services.forecast_service.build_forecast_defaults",
+    "investment.overview_snapshot": "money_manager.services.investment_service.overview_snapshot",
+    "investment.habit_snapshot": "money_manager.services.investment_service.investment_habit_snapshot"
+  }
+}

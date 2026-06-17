@@ -59,6 +59,7 @@ from money_manager.config.paths import (
     INVESTMENT_MARKET_CACHE_JSON,
     INTERNAL_TRANSFERS_CSV,
     CURRENCIES_JSON,
+    CACHE_DIR,
     TRANSACTION_FILES,
     ensure_runtime_directories,
 )

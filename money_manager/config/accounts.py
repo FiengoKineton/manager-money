@@ -285,6 +285,12 @@ def save_custom_account(label: str, description: str = "", aliases: str = "", ca
         json.dumps({"accounts": accounts}, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
+    try:
+        from money_manager.services.cache_service import notify_data_changed
+
+        notify_data_changed()
+    except Exception:
+        pass
     return record
 
 

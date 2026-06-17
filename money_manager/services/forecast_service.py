@@ -90,6 +90,12 @@ def estimate_cashflow_habits(main_df: pd.DataFrame, df_month: pd.DataFrame | Non
 
 
 def build_forecast_defaults() -> dict:
+    from money_manager.services.cache_service import cached_calculation
+
+    return cached_calculation("forecast.defaults", _build_forecast_defaults_uncached)
+
+
+def _build_forecast_defaults_uncached() -> dict:
     """Build smart defaults for the forecast.
 
     The defaults deliberately avoid a plain historical average.  They combine:

@@ -9,6 +9,15 @@ from money_manager.repositories.csv_files import append_row, ensure_csv, next_nu
 from money_manager.services.account_service import enrich_transactions_with_accounts
 
 
+def _notify_cache_changed() -> None:
+    try:
+        from money_manager.services.cache_service import notify_data_changed
+
+        notify_data_changed()
+    except Exception:
+        pass
+
+
 def csv_path_for_type(transaction_type: str) -> Path:
     try:
         return TRANSACTION_FILES[transaction_type]
@@ -109,6 +118,7 @@ def update_transaction(tx_id: int, transaction_type: str, data: dict) -> bool:
             df.loc[mask, col] = data[col]
 
     df.to_csv(path, index=False)
+    _notify_cache_changed()
     return True
 
 
@@ -127,6 +137,7 @@ def delete_transaction(tx_id: int, transaction_type: str) -> bool:
         return False
 
     df.to_csv(path, index=False)
+    _notify_cache_changed()
     return True
 
 

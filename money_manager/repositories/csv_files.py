@@ -3,6 +3,15 @@ from pathlib import Path
 from typing import Iterable
 
 
+def _notify_cache_changed() -> None:
+    try:
+        from money_manager.services.cache_service import notify_data_changed
+
+        notify_data_changed()
+    except Exception:
+        pass
+
+
 def ensure_csv(path: Path, fieldnames: list[str]) -> None:
     """Create or migrate a CSV file so it has the requested headers.
 
@@ -59,6 +68,7 @@ def write_rows(path: Path, fieldnames: list[str], rows: Iterable[dict]) -> None:
         writer.writeheader()
         for row in rows:
             writer.writerow({field: row.get(field, "") for field in headers})
+    _notify_cache_changed()
 
 
 def append_row(path: Path, fieldnames: list[str], row: dict) -> None:
@@ -67,6 +77,7 @@ def append_row(path: Path, fieldnames: list[str], row: dict) -> None:
     with path.open("a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=headers)
         writer.writerow({field: row.get(field, "") for field in headers})
+    _notify_cache_changed()
 
 
 def next_numeric_id(rows: list[dict], field: str = "id") -> int:
