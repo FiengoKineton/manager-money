@@ -26,6 +26,8 @@ def append_recurring(rule: dict) -> None:
         "category": rule.get("category", ""),
         "account": rule.get("account", "auto"),
         "start_date": (parse_date(rule.get("start_date")) or date.today()).isoformat(),
+        "end_date": _clean_date_field(rule.get("end_date", "")),
+        "max_occurrences": _clean_max_occurrences(rule.get("max_occurrences", "")),
         "last_generated": "",
     }
     rows.append(row)
@@ -33,18 +35,17 @@ def append_recurring(rule: dict) -> None:
 
 
 def update_recurring(rule_id, updates: dict) -> None:
+    """Update a rule without rewriting history.
+
+    Past generated/executed pending rows are not edited.  Open pending rows are
+    handled by the service before this function is called, and future generated
+    rows will use the updated values.
+    """
     rows = load_recurring()
 
     for row in rows:
         if str(row.get("id", "")) != str(rule_id):
             continue
-
-        old_schedule = (
-            row.get("amount"),
-            row.get("frequency"),
-            row.get("day_of_month"),
-            row.get("start_date"),
-        )
 
         row["name"] = updates.get("name", row.get("name", ""))
         row["type"] = updates.get("type", row.get("type", "expense"))
@@ -54,15 +55,14 @@ def update_recurring(rule_id, updates: dict) -> None:
         row["category"] = updates.get("category", row.get("category", ""))
         row["account"] = updates.get("account", row.get("account", "auto"))
         row["start_date"] = updates.get("start_date") or row.get("start_date") or date.today().isoformat()
-
-        new_schedule = (
-            row.get("amount"),
-            row.get("frequency"),
-            row.get("day_of_month"),
-            row.get("start_date"),
+        row["end_date"] = _clean_date_field(updates.get("end_date", row.get("end_date", "")))
+        row["max_occurrences"] = _clean_max_occurrences(
+            updates.get("max_occurrences", row.get("max_occurrences", ""))
         )
-        if new_schedule != old_schedule:
-            row["last_generated"] = ""
+        if "last_generated" in updates:
+            row["last_generated"] = _clean_date_field(updates.get("last_generated", ""))
+        # Otherwise intentionally keep last_generated. Resetting it can
+        # regenerate old periods with the new amount after a price/schedule edit.
         break
 
     write_recurring(rows)
@@ -101,6 +101,22 @@ def parse_frequency_months(value) -> int:
         return 1
 
     return max(1, months)
+
+
+def parse_max_occurrences(value) -> int | None:
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    try:
+        occurrences = int(float(text))
+    except (TypeError, ValueError):
+        return None
+
+    return occurrences if occurrences > 0 else None
 
 
 def parse_date(value):
@@ -143,6 +159,31 @@ def first_due_date(row: dict, today: date) -> date:
     return due_date
 
 
+def occurrence_count_until(row: dict, until_date: date | None) -> int:
+    """Count scheduled occurrences from the first due date up to until_date."""
+    if until_date is None:
+        return 0
+
+    frequency_months = parse_frequency_months(row.get("frequency"))
+    try:
+        desired_day = int(row.get("day_of_month", 1))
+    except (TypeError, ValueError):
+        desired_day = 1
+
+    start = first_due_date(row, until_date)
+    count = 0
+    current = start
+
+    # Safety cap avoids infinite loops if corrupted data sneaks in.
+    for _ in range(2400):
+        if current > until_date:
+            break
+        count += 1
+        current = add_months(current, frequency_months, desired_day)
+
+    return count
+
+
 def normalize_amount(value) -> float:
     try:
         return float(value)
@@ -150,7 +191,27 @@ def normalize_amount(value) -> float:
         return 0.0
 
 
+def _clean_date_field(value) -> str:
+    parsed = parse_date(value)
+    return parsed.isoformat() if parsed else ""
+
+
+def _clean_max_occurrences(value) -> str:
+    parsed = parse_max_occurrences(value)
+    return str(parsed) if parsed else ""
+
+
 def _normalize_row(row: dict) -> dict:
     normalized = {field: row.get(field, "") for field in RECURRING_FIELDS}
     normalized["frequency"] = str(parse_frequency_months(normalized.get("frequency")))
+    normalized["max_occurrences"] = _clean_max_occurrences(normalized.get("max_occurrences", ""))
+    normalized["end_date"] = _clean_date_field(normalized.get("end_date", ""))
+
+    # The UI treats the two stopping options as alternatives:
+    # either stop on an exact date OR stop after N occurrences.
+    # If both values exist because of an old edit, keep the occurrence limit
+    # and ignore the date cap, otherwise quarterly rules can be stopped too soon.
+    if normalized["max_occurrences"]:
+        normalized["end_date"] = ""
+
     return normalized

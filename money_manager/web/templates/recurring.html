@@ -13,14 +13,19 @@
   </div>
   <div class="pending-hero-metrics">
     <div>
-      <span>Rules</span>
+      <span>Active rules</span>
       <strong>{{ recurring|length }}</strong>
-      <small>Monthly or multi-month schedules.</small>
+      <small>Rules that can still create future payments.</small>
     </div>
     <div>
       <span>Next queue</span>
       <strong>{% if recurring %}{{ recurring[0].next_payment }}{% else %}—{% endif %}</strong>
       <small>First upcoming generated payment.</small>
+    </div>
+    <div>
+      <span>Finished</span>
+      <strong>{{ recurring_finished|length }}</strong>
+      <small>Rules stopped by end date or occurrence limit.</small>
     </div>
   </div>
 </section>
@@ -30,7 +35,7 @@
     <div>
       <span class="eyebrow">New automation</span>
       <h2>Add recurring payment</h2>
-      <p>Create the rule once; the app will queue generated movements when they become due.</p>
+      <p>Create the rule once; leave the stop fields empty to run forever.</p>
     </div>
   </div>
 
@@ -90,6 +95,21 @@
       </div>
     </div>
 
+    <div class="form-field">
+      <label>End date</label>
+      <input type="date" name="end_date">
+      <small>Optional. Last scheduled occurrence must be on or before this date.</small>
+    </div>
+
+    <div class="form-field">
+      <label>Stop after</label>
+      <div class="frequency-input">
+        <input type="number" name="max_occurrences" min="1" max="999" placeholder="Forever">
+        <span>occurrence(s)</span>
+      </div>
+      <small>Optional. If both stop fields are empty, the rule runs forever.</small>
+    </div>
+
     <div class="form-actions">
       <button type="submit">Add recurring</button>
     </div>
@@ -100,10 +120,10 @@
   <div class="panel-header">
     <div>
       <span class="eyebrow">Automatic schedule</span>
-      <h2>Saved recurring rules</h2>
+      <h2>Active recurring rules</h2>
       <p>Rules are ordered by the next generated payment, so the next thing to check is always first.</p>
     </div>
-    <span class="section-count">{{ recurring|length }} rule{{ '' if recurring|length == 1 else 's' }}</span>
+    <span class="section-count">{{ recurring|length }} active</span>
   </div>
 
   {% if recurring %}
@@ -124,6 +144,8 @@
         <div class="rule-badges">
           <span class="type-badge type-{{ r.type|lower }}">{{ r.type|capitalize }}</span>
           <span class="soft-badge next-badge">Next: {{ r.next_payment }}</span>
+          {% if r.end_date %}<span class="soft-badge">Ends: {{ r.end_date }}</span>{% endif %}
+          {% if r.max_occurrences %}<span class="soft-badge">{{ r.generated_count }}/{{ r.max_occurrences }} used{% if r.stop_after_last_date %} · last: {{ r.stop_after_last_date }}{% endif %}</span>{% endif %}
           {% if r.is_auxiliary_account %}<span class="soft-badge account-badge-soft">{{ r.account_label }}</span>{% endif %}
         </div>
       </div>
@@ -142,8 +164,8 @@
           <strong>{{ r.account_label }}</strong>
         </div>
         <div>
-          <span>Start date</span>
-          <strong>{{ r.start_date }}</strong>
+          <span>Stop rule</span>
+          <strong>{{ r.stop_rule_display }}</strong>
         </div>
       </div>
 
@@ -174,7 +196,17 @@
 
         <div>
           <label>Start</label>
-          <input type="date" name="start_date" value="{{ r.start_date }}">
+          <input type="date" name="start_date" value="{{ '' if r.start_date == '—' else r.start_date }}">
+        </div>
+
+        <div>
+          <label>End</label>
+          <input type="date" name="end_date" value="{{ r.end_date }}">
+        </div>
+
+        <div>
+          <label>Stop after</label>
+          <input type="number" name="max_occurrences" min="1" max="999" value="{{ r.max_occurrences }}" placeholder="Forever">
         </div>
 
         <div>
@@ -204,7 +236,59 @@
     {% endfor %}
   </div>
   {% else %}
-    <p class="empty">No recurring rules yet.</p>
+    <p class="empty">No active recurring rules.</p>
+  {% endif %}
+</section>
+
+<section class="transactions pending-card recurring-rules-card finished-recurring-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Archive</span>
+      <h2>Finished recurring rules</h2>
+      <p>Rules stopped by an end date or by the maximum number of occurrences. Totals are based on generated pending/history rows.</p>
+    </div>
+    <span class="section-count">{{ recurring_finished|length }} finished</span>
+  </div>
+
+  {% if recurring_finished %}
+  <div class="finished-rule-list">
+    {% for r in recurring_finished %}
+    <article class="finished-rule-card rule-{{ r.type|lower }} {% if r.is_auxiliary_account %}rule-auxiliary{% endif %}">
+      <div class="finished-rule-main">
+        <div>
+          <span class="type-badge type-{{ r.type|lower }}">{{ r.type|capitalize }}</span>
+          <h3>{{ r.name }}</h3>
+          <p>{{ r.finish_reason }} · {{ r.frequency_label }} · {{ r.amount_str }} each</p>
+        </div>
+        <form method="post" class="inline-form">
+          <input type="hidden" name="id" value="{{ r.id }}">
+          <button type="submit" name="action" value="delete" class="icon-action-btn icon-action-delete" title="Delete finished rule" aria-label="Delete finished rule" onclick="return confirm('Delete this finished recurring rule?')">×</button>
+        </form>
+      </div>
+
+      <div class="rule-metric-grid finished-metric-grid">
+        <div>
+          <span>{{ r.history_total_label }}</span>
+          <strong>{{ r.history_executed_total_str }}</strong>
+        </div>
+        <div>
+          <span>Generated rows</span>
+          <strong>{{ r.history_count }}</strong>
+        </div>
+        <div>
+          <span>Executed / pending</span>
+          <strong>{{ r.history_executed_count }} / {{ r.history_pending_count }}</strong>
+        </div>
+        <div>
+          <span>Period</span>
+          <strong>{{ r.start_date }} → {{ r.end_date_display }}</strong>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="empty">No finished recurring rules yet.</p>
   {% endif %}
 </section>
 {% endblock %}

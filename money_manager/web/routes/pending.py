@@ -9,7 +9,8 @@ from money_manager.services.recurring_service import (
     append_rule_from_form,
     delete_rule_from_form,
     generate_recurring,
-    prepare_recurring_for_display,
+    prepare_recurring_sections,
+    recurring_forecast_for_next_month,
     update_rule_from_form,
 )
 
@@ -59,6 +60,7 @@ def pending_page():
     process_pending(credit_only=True)
 
     pending_rows = prepare_pending_for_display(load_pending())
+    recurring_forecast = recurring_forecast_for_next_month()
 
     return render_template(
         "pending.html",
@@ -71,6 +73,7 @@ def pending_page():
         pending_outflow=pending_rows["pending_outflow"],
         auxiliary_pending=pending_rows["auxiliary_pending"],
         next_pending_date=pending_rows["next_pending_date"],
+        recurring_forecast=recurring_forecast,
         account_options=account_options_for_forms(),
     )
 
@@ -92,11 +95,13 @@ def recurring_page():
     generate_recurring()
     process_pending(credit_only=True)
     
-    recurring_rows = prepare_recurring_for_display(load_recurring())
+    recurring_sections = prepare_recurring_sections(load_recurring())
 
     return render_template(
         "recurring.html",
-        recurring=recurring_rows,
+        recurring=recurring_sections["active"],
+        recurring_finished=recurring_sections["finished"],
+        recurring_all=recurring_sections["all"],
         categories_by_type=CATEGORY_OPTIONS,
         default_category_by_type=DEFAULT_CATEGORY_BY_TYPE,
         account_options=account_options_for_forms(),

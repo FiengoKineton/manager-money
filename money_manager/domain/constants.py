@@ -48,6 +48,8 @@ RECURRING_FIELDS = [
     "category",
     "account",
     "start_date",
+    "end_date",
+    "max_occurrences",
     "last_generated",
 ]
 

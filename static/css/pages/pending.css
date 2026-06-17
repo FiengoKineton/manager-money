@@ -751,3 +751,168 @@
 .warning-text {
   color: var(--bad) !important;
 }
+
+/* Recurring end controls and forecast additions */
+.recurring-form {
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+}
+
+.add-recurring-card .form-field-wide {
+  grid-column: span 2;
+}
+
+.forecast-total-pill {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.75rem 0.95rem;
+  background: rgba(255, 255, 255, 0.82);
+  min-width: 180px;
+  text-align: right;
+}
+
+.forecast-total-pill span,
+.forecast-summary-strip span,
+.forecast-date small,
+.forecast-main small {
+  color: var(--muted);
+  font-size: 0.73rem;
+  font-weight: 820;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.forecast-total-pill strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1.25rem;
+  letter-spacing: -0.04em;
+}
+
+.forecast-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 0.85rem;
+}
+
+.forecast-summary-strip > div {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.72rem;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.forecast-summary-strip strong {
+  display: block;
+  margin-top: 0.2rem;
+  letter-spacing: -0.03em;
+}
+
+.compact-forecast-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.forecast-item {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr) minmax(120px, auto);
+  gap: 0.75rem;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.72rem 0.82rem;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.forecast-date {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 0.52rem 0.62rem;
+  background: rgba(248, 250, 252, 0.88);
+}
+
+.forecast-date span,
+.forecast-main strong,
+.forecast-amount strong {
+  display: block;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.forecast-main {
+  min-width: 0;
+}
+
+.forecast-amount {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.forecast-amount .type-badge {
+  margin-bottom: 0.3rem;
+}
+
+.finished-rule-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.finished-rule-card {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--shadow-sm);
+}
+
+.finished-rule-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.finished-rule-main h3 {
+  margin: 0.35rem 0 0.2rem;
+  letter-spacing: -0.04em;
+}
+
+.finished-rule-main p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.finished-metric-grid {
+  margin-left: 0;
+}
+
+@media (max-width: 1080px) {
+  .recurring-form {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+
+  .forecast-summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .recurring-form,
+  .forecast-summary-strip,
+  .forecast-item {
+    grid-template-columns: 1fr;
+  }
+
+  .add-recurring-card .form-field-wide {
+    grid-column: auto;
+  }
+
+  .forecast-total-pill,
+  .forecast-amount {
+    text-align: left;
+  }
+
+  .finished-rule-main {
+    flex-direction: column;
+  }
+}
