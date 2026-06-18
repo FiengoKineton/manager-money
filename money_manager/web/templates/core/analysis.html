@@ -2,95 +2,277 @@
 {% block page_title %}Analysis{% endblock %}
 
 {% block content %}
-<section class="analysis-hero">
+<section class="analysis-hero analysis-command-hero">
   <div>
-    <span class="eyebrow">Professional finance review</span>
-    <h2>Spending, income and investment behaviour</h2>
+    <span class="eyebrow">Decision cockpit</span>
+    <h2>Financial command center</h2>
     <p>
-      This page separates daily money habits from portfolio behaviour: income received,
-      spending pressure, average investment flow, dividends, buys/sells and estimated market P/L.
+      A professional view of the selected period: cashflow, fixed commitments, income quality,
+      spending concentration, obligations, receivables and portfolio behaviour.
     </p>
+    <div class="analysis-period-switcher" aria-label="Analysis period selector">
+      {% for option in period_options %}
+        <a href="{{ url_for('analysis.analysis', period=option.key) }}" class="analysis-period-chip {{ 'active' if option.active else '' }}">
+          <strong>{{ option.label }}</strong>
+          <small>{{ option.small }}</small>
+        </a>
+      {% endfor %}
+    </div>
   </div>
-  <div class="analysis-hero-score">
-    <span>Monthly net habit</span>
-    <strong>€ {{ '%.2f'|format(habits.avg_monthly_net) }}</strong>
-    <small>Smart estimate, not a plain average</small>
+
+  <div class="analysis-health-card tone-{{ health.tone }}">
+    <span>Financial health</span>
+    <div class="health-score-ring" style="--score: {{ health.score }};">
+      <strong>{{ health.score }}</strong>
+      <small>/100</small>
+    </div>
+    <h3>{{ health.label }}</h3>
+    <p>{{ health.text }}</p>
+    <dl>
+      <div><dt>Runway</dt><dd>{{ '%.1f'|format(health.runway_months) }} mo</dd></div>
+      <div><dt>Fixed pressure</dt><dd>{{ '%.0f'|format(health.recurring_ratio) }}%</dd></div>
+    </dl>
   </div>
 </section>
 
-<section class="analysis-kpi-grid">
+<section class="analysis-context-strip">
+  <div>
+    <span>Selected period</span>
+    <strong>{{ period.label }}</strong>
+    <small>{{ period.start }} → {{ period.end }}</small>
+  </div>
+  <div>
+    <span>Real main-bank net</span>
+    <strong>€ {{ '%.2f'|format(full_totals.net) }}</strong>
+    <small>Full CSV history, not only the selected period</small>
+  </div>
+  <div>
+    <span>Previous-period delta</span>
+    {% if comparison.has_previous %}
+      <strong class="{{ 'positive-text' if comparison.net_delta >= 0 else 'negative-text' }}">€ {{ '%.2f'|format(comparison.net_delta) }}</strong>
+      <small>Net movement vs comparable window</small>
+    {% else %}
+      <strong>—</strong>
+      <small>No comparable period yet</small>
+    {% endif %}
+  </div>
+</section>
+
+<section class="analysis-kpi-grid analysis-kpi-grid-six">
+  <article class="analysis-kpi tone-net">
+    <span>Period net</span>
+    <strong>€ {{ '%.2f'|format(period_totals.net) }}</strong>
+    <small>{{ '%.1f'|format(cashflow_statement.leftover_ratio) }}% of period income left after expenses and investments</small>
+  </article>
   <article class="analysis-kpi tone-income">
-    <span>Income habit / month</span>
-    <strong>€ {{ '%.2f'|format(habits.avg_monthly_income) }}</strong>
-    <small>{{ habits.income_method }}</small>
+    <span>Income</span>
+    <strong>€ {{ '%.2f'|format(period_totals.income) }}</strong>
+    <small>{{ '%.0f'|format(comparison.income_delta_pct) }}% vs previous period</small>
   </article>
   <article class="analysis-kpi tone-expense">
-    <span>Spending habit / month</span>
-    <strong>€ {{ '%.2f'|format(habits.avg_monthly_expenses) }}</strong>
-    <small>{{ '%.0f'|format(habits.burn_ratio) }}% of estimated income habit</small>
+    <span>Expenses</span>
+    <strong>€ {{ '%.2f'|format(period_totals.expenses) }}</strong>
+    <small>{{ '%.0f'|format(cashflow_statement.spending_ratio) }}% of income spent</small>
   </article>
   <article class="analysis-kpi tone-investment">
-    <span>Net invested / month</span>
-    <strong>€ {{ '%.2f'|format(investment.monthly_net_investment) }}</strong>
-    <small>Smart habit. Raw average: € {{ '%.2f'|format(investment.average_monthly_net_investment) }}/mo</small>
+    <span>Invested</span>
+    <strong>€ {{ '%.2f'|format(period_totals.investments) }}</strong>
+    <small>{{ '%.0f'|format(cashflow_statement.investment_ratio) }}% of income deployed to investments</small>
   </article>
-  <article class="analysis-kpi tone-profit {{ 'positive' if investment.profit_loss >= 0 else 'negative' }}">
-    <span>Investment P/L</span>
-    <strong>€ {{ '%.2f'|format(investment.profit_loss) }}</strong>
-    <small>{{ '%.2f'|format(investment.profit_loss_pct) }}% estimated market move</small>
+  <article class="analysis-kpi tone-warning">
+    <span>Recurring outflow</span>
+    <strong>€ {{ '%.2f'|format(recurring_pressure.monthly_total_outflow) }}</strong>
+    <small>{{ recurring_pressure.active_count }} active/future rules, monthly equivalent</small>
+  </article>
+  <article class="analysis-kpi {{ 'tone-danger' if liabilities.net_obligations > 0 else 'tone-good' }}">
+    <span>Net obligations</span>
+    <strong>€ {{ '%.2f'|format(liabilities.net_obligations) }}</strong>
+    <small>Debts + payables + pending − receivables</small>
   </article>
 </section>
 
-<section class="analysis-insight-grid">
-  {% for card in insight_cards %}
-    <article class="analysis-insight-card tone-{{ card.tone }}">
-      <span>{{ card.label }}</span>
-      <strong>{{ card.value }}</strong>
-      <p>{{ card.text }}</p>
-    </article>
-  {% endfor %}
+<section class="analysis-command-grid">
+  <article class="analysis-decision-card analysis-action-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">What to do next</span>
+        <h2>Actionable priorities</h2>
+      </div>
+    </div>
+    <div class="analysis-action-list">
+      {% for item in action_items %}
+        <div class="analysis-action-row">
+          <span class="priority-pill">{{ item.priority }}</span>
+          <div>
+            <strong>{{ item.title }}</strong>
+            <p>{{ item.text }}</p>
+          </div>
+          <em>{{ item.metric }}</em>
+        </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="analysis-decision-card">
+    <span class="eyebrow">Income quality</span>
+    <h3>Top income sources</h3>
+    {% if income_sources %}
+      <div class="analysis-mini-bars">
+        {% for source in income_sources[:5] %}
+          <div class="analysis-mini-bar-row">
+            <div><strong>{{ source.source }}</strong><small>{{ '%.0f'|format(source.share_pct) }}%</small></div>
+            <span><i style="width: {{ '%.0f'|format(source.share_pct) }}%;"></i></span>
+            <em>€ {{ '%.2f'|format(source.total) }}</em>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No income in this period.</p>
+    {% endif %}
+  </article>
+
+  <article class="analysis-decision-card">
+    <span class="eyebrow">Obligation stack</span>
+    <h3>What is still blocking liquidity</h3>
+    <dl class="analysis-stack-list">
+      <div><dt>Debts I owe</dt><dd>€ {{ '%.2f'|format(liabilities.debts_total) }}</dd></div>
+      <div><dt>Payables</dt><dd>€ {{ '%.2f'|format(liabilities.payables_total) }}</dd></div>
+      <div><dt>Pending payments</dt><dd>€ {{ '%.2f'|format(liabilities.pending_total) }}</dd></div>
+      <div class="positive-line"><dt>Receivables</dt><dd>€ {{ '%.2f'|format(liabilities.receivables_total) }}</dd></div>
+      <div class="strong-line"><dt>Due in 30 days</dt><dd>€ {{ '%.2f'|format(liabilities.due_30) }}</dd></div>
+    </dl>
+  </article>
 </section>
 
-<section class="analysis-section-heading">
+<section class="analysis-section-heading split-heading">
   <div>
-    <span class="eyebrow">Visual summary</span>
-    <h2>Main-bank money flow</h2>
+    <span class="eyebrow">Professional diagnostics</span>
+    <h2>Cashflow and allocation</h2>
   </div>
+  <a class="secondary-btn" href="{{ url_for('forecast.forecast') }}">Run forecast</a>
 </section>
 
 <div class="analysis-plots-grid professional-grid">
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.cashflow_waterfall|safe }}
+  </div>
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.monthly_savings_rate|safe }}
+  </div>
   <div class="chart-card chart-wide">
     <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
     {{ charts.monthly_summary|safe }}
   </div>
+</div>
 
+<section class="analysis-section-heading">
+  <div>
+    <span class="eyebrow">Behaviour analysis</span>
+    <h2>Where the money comes from and where it leaks</h2>
+  </div>
+</section>
+
+<div class="analysis-plots-grid professional-grid">
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.income_sources|safe }}
+  </div>
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.spending_pareto|safe }}
+  </div>
   <div class="chart-card">
     <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
     {{ charts.rolling_net_flow|safe }}
   </div>
-
-  <div class="chart-card">
-    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
-    {{ charts.expenses_by_category|safe }}
-  </div>
-
   <div class="chart-card">
     <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
     {{ charts.weekday_spending|safe }}
   </div>
-
   <div class="chart-card chart-wide">
     <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
     {{ charts.cumulative_balance|safe }}
   </div>
 </div>
 
+<section class="analysis-table-grid">
+  <article class="transactions professional-table-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Category control</span>
+        <h2>Top spending categories</h2>
+        <p>Use this to understand concentration, not just total spending.</p>
+      </div>
+    </div>
+    {% if category_rows %}
+      <table class="standard-table compact-analysis-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Share</th>
+            <th>Vs previous</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in category_rows %}
+            <tr>
+              <td>{{ row.category }}</td>
+              <td>€ {{ '%.2f'|format(row.total) }}</td>
+              <td>{{ '%.0f'|format(row.share_pct) }}%</td>
+              <td class="{{ 'positive-text' if row.delta <= 0 else 'negative-text' }}">{{ '+' if row.delta > 0 else '' }}€ {{ '%.2f'|format(row.delta) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">No expenses in this period.</p>
+    {% endif %}
+  </article>
+
+  <article class="transactions professional-table-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Risk check</span>
+        <h2>Largest expenses</h2>
+        <p>The fastest correction is usually hidden in a few large rows.</p>
+      </div>
+    </div>
+    {% if top_expenses %}
+      <table class="standard-table compact-analysis-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tx in top_expenses %}
+            <tr>
+              <td>{{ tx.date_str }}</td>
+              <td>{{ tx.category }}</td>
+              <td>{{ tx.description }}</td>
+              <td>€ {{ '%.2f'|format(tx.amount) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">No expenses yet.</p>
+    {% endif %}
+  </article>
+</section>
+
 <section class="analysis-section-heading split-heading">
   <div>
     <span class="eyebrow">Portfolio behaviour</span>
     <h2>Investments, dividends and buy/sell habits</h2>
   </div>
-  <a class="secondary-btn" href="{{ url_for('forecast.forecast') }}">Open smart forecast</a>
+  <a class="secondary-btn" href="{{ url_for('investments.investments_page') }}">Open investments</a>
 </section>
 
 <section class="investment-analysis-grid">
@@ -101,7 +283,7 @@
       <div><dt>Withdrawals + sells</dt><dd>€ {{ '%.2f'|format(investment.withdrawals_sells) }}</dd></div>
       <div><dt>Dividends received</dt><dd>€ {{ '%.2f'|format(investment.dividends) }}</dd></div>
       <div><dt>Smart monthly investment habit</dt><dd>€ {{ '%.2f'|format(investment.monthly_net_investment) }}</dd></div>
-      <div><dt>Raw monthly investment average</dt><dd>€ {{ '%.2f'|format(investment.average_monthly_net_investment) }}</dd></div>
+      <div><dt>Raw monthly investment average</dt><dd>€ {{ '%.2f'|format(investment.average_monthly_net_investment) }}/mo</dd></div>
       <div><dt>Auto annual return assumption</dt><dd>{{ '%.2f'|format(investment.annual_return_pct) }}%</dd></div>
     </dl>
     <p class="muted small-text">The forecast page uses these values as defaults, but you can override them before running a scenario.</p>
@@ -110,40 +292,6 @@
     <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
     {{ charts.investment_cashflows|safe }}
   </div>
-</section>
-
-<section class="transactions professional-table-card">
-  <div class="panel-header">
-    <div>
-      <span class="eyebrow">Risk check</span>
-      <h2>Top expenses</h2>
-      <p>The largest expenses are usually where the fastest corrections are possible.</p>
-    </div>
-  </div>
-  {% if top_expenses %}
-    <table class="standard-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Category</th>
-          <th>Description</th>
-          <th>Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for tx in top_expenses %}
-          <tr>
-            <td>{{ tx.date_str }}</td>
-            <td>{{ tx.category }}</td>
-            <td>{{ tx.description }}</td>
-            <td>€ {{ '%.2f'|format(tx.amount) }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p class="empty">No expenses yet.</p>
-  {% endif %}
 </section>
 
 {% endblock %}
