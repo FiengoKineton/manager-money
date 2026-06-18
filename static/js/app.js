@@ -987,7 +987,7 @@
 
         const selectedCard = event.target.closest(".quick-mode-card");
         if (selectedCard) {
-          selectedCard.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+          selectedCard.scrollIntoView({ behavior: "auto", block: "nearest", inline: "nearest" });
         }
 
         window.setTimeout(() => {
@@ -998,7 +998,7 @@
           );
 
           if (firstActiveField) {
-            firstActiveField.scrollIntoView({ behavior: "smooth", block: "center" });
+            firstActiveField.scrollIntoView({ behavior: "auto", block: "nearest" });
           }
         }, 180);
       });
@@ -1014,9 +1014,11 @@
 (function () {
   let ticking = false;
   let lastEvent = null;
+  const coarsePointer = window.matchMedia("(hover: none), (pointer: coarse), (max-width: 1120px)");
   const glowTargetsSelector = ".page-heading, .panel-card, .card, .form-section, .transactions, .summary-card, .priority-card, .mini-priority-card, .quick-mode-card, .payment-card, .recurring-rule-card, .mobile-disclosure-row";
 
   function updateBodyPointer(event) {
+    if (coarsePointer.matches) return;
     lastEvent = event;
     if (ticking) return;
     ticking = true;
@@ -1031,6 +1033,7 @@
   }
 
   function wireLocalGlow() {
+    if (coarsePointer.matches) return;
     document.querySelectorAll(glowTargetsSelector).forEach((target) => {
       if (target.dataset.glowWired === "true") return;
       target.dataset.glowWired = "true";
@@ -1104,7 +1107,7 @@
   ].join(", ");
 
   function createRipple(event) {
-    if (reducedMotion.matches) return;
+    if (reducedMotion.matches || !desktopPointer.matches) return;
     const target = event.target.closest(rippleSelector);
     if (!target) return;
 

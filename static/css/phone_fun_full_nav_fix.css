@@ -1197,3 +1197,239 @@
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Phone Fun Shell v3 reliability patch
+   These rules intentionally come last and override older mobile patch layers.
+-------------------------------------------------------------------------- */
+@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+  .mobile-sheet[hidden],
+  .mobile-add-menu[hidden],
+  .mobile-plan-menu[hidden],
+  .mobile-page-menu[hidden] {
+    display: none !important;
+  }
+
+  .mobile-sheet,
+  .mobile-add-menu,
+  .mobile-plan-menu,
+  .mobile-page-menu {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483400 !important;
+    pointer-events: none !important;
+    contain: layout paint style !important;
+  }
+
+  .mobile-sheet.is-open,
+  .mobile-add-menu.is-open,
+  .mobile-plan-menu.is-open,
+  .mobile-page-menu.is-open {
+    pointer-events: auto !important;
+  }
+
+  .mobile-sheet-backdrop {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: rgba(6, 14, 29, 0.22) !important;
+    backdrop-filter: blur(7px) !important;
+    -webkit-backdrop-filter: blur(7px) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.16s ease !important;
+    touch-action: manipulation !important;
+  }
+
+  .mobile-sheet.is-open .mobile-sheet-backdrop {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .mobile-sheet-panel,
+  .mobile-page-panel,
+  .mobile-add-panel {
+    display: grid !important;
+    position: fixed !important;
+    left: var(--phone-side) !important;
+    right: var(--phone-side-right) !important;
+    bottom: var(--phone-sheet-bottom) !important;
+    top: auto !important;
+    max-height: min(68dvh, calc((var(--phone-vh, 1vh) * 100) - var(--phone-topbar-height) - var(--phone-tabbar-height) - 2.2rem)) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    opacity: 0 !important;
+    transform: translate3d(0, 18px, 0) scale(0.985) !important;
+    transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.2, 1), opacity 0.16s ease !important;
+    animation: none !important;
+    pointer-events: none !important;
+    will-change: transform, opacity !important;
+  }
+
+  .mobile-sheet.is-open .mobile-sheet-panel,
+  .mobile-sheet.is-open .mobile-page-panel,
+  .mobile-sheet.is-open .mobile-add-panel {
+    opacity: 1 !important;
+    transform: translate3d(0, 0, 0) scale(1) !important;
+    pointer-events: auto !important;
+  }
+
+  .mobile-bottom-nav.mobile-tabbar,
+  .app-topbar {
+    will-change: transform !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+  }
+
+  .mobile-tabbar .mobile-tab,
+  .mobile-tabbar a,
+  .mobile-tabbar button {
+    transition: transform 0.14s ease, background-color 0.14s ease, box-shadow 0.14s ease !important;
+  }
+
+  .mobile-tabbar .mobile-tab:active,
+  .mobile-tabbar a:active,
+  .mobile-tabbar button:active {
+    transform: translateY(-1px) scale(0.985) !important;
+  }
+
+  .mobile-tabbar .mobile-tab-add:active {
+    transform: translateY(-10px) scale(0.985) !important;
+  }
+
+  body.mobile-sheet-open {
+    overscroll-behavior: none !important;
+  }
+
+  .phone-transaction-list {
+    display: grid !important;
+    gap: 0.68rem !important;
+  }
+
+  .phone-extra-transactions {
+    display: grid !important;
+    gap: 0.68rem !important;
+  }
+
+  .phone-extra-transactions.is-hidden {
+    display: none !important;
+  }
+
+  .transactions-with-phone-cards > table.transactions-table {
+    display: none !important;
+  }
+
+  .phone-transaction-card {
+    min-width: 0 !important;
+    min-height: 74px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 0.78rem !important;
+    padding: 0.82rem 0.92rem !important;
+    border-radius: 23px !important;
+    text-decoration: none !important;
+    color: var(--ink) !important;
+    background: rgba(255, 255, 255, 0.68) !important;
+    border: 1px solid rgba(255, 255, 255, 0.70) !important;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255,255,255,0.70) !important;
+    transform: translate3d(0, 0, 0) !important;
+    transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease !important;
+    touch-action: manipulation !important;
+  }
+
+  .phone-transaction-card:active {
+    transform: scale(0.992) !important;
+  }
+
+  .phone-transaction-copy {
+    display: grid !important;
+    gap: 0.17rem !important;
+    min-width: 0 !important;
+  }
+
+  .phone-transaction-copy b,
+  .phone-transaction-copy small,
+  .phone-transaction-copy em {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .phone-transaction-copy b {
+    font-size: 0.94rem !important;
+    line-height: 1.12 !important;
+    font-weight: 950 !important;
+  }
+
+  .phone-transaction-copy small,
+  .phone-transaction-copy em {
+    color: var(--muted) !important;
+    font-size: 0.74rem !important;
+    font-style: normal !important;
+  }
+
+  .phone-transaction-amount {
+    white-space: nowrap !important;
+    font-size: 0.94rem !important;
+    font-weight: 950 !important;
+  }
+
+  .phone-transaction-card.row-expense .phone-transaction-amount { color: #b91c1c !important; }
+  .phone-transaction-card.row-income .phone-transaction-amount { color: #047857 !important; }
+  .phone-transaction-card.row-investment .phone-transaction-amount { color: #1d4ed8 !important; }
+
+  html[data-theme="night"] .phone-transaction-card {
+    color: var(--ink) !important;
+    background:
+      linear-gradient(135deg, rgba(10, 28, 44, 0.88), rgba(8, 22, 35, 0.78)),
+      radial-gradient(circle at 100% 0%, rgba(70, 166, 184, 0.052), transparent 7rem) !important;
+    border-color: rgba(101, 171, 202, 0.13) !important;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.23), inset 0 1px 0 rgba(255,255,255,0.045) !important;
+  }
+
+  html[data-theme="night"] .phone-transaction-copy small,
+  html[data-theme="night"] .phone-transaction-copy em {
+    color: #8ea0b1 !important;
+  }
+
+  html[data-theme="night"] .phone-transaction-card.row-expense .phone-transaction-amount { color: #ef8e9b !important; }
+  html[data-theme="night"] .phone-transaction-card.row-income .phone-transaction-amount { color: #64d29d !important; }
+  html[data-theme="night"] .phone-transaction-card.row-investment .phone-transaction-amount { color: #93c5fd !important; }
+
+  .reveal-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+@media (min-width: 1121px) and (hover: hover) and (pointer: fine) {
+  .phone-transaction-list {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-sheet-panel,
+  .mobile-page-panel,
+  .mobile-add-panel,
+  .mobile-sheet-backdrop,
+  .mobile-tabbar .mobile-tab,
+  .mobile-tabbar a,
+  .mobile-tabbar button,
+  .phone-transaction-card {
+    transition: none !important;
+    animation: none !important;
+  }
+}

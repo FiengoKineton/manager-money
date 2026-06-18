@@ -14,7 +14,7 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=phone-fun-shell-2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=phone-fun-shell-3">
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
 <body class="app-body app-body-clean" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
@@ -155,9 +155,9 @@
     </button>
   </nav>
 
-  <details id="mobile-add-sheet" class="mobile-sheet mobile-add-menu" data-mobile-sheet="add">
-    <summary aria-label="Quick add">Quick add</summary>
-    <div class="mobile-sheet-panel mobile-add-panel" role="dialog" aria-label="Add money log">
+  <section id="mobile-add-sheet" class="mobile-sheet mobile-add-menu" data-mobile-sheet="add" hidden aria-hidden="true">
+    <button type="button" class="mobile-sheet-backdrop" data-mobile-close-sheets aria-label="Close add menu"></button>
+    <div class="mobile-sheet-panel mobile-add-panel" role="dialog" aria-modal="true" aria-label="Add money log">
       <div class="mobile-sheet-head">
         <div>
           <span class="mobile-page-kicker">Fast action</span>
@@ -172,11 +172,11 @@
         <a class="quick-add-special mobile-action-card" href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span><b>Special log</b><small>Debt, project, transfer</small></a>
       </div>
     </div>
-  </details>
+  </section>
 
-  <details id="mobile-plan-sheet" class="mobile-sheet mobile-plan-menu" data-mobile-sheet="plan">
-    <summary aria-label="Open planning pages">Planning</summary>
-    <div class="mobile-sheet-panel mobile-page-panel" role="dialog" aria-label="Planning pages">
+  <section id="mobile-plan-sheet" class="mobile-sheet mobile-plan-menu" data-mobile-sheet="plan" hidden aria-hidden="true">
+    <button type="button" class="mobile-sheet-backdrop" data-mobile-close-sheets aria-label="Close planning menu"></button>
+    <div class="mobile-sheet-panel mobile-page-panel" role="dialog" aria-modal="true" aria-label="Planning pages">
       <div class="mobile-sheet-head mobile-page-panel-head">
         <div>
           <span class="mobile-page-kicker">Money missions</span>
@@ -207,11 +207,11 @@
         </div>
       </section>
     </div>
-  </details>
+  </section>
 
-  <details id="mobile-more-sheet" class="mobile-sheet mobile-page-menu" data-mobile-sheet="more">
-    <summary aria-label="Open all pages">All pages</summary>
-    <div class="mobile-sheet-panel mobile-page-panel" role="dialog" aria-label="All mobile pages">
+  <section id="mobile-more-sheet" class="mobile-sheet mobile-page-menu" data-mobile-sheet="more" hidden aria-hidden="true">
+    <button type="button" class="mobile-sheet-backdrop" data-mobile-close-sheets aria-label="Close page menu"></button>
+    <div class="mobile-sheet-panel mobile-page-panel" role="dialog" aria-modal="true" aria-label="All mobile pages">
       <div class="mobile-sheet-head mobile-page-panel-head">
         <div>
           <span class="mobile-page-kicker">Phone map</span>
@@ -265,10 +265,10 @@
         </div>
       </section>
     </div>
-  </details>
+  </section>
 
-  <script src="{{ url_for('static', filename='js/app.js') }}?v=phone-fun-shell-2"></script>
-  <script src="{{ url_for('static', filename='js/phone_fun_full_nav_fix.js') }}?v=phone-fun-shell-2"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v=phone-fun-shell-3"></script>
+  <script src="{{ url_for('static', filename='js/phone_fun_full_nav_fix.js') }}?v=phone-fun-shell-3"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

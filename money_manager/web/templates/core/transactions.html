@@ -110,13 +110,38 @@
   </form>
 </section>
 
-<section class="transactions">
+<section class="transactions transactions-with-phone-cards">
   <div class="panel-header">
     <div>
       <span class="eyebrow">Saved rows</span>
       <h2>Transactions</h2>
     </div>
     <span class="section-count">{{ transactions|length }} shown</span>
+  </div>
+
+  <div class="phone-transaction-list" aria-label="Phone transaction cards">
+    {% for tx in transactions_initial %}
+      <a class="phone-transaction-card row-{{ tx.type }}" href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
+        <span class="phone-transaction-copy">
+          <b>{{ tx.description if tx.description and tx.description != 'nan' else tx.category }}</b>
+          <small>{{ tx.date_str }} · {{ tx.type.capitalize() }}{% if tx.account and tx.account != 'nan' %} · {{ tx.account }}{% endif %}</small>
+          {% if tx.sub_category and tx.sub_category != 'nan' %}<em>{{ tx.sub_category }}</em>{% endif %}
+        </span>
+        <strong class="phone-transaction-amount">{{ tx.amount_str }}</strong>
+      </a>
+    {% endfor %}
+    <div id="phone-full-transactions" class="phone-extra-transactions is-hidden">
+      {% for tx in transactions[50:] %}
+        <a class="phone-transaction-card row-{{ tx.type }}" href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
+          <span class="phone-transaction-copy">
+            <b>{{ tx.description if tx.description and tx.description != 'nan' else tx.category }}</b>
+            <small>{{ tx.date_str }} · {{ tx.type.capitalize() }}{% if tx.account and tx.account != 'nan' %} · {{ tx.account }}{% endif %}</small>
+            {% if tx.sub_category and tx.sub_category != 'nan' %}<em>{{ tx.sub_category }}</em>{% endif %}
+          </span>
+          <strong class="phone-transaction-amount">{{ tx.amount_str }}</strong>
+        </a>
+      {% endfor %}
+    </div>
   </div>
 
   <table class="standard-table transactions-table transactions-actionless-table transactions-fit-table" data-mobile-title="Description" data-mobile-amount="Amount" data-mobile-meta="Date, Type, Account">
