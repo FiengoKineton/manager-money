@@ -2,100 +2,103 @@
 {% block page_title %}Overview{% endblock %}
 
 {% block content %}
-<section class="prism-overview-board">
-  <article class="prism-hero-ticket">
+<section class="prism-simple-studio">
+  <article class="prism-studio-hero">
     <span class="eyebrow">Quick view</span>
     <h2>Money map</h2>
     <p>The fast version: available position, stress position, recoverable money, investment P/L, and the main shortcuts.</p>
-    <div class="prism-hero-actions">
+    <div class="prism-studio-actions">
       <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Add expense</a>
       <a class="secondary-btn" href="{{ url_for('dashboard.overview_detailed') }}">Detailed overview</a>
     </div>
   </article>
 
-  <div class="prism-money-orbit" aria-label="Money overview metrics">
-    <article class="prism-orbit-center tone-net">
-      <span>Net balance</span>
-      <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
-      <small>Main bank net only.</small>
-    </article>
-
-    <article class="prism-orbit-node prism-node-liquid tone-aux">
-      <span>Separate liquid</span>
-      <strong>€ {{ '%.2f'|format(auxiliary_balance) }}</strong>
-      <small>Cash Flow, EdenRed, Pre-paid, Other/custom.</small>
-    </article>
-
-    <article class="prism-orbit-node prism-node-credit tone-warning">
-      <span>Credit pending</span>
-      <strong>€ {{ '%.2f'|format(credit_pending_amount) }}</strong>
-      <small>Credit card / PayPal-credit still to settle.</small>
-    </article>
-
-    <article class="prism-orbit-node prism-node-debt tone-expense">
-      <span>Active debts</span>
-      <strong>€ {{ '%.2f'|format(active_debt) }}</strong>
-      <small>Debt still to pay.</small>
-    </article>
-
-    <article class="prism-orbit-node prism-node-owed tone-income">
-      <span>Owed to me</span>
-      <strong>€ {{ '%.2f'|format(receivable_active_remaining) }}</strong>
-      <small>Net if repaid: € {{ '%.2f'|format(net_if_receivables_repaid) }}</small>
-    </article>
-  </div>
+  <article class="prism-ledger-focus">
+    <div class="prism-ledger-main">
+      <span>Main available position</span>
+      <strong>€ {{ '%.2f'|format(cash_position) }}</strong>
+      <small>All account nets + invested capital. Market P/L is shown separately.</small>
+    </div>
+    <div class="prism-stress-stack">
+      <div class="prism-stress-chip">
+        <span>Stress position</span>
+        <strong>€ {{ '%.2f'|format(stress_position) }}</strong>
+        <small>Fast risk pressure check.</small>
+      </div>
+      <div class="prism-stress-chip">
+        <span>Adjusted stress</span>
+        <strong>€ {{ '%.2f'|format(adjusted_stress_position) }}</strong>
+        <small>Stress + owed to me + investment P/L.</small>
+      </div>
+    </div>
+  </article>
 </section>
 
-<section class="prism-position-strip" aria-label="Position summary">
-  <article class="prism-position-card prism-position-main">
-    <span>Main available position</span>
-    <strong>€ {{ '%.2f'|format(cash_position) }}</strong>
-    <small>All account nets + invested capital. Market P/L is shown separately.</small>
+<section class="prism-metric-ribbon" aria-label="Quick financial metrics">
+  <article class="prism-metric-tile tone-net">
+    <span>Net balance</span>
+    <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
+    <small>Main bank net only.</small>
   </article>
-  <article class="prism-position-card prism-position-stress">
-    <span>Stress position</span>
-    <strong>€ {{ '%.2f'|format(stress_position) }}</strong>
-    <small>Fast risk pressure check.</small>
+  <article class="prism-metric-tile tone-aux">
+    <span>Separate liquid</span>
+    <strong>€ {{ '%.2f'|format(auxiliary_balance) }}</strong>
+    <small>Cash Flow, EdenRed, Pre-paid, Other/custom.</small>
   </article>
-  <article class="prism-position-card prism-position-adjusted">
+  <article class="prism-metric-tile tone-warning">
+    <span>Credit pending</span>
+    <strong>€ {{ '%.2f'|format(credit_pending_amount) }}</strong>
+    <small>Credit card / PayPal-credit still to settle.</small>
+  </article>
+  <article class="prism-metric-tile tone-expense">
+    <span>Active debts</span>
+    <strong>€ {{ '%.2f'|format(active_debt) }}</strong>
+    <small>Debt still to pay.</small>
+  </article>
+  <article class="prism-metric-tile tone-income">
+    <span>Owed to me</span>
+    <strong>€ {{ '%.2f'|format(receivable_active_remaining) }}</strong>
+    <small>Net if repaid: € {{ '%.2f'|format(net_if_receivables_repaid) }}</small>
+  </article>
+  <article class="prism-metric-tile tone-investment">
     <span>Adjusted stress</span>
     <strong>€ {{ '%.2f'|format(adjusted_stress_position) }}</strong>
     <small>Stress + owed to me + investment P/L.</small>
   </article>
 </section>
 
-<section class="prism-pathway-map" aria-label="Main shortcuts">
-  <a href="{{ url_for('transactions.transactions_page') }}" class="prism-pathway path-transactions">
+<section class="prism-link-lanes" aria-label="Main shortcuts">
+  <a href="{{ url_for('transactions.transactions_page') }}" class="prism-lane-link path-transactions">
     <span>01</span>
     <b>Transactions</b>
     <strong>Open transaction log</strong>
     <small>Search, edit, delete, and review every saved movement.</small>
   </a>
-  <a href="{{ url_for('pending.pending_page') }}" class="prism-pathway path-pending">
+  <a href="{{ url_for('pending.pending_page') }}" class="prism-lane-link path-pending">
     <span>02</span>
     <b>Pending</b>
     <strong>Pay or delay scheduled items</strong>
     <small>Generated items stay pending until you execute them.</small>
   </a>
-  <a href="{{ url_for('pending.recurring_page') }}" class="prism-pathway path-recurring">
+  <a href="{{ url_for('pending.recurring_page') }}" class="prism-lane-link path-recurring">
     <span>03</span>
     <b>Recurring</b>
     <strong>Manage automatic rules</strong>
     <small>Rules generate the queue, but do not silently pay it.</small>
   </a>
-  <a href="{{ url_for('accounts.accounts_page') }}" class="prism-pathway path-accounts">
+  <a href="{{ url_for('accounts.accounts_page') }}" class="prism-lane-link path-accounts">
     <span>04</span>
     <b>Accounts</b>
     <strong>Separate liquid accounts</strong>
     <small>Cash Flow, EdenRed, cards and other custom accounts.</small>
   </a>
-  <a href="{{ url_for('investments.investments_page') }}" class="prism-pathway path-investments">
+  <a href="{{ url_for('investments.investments_page') }}" class="prism-lane-link path-investments">
     <span>05</span>
     <b>Investments</b>
     <strong>Market and deposits</strong>
     <small>Deposits, buy/sell, withdrawals and profit/loss analysis.</small>
   </a>
-  <a href="{{ url_for('dashboard.index') }}" class="prism-pathway path-dashboard">
+  <a href="{{ url_for('dashboard.index') }}" class="prism-lane-link path-dashboard">
     <span>06</span>
     <b>Dashboard</b>
     <strong>Charts and filtered totals</strong>

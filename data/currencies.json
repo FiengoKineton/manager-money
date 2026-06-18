@@ -7,7 +7,7 @@
       "rate_to_eur": 1.0,
       "correction_to_eur": 0.0,
       "source": "fixed",
-      "updated_at": "2026-06-18T09:32:54+00:00",
+      "updated_at": "2026-06-18T09:45:20+00:00",
       "active": true
     },
     {
@@ -16,7 +16,7 @@
       "rate_to_eur": 0.8635578583765113,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T09:32:54+00:00",
+      "updated_at": "2026-06-18T09:45:20+00:00",
       "active": true
     },
     {
@@ -25,7 +25,7 @@
       "rate_to_eur": 1.1562698733884489,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T09:32:54+00:00",
+      "updated_at": "2026-06-18T09:45:20+00:00",
       "active": true
     },
     {
@@ -34,7 +34,7 @@
       "rate_to_eur": 1.087169228762149,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T09:32:54+00:00",
+      "updated_at": "2026-06-18T09:45:20+00:00",
       "active": true
     },
     {
@@ -43,7 +43,7 @@
       "rate_to_eur": 0.09177848345233944,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T09:32:54+00:00",
+      "updated_at": "2026-06-18T09:45:20+00:00",
       "active": true
     },
     {
@@ -52,7 +52,7 @@
       "rate_to_eur": 0.09074080795615404,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T09:32:54+00:00",
+      "updated_at": "2026-06-18T09:45:20+00:00",
       "active": true
     },
     {
@@ -61,7 +61,7 @@
       "rate_to_eur": 0.13380253421999813,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T09:32:54+00:00",
+      "updated_at": "2026-06-18T09:45:20+00:00",
       "active": true
     },
     {
@@ -70,7 +70,7 @@
       "rate_to_eur": 0.6154603643525357,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T09:32:54+00:00",
+      "updated_at": "2026-06-18T09:45:20+00:00",
       "active": true
     },
     {
@@ -79,7 +79,7 @@
       "rate_to_eur": 0.6086427267194157,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T09:32:54+00:00",
+      "updated_at": "2026-06-18T09:45:20+00:00",
       "active": true
     },
     {
@@ -88,11 +88,11 @@
       "rate_to_eur": 0.005381552039608223,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T09:32:54+00:00",
+      "updated_at": "2026-06-18T09:45:20+00:00",
       "active": true
     }
   ],
-  "last_refresh_attempt": "2026-06-18T09:32:54+00:00",
-  "last_successful_refresh": "2026-06-18T09:32:54+00:00",
+  "last_refresh_attempt": "2026-06-18T09:45:20+00:00",
+  "last_successful_refresh": "2026-06-18T09:45:20+00:00",
   "last_error": ""
 }

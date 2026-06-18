@@ -1,0 +1,807 @@
+/* --------------------------------------------------------------------------
+   Prism stability/readability pass
+   Frontend-only fixes: contrast, fixed navigation, non-overlapping actions,
+   larger charts/tables, and a roomier overview composition.
+-------------------------------------------------------------------------- */
+:root {
+  --prism-bg: #07111f;
+  --prism-bg-2: #0d1b2e;
+  --prism-paper: #f8fafc;
+  --prism-paper-2: #e2e8f0;
+  --prism-ink: #0f172a;
+  --prism-muted: #475569;
+  --prism-line: rgba(15, 23, 42, 0.14);
+  --prism-glass: rgba(248, 250, 252, 0.9);
+  --prism-glass-strong: rgba(255, 255, 255, 0.96);
+  --prism-shadow: 0 28px 88px rgba(2, 6, 23, 0.32);
+  --prism-soft-shadow: 0 18px 54px rgba(15, 23, 42, 0.12);
+  --prism-coral: #e11d48;
+  --prism-yellow: #f59e0b;
+  --prism-lime: #16a34a;
+  --prism-aqua: #0891b2;
+  --prism-blue: #2563eb;
+  --prism-violet: #7c3aed;
+  --prism-pink: #db2777;
+  --prism-shellbar-h: 90px;
+  --prism-safe-bottom: 52px;
+}
+
+body.app-body-prism {
+  color: var(--prism-ink);
+  padding-bottom: 48px !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(37, 99, 235, 0.32), transparent 28rem),
+    radial-gradient(circle at 92% 10%, rgba(8, 145, 178, 0.30), transparent 30rem),
+    radial-gradient(circle at 48% 96%, rgba(124, 58, 237, 0.22), transparent 34rem),
+    linear-gradient(135deg, #07111f 0%, #0d1b2e 46%, #07111f 100%) !important;
+}
+
+/* Fixed top command bar: it stays available while scrolling. */
+.prism-shellbar {
+  position: fixed !important;
+  top: max(10px, env(safe-area-inset-top, 0px)) !important;
+  left: 50% !important;
+  right: auto !important;
+  z-index: 8000 !important;
+  width: min(1660px, calc(100vw - 32px)) !important;
+  margin: 0 !important;
+  transform: translateX(-50%) !important;
+  grid-template-columns: minmax(190px, auto) minmax(420px, 1fr) minmax(300px, auto) !important;
+  background:
+    linear-gradient(135deg, rgba(8, 13, 25, 0.92), rgba(15, 23, 42, 0.86)),
+    radial-gradient(circle at var(--prism-x, 70%) var(--prism-y, 40%), rgba(14, 165, 233, 0.22), transparent 18rem) !important;
+  border-color: rgba(226, 232, 240, 0.20) !important;
+  box-shadow: 0 20px 70px rgba(2, 6, 23, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.prism-shellbar::after {
+  left: 24px;
+  right: 24px;
+  bottom: -7px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #a7f3d0, #c4b5fd, transparent) !important;
+}
+
+.prism-brand {
+  color: #f8fafc !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(226, 232, 240, 0.12) !important;
+}
+
+.prism-brand-copy small {
+  color: rgba(226, 232, 240, 0.72) !important;
+}
+
+.prism-nav-group summary {
+  color: rgba(248, 250, 252, 0.88) !important;
+  background: rgba(255, 255, 255, 0.075) !important;
+  border-color: rgba(226, 232, 240, 0.16) !important;
+}
+
+.prism-nav-group summary span {
+  color: #06111f !important;
+  background: linear-gradient(135deg, #67e8f9, #a7f3d0) !important;
+}
+
+.prism-nav-group[open] summary,
+.prism-nav-group.is-active summary,
+.prism-nav-group summary:hover {
+  color: #06111f !important;
+  background: linear-gradient(135deg, #f8fafc, #bae6fd) !important;
+  box-shadow: 0 16px 34px rgba(14, 165, 233, 0.28) !important;
+}
+
+.prism-nav-menu {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.94)),
+    radial-gradient(circle at 16% 0%, rgba(14, 165, 233, 0.16), transparent 12rem) !important;
+  border-color: rgba(15, 23, 42, 0.10) !important;
+}
+
+.prism-nav-menu::before {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+.prism-nav-menu a {
+  color: #0f172a !important;
+  background: rgba(255, 255, 255, 0.74) !important;
+}
+
+.prism-nav-menu a:hover,
+.prism-nav-menu a.active {
+  color: #f8fafc !important;
+  background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+}
+
+.prism-net-pill {
+  color: #0f172a !important;
+  background:
+    radial-gradient(circle at 14% 10%, rgba(255, 255, 255, 0.92), transparent 46%),
+    linear-gradient(135deg, #f8fafc, #dbeafe 52%, #cffafe) !important;
+  border: 1px solid rgba(255, 255, 255, 0.34) !important;
+  box-shadow: 0 16px 42px rgba(2, 6, 23, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+}
+
+.prism-net-pill span {
+  color: #475569 !important;
+  opacity: 1 !important;
+}
+
+.prism-net-pill strong {
+  color: #0f172a !important;
+}
+
+.prism-logout-action {
+  color: #e2e8f0 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(226, 232, 240, 0.14) !important;
+}
+
+.prism-main {
+  margin-top: calc(var(--prism-shellbar-h) + 44px) !important;
+  padding-bottom: 140px !important;
+}
+
+.prism-page-titlebar {
+  margin-bottom: 26px !important;
+}
+
+/* Desktop action rail: no more covering plots/tables at the bottom. */
+@media (min-width: 901px) {
+  body.app-body-prism > .quick-actions.prism-action-dock,
+  .quick-actions.prism-action-dock {
+    left: auto !important;
+    right: max(16px, calc((100vw - 1660px) / 2 + 16px)) !important;
+    top: 50% !important;
+    bottom: auto !important;
+    width: 76px !important;
+    min-height: auto !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    padding: 10px !important;
+    border-radius: 999px !important;
+    transform: translateY(-50%) !important;
+    transition: width 220ms ease, box-shadow 220ms ease, transform 220ms ease !important;
+  }
+
+  .quick-actions.prism-action-dock:hover,
+  .quick-actions.prism-action-dock:focus-within {
+    width: 238px !important;
+    transform: translateY(-50%) translateX(-2px) !important;
+  }
+
+  .prism-action-dock::before {
+    inset: 24px auto 24px -8px !important;
+    width: 2px !important;
+    height: auto !important;
+    background: linear-gradient(180deg, transparent, #38bdf8, #a7f3d0, #c4b5fd, transparent) !important;
+  }
+
+  .prism-action-dock .prism-action,
+  .prism-action-dock .quick-action {
+    width: 56px !important;
+    min-height: 56px !important;
+    justify-content: flex-start !important;
+    padding: 8px 10px !important;
+    border-radius: 999px !important;
+    transition: width 220ms ease, transform 180ms ease, box-shadow 180ms ease, background 180ms ease !important;
+  }
+
+  .quick-actions.prism-action-dock:hover .prism-action,
+  .quick-actions.prism-action-dock:focus-within .prism-action,
+  .quick-actions.prism-action-dock:hover .quick-action,
+  .quick-actions.prism-action-dock:focus-within .quick-action {
+    width: 100% !important;
+  }
+
+  .prism-action .quick-action-copy {
+    width: 0;
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(-8px);
+    overflow: hidden;
+    transition: opacity 180ms ease, max-width 220ms ease, transform 220ms ease;
+  }
+
+  .quick-actions.prism-action-dock:hover .quick-action-copy,
+  .quick-actions.prism-action-dock:focus-within .quick-action-copy {
+    width: auto;
+    max-width: 150px;
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Phone/tablet keeps the thumb dock, with enough bottom space to avoid hiding content. */
+@media (max-width: 900px) {
+  :root {
+    --prism-shellbar-h: 128px;
+    --prism-safe-bottom: 136px;
+  }
+
+  body.app-body-prism {
+    padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .prism-main {
+    margin-top: calc(var(--prism-shellbar-h) + 30px) !important;
+    padding-bottom: 170px !important;
+  }
+
+  body.app-body-prism > .quick-actions.prism-action-dock,
+  .quick-actions.prism-action-dock {
+    bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
+    min-height: 66px !important;
+    border-radius: 22px !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .prism-action-dock .prism-action,
+  .prism-action-dock .quick-action {
+    min-height: 54px !important;
+    border-radius: 18px !important;
+  }
+}
+
+@media (max-width: 1000px) {
+  .prism-shellbar {
+    position: fixed !important;
+    width: calc(100vw - 20px) !important;
+    grid-template-columns: 1fr auto !important;
+    grid-template-areas:
+      "brand tools"
+      "nav nav" !important;
+    background: rgba(8, 13, 25, 0.92) !important;
+  }
+
+  .prism-nav-group summary {
+    color: #f8fafc !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(226, 232, 240, 0.14) !important;
+  }
+
+  .prism-nav-group[open] summary,
+  .prism-nav-group.is-active summary,
+  .prism-nav-group summary:hover {
+    color: #06111f !important;
+    background: linear-gradient(135deg, #f8fafc, #bae6fd) !important;
+  }
+
+  .prism-nav-menu,
+  .prism-nav-columns {
+    top: calc(var(--prism-shellbar-h) + 12px) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  :root { --prism-shellbar-h: 122px; }
+
+  .prism-shellbar {
+    top: 8px !important;
+  }
+
+  .prism-main {
+    margin-top: calc(var(--prism-shellbar-h) + 24px) !important;
+  }
+
+  .prism-action .quick-action-copy strong {
+    color: #0f172a !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Roomier quick overview. Same values and links, less compression.
+-------------------------------------------------------------------------- */
+.prism-simple-studio {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(520px, 1.1fr);
+  gap: clamp(18px, 2.2vw, 32px);
+  align-items: stretch;
+  margin-bottom: clamp(20px, 2.4vw, 34px);
+}
+
+.prism-studio-hero,
+.prism-ledger-focus {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.16);
+  box-shadow: var(--prism-shadow);
+}
+
+.prism-studio-hero {
+  min-height: 430px;
+  display: grid;
+  align-content: end;
+  gap: 18px;
+  padding: clamp(28px, 4.2vw, 60px);
+  color: #f8fafc;
+  border-radius: 40px 40px 40px 150px;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(56, 189, 248, 0.30), transparent 18rem),
+    linear-gradient(145deg, rgba(8, 13, 25, 0.96), rgba(15, 23, 42, 0.92));
+}
+
+.prism-studio-hero::before {
+  content: "";
+  position: absolute;
+  right: -90px;
+  top: -90px;
+  width: 260px;
+  aspect-ratio: 1;
+  border: 30px solid rgba(255, 255, 255, 0.07);
+  border-radius: 34% 66% 60% 40%;
+}
+
+.prism-studio-hero h2 {
+  position: relative;
+  z-index: 1;
+  max-width: 9ch;
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(3.3rem, 7vw, 7rem);
+  line-height: 0.84;
+  letter-spacing: -0.11em;
+}
+
+.prism-studio-hero p,
+.prism-studio-hero .eyebrow,
+.prism-studio-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.prism-studio-hero p {
+  max-width: 44ch;
+  margin: 0;
+  color: rgba(226, 232, 240, 0.78);
+  line-height: 1.55;
+}
+
+.prism-studio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.prism-ledger-focus {
+  min-height: 430px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 20px;
+  padding: clamp(24px, 3.2vw, 46px);
+  border-radius: 150px 40px 40px 40px;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(20, 184, 166, 0.18), transparent 18rem),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.92));
+}
+
+.prism-ledger-focus::after {
+  content: "";
+  position: absolute;
+  left: -80px;
+  bottom: -96px;
+  width: 280px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: conic-gradient(from 120deg, rgba(37, 99, 235, 0.26), rgba(8, 145, 178, 0.10), rgba(124, 58, 237, 0.18), rgba(37, 99, 235, 0.26));
+  filter: blur(1px);
+}
+
+.prism-ledger-main {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+}
+
+.prism-ledger-main span,
+.prism-metric-tile span,
+.prism-stress-chip span {
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.prism-ledger-main strong {
+  color: #0f172a;
+  font-size: clamp(3rem, 7vw, 7.2rem);
+  line-height: 0.9;
+  letter-spacing: -0.1em;
+}
+
+.prism-ledger-main small,
+.prism-metric-tile small,
+.prism-stress-chip small {
+  color: #475569;
+  line-height: 1.45;
+}
+
+.prism-stress-stack {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.prism-stress-chip {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  min-height: 124px;
+  color: #f8fafc;
+  border-radius: 28px 10px 28px 10px;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+.prism-stress-chip span,
+.prism-stress-chip small {
+  color: rgba(226, 232, 240, 0.72);
+}
+
+.prism-stress-chip strong {
+  color: #f8fafc;
+  font-size: clamp(1.35rem, 2.4vw, 2.2rem);
+  letter-spacing: -0.06em;
+}
+
+.prism-metric-ribbon {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(210px, 1fr));
+  gap: clamp(12px, 1.5vw, 18px);
+  margin-bottom: clamp(20px, 2.4vw, 34px);
+}
+
+.prism-metric-tile {
+  position: relative;
+  min-height: 170px;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  padding: clamp(18px, 2vw, 26px);
+  overflow: hidden;
+  border-radius: 34px 10px 34px 10px;
+  color: #0f172a;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.90));
+  border: 1px solid rgba(226, 232, 240, 0.72);
+  box-shadow: var(--prism-soft-shadow);
+}
+
+.prism-metric-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 8px;
+  background: linear-gradient(180deg, var(--card-accent, #0ea5e9), transparent);
+}
+
+.prism-metric-tile::after {
+  content: "";
+  position: absolute;
+  right: -46px;
+  bottom: -58px;
+  width: 150px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--card-accent, #0ea5e9);
+  opacity: 0.10;
+}
+
+.prism-metric-tile strong {
+  color: #0f172a;
+  font-size: clamp(1.55rem, 2.4vw, 2.45rem);
+  line-height: 0.96;
+  letter-spacing: -0.07em;
+}
+
+.prism-link-lanes {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.prism-lane-link {
+  position: relative;
+  min-height: 230px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 12px;
+  padding: 22px;
+  overflow: hidden;
+  color: #f8fafc !important;
+  text-decoration: none !important;
+  border-radius: 999px 999px 34px 34px;
+  background:
+    radial-gradient(circle at 50% 0%, var(--path-accent, #38bdf8), transparent 11rem),
+    linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+  border: 1px solid rgba(226, 232, 240, 0.14);
+  box-shadow: var(--prism-shadow);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.prism-lane-link:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 90px rgba(2, 6, 23, 0.42);
+}
+
+.prism-lane-link span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #06111f;
+  background: #f8fafc;
+  font-weight: 950;
+}
+
+.prism-lane-link b {
+  align-self: end;
+  color: var(--path-accent, #38bdf8);
+  font-size: 0.74rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.prism-lane-link strong {
+  color: #f8fafc;
+  font-size: clamp(1.1rem, 1.4vw, 1.45rem);
+  line-height: 1.05;
+  letter-spacing: -0.055em;
+}
+
+.prism-lane-link small {
+  color: rgba(226, 232, 240, 0.72);
+  line-height: 1.38;
+}
+
+/* --------------------------------------------------------------------------
+   Better contrast and visibility for real data sections.
+-------------------------------------------------------------------------- */
+.app-body-prism .priority-card,
+.app-body-prism .mini-priority-card,
+.app-body-prism .summary-card,
+.app-body-prism .quick-link-card,
+.app-body-prism .kpi-card,
+.app-body-prism .card,
+.app-body-prism .chart-card,
+.app-body-prism .pending-card,
+.app-body-prism .payment-card,
+.app-body-prism .recurring-rule-card,
+.app-body-prism .liquid-account-card,
+.app-body-prism .asset-card,
+.app-body-prism .document-card,
+.app-body-prism .panel-card,
+.app-body-prism .form-card,
+.app-body-prism .form-panel,
+.app-body-prism .detail-panel,
+.app-body-prism .table-panel,
+.app-body-prism .filters,
+.app-body-prism .filter-toolbar,
+.app-body-prism .filters-panel {
+  color: #0f172a !important;
+  border-color: rgba(226, 232, 240, 0.72) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.92)),
+    radial-gradient(circle at 0 0, rgba(14, 165, 233, 0.08), transparent 14rem) !important;
+}
+
+.app-body-prism .priority-card *,
+.app-body-prism .mini-priority-card *,
+.app-body-prism .summary-card *,
+.app-body-prism .kpi-card *,
+.app-body-prism .card *,
+.app-body-prism .panel-card *,
+.app-body-prism .form-card *,
+.app-body-prism .form-panel *,
+.app-body-prism .detail-panel *,
+.app-body-prism .table-panel *,
+.app-body-prism .filters *,
+.app-body-prism .filter-toolbar *,
+.app-body-prism .filters-panel * {
+  color-scheme: light;
+}
+
+.app-body-prism .metric-label,
+.app-body-prism .summary-card h3,
+.app-body-prism .kpi-card h3,
+.app-body-prism .card h3,
+.app-body-prism .panel-card h3,
+.app-body-prism .table-panel h2,
+.app-body-prism .table-panel h3,
+.app-body-prism label,
+.app-body-prism .filter-field span,
+.app-body-prism .filter-field label {
+  color: #334155 !important;
+}
+
+.app-body-prism .summary-card p,
+.app-body-prism .summary-card strong,
+.app-body-prism .kpi-card strong,
+.app-body-prism .card strong,
+.app-body-prism .panel-card strong {
+  color: #0f172a !important;
+}
+
+.app-body-prism .page-heading,
+.app-body-prism .section-heading {
+  color: #f8fafc !important;
+}
+
+.app-body-prism .page-heading p,
+.app-body-prism .section-heading p {
+  color: rgba(226, 232, 240, 0.78) !important;
+}
+
+/* Tables: high-contrast headers, full width, horizontal scroll instead of squeezing. */
+.app-body-prism .table-responsive,
+.app-body-prism .table-scroll,
+.app-body-prism .table-panel {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(226, 232, 240, 0.82) !important;
+}
+
+.app-body-prism table,
+.app-body-prism .data-table,
+.app-body-prism .transactions-table,
+.app-body-prism .money-table {
+  width: 100% !important;
+  min-width: 840px;
+  border-collapse: separate !important;
+  border-spacing: 0 8px !important;
+}
+
+.app-body-prism thead th {
+  color: #f8fafc !important;
+  background: #0f172a !important;
+  border-bottom: 0 !important;
+  font-size: 0.72rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.app-body-prism thead th:first-child {
+  border-radius: 16px 0 0 16px !important;
+}
+
+.app-body-prism thead th:last-child {
+  border-radius: 0 16px 16px 0 !important;
+}
+
+.app-body-prism tbody td {
+  color: #0f172a !important;
+  background: #ffffff !important;
+  border-block: 1px solid rgba(15, 23, 42, 0.08) !important;
+  vertical-align: middle !important;
+}
+
+.app-body-prism tbody td a,
+.app-body-prism tbody td strong,
+.app-body-prism tbody td b {
+  color: #0f172a !important;
+}
+
+.app-body-prism tbody td small,
+.app-body-prism tbody td .muted,
+.app-body-prism tbody td .description {
+  color: #475569 !important;
+}
+
+/* Do not squeeze charts and analysis panels into tiny columns. */
+.app-body-prism .dashboard-charts,
+.app-body-prism .chart-grid,
+.app-body-prism .analysis-grid,
+.app-body-prism .plots-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: clamp(18px, 2vw, 28px) !important;
+}
+
+.app-body-prism .dashboard-charts > *,
+.app-body-prism .chart-grid > *,
+.app-body-prism .analysis-grid > *,
+.app-body-prism .plots-grid > *,
+.app-body-prism .chart-full,
+.app-body-prism .dashboard-charts .chart-full {
+  grid-column: 1 / -1 !important;
+}
+
+.app-body-prism .chart-card,
+.app-body-prism .plot-card,
+.app-body-prism .analysis-card {
+  min-height: 440px !important;
+  padding: clamp(18px, 2vw, 28px) !important;
+}
+
+.app-body-prism .chart-card img,
+.app-body-prism .plot-card img,
+.app-body-prism .chart-card svg,
+.app-body-prism .plot-card svg,
+.app-body-prism .plotly-graph-div,
+.app-body-prism .js-plotly-plot {
+  max-width: 100% !important;
+  min-height: 330px;
+}
+
+@media (max-width: 1200px) {
+  .prism-simple-studio {
+    grid-template-columns: 1fr;
+  }
+
+  .prism-studio-hero,
+  .prism-ledger-focus {
+    min-height: 360px;
+  }
+
+  .prism-metric-ribbon,
+  .prism-link-lanes {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .prism-metric-tile {
+    flex: 0 0 min(300px, 82vw);
+    scroll-snap-align: start;
+  }
+
+  .prism-lane-link {
+    flex: 0 0 min(280px, 78vw);
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 700px) {
+  .prism-simple-studio {
+    gap: 14px;
+  }
+
+  .prism-studio-hero,
+  .prism-ledger-focus {
+    min-height: auto;
+    border-radius: 32px 12px 44px 12px;
+    padding: 24px;
+  }
+
+  .prism-studio-hero h2 {
+    font-size: clamp(3rem, 17vw, 4.8rem);
+  }
+
+  .prism-ledger-main strong {
+    font-size: clamp(2.6rem, 14vw, 4rem);
+  }
+
+  .prism-stress-stack {
+    grid-template-columns: 1fr;
+  }
+
+  .prism-metric-ribbon,
+  .prism-link-lanes {
+    margin-inline: -2px;
+  }
+
+  .app-body-prism table,
+  .app-body-prism .data-table,
+  .app-body-prism .transactions-table,
+  .app-body-prism .money-table {
+    min-width: 720px;
+  }
+
+  .app-body-prism .chart-card,
+  .app-body-prism .plot-card,
+  .app-body-prism .analysis-card {
+    min-height: 360px !important;
+    padding: 14px !important;
+  }
+}

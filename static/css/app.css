@@ -31,6 +31,7 @@
 @import url("modern-ui.css");
 @import url("pro-ui-refresh.css");
 @import url("layout-prism.css");
+@import url("layout-prism-fixes.css");
 
 .logout-form {
   display: inline-flex;
