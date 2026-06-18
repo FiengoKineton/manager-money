@@ -1,21 +1,27 @@
 /* --------------------------------------------------------------------------
-   Phone app final fix
-   Frontend-only: full mobile navigation, reliable bottom-sheet add menu,
-   and a darker low-glare night palette for phone/tablet layouts.
+   Phone Fun Shell v2
+   Frontend-only mobile layer. Desktop layout/backend logic stay unchanged.
+   Goals: reliable fixed phone navigation, bottom-sheet add/plan/more menus,
+   softer night mode, and a more playful card-first phone experience.
 -------------------------------------------------------------------------- */
 
-.mobile-page-menu {
+.mobile-bottom-nav,
+.mobile-sheet,
+.mobile-plan-menu,
+.mobile-page-menu,
+.mobile-add-menu {
   display: none;
 }
 
 @media (max-width: 1120px), (hover: none) and (pointer: coarse) {
   :root {
-    --phone-topbar-height: 76px;
-    --phone-bottom-nav-height: 70px;
-    --phone-float-bottom: calc(max(0.62rem, env(safe-area-inset-bottom, 0px)) + var(--phone-bottom-nav-height) + 0.75rem);
-    --phone-sheet-bottom: calc(max(0.62rem, env(safe-area-inset-bottom, 0px)) + var(--phone-bottom-nav-height) + 0.9rem);
-    --phone-edge: max(0.72rem, env(safe-area-inset-left, 0px));
-    --phone-edge-right: max(0.72rem, env(safe-area-inset-right, 0px));
+    --phone-topbar-height: 74px;
+    --phone-tabbar-height: 72px;
+    --phone-safe-bottom: max(0.55rem, env(safe-area-inset-bottom, 0px));
+    --phone-side: max(0.72rem, env(safe-area-inset-left, 0px));
+    --phone-side-right: max(0.72rem, env(safe-area-inset-right, 0px));
+    --phone-sheet-bottom: calc(var(--phone-safe-bottom) + var(--phone-tabbar-height) + 0.58rem);
+    --phone-card-radius: 25px;
   }
 
   html,
@@ -28,6 +34,11 @@
 
   body.app-body-clean {
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .app-sidebar {
+    display: none !important;
   }
 
   .app-layout,
@@ -35,37 +46,38 @@
   .app-main,
   .container,
   .app-content-stage {
+    width: 100% !important;
     max-width: 100vw !important;
     min-width: 0 !important;
     overflow-x: clip !important;
   }
 
-  .app-sidebar {
-    display: none !important;
-  }
-
   .app-topbar {
     position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
+    inset: 0 0 auto 0 !important;
     min-height: calc(var(--phone-topbar-height) + env(safe-area-inset-top, 0px)) !important;
-    padding: calc(0.56rem + env(safe-area-inset-top, 0px)) 0.72rem 0.56rem !important;
+    padding: calc(0.58rem + env(safe-area-inset-top, 0px)) 0.72rem 0.58rem !important;
     z-index: 2147483000 !important;
-    border-radius: 0 0 24px 24px !important;
+    border-radius: 0 0 26px 26px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    gap: 0.48rem !important;
-    pointer-events: auto !important;
+    gap: 0.52rem !important;
     transform: translate3d(0, 0, 0) !important;
-    backdrop-filter: blur(20px) saturate(1.08) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(1.08) !important;
+    pointer-events: auto !important;
+    backdrop-filter: blur(22px) saturate(1.14) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(1.14) !important;
   }
 
   .app-main {
-    padding-top: calc(var(--phone-topbar-height) + env(safe-area-inset-top, 0px) + 0.55rem) !important;
+    padding-top: calc(var(--phone-topbar-height) + env(safe-area-inset-top, 0px) + 0.64rem) !important;
+  }
+
+  .app-content-stage,
+  .container {
+    padding-left: 0.76rem !important;
+    padding-right: 0.76rem !important;
+    padding-bottom: calc(var(--phone-tabbar-height) + var(--phone-safe-bottom) + 3.4rem) !important;
   }
 
   .app-topbar-title {
@@ -82,14 +94,14 @@
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
-    font-size: clamp(1.02rem, 5vw, 1.34rem) !important;
-    line-height: 1.08 !important;
-    letter-spacing: -0.045em !important;
+    font-size: clamp(1rem, 4.8vw, 1.32rem) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.05em !important;
   }
 
   .app-topbar-actions {
-    display: inline-flex !important;
     flex: 0 0 auto !important;
+    display: inline-flex !important;
     align-items: center !important;
     gap: 0.42rem !important;
     min-width: 0 !important;
@@ -100,12 +112,12 @@
   }
 
   .topbar-net-pill {
-    display: inline-flex !important;
-    min-height: 39px !important;
-    max-width: 38vw !important;
-    padding: 0.42rem 0.58rem !important;
+    display: inline-grid !important;
+    place-items: center !important;
+    min-height: 40px !important;
+    max-width: 39vw !important;
+    padding: 0.42rem 0.62rem !important;
     border-radius: 15px !important;
-    justify-content: center !important;
     overflow: hidden !important;
   }
 
@@ -120,14 +132,14 @@
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
     font-size: 0.78rem !important;
-    letter-spacing: -0.02em !important;
+    letter-spacing: -0.025em !important;
   }
 
   .theme-toggle-btn {
-    width: 39px !important;
-    min-width: 39px !important;
-    height: 39px !important;
-    min-height: 39px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
     border-radius: 15px !important;
     padding: 0 !important;
   }
@@ -137,357 +149,370 @@
     height: 25px !important;
   }
 
-  .container,
-  .app-content-stage {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding-left: 0.76rem !important;
-    padding-right: 0.76rem !important;
-    padding-bottom: calc(var(--phone-bottom-nav-height) + 4.1rem + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  .mobile-bottom-nav {
+  /* Fixed phone tabbar. Buttons and anchors behave the same. */
+  .mobile-bottom-nav.mobile-tabbar {
     position: fixed !important;
     display: grid !important;
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    left: max(0.55rem, env(safe-area-inset-left, 0px)) !important;
-    right: max(0.55rem, env(safe-area-inset-right, 0px)) !important;
-    bottom: max(0.58rem, env(safe-area-inset-bottom, 0px)) !important;
-    min-height: var(--phone-bottom-nav-height) !important;
-    gap: 0.22rem !important;
+    left: max(0.52rem, env(safe-area-inset-left, 0px)) !important;
+    right: max(0.52rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: var(--phone-safe-bottom) !important;
+    min-height: var(--phone-tabbar-height) !important;
+    gap: 0.20rem !important;
     padding: 0.34rem !important;
-    border-radius: 25px !important;
-    z-index: 2147483000 !important;
+    border-radius: 27px !important;
+    z-index: 2147483100 !important;
     pointer-events: auto !important;
     transform: translate3d(0, 0, 0) !important;
     contain: layout paint style !important;
     touch-action: manipulation !important;
-    backdrop-filter: blur(20px) saturate(1.08) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(1.08) !important;
+    backdrop-filter: blur(24px) saturate(1.12) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(1.12) !important;
   }
 
-  .mobile-bottom-nav a {
+  .mobile-tabbar .mobile-tab,
+  .mobile-tabbar a,
+  .mobile-tabbar button {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    border: 0 !important;
+    background: transparent !important;
     position: relative !important;
-    z-index: 1 !important;
     min-width: 0 !important;
-    min-height: 50px !important;
+    min-height: 52px !important;
     display: grid !important;
     place-items: center !important;
-    gap: 0.06rem !important;
-    padding: 0.34rem 0.08rem !important;
-    border-radius: 18px !important;
-    text-decoration: none !important;
-    font-size: 0.64rem !important;
-    font-weight: 900 !important;
-    pointer-events: auto !important;
-    touch-action: manipulation !important;
-    -webkit-tap-highlight-color: transparent !important;
-  }
-
-  .mobile-bottom-nav a span {
-    width: 23px !important;
-    height: 23px !important;
-    display: grid !important;
-    place-items: center !important;
-    border-radius: 10px !important;
-  }
-
-  .mobile-bottom-nav a.active {
-    transform: translateY(-2px) !important;
-  }
-
-  .mobile-page-menu,
-  .mobile-add-menu {
-    display: block !important;
-    position: fixed !important;
-    z-index: 2147483100 !important;
-    pointer-events: auto !important;
-    transform: translate3d(0, 0, 0) !important;
-  }
-
-  .mobile-page-menu {
-    left: max(0.78rem, env(safe-area-inset-left, 0px)) !important;
-    right: auto !important;
-    bottom: var(--phone-float-bottom) !important;
-  }
-
-  .mobile-add-menu {
-    right: max(0.78rem, env(safe-area-inset-right, 0px)) !important;
-    left: auto !important;
-    bottom: var(--phone-float-bottom) !important;
-  }
-
-  .mobile-page-menu > summary,
-  .mobile-add-menu > summary {
-    list-style: none !important;
-    min-height: 54px !important;
-    height: 54px !important;
+    gap: 0.05rem !important;
+    padding: 0.34rem 0.06rem !important;
     border-radius: 20px !important;
-    display: inline-grid !important;
-    place-items: center !important;
-    position: relative !important;
-    z-index: 2147483300 !important;
+    text-decoration: none !important;
+    font: inherit !important;
+    font-size: 0.62rem !important;
+    font-weight: 950 !important;
     cursor: pointer !important;
     touch-action: manipulation !important;
-    -webkit-tap-highlight-color: transparent !important;
+    pointer-events: auto !important;
     user-select: none !important;
   }
 
-  .mobile-page-menu > summary {
-    grid-template-columns: auto auto !important;
-    gap: 0.42rem !important;
-    min-width: 94px !important;
-    padding: 0 0.86rem !important;
-    font-size: 0.86rem !important;
+  .mobile-tabbar .mobile-tab span,
+  .mobile-tabbar a span,
+  .mobile-tabbar button span {
+    width: 24px !important;
+    height: 24px !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 11px !important;
+    font-size: 0.96rem !important;
+    line-height: 1 !important;
+  }
+
+  .mobile-tabbar .mobile-tab b,
+  .mobile-tabbar a b,
+  .mobile-tabbar button b {
+    display: block !important;
+    line-height: 1 !important;
     font-weight: 950 !important;
   }
 
-  .mobile-page-menu > summary span {
-    width: 28px !important;
-    height: 28px !important;
-    border-radius: 12px !important;
-    display: grid !important;
-    place-items: center !important;
-    font-size: 1rem !important;
+  .mobile-tabbar .mobile-tab-add {
+    transform: translateY(-9px) !important;
+    min-height: 58px !important;
+    border-radius: 23px !important;
   }
 
-  .mobile-page-menu > summary b {
-    line-height: 1 !important;
+  .mobile-tabbar .mobile-tab-add span {
+    width: 31px !important;
+    height: 31px !important;
+    border-radius: 15px !important;
+    font-size: 1.16rem !important;
   }
 
-  .mobile-add-menu > summary {
-    width: 54px !important;
-    min-width: 54px !important;
-    padding: 0 !important;
-    font-size: 1.78rem !important;
-    font-weight: 900 !important;
-    line-height: 1 !important;
+  .mobile-tabbar .mobile-tab.active,
+  .mobile-tabbar a.active,
+  .mobile-tabbar button.active,
+  .mobile-tabbar button[aria-expanded="true"] {
+    transform: translateY(-2px) !important;
   }
 
-  .mobile-page-menu > summary::-webkit-details-marker,
-  .mobile-add-menu > summary::-webkit-details-marker {
+  .mobile-tabbar .mobile-tab-add.active,
+  .mobile-tabbar .mobile-tab-add[aria-expanded="true"] {
+    transform: translateY(-11px) scale(1.02) !important;
+  }
+
+  /* Mobile sheets are opened by JS through the bottom tab buttons. */
+  .mobile-sheet,
+  .mobile-add-menu,
+  .mobile-plan-menu,
+  .mobile-page-menu {
+    display: block !important;
+    position: fixed !important;
+    inset: auto !important;
+    z-index: 2147483200 !important;
+    pointer-events: none !important;
+  }
+
+  .mobile-sheet > summary,
+  .mobile-add-menu > summary,
+  .mobile-plan-menu > summary,
+  .mobile-page-menu > summary {
+    position: fixed !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+    list-style: none !important;
+    pointer-events: none !important;
+  }
+
+  .mobile-sheet > summary::-webkit-details-marker,
+  .mobile-add-menu > summary::-webkit-details-marker,
+  .mobile-plan-menu > summary::-webkit-details-marker,
+  .mobile-page-menu > summary::-webkit-details-marker {
     display: none !important;
   }
 
-  .mobile-page-menu[open],
-  .mobile-add-menu[open] {
+  .mobile-sheet[open],
+  .mobile-add-menu[open],
+  .mobile-plan-menu[open],
+  .mobile-page-menu[open] {
     z-index: 2147483400 !important;
   }
 
-  .mobile-page-menu[open]::before,
-  .mobile-add-menu[open]::before {
+  .mobile-sheet[open]::before,
+  .mobile-add-menu[open]::before,
+  .mobile-plan-menu[open]::before,
+  .mobile-page-menu[open]::before {
     content: "" !important;
     position: fixed !important;
     inset: 0 !important;
-    z-index: 2147483050 !important;
-    background: rgba(4, 13, 28, 0.22) !important;
+    z-index: 2147483200 !important;
+    background: rgba(6, 14, 29, 0.22) !important;
     backdrop-filter: blur(7px) !important;
     -webkit-backdrop-filter: blur(7px) !important;
     pointer-events: none !important;
   }
 
+  .mobile-sheet-panel,
   .mobile-page-panel,
   .mobile-add-panel {
     position: fixed !important;
-    left: max(0.72rem, env(safe-area-inset-left, 0px)) !important;
-    right: max(0.72rem, env(safe-area-inset-right, 0px)) !important;
+    left: var(--phone-side) !important;
+    right: var(--phone-side-right) !important;
     bottom: var(--phone-sheet-bottom) !important;
     top: auto !important;
     width: auto !important;
     min-width: 0 !important;
     max-width: none !important;
-    max-height: min(64dvh, calc(100dvh - var(--phone-topbar-height) - var(--phone-bottom-nav-height) - 2.4rem)) !important;
+    max-height: min(68dvh, calc(100dvh - var(--phone-topbar-height) - var(--phone-tabbar-height) - 2.2rem)) !important;
     overflow-y: auto !important;
     overscroll-behavior: contain !important;
-    padding: 0.75rem !important;
-    border-radius: 28px !important;
-    z-index: 2147483200 !important;
-    transform: translate3d(0, 0, 0) !important;
+    padding: 0.86rem !important;
+    border-radius: 30px !important;
+    z-index: 2147483500 !important;
     transform-origin: bottom center !important;
     animation: phoneSheetPop 0.18s ease both !important;
     pointer-events: auto !important;
     scrollbar-width: none !important;
-    backdrop-filter: blur(22px) saturate(1.08) !important;
-    -webkit-backdrop-filter: blur(22px) saturate(1.08) !important;
+    backdrop-filter: blur(24px) saturate(1.12) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(1.12) !important;
   }
 
+  .mobile-sheet-panel::-webkit-scrollbar,
   .mobile-page-panel::-webkit-scrollbar,
   .mobile-add-panel::-webkit-scrollbar {
     display: none !important;
   }
 
-  .mobile-add-panel {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 0.58rem !important;
-  }
-
-  .mobile-add-panel a {
-    min-width: 0 !important;
-    min-height: 70px !important;
-    padding: 0.82rem !important;
-    display: grid !important;
-    grid-template-columns: 38px minmax(0, 1fr) !important;
-    align-items: center !important;
-    gap: 0.66rem !important;
-    border-radius: 21px !important;
-    text-decoration: none !important;
-    pointer-events: auto !important;
-    white-space: normal !important;
-  }
-
-  .mobile-add-panel a span {
-    width: 38px !important;
-    height: 38px !important;
-    display: grid !important;
-    place-items: center !important;
-    border-radius: 15px !important;
-    color: #fff !important;
-  }
-
-  .mobile-add-panel a b {
-    min-width: 0 !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: normal !important;
-    line-height: 1.08 !important;
-  }
-
-  .mobile-page-panel {
-    display: grid !important;
-    gap: 0.86rem !important;
-  }
-
+  .mobile-sheet-head,
   .mobile-page-panel-head {
     display: flex !important;
     align-items: flex-end !important;
     justify-content: space-between !important;
     gap: 0.8rem !important;
-    padding: 0.36rem 0.24rem 0.1rem !important;
+    padding: 0.25rem 0.18rem 0.66rem !important;
   }
 
+  .mobile-sheet-head > div,
   .mobile-page-panel-head > div {
     display: grid !important;
-    gap: 0.08rem !important;
+    gap: 0.12rem !important;
     min-width: 0 !important;
   }
 
   .mobile-page-kicker {
     width: fit-content !important;
     border-radius: 999px !important;
-    padding: 0.18rem 0.46rem !important;
-    font-size: 0.62rem !important;
+    padding: 0.18rem 0.50rem !important;
+    font-size: 0.61rem !important;
     font-weight: 950 !important;
-    letter-spacing: 0.09em !important;
+    letter-spacing: 0.10em !important;
     text-transform: uppercase !important;
   }
 
+  .mobile-sheet-head strong,
   .mobile-page-panel-head strong {
-    font-size: 1.08rem !important;
-    letter-spacing: -0.035em !important;
+    font-size: 1.12rem !important;
+    letter-spacing: -0.045em !important;
     line-height: 1.05 !important;
   }
 
+  .mobile-sheet-head small,
   .mobile-page-panel-head small {
-    max-width: 11rem !important;
+    max-width: 12.4rem !important;
     text-align: right !important;
     line-height: 1.25 !important;
   }
 
+  .mobile-action-grid,
+  .mobile-add-grid,
+  .mobile-add-panel {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.58rem !important;
+  }
+
+  .mobile-add-panel > .mobile-sheet-head,
+  .mobile-add-panel > .mobile-action-grid {
+    grid-column: 1 / -1 !important;
+  }
+
+  .mobile-action-card,
+  .mobile-add-panel a,
+  .mobile-page-grid a {
+    min-width: 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    text-decoration: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .mobile-action-card,
+  .mobile-add-panel a {
+    min-height: 78px !important;
+    padding: 0.82rem !important;
+    display: grid !important;
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+    grid-template-areas: "icon title" "icon meta" !important;
+    align-content: center !important;
+    gap: 0.08rem 0.66rem !important;
+    border-radius: 23px !important;
+  }
+
+  .mobile-add-panel a::after,
+  .mobile-page-grid a::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: auto -22% -54% auto !important;
+    width: 86px !important;
+    height: 86px !important;
+    border-radius: 999px !important;
+    opacity: 0.23 !important;
+    pointer-events: none !important;
+  }
+
+  .mobile-action-card span,
+  .mobile-add-panel a span,
+  .mobile-page-grid a span {
+    grid-area: icon !important;
+    display: grid !important;
+    place-items: center !important;
+    font-weight: 950 !important;
+  }
+
+  .mobile-action-card span,
+  .mobile-add-panel a span {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 17px !important;
+    font-size: 1.04rem !important;
+  }
+
+  .mobile-action-card b,
+  .mobile-add-panel a b,
+  .mobile-page-grid a b {
+    grid-area: title !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    line-height: 1.07 !important;
+    font-size: 0.91rem !important;
+    font-weight: 950 !important;
+  }
+
+  .mobile-action-card small,
+  .mobile-add-panel a small,
+  .mobile-page-grid a small {
+    grid-area: meta !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 0.72rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .mobile-page-panel {
+    display: grid !important;
+    gap: 0.88rem !important;
+  }
+
   .mobile-page-section {
     display: grid !important;
-    gap: 0.5rem !important;
+    gap: 0.50rem !important;
   }
 
   .mobile-page-section h3 {
     margin: 0 !important;
-    padding: 0 0.18rem !important;
-    font-size: 0.72rem !important;
+    padding: 0 0.2rem !important;
+    font-size: 0.70rem !important;
     font-weight: 950 !important;
-    letter-spacing: 0.10em !important;
+    letter-spacing: 0.11em !important;
     text-transform: uppercase !important;
   }
 
   .mobile-page-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 0.5rem !important;
+    gap: 0.52rem !important;
+  }
+
+  .mobile-page-grid-single {
+    grid-template-columns: 1fr !important;
   }
 
   .mobile-page-grid a {
-    min-width: 0 !important;
     min-height: 82px !important;
     display: grid !important;
-    grid-template-columns: 36px minmax(0, 1fr) !important;
-    grid-template-areas:
-      "icon title"
-      "icon meta" !important;
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    grid-template-areas: "icon title" "icon meta" !important;
     align-content: center !important;
-    gap: 0.12rem 0.62rem !important;
-    padding: 0.76rem !important;
-    border-radius: 22px !important;
-    text-decoration: none !important;
-    position: relative !important;
-    overflow: hidden !important;
-    -webkit-tap-highlight-color: transparent !important;
-  }
-
-  .mobile-page-grid a::after {
-    content: "" !important;
-    position: absolute !important;
-    inset: auto -18% -46% auto !important;
-    width: 72px !important;
-    height: 72px !important;
-    border-radius: 999px !important;
-    opacity: 0.24 !important;
-    pointer-events: none !important;
+    gap: 0.08rem 0.62rem !important;
+    padding: 0.78rem !important;
+    border-radius: 23px !important;
   }
 
   .mobile-page-grid a span {
-    grid-area: icon !important;
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 15px !important;
-    display: grid !important;
-    place-items: center !important;
-    font-weight: 950 !important;
-  }
-
-  .mobile-page-grid a b {
-    grid-area: title !important;
-    align-self: end !important;
-    min-width: 0 !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    font-size: 0.86rem !important;
-    line-height: 1.08 !important;
-  }
-
-  .mobile-page-grid a small {
-    grid-area: meta !important;
-    align-self: start !important;
-    min-width: 0 !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    font-size: 0.72rem !important;
-  }
-
-  .mobile-page-grid a.active {
-    transform: translateY(-1px) !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 16px !important;
+    font-size: 1rem !important;
   }
 
   .mobile-page-grid a.active::before {
     content: "" !important;
     position: absolute !important;
-    left: 0.55rem !important;
-    right: 0.55rem !important;
-    bottom: 0.42rem !important;
+    left: 0.62rem !important;
+    right: 0.62rem !important;
+    bottom: 0.46rem !important;
     height: 3px !important;
     border-radius: 999px !important;
   }
 
+  /* Phone page surfaces: rounder, roomier, card-like. */
   .page-heading,
   .panel-card,
   .card,
@@ -519,8 +544,9 @@
   .overview-status-card,
   .dashboard-hero,
   .desktop-detail-shell,
-  .empty-state {
-    border-radius: 24px !important;
+  .empty-state,
+  table.mobile-card-table tr.mobile-disclosure-row {
+    border-radius: var(--phone-card-radius) !important;
     min-width: 0 !important;
   }
 
@@ -529,8 +555,19 @@
   .normal-add-polished,
   .smart-log-studio,
   .quick-special-panel,
-  .transactions {
+  .transactions,
+  .panel-card {
     overflow-x: clip !important;
+  }
+
+  .summary,
+  .overview-status-grid,
+  .dashboard-grid,
+  .analysis-grid,
+  .accounts-grid,
+  .forecast-grid,
+  .yearly-summary-grid {
+    gap: 0.72rem !important;
   }
 
   input,
@@ -543,11 +580,124 @@
     max-width: 100% !important;
   }
 
+  input,
+  select,
+  textarea {
+    min-height: 46px !important;
+    font-size: 16px !important;
+    border-radius: 16px !important;
+  }
+
+  textarea {
+    min-height: 86px !important;
+  }
+
+  .transaction-form,
+  .quick-special-grid,
+  .filters-form,
+  .entry-form,
+  .debt-form,
+  .recurring-form {
+    grid-template-columns: 1fr !important;
+  }
+
+  .transaction-form > *,
+  .quick-special-grid > *,
+  .form-field-wide,
+  .normal-add-submit-row {
+    grid-column: 1 / -1 !important;
+  }
+
+  .normal-add-submit-row button,
+  .transaction-form button[type="submit"],
+  .quick-special-actions button,
+  .quick-special-actions .secondary-btn,
+  .form-actions button,
+  .primary-btn {
+    min-height: 50px !important;
+    border-radius: 18px !important;
+    font-weight: 950 !important;
+  }
+
+  /* Special Log becomes a phone-first action deck. */
+  .smart-log-hero {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 0.72rem !important;
+    padding: 1rem !important;
+  }
+
+  .smart-log-orbit {
+    display: none !important;
+  }
+
+  .smart-log-back {
+    justify-self: stretch !important;
+    text-align: center !important;
+  }
+
+  .quick-picker-heading {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 0.36rem !important;
+  }
+
+  .quick-mode-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.58rem !important;
+  }
+
+  .quick-mode-card {
+    min-height: 106px !important;
+    padding: 0.78rem !important;
+    border-radius: 22px !important;
+  }
+
+  .quick-mode-card .quick-mode-copy em {
+    display: none !important;
+  }
+
+  .quick-special-workbench {
+    display: grid !important;
+    gap: 0.8rem !important;
+  }
+
+  .quick-special-summary {
+    position: sticky !important;
+    top: calc(var(--phone-topbar-height) + env(safe-area-inset-top, 0px) + 0.4rem) !important;
+    z-index: 2 !important;
+    border-radius: 20px !important;
+  }
+
+  /* Mobile tables: make disclosure cards feel tappable and fun, not tables. */
+  table.mobile-card-table tbody {
+    gap: 0.72rem !important;
+  }
+
+  .mobile-row-toggle {
+    border-radius: 22px !important;
+    min-height: 72px !important;
+    padding: 0.84rem !important;
+  }
+
+  .mobile-row-quick-actions {
+    gap: 0.46rem !important;
+    padding-top: 0.64rem !important;
+  }
+
+  .mobile-detail-action,
+  .mobile-action-group a,
+  .mobile-action-group button {
+    min-height: 42px !important;
+    border-radius: 15px !important;
+    font-weight: 900 !important;
+  }
+
   .mobile-bottom-nav,
-  .mobile-page-menu,
-  .mobile-add-menu,
-  .mobile-page-panel,
-  .mobile-add-panel,
+  .mobile-tabbar *,
+  .mobile-sheet,
+  .mobile-sheet *,
   .app-topbar,
   .app-topbar * {
     -webkit-user-select: none;
@@ -555,237 +705,136 @@
   }
 }
 
-@media (max-width: 520px) {
-  :root {
-    --phone-topbar-height: 72px;
-    --phone-bottom-nav-height: 66px;
-  }
-
-  .app-topbar {
-    padding-left: 0.58rem !important;
-    padding-right: 0.58rem !important;
-    gap: 0.34rem !important;
-  }
-
-  .app-topbar-title h1 {
-    font-size: clamp(0.98rem, 5vw, 1.20rem) !important;
-  }
-
-  .topbar-net-pill {
-    max-width: 35vw !important;
-    padding-left: 0.45rem !important;
-    padding-right: 0.45rem !important;
-  }
-
-  .topbar-net-pill strong {
-    font-size: 0.72rem !important;
-  }
-
-  .theme-toggle-btn {
-    width: 37px !important;
-    min-width: 37px !important;
-    height: 37px !important;
-    min-height: 37px !important;
-  }
-
-  .theme-toggle-orb {
-    width: 24px !important;
-    height: 24px !important;
-  }
-
-  .mobile-bottom-nav {
-    left: 0.42rem !important;
-    right: 0.42rem !important;
-    gap: 0.14rem !important;
-    padding: 0.30rem !important;
-  }
-
-  .mobile-bottom-nav a {
-    min-height: 47px !important;
-    font-size: 0.56rem !important;
-  }
-
-  .mobile-bottom-nav a span {
-    width: 21px !important;
-    height: 21px !important;
-  }
-
-  .mobile-page-menu > summary {
-    min-width: 82px !important;
-    height: 50px !important;
-    min-height: 50px !important;
-    border-radius: 18px !important;
-    padding: 0 0.68rem !important;
-    gap: 0.32rem !important;
-    font-size: 0.78rem !important;
-  }
-
-  .mobile-page-menu > summary span {
-    width: 25px !important;
-    height: 25px !important;
-    border-radius: 11px !important;
-  }
-
-  .mobile-add-menu > summary {
-    width: 50px !important;
-    min-width: 50px !important;
-    height: 50px !important;
-    min-height: 50px !important;
-    border-radius: 18px !important;
-  }
-
-  .mobile-add-panel {
-    grid-template-columns: 1fr !important;
-  }
-
-  .mobile-add-panel a {
-    min-height: 58px !important;
-  }
-
-  .mobile-page-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .mobile-page-grid a {
-    min-height: 66px !important;
-  }
-
-  .mobile-page-panel-head {
-    align-items: flex-start !important;
-    flex-direction: column !important;
-    gap: 0.25rem !important;
-  }
-
-  .mobile-page-panel-head small {
-    max-width: none !important;
-    text-align: left !important;
-  }
-}
-
-@media (max-height: 660px) and (max-width: 1120px) {
-  :root {
-    --phone-topbar-height: 66px;
-    --phone-bottom-nav-height: 60px;
-  }
-
-  .mobile-page-panel,
-  .mobile-add-panel {
-    max-height: min(60dvh, calc(100dvh - var(--phone-topbar-height) - var(--phone-bottom-nav-height) - 1.8rem)) !important;
-    border-radius: 23px !important;
-  }
-
-  .mobile-add-panel a,
-  .mobile-page-grid a {
-    min-height: 52px !important;
-  }
-}
-
-/* Day phone palette: fun, separate from desktop but still clean. */
+/* Day phone palette: vivid, but not neon. */
 @media (max-width: 1120px), (hover: none) and (pointer: coarse) {
   body.app-body-clean {
     background:
-      radial-gradient(circle at 0% 8%, rgba(37, 99, 235, 0.30), transparent 18rem),
-      radial-gradient(circle at 100% 5%, rgba(6, 182, 212, 0.24), transparent 16rem),
-      radial-gradient(circle at 90% 72%, rgba(16, 185, 129, 0.18), transparent 18rem),
-      linear-gradient(145deg, #e7f5ff 0%, #e9fff4 52%, #f0f2ff 100%) !important;
+      radial-gradient(circle at 2% 5%, rgba(37, 99, 235, 0.28), transparent 18rem),
+      radial-gradient(circle at 105% 2%, rgba(6, 182, 212, 0.23), transparent 15rem),
+      radial-gradient(circle at 88% 76%, rgba(16, 185, 129, 0.18), transparent 18rem),
+      linear-gradient(145deg, #eaf6ff 0%, #ecfff6 54%, #f4f2ff 100%) !important;
   }
 
   .app-topbar,
   .mobile-bottom-nav,
+  .mobile-sheet-panel,
   .mobile-page-panel,
-  .mobile-add-panel,
-  .mobile-page-menu > summary {
+  .mobile-add-panel {
     background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.76), rgba(224, 242, 254, 0.56)),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(224, 242, 254, 0.64)),
       radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.13), transparent 7rem),
-      radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.12), transparent 8rem) !important;
-    border: 1px solid rgba(255, 255, 255, 0.72) !important;
-    box-shadow: 0 22px 62px rgba(15, 23, 42, 0.20), inset 0 1px 0 rgba(255,255,255,0.82) !important;
+      radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.13), transparent 8rem) !important;
+    border: 1px solid rgba(255, 255, 255, 0.74) !important;
+    box-shadow: 0 24px 68px rgba(15, 23, 42, 0.18), inset 0 1px 0 rgba(255,255,255,0.84) !important;
   }
 
-  .mobile-page-menu > summary,
-  .mobile-bottom-nav a {
-    color: #0f2740 !important;
+  .topbar-net-pill,
+  .theme-toggle-btn,
+  .mobile-tabbar .mobile-tab,
+  .mobile-tabbar a,
+  .mobile-tabbar button {
+    color: #10243d !important;
   }
 
-  .mobile-page-menu > summary span,
-  .mobile-bottom-nav a span {
-    background: rgba(255,255,255,0.40) !important;
+  .topbar-net-pill,
+  .theme-toggle-btn,
+  .mobile-tabbar .mobile-tab span,
+  .mobile-tabbar a span,
+  .mobile-tabbar button span {
+    background: rgba(255,255,255,0.48) !important;
+    border-color: rgba(255,255,255,0.62) !important;
   }
 
-  .mobile-add-menu > summary,
-  .mobile-bottom-nav a.active,
+  .mobile-tabbar .mobile-tab-add,
+  .mobile-tabbar .mobile-tab.active,
+  .mobile-tabbar a.active,
+  .mobile-tabbar button.active,
+  .mobile-tabbar button[aria-expanded="true"],
   .mobile-page-grid a.active::before {
-    background: linear-gradient(135deg, #2563eb, #06b6d4 52%, #10b981) !important;
+    background: linear-gradient(135deg, #2563eb 0%, #06b6d4 52%, #10b981 100%) !important;
     color: #ffffff !important;
     box-shadow: 0 16px 34px rgba(37,99,235,0.24), 0 8px 20px rgba(16,185,129,0.16), inset 0 1px 0 rgba(255,255,255,0.32) !important;
   }
 
-  .mobile-page-grid a,
-  .mobile-add-panel a {
-    background: rgba(255,255,255,0.58) !important;
-    border: 1px solid rgba(255,255,255,0.62) !important;
-    color: #172033 !important;
-    box-shadow: 0 12px 28px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.70) !important;
+  .mobile-tabbar .mobile-tab-add span,
+  .mobile-tabbar .mobile-tab.active span,
+  .mobile-tabbar a.active span,
+  .mobile-tabbar button.active span,
+  .mobile-tabbar button[aria-expanded="true"] span {
+    background: rgba(255,255,255,0.22) !important;
+    color: #fff !important;
   }
 
-  .mobile-page-grid a::after {
+  .mobile-page-grid a,
+  .mobile-add-panel a,
+  .mobile-action-card,
+  table.mobile-card-table tr.mobile-disclosure-row,
+  .quick-mode-card {
+    background: rgba(255,255,255,0.62) !important;
+    border: 1px solid rgba(255,255,255,0.66) !important;
+    color: #152033 !important;
+    box-shadow: 0 14px 30px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.74) !important;
+  }
+
+  .mobile-page-grid a::after,
+  .mobile-add-panel a::after,
+  .mobile-action-card::after {
     background: linear-gradient(135deg, #2563eb, #06b6d4, #10b981) !important;
   }
 
   .mobile-page-grid a span,
-  .mobile-add-panel a span {
+  .mobile-add-panel a span,
+  .mobile-action-card span,
+  .quick-mode-icon {
     background: linear-gradient(135deg, #2563eb, #06b6d4) !important;
     color: #fff !important;
     box-shadow: 0 10px 20px rgba(37,99,235,0.20) !important;
   }
 
   .mobile-page-grid a small,
+  .mobile-add-panel a small,
+  .mobile-sheet-head small,
   .mobile-page-panel-head small,
   .mobile-page-section h3,
   .mobile-page-kicker {
-    color: #55677c !important;
+    color: #53677e !important;
   }
 
   .mobile-page-kicker {
     background: rgba(16, 185, 129, 0.12) !important;
-    border: 1px solid rgba(16, 185, 129, 0.20) !important;
+    border: 1px solid rgba(16, 185, 129, 0.21) !important;
   }
 }
 
-/* Night phone palette: deliberately darker than the desktop night mode. */
+/* Night phone palette: softer, darker, less eye stress than previous bright mode. */
 @media (max-width: 1120px), (hover: none) and (pointer: coarse) {
   html[data-theme="night"] {
-    --bg: #050d17;
+    --bg: #040b13;
     --ink: #dce7f1;
     --ink-soft: #c0cfdd;
-    --muted: #8fa1b2;
-    --surface: rgba(9, 20, 34, 0.88);
-    --surface-soft: rgba(13, 29, 45, 0.74);
-    --surface-muted: rgba(15, 38, 55, 0.56);
-    --line: rgba(92, 154, 187, 0.15);
-    --line-strong: rgba(88, 166, 203, 0.24);
+    --muted: #8ea0b1;
+    --surface: rgba(8, 18, 31, 0.90);
+    --surface-soft: rgba(11, 28, 43, 0.76);
+    --surface-muted: rgba(13, 36, 53, 0.58);
+    --line: rgba(93, 154, 187, 0.14);
+    --line-strong: rgba(88, 166, 203, 0.23);
     --brand: #6aa6d9;
-    --brand-dark: #3aa2ad;
-    --brand-soft: rgba(43, 104, 184, 0.20);
+    --brand-dark: #2e92a1;
+    --brand-soft: rgba(43, 104, 184, 0.18);
     --good: #64d29d;
-    --good-soft: rgba(21, 113, 82, 0.23);
+    --good-soft: rgba(21, 113, 82, 0.22);
     --bad: #ef8e9b;
-    --bad-soft: rgba(136, 38, 55, 0.22);
+    --bad-soft: rgba(136, 38, 55, 0.20);
     --warning: #e0ba65;
-    --warning-soft: rgba(126, 83, 28, 0.24);
-    --phone-night-a: rgba(11, 24, 39, 0.94);
-    --phone-night-b: rgba(6, 17, 30, 0.88);
-    --phone-night-c: rgba(9, 39, 50, 0.50);
-    --phone-night-border: rgba(101, 171, 202, 0.15);
+    --warning-soft: rgba(126, 83, 28, 0.22);
   }
 
   html[data-theme="night"] body.app-body-clean {
     background:
-      radial-gradient(circle at 0% 8%, rgba(42, 96, 172, 0.15), transparent 18rem),
-      radial-gradient(circle at 100% 6%, rgba(23, 120, 138, 0.11), transparent 17rem),
-      radial-gradient(circle at 92% 74%, rgba(25, 116, 87, 0.09), transparent 18rem),
-      linear-gradient(145deg, #040b13 0%, #071522 52%, #0a0d1a 100%) !important;
+      radial-gradient(circle at 0% 8%, rgba(42, 96, 172, 0.13), transparent 18rem),
+      radial-gradient(circle at 100% 6%, rgba(23, 120, 138, 0.10), transparent 17rem),
+      radial-gradient(circle at 92% 74%, rgba(25, 116, 87, 0.075), transparent 18rem),
+      linear-gradient(145deg, #030910 0%, #071522 54%, #080c18 100%) !important;
     color: var(--ink) !important;
   }
 
@@ -794,22 +843,21 @@
   html[data-theme="night"] body.app-body-clean .app-layout::before,
   html[data-theme="night"] body.app-body-clean .app-layout::after,
   html[data-theme="night"] .desktop-pointer-glow {
-    opacity: 0.08 !important;
-    filter: blur(30px) saturate(0.92) !important;
+    opacity: 0.07 !important;
+    filter: blur(30px) saturate(0.88) !important;
   }
 
   html[data-theme="night"] .app-topbar,
-  html[data-theme="night"] .app-topbar::before,
   html[data-theme="night"] .mobile-bottom-nav,
-  html[data-theme="night"] .mobile-page-menu > summary,
+  html[data-theme="night"] .mobile-sheet-panel,
   html[data-theme="night"] .mobile-page-panel,
   html[data-theme="night"] .mobile-add-panel {
     background:
-      linear-gradient(135deg, rgba(7, 18, 31, 0.94), rgba(8, 32, 43, 0.84)),
-      radial-gradient(circle at 12% 0%, rgba(52, 112, 185, 0.095), transparent 8rem),
-      radial-gradient(circle at 100% 100%, rgba(34, 134, 101, 0.075), transparent 8rem) !important;
-    border-color: rgba(101, 171, 202, 0.15) !important;
-    box-shadow: 0 24px 64px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.055) !important;
+      linear-gradient(135deg, rgba(7, 17, 30, 0.94), rgba(7, 29, 40, 0.84)),
+      radial-gradient(circle at 12% 0%, rgba(52, 112, 185, 0.075), transparent 8rem),
+      radial-gradient(circle at 100% 100%, rgba(34, 134, 101, 0.060), transparent 8rem) !important;
+    border-color: rgba(101, 171, 202, 0.14) !important;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.052) !important;
   }
 
   html[data-theme="night"] .page-heading,
@@ -843,73 +891,85 @@
   html[data-theme="night"] .overview-status-card,
   html[data-theme="night"] .dashboard-hero,
   html[data-theme="night"] .standard-table,
-  html[data-theme="night"] .empty-state {
+  html[data-theme="night"] .empty-state,
+  html[data-theme="night"] table.mobile-card-table tr.mobile-disclosure-row {
     background:
-      linear-gradient(135deg, var(--phone-night-a), var(--phone-night-b)),
-      radial-gradient(circle at 0% 0%, rgba(60, 120, 190, 0.055), transparent 16rem),
-      radial-gradient(circle at 100% 0%, rgba(58, 162, 173, 0.040), transparent 16rem) !important;
-    border-color: var(--phone-night-border) !important;
+      linear-gradient(135deg, rgba(8, 19, 32, 0.92), rgba(6, 17, 29, 0.88)),
+      radial-gradient(circle at 0% 0%, rgba(60, 120, 190, 0.045), transparent 16rem),
+      radial-gradient(circle at 100% 0%, rgba(58, 162, 173, 0.034), transparent 16rem) !important;
+    border-color: rgba(101, 171, 202, 0.13) !important;
     color: var(--ink) !important;
-    box-shadow: 0 20px 48px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.045) !important;
+    box-shadow: 0 20px 48px rgba(0,0,0,0.31), inset 0 1px 0 rgba(255,255,255,0.040) !important;
   }
 
-  html[data-theme="night"] .overview-primary-value,
-  html[data-theme="night"] .overview-status-list div,
-  html[data-theme="night"] .overview-shortcut-list a,
-  html[data-theme="night"] .balance-subgrid div,
-  html[data-theme="night"] .mini-metrics > div,
-  html[data-theme="night"] .comparison-row,
-  html[data-theme="night"] .health-pill,
-  html[data-theme="night"] .recent-row,
-  html[data-theme="night"] .category-bar-row,
-  html[data-theme="night"] .account-flow-line,
-  html[data-theme="night"] .table-responsive,
-  html[data-theme="night"] table.mobile-card-table tr.mobile-disclosure-row,
-  html[data-theme="night"] .mobile-row-quick-actions,
-  html[data-theme="night"] .mobile-form-summary,
-  html[data-theme="night"] .mobile-form-chip {
-    background: rgba(5, 16, 29, 0.52) !important;
-    border-color: rgba(101, 171, 202, 0.11) !important;
-    color: var(--ink) !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.030) !important;
+  html[data-theme="night"] .mobile-tabbar .mobile-tab,
+  html[data-theme="night"] .mobile-tabbar a,
+  html[data-theme="night"] .mobile-tabbar button,
+  html[data-theme="night"] .topbar-net-pill,
+  html[data-theme="night"] .theme-toggle-btn {
+    color: #dce7f1 !important;
+  }
+
+  html[data-theme="night"] .topbar-net-pill,
+  html[data-theme="night"] .theme-toggle-btn,
+  html[data-theme="night"] .mobile-tabbar .mobile-tab span,
+  html[data-theme="night"] .mobile-tabbar a span,
+  html[data-theme="night"] .mobile-tabbar button span {
+    background: rgba(91, 166, 203, 0.12) !important;
+    border-color: rgba(101, 171, 202, 0.13) !important;
+    color: #dbeafe !important;
+  }
+
+  html[data-theme="night"] .mobile-tabbar .mobile-tab-add,
+  html[data-theme="night"] .mobile-tabbar .mobile-tab.active,
+  html[data-theme="night"] .mobile-tabbar a.active,
+  html[data-theme="night"] .mobile-tabbar button.active,
+  html[data-theme="night"] .mobile-tabbar button[aria-expanded="true"],
+  html[data-theme="night"] .mobile-page-grid a.active::before {
+    background: linear-gradient(135deg, #2b5f9d 0%, #187b8a 54%, #1a7558 100%) !important;
+    color: #f5faff !important;
+    box-shadow: 0 14px 30px rgba(20,70,120,0.22), 0 8px 20px rgba(16,105,80,0.12), inset 0 1px 0 rgba(255,255,255,0.13) !important;
+  }
+
+  html[data-theme="night"] .mobile-tabbar .mobile-tab-add span,
+  html[data-theme="night"] .mobile-tabbar .mobile-tab.active span,
+  html[data-theme="night"] .mobile-tabbar a.active span,
+  html[data-theme="night"] .mobile-tabbar button.active span,
+  html[data-theme="night"] .mobile-tabbar button[aria-expanded="true"] span {
+    background: rgba(255,255,255,0.14) !important;
+    color: #f5faff !important;
   }
 
   html[data-theme="night"] .mobile-page-grid a,
-  html[data-theme="night"] .mobile-add-panel a {
+  html[data-theme="night"] .mobile-add-panel a,
+  html[data-theme="night"] .mobile-action-card,
+  html[data-theme="night"] .quick-mode-card,
+  html[data-theme="night"] .mobile-row-toggle,
+  html[data-theme="night"] .mobile-row-quick-actions,
+  html[data-theme="night"] .mobile-form-summary,
+  html[data-theme="night"] .mobile-form-chip {
     background:
-      linear-gradient(135deg, rgba(10, 28, 44, 0.88), rgba(8, 22, 35, 0.76)),
-      radial-gradient(circle at 100% 0%, rgba(70, 166, 184, 0.06), transparent 7rem) !important;
-    border-color: rgba(101, 171, 202, 0.14) !important;
+      linear-gradient(135deg, rgba(10, 28, 44, 0.88), rgba(8, 22, 35, 0.78)),
+      radial-gradient(circle at 100% 0%, rgba(70, 166, 184, 0.052), transparent 7rem) !important;
+    border-color: rgba(101, 171, 202, 0.13) !important;
     color: var(--ink) !important;
-    box-shadow: 0 12px 28px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.23), inset 0 1px 0 rgba(255,255,255,0.045) !important;
   }
 
-  html[data-theme="night"] .mobile-page-grid a::after {
+  html[data-theme="night"] .mobile-page-grid a::after,
+  html[data-theme="night"] .mobile-add-panel a::after,
+  html[data-theme="night"] .mobile-action-card::after {
     background: linear-gradient(135deg, #346cac, #198493, #1c7c5d) !important;
-    opacity: 0.19 !important;
+    opacity: 0.18 !important;
   }
 
   html[data-theme="night"] .mobile-page-grid a span,
   html[data-theme="night"] .mobile-add-panel a span,
-  html[data-theme="night"] .mobile-page-menu > summary span,
-  html[data-theme="night"] .mobile-bottom-nav a span {
+  html[data-theme="night"] .mobile-action-card span,
+  html[data-theme="night"] .quick-mode-icon {
     background: rgba(91, 166, 203, 0.14) !important;
     color: #dbeafe !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.065) !important;
-  }
-
-  html[data-theme="night"] .mobile-add-menu > summary,
-  html[data-theme="night"] .mobile-bottom-nav a.active,
-  html[data-theme="night"] .mobile-page-grid a.active::before {
-    background: linear-gradient(135deg, #2d64a7 0%, #187f90 52%, #1b805f 100%) !important;
-    color: #f5faff !important;
-    box-shadow: 0 14px 30px rgba(20,70,120,0.24), 0 8px 20px rgba(16,105,80,0.13), inset 0 1px 0 rgba(255,255,255,0.14) !important;
-  }
-
-  html[data-theme="night"] .mobile-page-grid a.active span,
-  html[data-theme="night"] .mobile-bottom-nav a.active span {
-    background: rgba(255,255,255,0.15) !important;
-    color: #f5faff !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.060) !important;
   }
 
   html[data-theme="night"] h1,
@@ -927,6 +987,7 @@
   html[data-theme="night"] .overview-status-main strong,
   html[data-theme="night"] .mobile-summary-title,
   html[data-theme="night"] .mobile-summary-amount,
+  html[data-theme="night"] .mobile-sheet-head strong,
   html[data-theme="night"] .mobile-page-panel-head strong {
     background: none !important;
     -webkit-background-clip: initial !important;
@@ -942,29 +1003,24 @@
   html[data-theme="night"] .hint,
   html[data-theme="night"] .panel-header p,
   html[data-theme="night"] .page-heading p,
-  html[data-theme="night"] .overview-primary-card p,
-  html[data-theme="night"] .overview-primary-value small,
-  html[data-theme="night"] .overview-status-main small,
-  html[data-theme="night"] .overview-shortcut-list span,
-  html[data-theme="night"] .overview-status-list dt,
   html[data-theme="night"] .mobile-summary-meta,
   html[data-theme="night"] .mobile-page-grid a small,
+  html[data-theme="night"] .mobile-add-panel a small,
+  html[data-theme="night"] .mobile-sheet-head small,
   html[data-theme="night"] .mobile-page-panel-head small,
   html[data-theme="night"] .mobile-page-section h3 {
-    color: #8fa1b2 !important;
+    color: #8ea0b1 !important;
   }
 
   html[data-theme="night"] .eyebrow,
   html[data-theme="night"] .metric-label,
-  html[data-theme="night"] .overview-primary-value span,
-  html[data-theme="night"] .overview-status-main span,
   html[data-theme="night"] .summary-card > span,
   html[data-theme="night"] .mini-priority-card > span,
   html[data-theme="night"] .mobile-page-kicker,
   html[data-theme="night"] .mobile-summary-label {
     color: #9fd8c6 !important;
-    background: rgba(35, 122, 96, 0.13) !important;
-    border-color: rgba(112, 201, 170, 0.16) !important;
+    background: rgba(35, 122, 96, 0.12) !important;
+    border-color: rgba(112, 201, 170, 0.15) !important;
   }
 
   html[data-theme="night"] input,
@@ -975,7 +1031,7 @@
     color: #dce7f1 !important;
     background: rgba(3, 12, 22, 0.66) !important;
     border-color: rgba(101, 171, 202, 0.14) !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.045) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.040) !important;
   }
 
   html[data-theme="night"] input::placeholder,
@@ -1006,25 +1062,135 @@
   html[data-theme="night"] .entry-form button,
   html[data-theme="night"] .form-actions button,
   html[data-theme="night"] .desktop-drawer-primary-action {
-    background: linear-gradient(135deg, #2d64a7 0%, #187f90 54%, #1b805f 100%) !important;
+    background: linear-gradient(135deg, #2b5f9d 0%, #187b8a 54%, #1a7558 100%) !important;
     color: #f5faff !important;
-    box-shadow: 0 13px 28px rgba(20,70,120,0.20), 0 7px 18px rgba(16,105,80,0.10), inset 0 1px 0 rgba(255,255,255,0.13) !important;
+    box-shadow: 0 13px 28px rgba(20,70,120,0.19), 0 7px 18px rgba(16,105,80,0.10), inset 0 1px 0 rgba(255,255,255,0.12) !important;
   }
 
   html[data-theme="night"] .secondary-btn,
   html[data-theme="night"] .compact-btn,
   html[data-theme="night"] .desktop-drawer-secondary-action,
   html[data-theme="night"] .mobile-detail-action-secondary {
-    background: rgba(98, 123, 144, 0.20) !important;
-    border-color: rgba(101, 171, 202, 0.14) !important;
+    background: rgba(98, 123, 144, 0.18) !important;
+    border-color: rgba(101, 171, 202, 0.13) !important;
     color: #d1deea !important;
+  }
+}
+
+@media (max-width: 520px) {
+  :root {
+    --phone-topbar-height: 70px;
+    --phone-tabbar-height: 68px;
+  }
+
+  .app-topbar {
+    padding-left: 0.58rem !important;
+    padding-right: 0.58rem !important;
+    gap: 0.34rem !important;
+  }
+
+  .topbar-net-pill {
+    max-width: 35vw !important;
+    padding-left: 0.45rem !important;
+    padding-right: 0.45rem !important;
+  }
+
+  .topbar-net-pill strong {
+    font-size: 0.72rem !important;
+  }
+
+  .mobile-bottom-nav.mobile-tabbar {
+    left: 0.42rem !important;
+    right: 0.42rem !important;
+    gap: 0.13rem !important;
+    padding: 0.30rem !important;
+    border-radius: 25px !important;
+  }
+
+  .mobile-tabbar .mobile-tab,
+  .mobile-tabbar a,
+  .mobile-tabbar button {
+    min-height: 48px !important;
+    font-size: 0.55rem !important;
+  }
+
+  .mobile-tabbar .mobile-tab span,
+  .mobile-tabbar a span,
+  .mobile-tabbar button span {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .mobile-tabbar .mobile-tab-add span {
+    width: 29px !important;
+    height: 29px !important;
+  }
+
+  .mobile-sheet-panel,
+  .mobile-page-panel,
+  .mobile-add-panel {
+    left: 0.58rem !important;
+    right: 0.58rem !important;
+    padding: 0.72rem !important;
+    border-radius: 27px !important;
+  }
+
+  .mobile-sheet-head,
+  .mobile-page-panel-head {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 0.20rem !important;
+  }
+
+  .mobile-sheet-head small,
+  .mobile-page-panel-head small {
+    max-width: none !important;
+    text-align: left !important;
+  }
+
+  .mobile-add-grid,
+  .mobile-action-grid,
+  .mobile-add-panel,
+  .mobile-page-grid,
+  .quick-mode-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mobile-page-grid a,
+  .mobile-action-card,
+  .mobile-add-panel a {
+    min-height: 66px !important;
+  }
+
+  .quick-mode-card {
+    min-height: 88px !important;
+  }
+}
+
+@media (max-height: 660px) and (max-width: 1120px) {
+  :root {
+    --phone-topbar-height: 64px;
+    --phone-tabbar-height: 62px;
+  }
+
+  .mobile-sheet-panel,
+  .mobile-page-panel,
+  .mobile-add-panel {
+    max-height: min(61dvh, calc(100dvh - var(--phone-topbar-height) - var(--phone-tabbar-height) - 1.6rem)) !important;
+    border-radius: 24px !important;
+  }
+
+  .mobile-action-card,
+  .mobile-add-panel a,
+  .mobile-page-grid a {
+    min-height: 56px !important;
   }
 }
 
 @keyframes phoneSheetPop {
   from {
     opacity: 0;
-    transform: translate3d(0, 12px, 0) scale(0.985);
+    transform: translate3d(0, 14px, 0) scale(0.985);
   }
   to {
     opacity: 1;

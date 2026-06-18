@@ -14,7 +14,7 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=phone-fun-shell-2">
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
 <body class="app-body app-body-clean" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
@@ -132,28 +132,92 @@
     </div>
   </div>
 
-  <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
-    <a href="{{ url_for('dashboard.overview') }}" class="{{ 'active' if home_open else '' }}"><span>⌂</span>Home</a>
-    <a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if ep in ['transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction'] else '' }}"><span>≡</span>Log</a>
-    <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if planning_open else '' }}"><span>◷</span>Plan</a>
-    <a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if ep == 'analysis.analysis' else '' }}"><span>◌</span>Analysis</a>
-    <a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if accounts_open else '' }}"><span>▣</span>Accounts</a>
+  <nav class="mobile-bottom-nav mobile-tabbar" aria-label="Mobile navigation">
+    <a href="{{ url_for('dashboard.overview') }}" class="mobile-tab {{ 'active' if home_open and ep != 'transactions.add_transaction' else '' }}">
+      <span aria-hidden="true">⌂</span>
+      <b>Home</b>
+    </a>
+    <a href="{{ url_for('transactions.transactions_page') }}" class="mobile-tab {{ 'active' if ep in ['transactions.transactions_page', 'transactions.transaction_detail'] else '' }}">
+      <span aria-hidden="true">≡</span>
+      <b>Logs</b>
+    </a>
+    <button type="button" class="mobile-tab mobile-tab-add {{ 'active' if ep == 'transactions.add_transaction' else '' }}" data-mobile-open-sheet="add" aria-controls="mobile-add-sheet" aria-expanded="false">
+      <span aria-hidden="true">＋</span>
+      <b>Add</b>
+    </button>
+    <button type="button" class="mobile-tab {{ 'active' if planning_open else '' }}" data-mobile-open-sheet="plan" aria-controls="mobile-plan-sheet" aria-expanded="false">
+      <span aria-hidden="true">◷</span>
+      <b>Plan</b>
+    </button>
+    <button type="button" class="mobile-tab {{ 'active' if accounts_open or wealth_open else '' }}" data-mobile-open-sheet="more" aria-controls="mobile-more-sheet" aria-expanded="false">
+      <span aria-hidden="true">▦</span>
+      <b>More</b>
+    </button>
   </nav>
 
+  <details id="mobile-add-sheet" class="mobile-sheet mobile-add-menu" data-mobile-sheet="add">
+    <summary aria-label="Quick add">Quick add</summary>
+    <div class="mobile-sheet-panel mobile-add-panel" role="dialog" aria-label="Add money log">
+      <div class="mobile-sheet-head">
+        <div>
+          <span class="mobile-page-kicker">Fast action</span>
+          <strong>Add a log</strong>
+        </div>
+        <small>Big buttons, no off-screen desktop dropdown.</small>
+      </div>
+      <div class="mobile-action-grid mobile-add-grid">
+        <a class="quick-add-expense mobile-action-card" href="{{ url_for('transactions.add_transaction', type='expense') }}"><span>−</span><b>Expense</b><small>Money out</small></a>
+        <a class="quick-add-income mobile-action-card" href="{{ url_for('transactions.add_transaction', type='income') }}"><span>＋</span><b>Income</b><small>Money in</small></a>
+        <a class="quick-add-investment mobile-action-card" href="{{ url_for('transactions.add_transaction', type='investment') }}"><span>↗</span><b>Investment</b><small>Portfolio move</small></a>
+        <a class="quick-add-special mobile-action-card" href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span><b>Special log</b><small>Debt, project, transfer</small></a>
+      </div>
+    </div>
+  </details>
 
+  <details id="mobile-plan-sheet" class="mobile-sheet mobile-plan-menu" data-mobile-sheet="plan">
+    <summary aria-label="Open planning pages">Planning</summary>
+    <div class="mobile-sheet-panel mobile-page-panel" role="dialog" aria-label="Planning pages">
+      <div class="mobile-sheet-head mobile-page-panel-head">
+        <div>
+          <span class="mobile-page-kicker">Money missions</span>
+          <strong>Plan and control</strong>
+        </div>
+        <small>Payments, debts, projects and money to collect.</small>
+      </div>
+      <section class="mobile-page-section">
+        <h3>Scheduled money</h3>
+        <div class="mobile-page-grid">
+          <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}"><span>◷</span><b>Pending payments</b><small>Not executed yet</small></a>
+          <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}"><span>↻</span><b>Recurring rules</b><small>Automatic schedule</small></a>
+        </div>
+      </section>
+      <section class="mobile-page-section">
+        <h3>Obligations</h3>
+        <div class="mobile-page-grid">
+          <a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if ep == 'payables.payables_page' else '' }}"><span>⇣</span><b>Payables</b><small>Credits to be paid</small></a>
+          <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}"><span>−</span><b>Debts I owe</b><small>Debt tracking</small></a>
+          <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}"><span>＋</span><b>Money owed to me</b><small>Collectable money</small></a>
+          <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if ep in ['expense_projects.expense_projects_page', 'expense_projects.expense_project_detail'] else '' }}"><span>◇</span><b>Expense projects</b><small>Big planned costs</small></a>
+        </div>
+      </section>
+      <section class="mobile-page-section">
+        <h3>Forecast</h3>
+        <div class="mobile-page-grid mobile-page-grid-single">
+          <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if ep == 'forecast.forecast' else '' }}"><span>⌁</span><b>Forecast</b><small>Future pressure</small></a>
+        </div>
+      </section>
+    </div>
+  </details>
 
-  <details class="mobile-page-menu" data-mobile-sheet="pages">
-    <summary aria-label="Open all pages">
-      <span aria-hidden="true">☰</span>
-      <b>Pages</b>
-    </summary>
-    <div class="mobile-page-panel" role="navigation" aria-label="All mobile pages">
-      <div class="mobile-page-panel-head">
+  <details id="mobile-more-sheet" class="mobile-sheet mobile-page-menu" data-mobile-sheet="more">
+    <summary aria-label="Open all pages">All pages</summary>
+    <div class="mobile-sheet-panel mobile-page-panel" role="dialog" aria-label="All mobile pages">
+      <div class="mobile-sheet-head mobile-page-panel-head">
         <div>
           <span class="mobile-page-kicker">Phone map</span>
-          <strong>Everything you have on PC</strong>
+          <strong>Everything from PC</strong>
         </div>
-        <small>Jump to any page without using the desktop sidebar.</small>
+        <small>Every desktop section is reachable here.</small>
       </div>
 
       <section class="mobile-page-section">
@@ -162,7 +226,7 @@
           <a href="{{ url_for('dashboard.overview') }}" class="{{ 'active' if ep == 'dashboard.overview' else '' }}"><span>⌂</span><b>Quick overview</b><small>Decision view</small></a>
           <a href="{{ url_for('dashboard.overview_detailed') }}" class="{{ 'active' if ep == 'dashboard.overview_detailed' else '' }}"><span>◫</span><b>Detailed overview</b><small>Full money snapshot</small></a>
           <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if ep == 'dashboard.index' else '' }}"><span>▤</span><b>Dashboard</b><small>Charts and filters</small></a>
-          <a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if ep in ['transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction'] else '' }}"><span>≡</span><b>Transactions</b><small>Main log</small></a>
+          <a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if ep in ['transactions.transactions_page', 'transactions.transaction_detail'] else '' }}"><span>≡</span><b>Transactions</b><small>Main log</small></a>
           <a href="{{ url_for('net_explanation.net_explanation') }}" class="{{ 'active' if ep == 'net_explanation.net_explanation' else '' }}"><span>?</span><b>Why this net?</b><small>Counted rows</small></a>
         </div>
       </section>
@@ -203,18 +267,8 @@
     </div>
   </details>
 
-  <details class="mobile-add-menu">
-    <summary aria-label="Quick add">+</summary>
-    <div class="mobile-add-panel">
-      <a class="quick-add-expense" href="{{ url_for('transactions.add_transaction', type='expense') }}"><span>−</span><b>Add expense</b></a>
-      <a class="quick-add-income" href="{{ url_for('transactions.add_transaction', type='income') }}"><span>＋</span><b>Add income</b></a>
-      <a class="quick-add-investment" href="{{ url_for('transactions.add_transaction', type='investment') }}"><span>↗</span><b>Add investment</b></a>
-      <a class="quick-add-special" href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span><b>Special log</b></a>
-    </div>
-  </details>
-
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/phone_fun_full_nav_fix.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v=phone-fun-shell-2"></script>
+  <script src="{{ url_for('static', filename='js/phone_fun_full_nav_fix.js') }}?v=phone-fun-shell-2"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
