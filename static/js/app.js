@@ -1007,3 +1007,43 @@
 
   document.addEventListener("DOMContentLoaded", enhanceMobileSpecialLog);
 })();
+
+/* --------------------------------------------------------------------------
+   Glass pointer lighting
+-------------------------------------------------------------------------- */
+(function () {
+  let ticking = false;
+  let lastEvent = null;
+  const glowTargetsSelector = ".page-heading, .panel-card, .card, .form-section, .transactions, .summary-card, .priority-card, .mini-priority-card, .quick-mode-card, .payment-card, .recurring-rule-card, .mobile-disclosure-row";
+
+  function updateBodyPointer(event) {
+    lastEvent = event;
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(() => {
+      if (!lastEvent) return;
+      const x = `${lastEvent.clientX}px`;
+      const y = `${lastEvent.clientY}px`;
+      document.documentElement.style.setProperty("--pointer-x", x);
+      document.documentElement.style.setProperty("--pointer-y", y);
+      ticking = false;
+    });
+  }
+
+  function wireLocalGlow() {
+    document.querySelectorAll(glowTargetsSelector).forEach((target) => {
+      if (target.dataset.glowWired === "true") return;
+      target.dataset.glowWired = "true";
+      target.addEventListener("pointermove", (event) => {
+        const rect = target.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * 100;
+        const y = ((event.clientY - rect.top) / Math.max(rect.height, 1)) * 100;
+        target.style.setProperty("--local-x", `${x}%`);
+        target.style.setProperty("--local-y", `${y}%`);
+      });
+    });
+  }
+
+  document.addEventListener("pointermove", updateBodyPointer, { passive: true });
+  document.addEventListener("DOMContentLoaded", wireLocalGlow);
+})();

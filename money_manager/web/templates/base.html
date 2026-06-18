@@ -7,12 +7,12 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
-<body class="app-body app-body-clean app-body-glass" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
+<body class="app-body app-body-clean" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
   {% set ep = request.endpoint or '' %}
   {% set home_open = ep in ['dashboard.overview', 'dashboard.overview_detailed', 'dashboard.index', 'transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction', 'net_explanation.net_explanation'] %}
-  {% set planning_open = ep in ['pending.pending_page', 'pending.recurring_page', 'debts.debts_page', 'payables.payables_page', 'expense_projects.expense_projects_page', 'expense_projects.expense_project_detail', 'receivables.receivables_page', 'forecast.forecast'] %}
+  {% set planning_open = ep in ['pending.pending_page', 'pending.recurring_page', 'debts.debts_page', 'payables.payables_page', 'expense_projects.expense_projects_page', 'expense_projects.expense_project_detail', 'receivables.receivables_page'] %}
   {% set accounts_open = ep in ['accounts.accounts_page', 'accounts.account_detail', 'currencies.currencies_page', 'internal_transfers.internal_transfers_page', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
-  {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'yearly_summary.yearly_summary_page', 'documents.documents'] %}
+  {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'yearly_summary.yearly_summary_page', 'forecast.forecast', 'documents.documents'] %}
 
   <div class="app-layout">
     <aside class="app-sidebar" aria-label="Main navigation">
@@ -39,27 +39,18 @@
           </div>
         </details>
 
-        <details class="nav-group app-nav-group planning-nav-group {{ 'is-active' if planning_open else '' }}" {{ 'open' if planning_open else '' }}>
+        <details class="nav-group app-nav-group {{ 'is-active' if planning_open else '' }}" {{ 'open' if planning_open else '' }}>
           <summary>Planning</summary>
-          <div class="nav-items nav-folder-stack">
-            <div class="nav-subfolder">
-              <span class="nav-folder-label">Scheduled money</span>
-              <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}">Pending payments</a>
-              <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}">Recurring rules</a>
-              <a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if ep == 'payables.payables_page' else '' }}">Payables</a>
-            </div>
-
-            <div class="nav-subfolder">
-              <span class="nav-folder-label">Projects & forecast</span>
-              <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if ep in ['expense_projects.expense_projects_page', 'expense_projects.expense_project_detail'] else '' }}">Expense projects</a>
-              <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if ep == 'forecast.forecast' else '' }}">Forecast</a>
-            </div>
-
-            <div class="nav-subfolder">
-              <span class="nav-folder-label">Obligations</span>
-              <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}">Debts I owe</a>
-              <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}">Money owed to me</a>
-            </div>
+          <div class="nav-items nav-items-foldered">
+            <span class="nav-subfolder-label">Scheduled money</span>
+            <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}">Pending payments</a>
+            <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}">Recurring rules</a>
+            <span class="nav-subfolder-label">Projects & forecast</span>
+            <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if ep in ['expense_projects.expense_projects_page', 'expense_projects.expense_project_detail'] else '' }}">Expense projects</a>
+            <span class="nav-subfolder-label">Obligations</span>
+            <a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if ep == 'payables.payables_page' else '' }}">Payables</a>
+            <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}">Debts I owe</a>
+            <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}">Money owed to me</a>
           </div>
         </details>
 
@@ -111,10 +102,10 @@
           <details class="quick-add-menu">
             <summary class="primary-btn">+ Add</summary>
             <div class="quick-add-panel">
-              <a href="{{ url_for('transactions.add_transaction', type='expense') }}"><span>−</span> Expense</a>
-              <a href="{{ url_for('transactions.add_transaction', type='income') }}"><span>＋</span> Income</a>
-              <a href="{{ url_for('transactions.add_transaction', type='investment') }}"><span>↗</span> Investment</a>
-              <a href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span> Special log</a>
+              <a class="quick-add-expense" href="{{ url_for('transactions.add_transaction', type='expense') }}"><span>−</span><b>Expense</b><small>Standard spending row</small></a>
+              <a class="quick-add-income" href="{{ url_for('transactions.add_transaction', type='income') }}"><span>＋</span><b>Income</b><small>Salary, transfers in</small></a>
+              <a class="quick-add-investment" href="{{ url_for('transactions.add_transaction', type='investment') }}"><span>↗</span><b>Investment</b><small>Portfolio movements</small></a>
+              <a class="quick-add-special" href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span><b>Special log</b><small>Debts, payables, projects</small></a>
             </div>
           </details>
         </div>
@@ -139,10 +130,10 @@
   <details class="mobile-add-menu">
     <summary aria-label="Quick add">+</summary>
     <div class="mobile-add-panel">
-      <a href="{{ url_for('transactions.add_transaction', type='expense') }}">Add expense</a>
-      <a href="{{ url_for('transactions.add_transaction', type='income') }}">Add income</a>
-      <a href="{{ url_for('transactions.add_transaction', type='investment') }}">Add investment</a>
-      <a href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}">Special log</a>
+      <a class="quick-add-expense" href="{{ url_for('transactions.add_transaction', type='expense') }}"><span>−</span><b>Add expense</b></a>
+      <a class="quick-add-income" href="{{ url_for('transactions.add_transaction', type='income') }}"><span>＋</span><b>Add income</b></a>
+      <a class="quick-add-investment" href="{{ url_for('transactions.add_transaction', type='investment') }}"><span>↗</span><b>Add investment</b></a>
+      <a class="quick-add-special" href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span><b>Special log</b></a>
     </div>
   </details>
 
