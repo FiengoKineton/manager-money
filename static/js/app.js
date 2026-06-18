@@ -1047,3 +1047,132 @@
   document.addEventListener("pointermove", updateBodyPointer, { passive: true });
   document.addEventListener("DOMContentLoaded", wireLocalGlow);
 })();
+
+
+/* --------------------------------------------------------------------------
+   Aurora UI interactions: button ripple, scroll reveal, desktop pointer glow
+-------------------------------------------------------------------------- */
+(function () {
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const desktopPointer = window.matchMedia("(hover: hover) and (pointer: fine) and (min-width: 1001px)");
+  const rippleSelector = [
+    ".primary-btn",
+    ".secondary-btn",
+    ".compact-btn",
+    ".mobile-add-menu > summary",
+    ".transaction-form button",
+    ".recurring-form button",
+    ".debt-form button",
+    ".entry-form button",
+    ".form-actions button",
+    ".quick-add-panel a",
+    ".mobile-add-panel a",
+    ".icon-action-btn",
+    ".desktop-drawer-primary-action",
+    ".mobile-detail-action",
+    ".creditor-payoff-form button"
+  ].join(", ");
+
+  const revealSelector = [
+    ".page-heading",
+    ".panel-card",
+    ".card",
+    ".filters",
+    ".form-section",
+    ".transactions",
+    ".chart-card",
+    ".summary-card",
+    ".priority-card",
+    ".mini-priority-card",
+    ".analysis-decision-card",
+    ".analysis-kpi",
+    ".analysis-health-card",
+    ".investment-behaviour-card",
+    ".payment-card",
+    ".recurring-rule-card",
+    ".document-card",
+    ".asset-card",
+    ".year-card",
+    ".initial-condition-card",
+    ".flow-card",
+    ".top-category-card",
+    ".investment-card",
+    ".quick-special-panel",
+    ".smart-log-studio",
+    ".normal-add-polished"
+  ].join(", ");
+
+  function createRipple(event) {
+    if (reducedMotion.matches) return;
+    const target = event.target.closest(rippleSelector);
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const ripple = document.createElement("span");
+    ripple.className = "ripple-dot";
+    ripple.style.left = `${event.clientX - rect.left}px`;
+    ripple.style.top = `${event.clientY - rect.top}px`;
+    target.appendChild(ripple);
+    ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+  }
+
+  function wireScrollReveal() {
+    const nodes = Array.from(document.querySelectorAll(revealSelector));
+    if (!nodes.length) return;
+
+    if (reducedMotion.matches || !("IntersectionObserver" in window)) {
+      nodes.forEach((node) => node.classList.add("is-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+
+    nodes.forEach((node, index) => {
+      if (node.dataset.revealWired === "true") return;
+      node.dataset.revealWired = "true";
+      node.classList.add("reveal-on-scroll");
+      node.style.setProperty("--reveal-delay", `${Math.min(index % 6, 5) * 38}ms`);
+      observer.observe(node);
+    });
+  }
+
+  function ensureDesktopPointerGlow() {
+    if (!desktopPointer.matches || reducedMotion.matches) return null;
+    let glow = document.querySelector(".desktop-pointer-glow");
+    if (glow) return glow;
+    glow = document.createElement("div");
+    glow.className = "desktop-pointer-glow";
+    glow.setAttribute("aria-hidden", "true");
+    document.body.appendChild(glow);
+    return glow;
+  }
+
+  let pointerTimer = null;
+  function activatePointerGlow(event) {
+    if (!desktopPointer.matches || reducedMotion.matches) return;
+    ensureDesktopPointerGlow();
+    document.body.classList.add("pointer-active");
+    document.documentElement.style.setProperty("--pointer-x", `${event.clientX}px`);
+    document.documentElement.style.setProperty("--pointer-y", `${event.clientY}px`);
+    window.clearTimeout(pointerTimer);
+    pointerTimer = window.setTimeout(() => {
+      document.body.classList.remove("pointer-active");
+    }, 900);
+  }
+
+  function wireAuroraInteractions() {
+    document.addEventListener("pointerdown", createRipple, { passive: true });
+    document.addEventListener("pointermove", activatePointerGlow, { passive: true });
+    wireScrollReveal();
+  }
+
+  document.addEventListener("DOMContentLoaded", wireAuroraInteractions);
+})();

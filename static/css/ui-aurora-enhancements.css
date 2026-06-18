@@ -1,0 +1,548 @@
+/* --------------------------------------------------------------------------
+   Aurora Glass Enhancement Layer
+   Visual-only layer: stronger glassmorphism, animated aurora, blue/green color
+   energy, shine/ripple-ready buttons, scroll reveal and desktop pointer glow.
+-------------------------------------------------------------------------- */
+:root {
+  --aurora-blue: rgba(37, 99, 235, 0.34);
+  --aurora-cyan: rgba(6, 182, 212, 0.30);
+  --aurora-green: rgba(16, 185, 129, 0.24);
+  --aurora-lime: rgba(132, 204, 22, 0.16);
+  --aurora-violet: rgba(124, 58, 237, 0.22);
+  --aurora-ink: #0f172a;
+  --glass-vivid: rgba(255, 255, 255, 0.46);
+  --glass-vivid-strong: rgba(255, 255, 255, 0.60);
+  --glass-vivid-border: rgba(255, 255, 255, 0.72);
+  --glass-blue-border: rgba(125, 211, 252, 0.36);
+  --glass-green-border: rgba(110, 231, 183, 0.28);
+  --glow-primary: rgba(37, 99, 235, 0.34);
+  --glow-success: rgba(16, 185, 129, 0.28);
+  --glow-cyan-strong: rgba(6, 182, 212, 0.34);
+}
+
+html {
+  background: #dfeaff;
+}
+
+body.app-body-clean {
+  background:
+    radial-gradient(circle at 8% 9%, rgba(37, 99, 235, 0.34), transparent 23rem),
+    radial-gradient(circle at 83% 3%, rgba(6, 182, 212, 0.31), transparent 25rem),
+    radial-gradient(circle at 96% 51%, rgba(16, 185, 129, 0.22), transparent 26rem),
+    radial-gradient(circle at 18% 93%, rgba(132, 204, 22, 0.16), transparent 22rem),
+    radial-gradient(circle at 72% 78%, rgba(124, 58, 237, 0.18), transparent 28rem),
+    linear-gradient(135deg, #eaf4ff 0%, #e7fff7 34%, #edf2ff 68%, #f6f2ff 100%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+body.app-body-clean::before {
+  opacity: 0.78;
+  background:
+    radial-gradient(ellipse at 18% 18%, rgba(37, 99, 235, 0.20), transparent 30rem),
+    radial-gradient(ellipse at 82% 22%, rgba(6, 182, 212, 0.24), transparent 28rem),
+    radial-gradient(ellipse at 64% 90%, rgba(16, 185, 129, 0.18), transparent 29rem),
+    linear-gradient(110deg, transparent 0 13%, rgba(255, 255, 255, 0.30) 13.2% 13.62%, transparent 13.9% 100%),
+    linear-gradient(30deg, transparent 0 62%, rgba(34, 211, 238, 0.13) 62.2% 62.9%, transparent 63.1% 100%),
+    radial-gradient(circle at var(--pointer-x, 55%) var(--pointer-y, 30%), rgba(255, 255, 255, 0.72), transparent 14rem);
+  animation: auroraFloatOne 18s ease-in-out infinite alternate;
+}
+
+body.app-body-clean::after {
+  width: 44rem;
+  height: 44rem;
+  left: calc(var(--pointer-x, 50%) - 22rem);
+  top: calc(var(--pointer-y, 34%) - 22rem);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.38), rgba(34, 211, 238, 0.22) 23%, rgba(16, 185, 129, 0.13) 42%, rgba(37, 99, 235, 0.10) 57%, transparent 74%);
+  filter: blur(18px) saturate(1.24);
+  opacity: 0.78;
+  animation: pointerBreath 5s ease-in-out infinite alternate;
+}
+
+body.app-body-clean .app-layout::before,
+body.app-body-clean .app-layout::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 999px;
+  filter: blur(34px) saturate(1.3);
+  opacity: 0.42;
+  transform: translateZ(0);
+}
+
+body.app-body-clean .app-layout::before {
+  width: 42rem;
+  height: 20rem;
+  left: 16%;
+  top: 10%;
+  background: linear-gradient(110deg, rgba(37, 99, 235, 0.30), rgba(6, 182, 212, 0.28), rgba(16, 185, 129, 0.18));
+  animation: auroraRibbonA 24s ease-in-out infinite alternate;
+}
+
+body.app-body-clean .app-layout::after {
+  width: 35rem;
+  height: 22rem;
+  right: 4%;
+  bottom: 4%;
+  background: linear-gradient(120deg, rgba(16, 185, 129, 0.24), rgba(34, 211, 238, 0.20), rgba(99, 102, 241, 0.18));
+  animation: auroraRibbonB 28s ease-in-out infinite alternate;
+}
+
+.app-workspace,
+.app-sidebar,
+.app-topbar,
+.mobile-bottom-nav,
+.mobile-add-menu,
+.desktop-detail-drawer {
+  position: relative;
+  z-index: 2;
+}
+
+.app-content-stage {
+  position: relative;
+  z-index: 2;
+}
+
+/* Stronger but controlled glass surfaces */
+.app-sidebar,
+.app-topbar,
+.mobile-bottom-nav,
+.mobile-add-panel,
+.quick-add-panel,
+.desktop-detail-shell,
+.page-heading,
+.panel-card,
+.card,
+.filters,
+.form-section,
+.transactions,
+.chart-card,
+.summary-card,
+.priority-card,
+.mini-priority-card,
+.account-overview-card,
+.analysis-decision-card,
+.analysis-kpi,
+.analysis-health-card,
+.investment-behaviour-card,
+.payment-card,
+.recurring-rule-card,
+.document-card,
+.asset-card,
+.year-card,
+.initial-condition-card,
+.flow-card,
+.top-category-card,
+.investment-card,
+.quick-special-panel,
+.smart-log-studio,
+.normal-add-polished,
+.standard-table {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.36)),
+    radial-gradient(circle at 7% 0%, rgba(125, 211, 252, 0.16), transparent 16rem),
+    radial-gradient(circle at 100% 100%, rgba(110, 231, 183, 0.12), transparent 18rem);
+  border-color: var(--glass-vivid-border);
+  box-shadow:
+    0 20px 60px rgba(15, 23, 42, 0.12),
+    0 8px 24px rgba(37, 99, 235, 0.06),
+    inset 0 1px 0 rgba(255,255,255,0.88),
+    inset 0 -1px 0 rgba(255,255,255,0.30);
+  backdrop-filter: blur(28px) saturate(1.32);
+  -webkit-backdrop-filter: blur(28px) saturate(1.32);
+}
+
+.app-sidebar {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.68), rgba(230, 248, 255, 0.34)),
+    radial-gradient(circle at 20% 4%, rgba(59, 130, 246, 0.28), transparent 17rem),
+    radial-gradient(circle at 86% 72%, rgba(16, 185, 129, 0.18), transparent 16rem);
+  border-right-color: rgba(186, 230, 253, 0.54);
+}
+
+.app-topbar {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.52), rgba(236, 253, 245, 0.26), rgba(239, 246, 255, 0.38));
+  border-bottom-color: rgba(186, 230, 253, 0.52);
+}
+
+.page-heading::before,
+.panel-card::before,
+.card::before,
+.form-section::before,
+.transactions::before {
+  background:
+    radial-gradient(circle at var(--local-x, 24%) var(--local-y, 0%), rgba(255,255,255,0.78), transparent 12rem),
+    radial-gradient(circle at calc(var(--local-x, 24%) + 12%) calc(var(--local-y, 0%) + 20%), rgba(34, 211, 238, 0.14), transparent 15rem),
+    linear-gradient(135deg, rgba(255,255,255,0.22), transparent 48%);
+  opacity: 0.84;
+}
+
+.app-topbar-title h1,
+.page-heading h2,
+.smart-log-hero h2,
+.normal-add-header h2 {
+  background: linear-gradient(120deg, #0f172a 0%, #1d4ed8 40%, #0891b2 70%, #059669 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.eyebrow,
+.nav-subfolder-label,
+.desktop-detail-eyebrow {
+  color: #0369a1;
+}
+
+.eyebrow {
+  background: linear-gradient(135deg, rgba(240, 249, 255, 0.74), rgba(236, 253, 245, 0.54));
+  border-color: rgba(186, 230, 253, 0.68);
+  box-shadow: 0 12px 30px rgba(14, 165, 233, 0.12), inset 0 1px 0 rgba(255,255,255,0.82);
+}
+
+/* More blue/green identity for nav and data accents */
+.nav-items a.active {
+  color: #075985;
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.78), rgba(204, 251, 241, 0.58));
+  box-shadow: 0 14px 34px rgba(14, 165, 233, 0.16), inset 0 1px 0 rgba(255,255,255,0.82);
+}
+
+.nav-items a.active::before {
+  background: linear-gradient(135deg, #38bdf8, #10b981);
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.75);
+}
+
+.summary-card:nth-child(4n + 1),
+.analysis-kpi:nth-child(4n + 1),
+.priority-card:nth-child(4n + 1) { --tone-soft: rgba(37, 99, 235, 0.18); --section-glow-a: rgba(37, 99, 235, 0.16); --section-glow-b: rgba(6, 182, 212, 0.14); }
+.summary-card:nth-child(4n + 2),
+.analysis-kpi:nth-child(4n + 2),
+.priority-card:nth-child(4n + 2) { --tone-soft: rgba(16, 185, 129, 0.17); --section-glow-a: rgba(16, 185, 129, 0.15); --section-glow-b: rgba(6, 182, 212, 0.12); }
+.summary-card:nth-child(4n + 3),
+.analysis-kpi:nth-child(4n + 3),
+.priority-card:nth-child(4n + 3) { --tone-soft: rgba(6, 182, 212, 0.17); --section-glow-a: rgba(6, 182, 212, 0.15); --section-glow-b: rgba(37, 99, 235, 0.11); }
+.summary-card:nth-child(4n),
+.analysis-kpi:nth-child(4n),
+.priority-card:nth-child(4n) { --tone-soft: rgba(124, 58, 237, 0.14); --section-glow-a: rgba(124, 58, 237, 0.12); --section-glow-b: rgba(16, 185, 129, 0.10); }
+
+/* Buttons: shine, richer color, and JS ripple support */
+.primary-btn,
+.secondary-btn,
+.compact-btn,
+.mobile-add-menu > summary,
+.transaction-form button,
+.recurring-form button,
+.debt-form button,
+.entry-form button,
+.form-actions button,
+.quick-add-panel a,
+.mobile-add-panel a,
+.icon-action-btn,
+.desktop-drawer-primary-action,
+.mobile-detail-action,
+.creditor-payoff-form button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.primary-btn,
+.mobile-add-menu > summary,
+.transaction-form button,
+.recurring-form button,
+.debt-form button,
+.entry-form button,
+.form-actions button,
+.desktop-drawer-primary-action {
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 42%, #10b981 100%);
+  box-shadow:
+    0 18px 42px rgba(37, 99, 235, 0.28),
+    0 0 0 1px rgba(255,255,255,0.36) inset,
+    0 0 24px rgba(16, 185, 129, 0.15);
+}
+
+.primary-btn:hover,
+.secondary-btn:hover,
+.compact-btn:hover,
+.mobile-add-menu > summary:hover,
+.transaction-form button:hover,
+.recurring-form button:hover,
+.debt-form button:hover,
+.entry-form button:hover,
+.form-actions button:hover,
+.quick-add-panel a:hover,
+.mobile-add-panel a:hover,
+.icon-action-btn:hover,
+.desktop-drawer-primary-action:hover,
+.mobile-detail-action:hover,
+.creditor-payoff-form button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 24px 56px rgba(37, 99, 235, 0.24),
+    0 8px 26px rgba(16, 185, 129, 0.14),
+    0 0 0 1px rgba(255,255,255,0.40) inset;
+}
+
+.primary-btn::before,
+.secondary-btn::before,
+.compact-btn::before,
+.mobile-add-menu > summary::before,
+.transaction-form button::before,
+.recurring-form button::before,
+.debt-form button::before,
+.entry-form button::before,
+.form-actions button::before,
+.quick-add-panel a::before,
+.mobile-add-panel a::before,
+.desktop-drawer-primary-action::before,
+.mobile-detail-action::before,
+.creditor-payoff-form button::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -35% auto -35% -55%;
+  width: 42%;
+  transform: skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.62), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.primary-btn:hover::before,
+.secondary-btn:hover::before,
+.compact-btn:hover::before,
+.mobile-add-menu > summary:hover::before,
+.transaction-form button:hover::before,
+.recurring-form button:hover::before,
+.debt-form button:hover::before,
+.entry-form button:hover::before,
+.form-actions button:hover::before,
+.quick-add-panel a:hover::before,
+.mobile-add-panel a:hover::before,
+.desktop-drawer-primary-action:hover::before,
+.mobile-detail-action:hover::before,
+.creditor-payoff-form button:hover::before {
+  animation: buttonShine 0.82s ease;
+}
+
+.ripple-dot {
+  position: absolute;
+  z-index: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255,255,255,0.78), rgba(255,255,255,0.32) 42%, transparent 70%);
+  transform: translate(-50%, -50%) scale(0);
+  animation: buttonRipple 0.68s ease-out forwards;
+  mix-blend-mode: screen;
+}
+
+.primary-btn > *,
+.secondary-btn > *,
+.compact-btn > *,
+.quick-add-panel a > *,
+.mobile-add-panel a > *,
+.mobile-add-menu > summary > *,
+.transaction-form button > *,
+.recurring-form button > *,
+.debt-form button > *,
+.entry-form button > *,
+.form-actions button > *,
+.creditor-payoff-form button > * {
+  position: relative;
+  z-index: 1;
+}
+
+.quick-add-panel a,
+.mobile-add-panel a {
+  background: linear-gradient(135deg, rgba(255,255,255,0.66), rgba(240, 249, 255, 0.44));
+  border-color: rgba(186, 230, 253, 0.54);
+}
+
+.quick-add-expense { --quick-tone: #e11d48; --quick-soft: rgba(244,63,94,0.13); --quick-glow: rgba(244,63,94,0.18); }
+.quick-add-income { --quick-tone: #059669; --quick-soft: rgba(16,185,129,0.16); --quick-glow: rgba(16,185,129,0.26); }
+.quick-add-investment { --quick-tone: #2563eb; --quick-soft: rgba(37,99,235,0.16); --quick-glow: rgba(37,99,235,0.28); }
+.quick-add-special { --quick-tone: #0891b2; --quick-soft: rgba(6,182,212,0.18); --quick-glow: rgba(6,182,212,0.30); }
+
+/* Inputs keep readability but receive a cooler tint */
+input[type="text"],
+input[type="date"],
+input[type="number"],
+input[type="email"],
+textarea,
+select {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.72), rgba(240, 249, 255, 0.46));
+  border-color: rgba(186, 230, 253, 0.58);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(14, 165, 233, 0.64);
+  box-shadow:
+    0 0 0 4px rgba(14, 165, 233, 0.14),
+    0 14px 34px rgba(37, 99, 235, 0.12),
+    inset 0 1px 0 rgba(255,255,255,0.78);
+}
+
+/* Rows and tables get a cooler, smoother skin */
+th {
+  background: linear-gradient(135deg, rgba(240, 249, 255, 0.64), rgba(236, 253, 245, 0.40));
+  color: #334155;
+}
+
+.clickable-row:hover td,
+.desktop-detail-row:hover td {
+  background: rgba(240, 249, 255, 0.72);
+}
+
+tr.row-income td {
+  background: rgba(236, 253, 245, 0.56);
+}
+tr.row-investment td {
+  background: rgba(239, 246, 255, 0.58);
+  color: #1e3a8a;
+}
+tr.row-investment td:first-child { box-shadow: inset 4px 0 0 #38bdf8; }
+
+/* Scroll reveal. JS adds .reveal-on-scroll to major surfaces. */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(18px) scale(0.985);
+  transition:
+    opacity 0.64s cubic-bezier(.2,.8,.2,1),
+    transform 0.64s cubic-bezier(.2,.8,.2,1),
+    box-shadow 0.28s ease;
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Desktop pointer glow follows the cursor without affecting mobile. */
+.desktop-pointer-glow {
+  position: fixed;
+  left: var(--pointer-x, 50vw);
+  top: var(--pointer-y, 30vh);
+  width: 22rem;
+  height: 22rem;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.48), rgba(34, 211, 238, 0.22) 28%, rgba(16, 185, 129, 0.12) 46%, transparent 72%);
+  filter: blur(20px) saturate(1.2);
+  mix-blend-mode: screen;
+  transition: opacity 0.18s ease;
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 1001px) {
+  body.pointer-active .desktop-pointer-glow { opacity: 0.72; }
+}
+
+@media (max-width: 1000px) {
+  .desktop-pointer-glow { display: none; }
+}
+
+@media (max-width: 760px) {
+  body.app-body-clean {
+    background:
+      radial-gradient(circle at 2% 1%, rgba(37, 99, 235, 0.28), transparent 17rem),
+      radial-gradient(circle at 96% 10%, rgba(6, 182, 212, 0.24), transparent 17rem),
+      radial-gradient(circle at 82% 94%, rgba(16, 185, 129, 0.18), transparent 18rem),
+      linear-gradient(135deg, #edf7ff 0%, #ebfff8 42%, #eef3ff 100%);
+  }
+
+  .page-heading,
+  .panel-card,
+  .card,
+  .filters,
+  .form-section,
+  .transactions,
+  .summary-card,
+  .priority-card,
+  .mini-priority-card {
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.68), rgba(239, 246, 255, 0.44)),
+      radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.12), transparent 11rem);
+  }
+
+  .reveal-on-scroll {
+    transform: translateY(10px);
+    transition-duration: 0.44s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.app-body-clean::before,
+  body.app-body-clean::after,
+  body.app-body-clean .app-layout::before,
+  body.app-body-clean .app-layout::after,
+  .primary-btn:hover::before,
+  .secondary-btn:hover::before,
+  .compact-btn:hover::before,
+  .mobile-add-menu > summary:hover::before,
+  .transaction-form button:hover::before,
+  .recurring-form button:hover::before,
+  .debt-form button:hover::before,
+  .entry-form button:hover::before,
+  .form-actions button:hover::before,
+  .quick-add-panel a:hover::before,
+  .mobile-add-panel a:hover::before,
+  .desktop-drawer-primary-action:hover::before,
+  .mobile-detail-action:hover::before,
+  .creditor-payoff-form button:hover::before {
+    animation: none !important;
+  }
+
+  .reveal-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+@keyframes auroraFloatOne {
+  0% { transform: translate3d(-1.5%, -1%, 0) scale(1); filter: hue-rotate(0deg) saturate(1.05); }
+  50% { transform: translate3d(1.2%, 1.6%, 0) scale(1.025); filter: hue-rotate(8deg) saturate(1.2); }
+  100% { transform: translate3d(2%, -0.8%, 0) scale(1.04); filter: hue-rotate(-6deg) saturate(1.14); }
+}
+
+@keyframes pointerBreath {
+  from { opacity: 0.54; transform: scale(0.95); }
+  to { opacity: 0.82; transform: scale(1.05); }
+}
+
+@keyframes auroraRibbonA {
+  0% { transform: translate3d(-8%, -4%, 0) rotate(-7deg) scale(1); }
+  50% { transform: translate3d(16%, 6%, 0) rotate(7deg) scale(1.12); }
+  100% { transform: translate3d(30%, -1%, 0) rotate(-2deg) scale(1.04); }
+}
+
+@keyframes auroraRibbonB {
+  0% { transform: translate3d(8%, 4%, 0) rotate(8deg) scale(1.04); }
+  50% { transform: translate3d(-14%, -8%, 0) rotate(-8deg) scale(1.14); }
+  100% { transform: translate3d(-26%, 1%, 0) rotate(2deg) scale(1.06); }
+}
+
+@keyframes buttonShine {
+  0% { transform: translateX(0) skewX(-18deg); opacity: 0; }
+  18% { opacity: 0.9; }
+  100% { transform: translateX(430%) skewX(-18deg); opacity: 0; }
+}
+
+@keyframes buttonRipple {
+  to {
+    transform: translate(-50%, -50%) scale(20);
+    opacity: 0;
+  }
+}
