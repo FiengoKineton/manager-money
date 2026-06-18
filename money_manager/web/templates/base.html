@@ -7,11 +7,13 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
-<body class="app-body app-body-nebula" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
-  <div class="ambient-grid" aria-hidden="true"></div>
-  <div class="nebula-orb nebula-orb-one" aria-hidden="true"></div>
-  <div class="nebula-orb nebula-orb-two" aria-hidden="true"></div>
-  <div class="nebula-orb nebula-orb-three" aria-hidden="true"></div>
+<body class="app-body app-body-prism" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
+  <div class="prism-sky" aria-hidden="true">
+    <span class="prism-blob prism-blob-a"></span>
+    <span class="prism-blob prism-blob-b"></span>
+    <span class="prism-blob prism-blob-c"></span>
+    <span class="prism-grid"></span>
+  </div>
 
   {% set ep = request.endpoint or '' %}
   {% set home_open = ep in ['dashboard.overview', 'dashboard.overview_detailed', 'dashboard.index', 'transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction', 'net_explanation.net_explanation'] %}
@@ -19,127 +21,120 @@
   {% set accounts_open = ep in ['accounts.accounts_page', 'accounts.account_detail', 'currencies.currencies_page', 'internal_transfers.internal_transfers_page', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
   {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'yearly_summary.yearly_summary_page', 'forecast.forecast', 'documents.documents'] %}
 
-  <div class="app-shell app-shell-nebula">
-    <aside class="sidebar nebula-topnav" aria-label="Application navigation">
-      <a class="brand nebula-brand" href="{{ url_for('dashboard.overview') }}">
-        <span class="brand-avatar-wrap">
-          <img class="brand-avatar" src="{{ url_for('documents.profile_photo') }}" alt="Profile photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
-          <span class="brand-mark brand-mark-fallback">GM</span>
-        </span>
-        <span class="brand-text">
-          <strong>Giuseppe</strong>
-          <small>Money Manager</small>
-        </span>
+  <header class="prism-shellbar" aria-label="Application navigation">
+    <a class="prism-brand" href="{{ url_for('dashboard.overview') }}">
+      <span class="prism-avatar-shell">
+        <img class="brand-avatar" src="{{ url_for('documents.profile_photo') }}" alt="Profile photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+        <span class="brand-mark brand-mark-fallback">GM</span>
+      </span>
+      <span class="prism-brand-copy">
+        <strong>Giuseppe</strong>
+        <small>Money Manager</small>
+      </span>
+    </a>
+
+    <nav class="prism-top-categories" aria-label="Main navigation">
+      <details class="prism-nav-group {{ 'is-active' if home_open else '' }}" data-prism-group>
+        <summary><span>01</span>Home</summary>
+        <div class="prism-nav-menu">
+          <a href="{{ url_for('dashboard.overview') }}" class="{{ 'active' if ep == 'dashboard.overview' else '' }}">Quick Overview</a>
+          <a href="{{ url_for('dashboard.overview_detailed') }}" class="{{ 'active' if ep == 'dashboard.overview_detailed' else '' }}">Detailed Overview</a>
+          <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if ep == 'dashboard.index' else '' }}">Dashboard</a>
+          <a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if ep in ['transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction'] else '' }}">Transactions</a>
+          <a href="{{ url_for('net_explanation.net_explanation') }}" class="{{ 'active' if ep == 'net_explanation.net_explanation' else '' }}">Why this net?</a>
+        </div>
+      </details>
+
+      <details class="prism-nav-group prism-nav-wide {{ 'is-active' if planning_open else '' }}" data-prism-group>
+        <summary><span>02</span>Planning</summary>
+        <div class="prism-nav-menu prism-nav-columns">
+          <div>
+            <b>Queue</b>
+            <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}">Pending Payments</a>
+            <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}">Recurring Rules</a>
+          </div>
+          <div>
+            <b>Projects</b>
+            <a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if ep == 'payables.payables_page' else '' }}">Payables</a>
+            <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if ep in ['expense_projects.expense_projects_page', 'expense_projects.expense_project_detail'] else '' }}">Expense Projects</a>
+          </div>
+          <div>
+            <b>People</b>
+            <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}">Debts I Owe</a>
+            <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}">Money Owed to Me</a>
+          </div>
+        </div>
+      </details>
+
+      <details class="prism-nav-group {{ 'is-active' if accounts_open else '' }}" data-prism-group>
+        <summary><span>03</span>Accounts</summary>
+        <div class="prism-nav-menu">
+          <a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if ep in ['accounts.accounts_page', 'accounts.account_detail'] else '' }}">Liquid Accounts</a>
+          <a href="{{ url_for('internal_transfers.internal_transfers_page') }}" class="{{ 'active' if ep == 'internal_transfers.internal_transfers_page' else '' }}">Internal Transfers</a>
+          <a href="{{ url_for('currencies.currencies_page') }}" class="{{ 'active' if ep == 'currencies.currencies_page' else '' }}">Currency Exchange</a>
+          <a href="{{ url_for('sparagnat.sparagnat_page') }}" class="{{ 'active' if ep == 'sparagnat.sparagnat_page' else '' }}">Sparagnat e Fottut</a>
+          <a href="{{ url_for('parent_support.parent_support_page') }}" class="{{ 'active' if ep == 'parent_support.parent_support_page' else '' }}">Parent Support</a>
+        </div>
+      </details>
+
+      <details class="prism-nav-group {{ 'is-active' if wealth_open else '' }}" data-prism-group>
+        <summary><span>04</span>Wealth</summary>
+        <div class="prism-nav-menu">
+          <a href="{{ url_for('investments.investments_page') }}" class="{{ 'active' if ep == 'investments.investments_page' else '' }}">Investments</a>
+          <a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if ep == 'analysis.analysis' else '' }}">Analysis</a>
+          <a href="{{ url_for('yearly_summary.yearly_summary_page') }}" class="{{ 'active' if ep == 'yearly_summary.yearly_summary_page' else '' }}">Yearly Summary</a>
+          <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if ep == 'forecast.forecast' else '' }}">Forecast</a>
+          <a href="{{ url_for('documents.documents') }}" class="{{ 'active' if ep == 'documents.documents' else '' }}">Documents</a>
+        </div>
+      </details>
+    </nav>
+
+    <div class="prism-shell-tools">
+      <a class="prism-net-pill always-on-balance" href="{{ url_for('dashboard.overview') }}" aria-label="Open quick overview">
+        <span>Always-on net</span>
+        <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
       </a>
+      <form method="post" action="{{ url_for('auth.logout') }}" class="prism-logout-form">
+        <button type="submit" class="prism-logout-action" aria-label="Logout">Logout</button>
+      </form>
+    </div>
+  </header>
 
-      <nav class="sidebar-nav nebula-nav-lane" aria-label="Main navigation">
-        <details class="nav-group" data-nav-section="Home">
-          <summary class="nav-label"><span class="nav-dot">⌂</span><span>Home</span></summary>
-          <div class="nav-items">
-            <a href="{{ url_for('dashboard.overview') }}" class="{{ 'active' if ep == 'dashboard.overview' else '' }}">Quick Overview</a>
-            <a href="{{ url_for('dashboard.overview_detailed') }}" class="{{ 'active' if ep == 'dashboard.overview_detailed' else '' }}">Detailed Overview</a>
-            <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if ep == 'dashboard.index' else '' }}">Dashboard</a>
-            <a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if ep in ['transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction'] else '' }}">Transactions</a>
-            <a href="{{ url_for('net_explanation.net_explanation') }}" class="{{ 'active' if ep == 'net_explanation.net_explanation' else '' }}">Why this net?</a>
-          </div>
-        </details>
-
-        <details class="nav-group" data-nav-section="Planning">
-          <summary class="nav-label"><span class="nav-dot">◌</span><span>Planning</span></summary>
-          <div class="nav-items nav-items-grouped">
-            <div class="nav-cluster">
-              <span class="nav-cluster-label">Payment queue</span>
-              <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}">Pending Payments</a>
-              <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}">Recurring Rules</a>
-            </div>
-
-            <div class="nav-cluster">
-              <span class="nav-cluster-label">Project liabilities</span>
-              <a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if ep == 'payables.payables_page' else '' }}">Payables</a>
-              <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if ep in ['expense_projects.expense_projects_page', 'expense_projects.expense_project_detail'] else '' }}">Expense Projects</a>
-            </div>
-
-            <div class="nav-cluster nav-cluster-soft">
-              <span class="nav-cluster-label">People</span>
-              <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}">Debts I Owe</a>
-              <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}">Money Owed to Me</a>
-            </div>
-          </div>
-        </details>
-
-        <details class="nav-group" data-nav-section="Accounts">
-          <summary class="nav-label"><span class="nav-dot">▦</span><span>Accounts</span></summary>
-          <div class="nav-items">
-            <a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if ep in ['accounts.accounts_page', 'accounts.account_detail'] else '' }}">Liquid Accounts</a>
-            <a href="{{ url_for('internal_transfers.internal_transfers_page') }}" class="{{ 'active' if ep == 'internal_transfers.internal_transfers_page' else '' }}">Internal Transfers</a>
-            <a href="{{ url_for('currencies.currencies_page') }}" class="{{ 'active' if ep == 'currencies.currencies_page' else '' }}">Currency Exchange</a>
-            <a href="{{ url_for('sparagnat.sparagnat_page') }}" class="{{ 'active' if ep == 'sparagnat.sparagnat_page' else '' }}">Sparagnat e Fottut</a>
-            <a href="{{ url_for('parent_support.parent_support_page') }}" class="{{ 'active' if ep == 'parent_support.parent_support_page' else '' }}">Parent Support</a>
-          </div>
-        </details>
-
-        <details class="nav-group" data-nav-section="Wealth">
-          <summary class="nav-label"><span class="nav-dot">◇</span><span>Wealth</span></summary>
-          <div class="nav-items">
-            <a href="{{ url_for('investments.investments_page') }}" class="{{ 'active' if ep == 'investments.investments_page' else '' }}">Investments</a>
-            <a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if ep == 'analysis.analysis' else '' }}">Analysis</a>
-            <a href="{{ url_for('yearly_summary.yearly_summary_page') }}" class="{{ 'active' if ep == 'yearly_summary.yearly_summary_page' else '' }}">Yearly Summary</a>
-            <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if ep == 'forecast.forecast' else '' }}">Forecast</a>
-            <a href="{{ url_for('documents.documents') }}" class="{{ 'active' if ep == 'documents.documents' else '' }}">Documents</a>
-          </div>
-        </details>
-      </nav>
-
-      <div class="nebula-status-zone">
-        <a class="topbar-balance-pill always-on-balance nebula-net-chip" href="{{ url_for('dashboard.overview') }}" aria-label="Open quick overview">
-          <span>Always-on net</span>
-          <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
-        </a>
-
-        <form method="post" action="{{ url_for('auth.logout') }}" class="sidebar-logout-form nebula-logout-form">
-          <button type="submit" class="sidebar-logout-action nebula-logout-action" aria-label="Logout">Logout</button>
-        </form>
+  <main class="prism-main">
+    <header class="prism-page-titlebar">
+      <div>
+        <span class="eyebrow">Personal finance studio</span>
+        <h1>{% block page_title %}Money Manager{% endblock %}</h1>
       </div>
-    </aside>
+      <span class="prism-live-indicator" aria-hidden="true"><i></i><i></i><i></i></span>
+    </header>
 
-    <main class="app-main nebula-main">
-      <header class="topbar nebula-page-header">
-        <div class="topbar-title">
-          <span class="eyebrow">Personal finance OS</span>
-          <h1>{% block page_title %}Money Manager{% endblock %}</h1>
-        </div>
-        <div class="nebula-page-signal" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </div>
-      </header>
+    <div class="container prism-content-stage">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
 
-      <div class="container content-stage nebula-content-stage">
-        {% block content %}{% endblock %}
-      </div>
-    </main>
-  </div>
-
-  <nav class="quick-actions nebula-action-dock" aria-label="Quick logging actions">
-    <a href="{{ url_for('transactions.add_transaction', type='expense') }}" class="quick-action expense-action">
+  <nav class="quick-actions prism-action-dock" aria-label="Quick logging actions">
+    <a href="{{ url_for('transactions.add_transaction', type='expense') }}" class="quick-action prism-action expense-action">
       <span class="action-symbol">−</span>
       <span class="quick-action-copy"><small>Log</small><strong>Expense</strong></span>
     </a>
-    <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="quick-action income-action">
+    <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="quick-action prism-action income-action">
       <span class="action-symbol">＋</span>
       <span class="quick-action-copy"><small>Log</small><strong>Income</strong></span>
     </a>
-    <a href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}" class="quick-action special-action">
+    <a href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}" class="quick-action prism-action special-action">
       <span class="action-symbol">◆</span>
       <span class="quick-action-copy"><small>Create</small><strong>Special</strong></span>
     </a>
-    <a href="{{ url_for('transactions.add_transaction', type='investment') }}" class="quick-action investment-action">
+    <a href="{{ url_for('transactions.add_transaction', type='investment') }}" class="quick-action prism-action investment-action">
       <span class="action-symbol">↗</span>
       <span class="quick-action-copy"><small>Track</small><strong>Invest</strong></span>
     </a>
   </nav>
 
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/layout-nebula.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/layout-prism.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
