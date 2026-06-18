@@ -1070,7 +1070,8 @@
     ".icon-action-btn",
     ".desktop-drawer-primary-action",
     ".mobile-detail-action",
-    ".creditor-payoff-form button"
+    ".creditor-payoff-form button",
+    ".theme-toggle-btn"
   ].join(", ");
 
   const revealSelector = [
@@ -1176,3 +1177,49 @@
 
   document.addEventListener("DOMContentLoaded", wireAuroraInteractions);
 })();
+
+/* --------------------------------------------------------------------------
+   Day / night color mode toggle
+-------------------------------------------------------------------------- */
+(function () {
+  const storageKey = "moneyManagerColorMode";
+
+  function getMode() {
+    const mode = document.documentElement.dataset.theme || "day";
+    return mode === "night" ? "night" : "day";
+  }
+
+  function setMode(mode) {
+    const nextMode = mode === "night" ? "night" : "day";
+    document.documentElement.dataset.theme = nextMode;
+    try {
+      window.localStorage.setItem(storageKey, nextMode);
+    } catch (error) {
+      // Local storage can fail in private windows; the visual toggle still works.
+    }
+    syncButtons();
+  }
+
+  function syncButtons() {
+    const mode = getMode();
+    document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+      const targetMode = mode === "night" ? "day" : "night";
+      button.setAttribute("aria-label", `Switch to ${targetMode} mode`);
+      button.setAttribute("title", `Switch to ${targetMode} mode`);
+      const label = button.querySelector("[data-theme-toggle-label]");
+      if (label) label.textContent = targetMode === "night" ? "Night" : "Day";
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    syncButtons();
+    document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+      if (button.dataset.themeToggleWired === "true") return;
+      button.dataset.themeToggleWired = "true";
+      button.addEventListener("click", () => {
+        setMode(getMode() === "night" ? "day" : "night");
+      });
+    });
+  });
+})();
+

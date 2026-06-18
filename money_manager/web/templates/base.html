@@ -4,6 +4,16 @@
   <meta charset="utf-8">
   <title>Money Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function () {
+      try {
+        var savedTheme = window.localStorage.getItem("moneyManagerColorMode") || "day";
+        document.documentElement.dataset.theme = savedTheme === "night" ? "night" : "day";
+      } catch (error) {
+        document.documentElement.dataset.theme = "day";
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
@@ -108,6 +118,10 @@
               <a class="quick-add-special" href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span><b>Special log</b><small>Debts, payables, projects</small></a>
             </div>
           </details>
+          <button type="button" class="theme-toggle-btn" data-theme-toggle aria-label="Switch to night mode" title="Switch day/night mode">
+            <span class="theme-toggle-orb" aria-hidden="true"></span>
+            <b data-theme-toggle-label>Night</b>
+          </button>
         </div>
       </header>
 
