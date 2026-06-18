@@ -69,6 +69,7 @@ CALCULATION_ENTRYPOINTS: dict[str, str] = {
     "overview.context": "money_manager.services.overview_service.build_overview_context",
     "analysis.metrics": "money_manager.services.analytics_service.build_analysis_metrics_cached",
     "forecast.defaults": "money_manager.services.forecast_service.build_forecast_defaults",
+    "quick_log.context": "money_manager.services.quick_log_service.quick_log_context",
     "investment.overview_snapshot": "money_manager.services.investment_service.overview_snapshot",
     "investment.habit_snapshot": "money_manager.services.investment_service.investment_habit_snapshot",
 }

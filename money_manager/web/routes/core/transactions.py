@@ -118,6 +118,9 @@ def add_transaction():
     if transaction_type not in TRANSACTION_TYPES:
         transaction_type = "expense"
 
+    show_special_log = request.args.get("special") == "1" or (request.method == "POST" and request.form.get("action") == "quick_special_log")
+    special_context = quick_log_context() if show_special_log else {"quick_log_modes": [], "quick_log_context": {}}
+
     context = category_context(transaction_type)
     currency_options = currency_options_for_forms()
     return render_template(
@@ -134,8 +137,8 @@ def add_transaction():
         quick_error=quick_error,
         quick_message=quick_message,
         quick_values=quick_values,
-        show_special_log=request.args.get("special") == "1",
-        **quick_log_context(),
+        show_special_log=show_special_log,
+        **special_context,
     )
 
 

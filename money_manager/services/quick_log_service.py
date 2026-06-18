@@ -98,6 +98,12 @@ QUICK_LOG_MODES = [
 
 
 def quick_log_context() -> dict:
+    from money_manager.services.cache_service import cached_calculation
+
+    return cached_calculation("quick_log.context", _quick_log_context_uncached)
+
+
+def _quick_log_context_uncached() -> dict:
     debts = [_prepare_amount_row(row) for row in load_debts() if _is_active(row) and _amount(row.get("remaining_amount")) > 0]
     payables = [_prepare_amount_row(row) for row in load_payables() if _is_active(row) and _amount(row.get("remaining_amount")) > 0]
     receivables = [_prepare_amount_row(row) for row in load_receivables() if _is_active(row) and _amount(row.get("remaining_amount")) > 0]

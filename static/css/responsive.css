@@ -1,4 +1,11 @@
 /* Final responsive layer: explicit phone/tablet behavior only. */
+
+/* Mobile-only form summaries are injected by JS for phone cards. Keep them out of
+   the desktop layout so they never appear as default grey browser buttons. */
+.mobile-form-summary {
+  display: none;
+}
+
 @media (max-width: 1180px) {
   .secondary-metrics-strip,
   .liquidity-snapshot-grid,

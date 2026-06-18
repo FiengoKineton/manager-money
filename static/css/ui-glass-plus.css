@@ -762,3 +762,421 @@ tr.row-investment td:first-child { box-shadow: inset 4px 0 0 #a78bfa; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+
+/* --------------------------------------------------------------------------
+   Glass Fintech Plus v2: clearer cards, richer color, better pointer lights
+-------------------------------------------------------------------------- */
+:root {
+  --bg: #e9efff;
+  --surface: rgba(255, 255, 255, 0.62);
+  --surface-soft: rgba(255, 255, 255, 0.48);
+  --surface-muted: rgba(224, 231, 255, 0.46);
+  --glass: rgba(255, 255, 255, 0.50);
+  --glass-strong: rgba(255, 255, 255, 0.66);
+  --glass-border: rgba(255, 255, 255, 0.64);
+  --line: rgba(255, 255, 255, 0.58);
+  --line-strong: rgba(99, 102, 241, 0.22);
+  --shadow-sm: 0 14px 34px rgba(31, 41, 55, 0.09);
+  --shadow: 0 26px 70px rgba(30, 41, 59, 0.15);
+  --shadow-lg: 0 38px 105px rgba(15, 23, 42, 0.24);
+}
+
+body.app-body-clean {
+  background:
+    radial-gradient(circle at 7% 7%, rgba(59, 130, 246, 0.32), transparent 22rem),
+    radial-gradient(circle at 72% -4%, rgba(168, 85, 247, 0.24), transparent 26rem),
+    radial-gradient(circle at 97% 36%, rgba(34, 211, 238, 0.20), transparent 25rem),
+    radial-gradient(circle at 18% 92%, rgba(16, 185, 129, 0.16), transparent 20rem),
+    radial-gradient(circle at 88% 86%, rgba(244, 63, 94, 0.16), transparent 24rem),
+    linear-gradient(135deg, #eef5ff 0%, #f7f0ff 48%, #eaf8ff 100%);
+  background-attachment: fixed;
+}
+
+body.app-body-clean::before {
+  opacity: 0.55;
+  background:
+    linear-gradient(118deg, transparent 0 18%, rgba(255, 255, 255, 0.34) 18.1% 18.45%, transparent 18.6% 100%),
+    linear-gradient(31deg, transparent 0 64%, rgba(99, 102, 241, 0.15) 64.1% 64.75%, transparent 64.9% 100%),
+    linear-gradient(150deg, transparent 0 74%, rgba(34, 211, 238, 0.13) 74.2% 74.9%, transparent 75% 100%),
+    radial-gradient(circle at var(--pointer-x, 50%) var(--pointer-y, 24%), rgba(255, 255, 255, 0.72), transparent 15rem),
+    radial-gradient(circle at calc(var(--pointer-x, 50%) + 6rem) calc(var(--pointer-y, 24%) + 4rem), rgba(99, 102, 241, 0.18), transparent 17rem);
+}
+
+body.app-body-clean::after {
+  width: 34rem;
+  height: 34rem;
+  left: calc(var(--pointer-x, 50%) - 17rem);
+  top: calc(var(--pointer-y, 30%) - 17rem);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.46), rgba(34, 211, 238, 0.16) 26%, rgba(99, 102, 241, 0.12) 48%, transparent 72%);
+  filter: blur(14px);
+  opacity: 0.66;
+}
+
+.app-content-stage > section:nth-of-type(3n + 1) { --section-glow-a: rgba(34, 211, 238, 0.16); --section-glow-b: rgba(99, 102, 241, 0.13); }
+.app-content-stage > section:nth-of-type(3n + 2) { --section-glow-a: rgba(168, 85, 247, 0.15); --section-glow-b: rgba(244, 63, 94, 0.10); }
+.app-content-stage > section:nth-of-type(3n) { --section-glow-a: rgba(16, 185, 129, 0.13); --section-glow-b: rgba(59, 130, 246, 0.11); }
+
+.page-heading,
+.panel-card,
+.card,
+.filters,
+.form-section,
+.transactions,
+.chart-card,
+.summary-card,
+.priority-card,
+.mini-priority-card,
+.account-overview-card,
+.analysis-decision-card,
+.analysis-kpi,
+.analysis-health-card,
+.investment-behaviour-card,
+.payment-card,
+.recurring-rule-card,
+.document-card,
+.asset-card,
+.year-card,
+.initial-condition-card,
+.flow-card,
+.top-category-card,
+.investment-card,
+.quick-special-panel {
+  background:
+    radial-gradient(circle at 0% 0%, var(--section-glow-a, rgba(99, 102, 241, 0.12)), transparent 18rem),
+    radial-gradient(circle at 100% 100%, var(--section-glow-b, rgba(34, 211, 238, 0.10)), transparent 18rem),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(247, 250, 255, 0.42));
+  border-color: rgba(255, 255, 255, 0.68);
+  box-shadow:
+    0 18px 46px rgba(31, 41, 55, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.app-sidebar,
+.app-topbar,
+.mobile-bottom-nav,
+.quick-add-panel,
+.mobile-add-panel {
+  background:
+    radial-gradient(circle at 0 0, rgba(99, 102, 241, 0.13), transparent 16rem),
+    linear-gradient(145deg, rgba(255,255,255,0.66), rgba(255,255,255,0.42));
+}
+
+.primary-btn,
+.secondary-btn,
+.compact-btn,
+.net-pill,
+.section-count,
+.type-badge,
+.soft-badge,
+.status-badge,
+.date-pill,
+.nav-items a.active,
+.quick-picker-count,
+.forecast-total-pill,
+.forecast-summary-strip > div,
+.rule-metric-grid > div,
+.payment-date-block,
+.creditor-summary-row {
+  position: relative;
+}
+
+.primary-btn::after,
+.secondary-btn::after,
+.compact-btn::after,
+.net-pill::after,
+.section-count::after,
+.type-badge::after,
+.soft-badge::after,
+.status-badge::after,
+.date-pill::after,
+.nav-items a.active::after,
+.quick-picker-count::after {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -9px;
+  height: 12px;
+  border-radius: 999px;
+  background: radial-gradient(ellipse, rgba(99, 102, 241, 0.26), transparent 72%);
+  filter: blur(5px);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.type-expense::after,
+.status-pending::after { background: radial-gradient(ellipse, rgba(244, 63, 94, 0.22), transparent 72%); }
+.type-income::after,
+.status-executed::after { background: radial-gradient(ellipse, rgba(16, 185, 129, 0.22), transparent 72%); }
+.type-investment::after { background: radial-gradient(ellipse, rgba(124, 58, 237, 0.24), transparent 72%); }
+
+/* Desktop form-card summaries must never render as default grey buttons. */
+.mobile-form-summary {
+  display: none;
+}
+
+/* Pending and recurring: use real desktop card layouts instead of a squeezed table-like row. */
+.payment-card-list,
+.recurring-rule-list {
+  gap: 1rem;
+}
+
+.payment-card {
+  grid-template-columns: minmax(150px, 176px) minmax(360px, 1fr) minmax(280px, 0.82fr);
+  align-items: stretch;
+  gap: 0.9rem;
+  padding: 1rem 4rem 1rem 1rem;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.payment-card.payment-pending {
+  background:
+    radial-gradient(circle at 0 0, rgba(244, 63, 94, 0.10), transparent 15rem),
+    linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,247,237,0.42));
+}
+
+.payment-card.payment-executed {
+  background:
+    radial-gradient(circle at 0 0, rgba(16, 185, 129, 0.09), transparent 15rem),
+    linear-gradient(135deg, rgba(255,255,255,0.58), rgba(241,245,249,0.42));
+}
+
+.payment-date-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 86px;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 16% 14%, rgba(255,255,255,0.92), transparent 8rem),
+    rgba(255,255,255,0.48);
+  border-color: rgba(255,255,255,0.72);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), 0 12px 28px rgba(99,102,241,0.08);
+}
+
+.payment-edit-grid {
+  grid-template-columns: minmax(104px, 0.58fr) minmax(140px, 0.72fr) minmax(220px, 1.15fr);
+  gap: 0.68rem;
+  align-content: center;
+}
+
+.payment-edit-side {
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 0.55rem;
+  align-content: center;
+}
+
+.payment-edit-side label,
+.payment-date-block label,
+.payment-edit-grid label,
+.recurring-rule-card label {
+  color: rgba(52, 64, 84, 0.74);
+  letter-spacing: 0.065em;
+}
+
+.payment-action-rail,
+.rule-action-rail {
+  width: 3.25rem;
+  justify-content: center;
+  gap: 0.52rem;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255,255,255,0.84), transparent 7rem),
+    linear-gradient(180deg, rgba(255,255,255,0.56), rgba(238,242,255,0.34));
+  border-left-color: rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(16px) saturate(1.12);
+  -webkit-backdrop-filter: blur(16px) saturate(1.12);
+}
+
+.icon-action-btn {
+  box-shadow:
+    0 11px 24px rgba(15, 23, 42, 0.16),
+    0 0 0 1px rgba(255,255,255,0.26) inset;
+}
+.icon-action-save { background: linear-gradient(135deg, #22c55e, #059669); }
+.icon-action-delay { background: linear-gradient(135deg, #fbbf24, #f97316); }
+.icon-action-execute { background: linear-gradient(135deg, #6366f1, #7c3aed); }
+.icon-action-delete { background: linear-gradient(135deg, #fb7185, #e11d48); }
+
+.recurring-rule-card {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.05rem 4rem 1.05rem 1.15rem;
+  border-radius: 24px;
+}
+
+.recurring-rule-card.rule-expense {
+  background:
+    radial-gradient(circle at 0 0, rgba(244, 63, 94, 0.11), transparent 16rem),
+    linear-gradient(135deg, rgba(255,255,255,0.70), rgba(255,241,242,0.38));
+}
+.recurring-rule-card.rule-income {
+  background:
+    radial-gradient(circle at 0 0, rgba(16, 185, 129, 0.12), transparent 16rem),
+    linear-gradient(135deg, rgba(255,255,255,0.70), rgba(236,253,245,0.38));
+}
+.recurring-rule-card.rule-investment {
+  background:
+    radial-gradient(circle at 0 0, rgba(124, 58, 237, 0.13), transparent 16rem),
+    linear-gradient(135deg, rgba(255,255,255,0.70), rgba(245,243,255,0.42));
+}
+
+.rule-card-topline {
+  grid-template-columns: minmax(260px, 1.15fr) minmax(130px, auto) minmax(320px, 1fr);
+  gap: 0.9rem;
+  align-items: center;
+  margin-left: 0;
+}
+
+.rule-name-field input {
+  min-height: 52px;
+  font-size: 1.02rem;
+  border-radius: 18px;
+}
+
+.rule-amount-stack {
+  padding: 0.58rem 0.7rem;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.42);
+  border: 1px solid rgba(255,255,255,0.62);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
+}
+
+.rule-badges {
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.rule-metric-grid {
+  margin-left: 0;
+}
+
+.compact-rule-fields {
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 0.7rem;
+  margin-left: 0;
+}
+
+.rule-fields-grid > div,
+.payment-edit-grid > div,
+.payment-edit-side > div {
+  min-width: 0;
+}
+
+/* Totals by creditor: amount and extinguish action sit on the opposite/right side. */
+.creditor-summary-card h2 {
+  margin-top: 0;
+}
+
+.creditor-summary-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.creditor-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(255,255,255,0.66);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 0 0, rgba(99,102,241,0.10), transparent 12rem),
+    rgba(255,255,255,0.46);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), 0 12px 28px rgba(31,41,55,0.06);
+}
+
+.creditor-summary-main {
+  min-width: 0;
+}
+
+.creditor-summary-main strong,
+.creditor-summary-main span {
+  display: block;
+}
+
+.creditor-summary-amount {
+  font-weight: 950;
+  font-size: 1.08rem;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.creditor-payoff-form {
+  margin: 0;
+  justify-self: end;
+}
+
+@media (max-width: 1180px) {
+  .payment-card {
+    grid-template-columns: minmax(140px, 160px) minmax(280px, 1fr) minmax(220px, 0.82fr);
+  }
+  .payment-edit-grid {
+    grid-template-columns: minmax(98px, 0.58fr) minmax(125px, 0.72fr) minmax(180px, 1fr);
+  }
+  .payment-edit-side {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 980px) {
+  .payment-card,
+  .rule-card-topline {
+    grid-template-columns: 1fr;
+  }
+  .payment-edit-grid,
+  .payment-edit-side {
+    grid-template-columns: 1fr 1fr;
+  }
+  .rule-amount-stack,
+  .forecast-amount {
+    text-align: left;
+  }
+  .rule-badges {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .mobile-form-summary {
+    display: grid;
+    background:
+      radial-gradient(circle at 0 0, rgba(255,255,255,0.72), transparent 9rem),
+      linear-gradient(135deg, rgba(255,255,255,0.66), rgba(238,242,255,0.42));
+    border: 1px solid rgba(255,255,255,0.70);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), 0 14px 32px rgba(31,41,55,0.09);
+  }
+
+  .payment-card,
+  .recurring-rule-card {
+    padding-right: 0.78rem;
+    padding-bottom: 4rem;
+    border-radius: 22px;
+  }
+
+  .payment-edit-grid,
+  .payment-edit-side,
+  .compact-rule-fields,
+  .rule-metric-grid,
+  .forecast-summary-strip,
+  .creditor-summary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .creditor-summary-row {
+    align-items: stretch;
+  }
+
+  .creditor-summary-amount,
+  .creditor-payoff-form {
+    justify-self: stretch;
+  }
+
+  .creditor-payoff-form button {
+    width: 100%;
+  }
+}

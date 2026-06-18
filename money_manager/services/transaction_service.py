@@ -108,7 +108,7 @@ def account_balance(account_key: str) -> float:
     from money_manager.services.account_service import account_balance_rows
 
     key = normalize_account_key(account_key)
-    rows = account_balance_rows(load_all())
+    rows = account_balance_rows(load_transactions())
     for row in rows:
         if row.get("key") == key:
             return float(row.get("balance", 0.0) or 0.0)
@@ -118,13 +118,13 @@ def account_balance(account_key: str) -> float:
 def account_balances_for_preview() -> dict:
     from money_manager.services.account_service import account_balance_rows
 
-    return {row.get("key"): float(row.get("balance", 0.0) or 0.0) for row in account_balance_rows(load_all())}
+    return {row.get("key"): float(row.get("balance", 0.0) or 0.0) for row in account_balance_rows(load_transactions())}
 
 
 def main_net_for_preview() -> float:
     from money_manager.services.account_service import main_account_transactions
 
-    df = main_account_transactions(load_all())
+    df = main_account_transactions(load_transactions())
     if df.empty:
         return 0.0
     return float(df.get("signed_amount", 0).sum())
