@@ -1,0 +1,421 @@
+/* --------------------------------------------------------------------------
+   Final UI corrections: compact project tables, icon-only mode toggle, and
+   stronger high-contrast night palette. Visual only; no backend logic touched.
+-------------------------------------------------------------------------- */
+
+/* Icon-only Day/Night button: keep the accessible label/title, remove text. */
+.theme-toggle-btn {
+  width: 54px;
+  min-width: 54px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0.45rem !important;
+  justify-content: center;
+  gap: 0;
+}
+.theme-toggle-btn b,
+.theme-toggle-btn [data-theme-toggle-label] { display: none !important; }
+.theme-toggle-orb { flex: 0 0 auto; }
+
+@media (max-width: 760px) {
+  .theme-toggle-btn {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Planned/expected costs: keep all fields, but stop the table from pushing the
+   page width. On phones the existing card layout still takes over. */
+@media (min-width: 761px) {
+  .project-table-card {
+    overflow-x: hidden !important;
+    max-width: 100%;
+  }
+
+  .project-table {
+    min-width: 960px !important;
+    width: 100% !important;
+  }
+
+  .project-planned-table {
+    table-layout: fixed !important;
+    min-width: 0 !important;
+  }
+
+  .project-planned-table th,
+  .project-planned-table td {
+    padding: 0.64rem 0.62rem !important;
+    vertical-align: middle;
+  }
+
+  .project-planned-table th:nth-child(1),
+  .project-planned-table td:nth-child(1) { width: 23%; }
+  .project-planned-table th:nth-child(2),
+  .project-planned-table td:nth-child(2) { width: 12%; }
+  .project-planned-table th:nth-child(3),
+  .project-planned-table td:nth-child(3),
+  .project-planned-table th:nth-child(4),
+  .project-planned-table td:nth-child(4) { width: 10.5%; }
+  .project-planned-table th:nth-child(5),
+  .project-planned-table td:nth-child(5) { width: 13.5%; }
+  .project-planned-table th:nth-child(6),
+  .project-planned-table td:nth-child(6) { width: 19%; }
+  .project-planned-table th:nth-child(7),
+  .project-planned-table td:nth-child(7) { width: 8%; }
+  .project-planned-table th:nth-child(8),
+  .project-planned-table td:nth-child(8) { width: 13.5%; }
+
+  .project-planned-table input,
+  .project-planned-table select,
+  .project-planned-table textarea,
+  .project-planned-table .table-note-input {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0.52rem 0.56rem !important;
+    font-size: 0.84rem !important;
+  }
+
+  .project-planned-table .linked-payable-note {
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .project-planned-table .progress-wrap {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .project-planned-table small {
+    display: block;
+    line-height: 1.25;
+  }
+
+  .project-planned-table .table-action-rail {
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.38rem;
+  }
+
+  .project-planned-table .project-mini-pay {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    width: 100%;
+    gap: 0.38rem;
+  }
+
+  .project-planned-table .project-mini-pay select,
+  .project-planned-table .project-mini-pay input,
+  .project-planned-table .project-mini-pay button {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .project-planned-table .project-mini-pay button,
+  .project-planned-table .row-action-form .compact-btn {
+    min-height: 32px;
+    padding-inline: 0.5rem;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1180px) {
+  .project-table {
+    min-width: 0 !important;
+  }
+
+  .project-planned-table th:nth-child(2),
+  .project-planned-table td:nth-child(2) { width: 10%; }
+  .project-planned-table th:nth-child(5),
+  .project-planned-table td:nth-child(5) { width: 12%; }
+  .project-planned-table th:nth-child(8),
+  .project-planned-table td:nth-child(8) { width: 12%; }
+
+  .project-planned-table .project-mini-pay {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* High-contrast night mode: text becomes truly light, while cards keep colored
+   glass patches so the UI does not turn into flat black. */
+html[data-theme="night"] {
+  --bg: #06121f;
+  --surface: rgba(8, 20, 34, 0.80);
+  --surface-soft: rgba(10, 29, 50, 0.78);
+  --surface-muted: rgba(13, 42, 64, 0.68);
+  --ink: #f8fbff;
+  --ink-soft: #e6f2ff;
+  --muted: #adc3d9;
+  --line: rgba(125, 211, 252, 0.22);
+  --line-strong: rgba(56, 189, 248, 0.38);
+  --brand: #67e8f9;
+  --brand-dark: #38bdf8;
+  --brand-soft: rgba(14, 165, 233, 0.22);
+  --good: #4ade80;
+  --bad: #fb7185;
+  --warning: #facc15;
+  --glass-main: rgba(8, 22, 38, 0.76);
+  --glass-main-strong: rgba(10, 32, 55, 0.86);
+  --glass-border: rgba(125, 211, 252, 0.32);
+  --glass-shadow: 0 30px 92px rgba(0, 0, 0, 0.48), 0 12px 42px rgba(14, 165, 233, 0.16);
+}
+
+html[data-theme="night"] body.app-body-clean {
+  color: var(--ink) !important;
+  background:
+    radial-gradient(circle at 8% 9%, rgba(37, 99, 235, 0.46), transparent 23rem),
+    radial-gradient(circle at 82% 4%, rgba(34, 211, 238, 0.32), transparent 25rem),
+    radial-gradient(circle at 100% 50%, rgba(16, 185, 129, 0.24), transparent 27rem),
+    radial-gradient(circle at 18% 92%, rgba(132, 204, 22, 0.16), transparent 22rem),
+    linear-gradient(135deg, #050b16 0%, #061b2d 38%, #06302b 70%, #0e1735 100%) !important;
+}
+
+html[data-theme="night"] .app-sidebar,
+html[data-theme="night"] .app-topbar,
+html[data-theme="night"] .mobile-bottom-nav,
+html[data-theme="night"] .mobile-add-panel,
+html[data-theme="night"] .quick-add-panel,
+html[data-theme="night"] .desktop-detail-shell,
+html[data-theme="night"] .page-heading,
+html[data-theme="night"] .panel-card,
+html[data-theme="night"] .card,
+html[data-theme="night"] .filters,
+html[data-theme="night"] .form-section,
+html[data-theme="night"] .transactions,
+html[data-theme="night"] .chart-card,
+html[data-theme="night"] .summary-card,
+html[data-theme="night"] .priority-card,
+html[data-theme="night"] .mini-priority-card,
+html[data-theme="night"] .standard-table,
+html[data-theme="night"] .account-overview-card,
+html[data-theme="night"] .analysis-decision-card,
+html[data-theme="night"] .analysis-kpi,
+html[data-theme="night"] .analysis-health-card,
+html[data-theme="night"] .investment-behaviour-card,
+html[data-theme="night"] .payment-card,
+html[data-theme="night"] .recurring-rule-card,
+html[data-theme="night"] .document-card,
+html[data-theme="night"] .asset-card,
+html[data-theme="night"] .year-card,
+html[data-theme="night"] .initial-condition-card,
+html[data-theme="night"] .flow-card,
+html[data-theme="night"] .top-category-card,
+html[data-theme="night"] .investment-card,
+html[data-theme="night"] .quick-special-panel,
+html[data-theme="night"] .smart-log-studio,
+html[data-theme="night"] .normal-add-polished {
+  color: var(--ink) !important;
+  background:
+    linear-gradient(135deg, rgba(8, 22, 38, 0.84), rgba(9, 39, 58, 0.58)),
+    radial-gradient(circle at 0 0, rgba(59, 130, 246, 0.22), transparent 18rem),
+    radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.14), transparent 18rem) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+}
+
+html[data-theme="night"] .app-topbar {
+  background:
+    linear-gradient(100deg, rgba(5, 13, 26, 0.90), rgba(5, 38, 59, 0.72), rgba(5, 53, 42, 0.62)),
+    radial-gradient(circle at 12% 0%, rgba(59, 130, 246, 0.35), transparent 16rem),
+    radial-gradient(circle at 86% 80%, rgba(52, 211, 153, 0.23), transparent 16rem) !important;
+}
+
+html[data-theme="night"] .app-sidebar {
+  background:
+    linear-gradient(180deg, rgba(4, 13, 28, 0.94), rgba(6, 30, 49, 0.84)),
+    radial-gradient(circle at 18% 0%, rgba(59, 130, 246, 0.26), transparent 16rem),
+    radial-gradient(circle at 95% 65%, rgba(16, 185, 129, 0.17), transparent 15rem) !important;
+}
+
+html[data-theme="night"] h1,
+html[data-theme="night"] h2,
+html[data-theme="night"] h3,
+html[data-theme="night"] h4,
+html[data-theme="night"] p,
+html[data-theme="night"] label,
+html[data-theme="night"] td,
+html[data-theme="night"] th,
+html[data-theme="night"] strong,
+html[data-theme="night"] b,
+html[data-theme="night"] span,
+html[data-theme="night"] .amount,
+html[data-theme="night"] .desktop-detail-title,
+html[data-theme="night"] .desktop-detail-amount,
+html[data-theme="night"] .desktop-detail-line-value,
+html[data-theme="night"] .summary-card p,
+html[data-theme="night"] .analysis-kpi strong {
+  color: var(--ink) !important;
+}
+
+html[data-theme="night"] small,
+html[data-theme="night"] .hint,
+html[data-theme="night"] .muted,
+html[data-theme="night"] .desktop-detail-subtitle,
+html[data-theme="night"] .desktop-detail-line-label,
+html[data-theme="night"] .summary-card h3,
+html[data-theme="night"] .analysis-kpi span,
+html[data-theme="night"] .nav-subfolder-label {
+  color: var(--muted) !important;
+}
+
+html[data-theme="night"] .app-topbar-title h1,
+html[data-theme="night"] .page-heading h2,
+html[data-theme="night"] .smart-log-hero h2,
+html[data-theme="night"] .normal-add-header h2 {
+  background: none !important;
+  color: #f8fbff !important;
+  -webkit-text-fill-color: #f8fbff !important;
+  text-shadow: 0 0 26px rgba(56, 189, 248, 0.28);
+}
+
+html[data-theme="night"] .eyebrow,
+html[data-theme="night"] .desktop-detail-eyebrow {
+  color: #a7f3d0 !important;
+  background:
+    linear-gradient(135deg, rgba(14, 165, 233, 0.22), rgba(16, 185, 129, 0.16)) !important;
+  border-color: rgba(125, 211, 252, 0.34) !important;
+}
+
+html[data-theme="night"] .app-brand,
+html[data-theme="night"] .net-pill,
+html[data-theme="night"] .topbar-net-pill,
+html[data-theme="night"] .logout-action,
+html[data-theme="night"] .app-nav-group[open],
+html[data-theme="night"] .app-nav-group.is-active {
+  color: var(--ink) !important;
+  background:
+    linear-gradient(135deg, rgba(15, 35, 60, 0.78), rgba(9, 53, 57, 0.44)) !important;
+  border-color: rgba(125, 211, 252, 0.28) !important;
+  box-shadow: 0 18px 46px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.12) !important;
+}
+
+html[data-theme="night"] .app-nav-group summary,
+html[data-theme="night"] .nav-items a,
+html[data-theme="night"] .mobile-bottom-nav a,
+html[data-theme="night"] .mobile-add-panel a,
+html[data-theme="night"] .quick-add-panel a {
+  color: #e6f2ff !important;
+}
+
+html[data-theme="night"] .nav-items a:not(.active) {
+  color: #c7d9ec !important;
+}
+
+html[data-theme="night"] .nav-items a:hover,
+html[data-theme="night"] .mobile-bottom-nav a.active {
+  color: #ffffff !important;
+  background: rgba(34, 211, 238, 0.12) !important;
+}
+
+html[data-theme="night"] .nav-items a.active {
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.48), rgba(16, 185, 129, 0.28)) !important;
+  box-shadow: inset 4px 0 0 #67e8f9, 0 14px 34px rgba(14, 165, 233, 0.18) !important;
+}
+
+html[data-theme="night"] input[type="text"],
+html[data-theme="night"] input[type="date"],
+html[data-theme="night"] input[type="number"],
+html[data-theme="night"] input[type="email"],
+html[data-theme="night"] textarea,
+html[data-theme="night"] select {
+  color: #f8fbff !important;
+  background:
+    linear-gradient(135deg, rgba(3, 13, 27, 0.74), rgba(10, 41, 58, 0.62)) !important;
+  border-color: rgba(125, 211, 252, 0.30) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(14,165,233,0.04) !important;
+}
+
+html[data-theme="night"] input::placeholder,
+html[data-theme="night"] textarea::placeholder { color: #98abc0 !important; }
+html[data-theme="night"] option { color: #0f172a !important; background: #f8fbff !important; }
+
+html[data-theme="night"] .standard-table th {
+  color: #dff8ff !important;
+  background:
+    linear-gradient(135deg, rgba(30, 64, 175, 0.52), rgba(8, 145, 178, 0.34), rgba(6, 95, 70, 0.26)) !important;
+  border-bottom-color: rgba(125, 211, 252, 0.26) !important;
+}
+
+html[data-theme="night"] .standard-table td,
+html[data-theme="night"] td,
+html[data-theme="night"] .clickable-row td,
+html[data-theme="night"] .desktop-detail-row td {
+  color: #f0f7ff !important;
+  border-bottom-color: rgba(125, 211, 252, 0.14) !important;
+}
+
+html[data-theme="night"] .standard-table tbody tr:hover td,
+html[data-theme="night"] .clickable-row:hover td,
+html[data-theme="night"] .desktop-detail-row:hover td {
+  background: rgba(34, 211, 238, 0.12) !important;
+}
+
+html[data-theme="night"] tr.row-expense td {
+  background: rgba(251, 113, 133, 0.16) !important;
+  color: #ffe4e6 !important;
+}
+html[data-theme="night"] tr.row-income td {
+  background: rgba(74, 222, 128, 0.15) !important;
+  color: #dcfce7 !important;
+}
+html[data-theme="night"] tr.row-investment td {
+  background: rgba(196, 181, 253, 0.14) !important;
+  color: #ede9fe !important;
+}
+
+html[data-theme="night"] .pill,
+html[data-theme="night"] .badge,
+html[data-theme="night"] .status-badge,
+html[data-theme="night"] .linked-payable-note {
+  color: #ffffff !important;
+  border-color: rgba(255,255,255,0.18) !important;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.54), rgba(16, 185, 129, 0.34)) !important;
+  box-shadow: 0 10px 24px rgba(14,165,233,0.14), inset 0 1px 0 rgba(255,255,255,0.16) !important;
+}
+
+html[data-theme="night"] .summary-card:nth-child(4n + 1),
+html[data-theme="night"] .analysis-kpi:nth-child(4n + 1),
+html[data-theme="night"] .priority-card:nth-child(4n + 1) {
+  background: linear-gradient(135deg, rgba(15, 47, 92, 0.78), rgba(8, 22, 38, 0.64)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #60a5fa !important;
+}
+html[data-theme="night"] .summary-card:nth-child(4n + 2),
+html[data-theme="night"] .analysis-kpi:nth-child(4n + 2),
+html[data-theme="night"] .priority-card:nth-child(4n + 2) {
+  background: linear-gradient(135deg, rgba(8, 75, 75, 0.70), rgba(8, 22, 38, 0.64)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #22d3ee !important;
+}
+html[data-theme="night"] .summary-card:nth-child(4n + 3),
+html[data-theme="night"] .analysis-kpi:nth-child(4n + 3),
+html[data-theme="night"] .priority-card:nth-child(4n + 3) {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.70), rgba(8, 22, 38, 0.64)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #34d399 !important;
+}
+html[data-theme="night"] .summary-card:nth-child(4n),
+html[data-theme="night"] .analysis-kpi:nth-child(4n),
+html[data-theme="night"] .priority-card:nth-child(4n) {
+  background: linear-gradient(135deg, rgba(76, 29, 149, 0.62), rgba(8, 22, 38, 0.64)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #a78bfa !important;
+}
+
+/* Day mode gets a little more blue/green and less pale-pink without becoming loud. */
+html[data-theme="day"] .summary-card:nth-child(4n + 1),
+html[data-theme="day"] .priority-card:nth-child(4n + 1),
+html[data-theme="day"] .analysis-kpi:nth-child(4n + 1) {
+  background: linear-gradient(135deg, rgba(255,255,255,0.72), rgba(219,234,254,0.48)) !important;
+}
+html[data-theme="day"] .summary-card:nth-child(4n + 2),
+html[data-theme="day"] .priority-card:nth-child(4n + 2),
+html[data-theme="day"] .analysis-kpi:nth-child(4n + 2) {
+  background: linear-gradient(135deg, rgba(255,255,255,0.72), rgba(204,251,241,0.48)) !important;
+}
+html[data-theme="day"] .summary-card:nth-child(4n + 3),
+html[data-theme="day"] .priority-card:nth-child(4n + 3),
+html[data-theme="day"] .analysis-kpi:nth-child(4n + 3) {
+  background: linear-gradient(135deg, rgba(255,255,255,0.72), rgba(209,250,229,0.46)) !important;
+}
