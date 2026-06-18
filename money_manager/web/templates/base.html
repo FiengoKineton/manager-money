@@ -8,14 +8,15 @@
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
 <body class="app-body" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
-  <div class="app-shell">
-    <aside class="sidebar">
+  <div class="ambient-grid" aria-hidden="true"></div>
+  <div class="app-shell app-shell-command-layout">
+    <aside class="sidebar app-navigation-dock">
       <a class="brand" href="{{ url_for('dashboard.overview') }}">
         <span class="brand-avatar-wrap">
           <img class="brand-avatar" src="{{ url_for('documents.profile_photo') }}" alt="Profile photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
           <span class="brand-mark brand-mark-fallback">GM</span>
         </span>
-        <span>
+        <span class="brand-text">
           <strong>Giuseppe</strong>
           <small>Money Manager</small>
         </span>
@@ -27,11 +28,12 @@
       {% set accounts_open = ep in ['accounts.accounts_page', 'accounts.account_detail', 'currencies.currencies_page', 'internal_transfers.internal_transfers_page', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
       {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'yearly_summary.yearly_summary_page', 'forecast.forecast', 'documents.documents'] %}
       <nav class="sidebar-nav" aria-label="Main navigation">
+        <span class="nav-dock-title">Navigation</span>
         <a class="sidebar-mobile-balance-pill" href="{{ url_for('dashboard.overview') }}" aria-label="Open quick overview">
-          <span>Main bank net</span>
+          <span>Always-on net</span>
           <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
         </a>
-        <details class="nav-group" {% if home_open %}open{% endif %}>
+        <details class="nav-group" data-nav-section="Home" {% if home_open %}open{% endif %}>
           <summary class="nav-label">Home</summary>
           <div class="nav-items">
             <a href="{{ url_for('dashboard.overview') }}" class="{{ 'active' if ep == 'dashboard.overview' else '' }}">Quick Overview</a>
@@ -42,7 +44,7 @@
           </div>
         </details>
 
-        <details class="nav-group" {% if planning_open %}open{% endif %}>
+        <details class="nav-group" data-nav-section="Planning" {% if planning_open %}open{% endif %}>
           <summary class="nav-label">Planning</summary>
           <div class="nav-items nav-items-grouped">
             <div class="nav-cluster">
@@ -65,7 +67,7 @@
           </div>
         </details>
 
-        <details class="nav-group" {% if accounts_open %}open{% endif %}>
+        <details class="nav-group" data-nav-section="Accounts" {% if accounts_open %}open{% endif %}>
           <summary class="nav-label">Accounts</summary>
           <div class="nav-items">
             <a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if ep in ['accounts.accounts_page', 'accounts.account_detail'] else '' }}">Liquid Accounts</a>
@@ -76,7 +78,7 @@
           </div>
         </details>
 
-        <details class="nav-group" {% if wealth_open %}open{% endif %}>
+        <details class="nav-group" data-nav-section="Wealth" {% if wealth_open %}open{% endif %}>
           <summary class="nav-label">Wealth & Reports</summary>
           <div class="nav-items">
             <a href="{{ url_for('investments.investments_page') }}" class="{{ 'active' if ep == 'investments.investments_page' else '' }}">Investments</a>
@@ -96,27 +98,42 @@
 
     </aside>
 
-    <main class="app-main">
-      <header class="topbar">
-        <div class="topbar-title">
-          <span class="eyebrow">Personal finance workspace</span>
-          <h1>{% block page_title %}Money Manager{% endblock %}</h1>
+    <main class="app-main app-content-canvas">
+      <header class="topbar app-command-deck">
+        <div class="command-title-row">
+          <div class="topbar-title">
+            <span class="eyebrow">Personal finance cockpit</span>
+            <h1>{% block page_title %}Money Manager{% endblock %}</h1>
+          </div>
+
+          <a class="topbar-balance-pill always-on-balance" href="{{ url_for('dashboard.overview') }}" aria-label="Open quick overview">
+            <span>Always-on net balance</span>
+            <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
+            <small>Main bank net</small>
+          </a>
         </div>
 
-        <a class="topbar-balance-pill" href="{{ url_for('dashboard.overview') }}" aria-label="Open quick overview">
-          <span>Main bank net</span>
-          <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
-        </a>
-
-        <div class="quick-actions">
-          <a href="{{ url_for('transactions.add_transaction', type='expense') }}" class="quick-action expense-action">+ Expense</a>
-          <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="quick-action income-action">+ Income</a>
-          <a href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}" class="quick-action special-action">+ Special log</a>
-          <a href="{{ url_for('transactions.add_transaction', type='investment') }}" class="quick-action investment-action">+ Investment</a>
+        <div class="quick-actions command-action-grid" aria-label="Quick logging actions">
+          <a href="{{ url_for('transactions.add_transaction', type='expense') }}" class="quick-action expense-action">
+            <span class="quick-action-kicker">Log</span>
+            <strong>Expense</strong>
+          </a>
+          <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="quick-action income-action">
+            <span class="quick-action-kicker">Log</span>
+            <strong>Income</strong>
+          </a>
+          <a href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}" class="quick-action special-action">
+            <span class="quick-action-kicker">Create</span>
+            <strong>Special log</strong>
+          </a>
+          <a href="{{ url_for('transactions.add_transaction', type='investment') }}" class="quick-action investment-action">
+            <span class="quick-action-kicker">Track</span>
+            <strong>Investment</strong>
+          </a>
         </div>
       </header>
 
-      <div class="container">
+      <div class="container content-stage">
         {% block content %}{% endblock %}
       </div>
     </main>
@@ -145,6 +162,7 @@
   </nav>
 
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/layout-ui.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
