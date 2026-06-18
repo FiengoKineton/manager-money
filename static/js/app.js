@@ -4,7 +4,7 @@
     document.documentElement.style.setProperty("--page-bg-image", `url('${backgroundUrl}')`);
   }
 
-  const mobileCardsMedia = window.matchMedia("(max-width: 760px)");
+  const mobileCardsMedia = window.matchMedia("(max-width: 900px)");
   const desktopDetailMedia = window.matchMedia("(min-width: 1001px)");
   const isMobileCardsViewport = () => mobileCardsMedia.matches;
   const isDesktopDetailViewport = () => desktopDetailMedia.matches;
