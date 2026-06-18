@@ -30,6 +30,8 @@
 @import url("responsive.css");
 @import url("modern-ui.css");
 @import url("pro-ui-refresh.css");
+@import url("layout-cockpit.css");
+@import url("layout-atlas.css");
 
 .logout-form {
   display: inline-flex;
@@ -41,4 +43,3 @@
   cursor: pointer;
   font: inherit;
 }
-@import url("layout-cockpit.css");

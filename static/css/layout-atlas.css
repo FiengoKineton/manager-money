@@ -1,0 +1,1402 @@
+/* --------------------------------------------------------------------------
+   Atlas layout refresh
+   Frontend-only visual layer: keeps all routes, data, tables, forms and logic.
+   This file intentionally overrides the previous cockpit layer to explore a
+   different product layout for desktop and mobile.
+-------------------------------------------------------------------------- */
+:root {
+  --atlas-page-max: 1780px;
+  --atlas-gutter: clamp(0.72rem, 1.6vw, 1.8rem);
+  --atlas-nav-radius: 34px;
+  --atlas-card-radius-a: 36px 54px 38px 44px;
+  --atlas-card-radius-b: 54px 34px 50px 36px;
+  --atlas-pill: 999px;
+  --atlas-ink: #0f172a;
+  --atlas-muted: #64748b;
+  --atlas-paper: rgba(255, 255, 255, 0.78);
+  --atlas-paper-strong: rgba(255, 255, 255, 0.90);
+  --atlas-line: rgba(255, 255, 255, 0.68);
+  --atlas-dark: rgba(11, 18, 32, 0.82);
+  --atlas-shadow: 0 28px 86px rgba(15, 23, 42, 0.14);
+  --atlas-shadow-soft: 0 16px 44px rgba(15, 23, 42, 0.09);
+  --atlas-glow-blue: rgba(37, 99, 235, 0.22);
+  --atlas-glow-cyan: rgba(14, 165, 233, 0.22);
+  --atlas-glow-violet: rgba(124, 58, 237, 0.18);
+}
+
+html {
+  scroll-padding-top: 1rem;
+}
+
+body.app-body {
+  min-height: 100vh;
+  overflow-x: clip;
+  color: var(--atlas-ink);
+  background:
+    radial-gradient(circle at 8% 12%, rgba(59, 130, 246, 0.22), transparent 28rem),
+    radial-gradient(circle at 86% 2%, rgba(168, 85, 247, 0.16), transparent 28rem),
+    radial-gradient(circle at 66% 88%, rgba(20, 184, 166, 0.16), transparent 26rem),
+    linear-gradient(135deg, #f8fbff 0%, #eef5ff 38%, #fbfdff 100%) !important;
+}
+
+body.app-body::before {
+  opacity: 0.62 !important;
+}
+
+.ambient-grid {
+  opacity: 0.25 !important;
+  background-size: 92px 92px !important;
+  transform-origin: center;
+}
+
+/* Desktop: turn the old sidebar into a horizontal command navigation. -------- */
+@media (min-width: 1001px) {
+  .app-shell-command-layout {
+    display: block !important;
+    min-height: 100vh;
+    padding: 0 !important;
+  }
+
+  .app-navigation-dock.sidebar {
+    position: sticky !important;
+    inset: auto !important;
+    top: 0.78rem !important;
+    z-index: 80 !important;
+    width: min(calc(100% - var(--atlas-gutter) * 2), var(--atlas-page-max)) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0.78rem auto 0 !important;
+    padding: 0.62rem !important;
+    display: grid !important;
+    grid-template-columns: minmax(190px, 250px) minmax(0, 1fr) auto;
+    align-items: center !important;
+    gap: clamp(0.48rem, 1vw, 0.88rem) !important;
+    overflow: visible !important;
+    border-radius: var(--atlas-nav-radius) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #f8fafc !important;
+    background:
+      radial-gradient(circle at var(--atlas-x, 75%) var(--atlas-y, 12%), rgba(125, 211, 252, 0.19), transparent 18rem),
+      linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.72) 48%, rgba(30, 41, 59, 0.80)) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.13),
+      0 24px 80px rgba(15, 23, 42, 0.24) !important;
+    backdrop-filter: blur(28px) saturate(1.35) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(1.35) !important;
+  }
+
+  .app-navigation-dock.sidebar::before {
+    content: "";
+    position: absolute;
+    inset: 0.34rem;
+    z-index: -1;
+    border-radius: calc(var(--atlas-nav-radius) - 8px);
+    border: 1px solid rgba(255,255,255,0.07);
+    pointer-events: none;
+  }
+
+  .app-navigation-dock .brand {
+    min-height: 58px !important;
+    width: auto !important;
+    padding: 0.54rem 0.64rem !important;
+    border-radius: 24px !important;
+    background: rgba(255,255,255,0.075) !important;
+    border: 1px solid rgba(255,255,255,0.11) !important;
+  }
+
+  .app-navigation-dock .brand::after {
+    display: none !important;
+  }
+
+  .app-navigation-dock .brand-avatar,
+  .app-navigation-dock .brand-mark {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 18px !important;
+  }
+
+  .app-navigation-dock .brand-text strong {
+    font-size: 0.98rem !important;
+    letter-spacing: -0.035em;
+  }
+
+  .app-navigation-dock .brand-text small {
+    font-size: 0.72rem;
+  }
+
+  .app-navigation-dock .sidebar-nav {
+    min-width: 0;
+    height: auto !important;
+    max-height: none !important;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center !important;
+    gap: 0.42rem !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .app-navigation-dock .nav-dock-title,
+  .app-navigation-dock .sidebar-mobile-balance-pill,
+  .app-navigation-dock .nav-orbit-indicator {
+    display: none !important;
+  }
+
+  .app-navigation-dock .nav-group {
+    position: relative !important;
+    display: block !important;
+    min-width: 0 !important;
+    border: 0 !important;
+    border-radius: var(--atlas-pill) !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  .app-navigation-dock .nav-group:hover {
+    transform: none !important;
+    background: transparent !important;
+  }
+
+  .app-navigation-dock .nav-group > summary.nav-label {
+    min-height: 46px !important;
+    margin: 0 !important;
+    padding: 0.56rem 0.76rem 0.56rem 0.58rem !important;
+    border-radius: var(--atlas-pill) !important;
+    color: rgba(248, 250, 252, 0.82) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    background: rgba(255,255,255,0.070) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08) !important;
+    transition: transform 200ms ease, background 200ms ease, border-color 200ms ease, color 200ms ease;
+  }
+
+  .app-navigation-dock .nav-group > summary.nav-label::before {
+    width: 2rem !important;
+    height: 2rem !important;
+    flex-basis: 2rem !important;
+    border-radius: 999px !important;
+    background: rgba(255,255,255,0.10) !important;
+  }
+
+  .app-navigation-dock .nav-group > summary.nav-label::after {
+    margin-left: 0.38rem !important;
+    transform: translateY(-1px);
+  }
+
+  .app-navigation-dock .nav-group:hover > summary.nav-label,
+  .app-navigation-dock .nav-group:focus-within > summary.nav-label,
+  .app-navigation-dock .nav-group[open] > summary.nav-label {
+    color: #ffffff !important;
+    border-color: rgba(125, 211, 252, 0.25) !important;
+    background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08)) !important;
+    transform: translateY(-1px);
+  }
+
+  .app-navigation-dock .nav-group .nav-items {
+    position: absolute !important;
+    top: calc(100% + 0.78rem);
+    left: 0;
+    z-index: 100;
+    width: max-content;
+    min-width: 270px;
+    max-width: min(420px, calc(100vw - 2rem));
+    display: grid !important;
+    gap: 0.34rem !important;
+    padding: 0.62rem !important;
+    border-radius: 28px !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    background:
+      radial-gradient(circle at 94% 0%, rgba(14, 165, 233, 0.20), transparent 12rem),
+      rgba(15, 23, 42, 0.86) !important;
+    box-shadow: 0 26px 72px rgba(15, 23, 42, 0.26) !important;
+    backdrop-filter: blur(28px) saturate(1.35) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(1.35) !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-8px) scale(0.98);
+    transform-origin: top left;
+    transition: opacity 170ms ease, transform 170ms ease, visibility 170ms ease;
+  }
+
+  .app-navigation-dock .nav-group:hover .nav-items,
+  .app-navigation-dock .nav-group:focus-within .nav-items {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+
+  .app-navigation-dock .nav-group:nth-of-type(n + 4) .nav-items {
+    left: auto;
+    right: 0;
+    transform-origin: top right;
+  }
+
+  .app-navigation-dock .nav-items-grouped {
+    min-width: 330px !important;
+  }
+
+  .app-navigation-dock .nav-cluster {
+    padding: 0.28rem !important;
+    border-radius: 20px !important;
+    background: rgba(255,255,255,0.045) !important;
+  }
+
+  .app-navigation-dock .nav-cluster + .nav-cluster {
+    margin-top: 0.18rem;
+  }
+
+  .app-navigation-dock .nav-cluster-label {
+    margin: 0.34rem 0.56rem 0.2rem !important;
+    color: rgba(203,213,225,0.64) !important;
+  }
+
+  .app-navigation-dock .nav-items a,
+  .app-navigation-dock .sidebar-nav a {
+    min-height: 40px !important;
+    padding: 0.6rem 0.72rem !important;
+    color: rgba(226,232,240,0.80) !important;
+    border-radius: 17px !important;
+    background: transparent !important;
+  }
+
+  .app-navigation-dock .nav-items a::before {
+    width: 0.38rem !important;
+    height: 0.38rem !important;
+    margin-right: 0.55rem !important;
+  }
+
+  .app-navigation-dock .nav-items a:hover,
+  .app-navigation-dock .nav-items a.active {
+    color: #ffffff !important;
+    background: rgba(255,255,255,0.105) !important;
+  }
+
+  .app-navigation-dock .nav-items a.active {
+    box-shadow:
+      inset 0 0 0 1px rgba(125,211,252,0.20),
+      inset 4px 0 0 rgba(103,232,249,0.88) !important;
+  }
+
+  .app-navigation-dock .sidebar-footer {
+    margin: 0 !important;
+    justify-self: end;
+    align-self: center;
+  }
+
+  .sidebar-logout-action {
+    min-height: 46px !important;
+    border-radius: 999px !important;
+    padding-inline: 0.92rem !important;
+    color: rgba(226,232,240,0.82) !important;
+    border: 1px solid rgba(255,255,255,0.11) !important;
+    background: rgba(255,255,255,0.07) !important;
+  }
+
+  .sidebar-logout-action:hover {
+    color: #ffffff !important;
+    background: rgba(255,255,255,0.12) !important;
+  }
+
+  .app-content-canvas.app-main {
+    min-height: auto !important;
+    margin-left: 0 !important;
+    padding: 0 var(--atlas-gutter) clamp(1.5rem, 2vw, 2.3rem) !important;
+  }
+}
+
+/* Command deck: three-pod header with actions using all available space. ------ */
+.app-command-deck.topbar {
+  position: relative !important;
+  top: auto !important;
+  z-index: 30 !important;
+  width: min(100%, var(--atlas-page-max));
+  margin: clamp(0.68rem, 1vw, 1.05rem) auto 0 !important;
+  padding: clamp(0.76rem, 1.15vw, 1.05rem) !important;
+  display: grid !important;
+  grid-template-columns: minmax(235px, 0.85fr) minmax(245px, 330px) minmax(360px, 1.18fr) !important;
+  gap: clamp(0.62rem, 1vw, 0.96rem) !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  border-radius: 42px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background:
+    radial-gradient(circle at var(--deck-x, 78%) var(--deck-y, 12%), rgba(125, 211, 252, 0.23), transparent 18rem),
+    radial-gradient(circle at 6% 14%, rgba(124, 58, 237, 0.09), transparent 16rem),
+    linear-gradient(135deg, rgba(255,255,255,0.83), rgba(255,255,255,0.56)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.88),
+    0 30px 86px rgba(15,23,42,0.13) !important;
+}
+
+.app-command-deck.topbar::before {
+  opacity: 0.48 !important;
+  mask-image: none !important;
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.74) 42%, transparent 64%) !important;
+  transform: translateX(calc((var(--ui-scroll, 0) - 50) * 0.85%));
+}
+
+.app-command-deck.topbar::after {
+  left: clamp(1rem, 1.8vw, 1.5rem) !important;
+  right: clamp(1rem, 1.8vw, 1.5rem) !important;
+  bottom: 0.5rem !important;
+  height: 2px !important;
+  background:
+    linear-gradient(90deg, #0ea5e9, #6366f1, #14b8a6) 0 0 / max(calc(var(--ui-scroll, 0) * 1%), 7%) 100% no-repeat,
+    rgba(15, 23, 42, 0.07) !important;
+}
+
+.command-title-row {
+  display: contents !important;
+}
+
+.app-command-deck .topbar-title {
+  grid-column: 1;
+  min-width: 0;
+  min-height: 148px !important;
+  padding: clamp(1rem, 1.5vw, 1.3rem) !important;
+  justify-content: space-between !important;
+  border-radius: 32px 58px 34px 38px !important;
+  background:
+    radial-gradient(circle at 4% 8%, rgba(255,255,255,0.96), transparent 13rem),
+    linear-gradient(135deg, rgba(255,255,255,0.66), rgba(255,255,255,0.30)) !important;
+  border: 1px solid rgba(255,255,255,0.72) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.78) !important;
+}
+
+.app-command-deck .topbar-title .eyebrow {
+  max-width: 100%;
+  white-space: normal;
+  padding: 0 !important;
+  color: #6d5dfc !important;
+  background: transparent !important;
+  border: 0 !important;
+  font-size: clamp(0.62rem, 0.9vw, 0.76rem) !important;
+  line-height: 1.2;
+}
+
+.app-command-deck .topbar-title .eyebrow::before {
+  flex: 0 0 auto;
+}
+
+.app-command-deck .topbar-title h1 {
+  max-width: none !important;
+  margin: auto 0 0 !important;
+  font-size: clamp(1.75rem, 3.2vw, 3.85rem) !important;
+  line-height: 0.90 !important;
+  letter-spacing: -0.09em !important;
+}
+
+.always-on-balance.topbar-balance-pill,
+.topbar-balance-pill.always-on-balance {
+  grid-column: 2;
+  display: flex !important;
+  min-width: 0 !important;
+  min-height: 148px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: clamp(1rem, 1.5vw, 1.25rem) !important;
+  border-radius: 999px 42px 999px 42px !important;
+  color: #ffffff !important;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(255,255,255,0.26), transparent 8.5rem),
+    radial-gradient(circle at 10% 90%, rgba(34,211,238,0.22), transparent 9rem),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.88) 48%, rgba(67, 56, 202, 0.92)) !important;
+  border: 1px solid rgba(255,255,255,0.17) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    0 22px 58px rgba(15, 23, 42, 0.24) !important;
+}
+
+.always-on-balance.topbar-balance-pill::before {
+  width: 15rem !important;
+  height: 15rem !important;
+  inset: -52% -36% auto auto !important;
+}
+
+.always-on-balance span {
+  max-width: 100%;
+  color: rgba(226,232,240,0.78) !important;
+  font-size: 0.66rem !important;
+  letter-spacing: 0.14em !important;
+}
+
+.always-on-balance strong,
+.topbar-balance-pill.always-on-balance strong {
+  margin-top: 0.3rem !important;
+  font-size: clamp(1.9rem, 3.1vw, 3.22rem) !important;
+  line-height: 0.95 !important;
+  letter-spacing: -0.078em !important;
+  white-space: nowrap;
+}
+
+.always-on-balance small {
+  margin-top: 0.74rem !important;
+  padding: 0.35rem 0.62rem !important;
+}
+
+.command-action-grid.quick-actions {
+  grid-column: 3;
+  align-self: stretch;
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(150px, 1fr)) !important;
+  grid-auto-rows: 1fr;
+  gap: clamp(0.55rem, 0.8vw, 0.74rem) !important;
+  align-content: stretch !important;
+  justify-content: stretch !important;
+}
+
+.command-action-grid .quick-action {
+  position: relative;
+  min-width: 0 !important;
+  min-height: 68px !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.72rem !important;
+  padding: 0.78rem 0.88rem !important;
+  border-radius: 999px 28px 28px 999px !important;
+  color: #0f172a !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255,255,255,0.86), transparent 6rem),
+    linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,255,255,0.42)) !important;
+  border: 1px solid rgba(255,255,255,0.76) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.90),
+    0 14px 34px rgba(15, 23, 42, 0.075) !important;
+  transform-style: preserve-3d;
+  overflow: hidden;
+}
+
+.command-action-grid .quick-action::before {
+  position: static !important;
+  flex: 0 0 2.35rem;
+  width: 2.35rem !important;
+  height: 2.35rem !important;
+  display: grid;
+  place-items: center;
+  margin: 0 !important;
+  border-radius: 999px !important;
+  opacity: 1 !important;
+  color: #ffffff;
+  background: currentColor !important;
+  box-shadow: none !important;
+}
+
+.command-action-grid .expense-action::before { content: "−" !important; background: #dc2626 !important; }
+.command-action-grid .income-action::before { content: "+" !important; background: #059669 !important; }
+.command-action-grid .special-action::before { content: "◆" !important; background: #7c3aed !important; }
+.command-action-grid .investment-action::before { content: "↗" !important; background: #2563eb !important; }
+
+.command-action-grid .quick-action::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.72) 46%, transparent 68%);
+  transform: translateX(-120%);
+  transition: transform 540ms ease;
+}
+
+.command-action-grid .quick-action:hover::after {
+  transform: translateX(120%);
+}
+
+.command-action-grid .quick-action:hover {
+  transform: translateY(-3px) scale(1.01) !important;
+}
+
+.quick-action-kicker {
+  display: block;
+  font-size: 0.62rem !important;
+  line-height: 1 !important;
+}
+
+.command-action-grid .quick-action strong {
+  display: block;
+  margin-top: 0.1rem;
+  color: #0f172a !important;
+  font-size: clamp(0.95rem, 1.1vw, 1.15rem) !important;
+  line-height: 1 !important;
+  white-space: normal;
+}
+
+/* Content stage: wider, more editorial, less blocky. ------------------------- */
+.content-stage.container {
+  width: min(100%, var(--atlas-page-max)) !important;
+  margin: 0 auto !important;
+  padding: clamp(0.75rem, 1.2vw, 1.2rem) 0 0 !important;
+}
+
+.page-heading,
+.professional-heading {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  overflow: hidden !important;
+  padding: clamp(1.05rem, 1.85vw, 1.65rem) clamp(1.05rem, 2vw, 1.9rem) !important;
+  border-radius: 36px 72px 36px 52px !important;
+  border: 1px solid rgba(255,255,255,0.72) !important;
+  background:
+    radial-gradient(circle at 100% 4%, rgba(59,130,246,0.17), transparent 17rem),
+    radial-gradient(circle at 0% 100%, rgba(20,184,166,0.11), transparent 14rem),
+    linear-gradient(135deg, rgba(255,255,255,0.84), rgba(255,255,255,0.54)) !important;
+  box-shadow: var(--atlas-shadow-soft) !important;
+}
+
+.page-heading::before,
+.professional-heading::before {
+  content: "";
+  width: 0.5rem;
+  align-self: stretch;
+  min-height: 3.2rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2563eb, #14b8a6, #8b5cf6);
+  box-shadow: 0 0 28px rgba(37, 99, 235, 0.36);
+}
+
+.page-heading > div,
+.professional-heading > div {
+  order: -1;
+}
+
+.page-heading::after,
+.professional-heading::after {
+  opacity: 0.72 !important;
+}
+
+.page-heading h2,
+.professional-heading h2,
+.professional-heading h1 {
+  font-size: clamp(1.45rem, 2.4vw, 2.55rem) !important;
+  line-height: 1 !important;
+  letter-spacing: -0.075em !important;
+}
+
+.page-heading p,
+.professional-heading p {
+  max-width: 78ch;
+}
+
+/* Bento-like visual rhythm without changing the information shown. */
+.summary,
+.summary-grid,
+.dashboard-summary,
+.yearly-kpi-grid,
+.account-summary-grid,
+.investment-kpi-grid,
+.forecast-summary,
+.receivables-summary,
+.debts-summary,
+.payables-summary,
+.pending-summary,
+.project-summary-grid {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  gap: clamp(0.68rem, 1vw, 1rem) !important;
+  align-items: stretch;
+}
+
+.summary > *,
+.summary-grid > *,
+.dashboard-summary > *,
+.yearly-kpi-grid > *,
+.account-summary-grid > *,
+.investment-kpi-grid > *,
+.forecast-summary > *,
+.receivables-summary > *,
+.debts-summary > *,
+.payables-summary > *,
+.pending-summary > *,
+.project-summary-grid > * {
+  grid-column: span 3;
+}
+
+.summary > *:first-child,
+.summary-grid > *:first-child,
+.dashboard-summary > *:first-child,
+.yearly-kpi-grid > *:first-child,
+.account-summary-grid > *:first-child,
+.investment-kpi-grid > *:first-child,
+.forecast-summary > *:first-child,
+.receivables-summary > *:first-child,
+.debts-summary > *:first-child,
+.payables-summary > *:first-child,
+.pending-summary > *:first-child,
+.project-summary-grid > *:first-child {
+  grid-column: span 4;
+}
+
+.summary > *:nth-child(2),
+.summary-grid > *:nth-child(2),
+.dashboard-summary > *:nth-child(2),
+.yearly-kpi-grid > *:nth-child(2),
+.account-summary-grid > *:nth-child(2),
+.investment-kpi-grid > *:nth-child(2),
+.forecast-summary > *:nth-child(2),
+.receivables-summary > *:nth-child(2),
+.debts-summary > *:nth-child(2),
+.payables-summary > *:nth-child(2),
+.pending-summary > *:nth-child(2),
+.project-summary-grid > *:nth-child(2) {
+  grid-column: span 5;
+}
+
+.summary > *:only-child,
+.summary-grid > *:only-child {
+  grid-column: 1 / -1;
+}
+
+.summary-card,
+.card,
+.panel-card,
+.chart-card,
+.kpi-card,
+.pending-card,
+.payment-card,
+.recurring-rule-card,
+.account-directory-card,
+.analysis-preview-card,
+.priority-card,
+.liquid-account-card,
+.asset-card,
+.document-card,
+.year-card,
+.initial-condition-card,
+.flow-card,
+.top-category-card,
+.investment-card,
+.form-section,
+.filters,
+.transactions,
+.table-panel,
+.table-shell,
+.money-table-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--atlas-card-radius-a) !important;
+  border: 1px solid rgba(255,255,255,0.72) !important;
+  background:
+    radial-gradient(circle at var(--ui-x, 82%) var(--ui-y, 8%), rgba(125,211,252,0.14), transparent 13rem),
+    linear-gradient(135deg, rgba(255,255,255,0.78), rgba(255,255,255,0.50)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.88),
+    0 18px 48px rgba(15, 23, 42, 0.085) !important;
+  transition: transform 260ms cubic-bezier(.2,.8,.2,1), box-shadow 260ms ease, border-color 260ms ease, background 260ms ease;
+}
+
+.summary-card:nth-child(even),
+.card:nth-child(even),
+.panel-card:nth-child(even),
+.chart-card:nth-child(even),
+.kpi-card:nth-child(even),
+.pending-card:nth-child(even),
+.payment-card:nth-child(even),
+.recurring-rule-card:nth-child(even),
+.account-directory-card:nth-child(even),
+.analysis-preview-card:nth-child(even),
+.priority-card:nth-child(even),
+.liquid-account-card:nth-child(even),
+.asset-card:nth-child(even),
+.document-card:nth-child(even),
+.year-card:nth-child(even),
+.initial-condition-card:nth-child(even),
+.flow-card:nth-child(even),
+.top-category-card:nth-child(even),
+.investment-card:nth-child(even) {
+  border-radius: var(--atlas-card-radius-b) !important;
+}
+
+.summary-card::after,
+.card::after,
+.panel-card::after,
+.chart-card::after,
+.kpi-card::after,
+.pending-card::after,
+.payment-card::after,
+.recurring-rule-card::after,
+.account-directory-card::after,
+.analysis-preview-card::after,
+.priority-card::after,
+.liquid-account-card::after,
+.asset-card::after,
+.document-card::after,
+.year-card::after,
+.initial-condition-card::after,
+.flow-card::after,
+.top-category-card::after,
+.investment-card::after {
+  content: "";
+  position: absolute;
+  right: -3.2rem;
+  top: -3.2rem;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255,255,255,0.44), transparent 68%);
+  pointer-events: none;
+}
+
+.summary-card:hover,
+.card:hover,
+.panel-card:hover,
+.chart-card:hover,
+.kpi-card:hover,
+.pending-card:hover,
+.payment-card:hover,
+.recurring-rule-card:hover,
+.account-directory-card:hover,
+.analysis-preview-card:hover,
+.priority-card:hover,
+.liquid-account-card:hover,
+.asset-card:hover,
+.document-card:hover,
+.year-card:hover,
+.initial-condition-card:hover,
+.flow-card:hover,
+.top-category-card:hover,
+.investment-card:hover {
+  transform: translateY(-4px) !important;
+  border-color: rgba(255,255,255,0.88) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.92),
+    0 30px 72px rgba(15, 23, 42, 0.13) !important;
+}
+
+.summary-card h3,
+.kpi-card h3,
+.card h3,
+.panel-card h3,
+.chart-card h3 {
+  color: #334155;
+  letter-spacing: -0.04em !important;
+}
+
+.summary-card p,
+.kpi-card strong,
+.kpi-value,
+.hero-balance-card strong,
+.total-value,
+.metric-value {
+  letter-spacing: -0.065em !important;
+}
+
+/* Form/filter modules become one curved control panel instead of raw boxes. */
+.filters,
+.filter-toolbar,
+.form-section {
+  border-radius: 34px 58px 34px 44px !important;
+}
+
+input,
+select,
+textarea {
+  border-radius: 999px !important;
+}
+
+textarea {
+  border-radius: 22px !important;
+}
+
+button,
+.btn,
+.button,
+.primary-action,
+.secondary-action,
+.danger-action,
+.quick-action,
+.mobile-action-item {
+  border-radius: 999px !important;
+}
+
+.form-grid,
+.filters-form,
+.transaction-form,
+.recurring-form,
+.debt-form,
+.entry-form,
+.project-form,
+.payable-form {
+  gap: clamp(0.68rem, 1vw, 1.05rem) !important;
+}
+
+/* Tables: rows become soft data capsules, still same columns/rows. */
+.table-shell,
+.table-wrapper,
+.table-responsive,
+.transactions,
+.money-table-wrapper {
+  overflow-x: auto;
+  border-radius: 34px !important;
+}
+
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 0.52rem !important;
+}
+
+thead th {
+  background: transparent !important;
+  color: #64748b !important;
+  font-size: 0.68rem !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+tbody tr {
+  background: linear-gradient(135deg, rgba(255,255,255,0.66), rgba(255,255,255,0.44)) !important;
+  box-shadow: 0 10px 26px rgba(15,23,42,0.05) !important;
+}
+
+tbody td:first-child {
+  border-radius: 999px 0 0 999px !important;
+}
+
+tbody td:last-child {
+  border-radius: 0 999px 999px 0 !important;
+}
+
+tbody tr:hover {
+  background: rgba(255,255,255,0.82) !important;
+  box-shadow: 0 16px 38px rgba(15,23,42,0.09) !important;
+}
+
+/* Keep previous useful additions but adapt them to this layout. */
+.mobile-action-bar {
+  border-radius: 28px !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18) !important;
+}
+
+.desktop-detail-drawer {
+  border-radius: 38px 0 0 38px !important;
+}
+
+/* Medium desktop: actions drop to a full-width strip, preventing overlap. */
+@media (max-width: 1420px) and (min-width: 1001px) {
+  .app-navigation-dock.sidebar {
+    grid-template-columns: minmax(180px, 235px) minmax(0, 1fr);
+  }
+
+  .app-navigation-dock .sidebar-footer {
+    display: none !important;
+  }
+
+  .app-navigation-dock .nav-group > summary.nav-label {
+    padding-right: 0.64rem !important;
+  }
+
+  .app-command-deck.topbar {
+    grid-template-columns: minmax(0, 1fr) minmax(245px, 330px) !important;
+  }
+
+  .app-command-deck .topbar-title {
+    grid-column: 1;
+  }
+
+  .always-on-balance.topbar-balance-pill,
+  .topbar-balance-pill.always-on-balance {
+    grid-column: 2;
+  }
+
+  .command-action-grid.quick-actions {
+    grid-column: 1 / -1 !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1220px) and (min-width: 1001px) {
+  .app-navigation-dock.sidebar {
+    align-items: start !important;
+    grid-template-columns: 1fr;
+  }
+
+  .app-navigation-dock .brand {
+    width: 100% !important;
+  }
+
+  .app-navigation-dock .sidebar-nav {
+    width: 100%;
+  }
+
+  .command-action-grid.quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .summary > *,
+  .summary-grid > *,
+  .dashboard-summary > *,
+  .yearly-kpi-grid > *,
+  .account-summary-grid > *,
+  .investment-kpi-grid > *,
+  .forecast-summary > *,
+  .receivables-summary > *,
+  .debts-summary > *,
+  .payables-summary > *,
+  .pending-summary > *,
+  .project-summary-grid > *,
+  .summary > *:first-child,
+  .summary-grid > *:first-child,
+  .dashboard-summary > *:first-child,
+  .yearly-kpi-grid > *:first-child,
+  .account-summary-grid > *:first-child,
+  .investment-kpi-grid > *:first-child,
+  .forecast-summary > *:first-child,
+  .receivables-summary > *:first-child,
+  .debts-summary > *:first-child,
+  .payables-summary > *:first-child,
+  .pending-summary > *:first-child,
+  .project-summary-grid > *:first-child,
+  .summary > *:nth-child(2),
+  .summary-grid > *:nth-child(2),
+  .dashboard-summary > *:nth-child(2),
+  .yearly-kpi-grid > *:nth-child(2),
+  .account-summary-grid > *:nth-child(2),
+  .investment-kpi-grid > *:nth-child(2),
+  .forecast-summary > *:nth-child(2),
+  .receivables-summary > *:nth-child(2),
+  .debts-summary > *:nth-child(2),
+  .payables-summary > *:nth-child(2),
+  .pending-summary > *:nth-child(2),
+  .project-summary-grid > *:nth-child(2) {
+    grid-column: span 6;
+  }
+}
+
+/* Tablet/phone: wallet-first app, action carousel, top nav strips. ------------ */
+@media (max-width: 1000px) {
+  .app-shell-command-layout {
+    display: block !important;
+  }
+
+  .app-navigation-dock.sidebar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 90 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0.58rem 0.62rem 0.68rem !important;
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 0.54rem !important;
+    border-radius: 0 0 30px 30px !important;
+    background:
+      radial-gradient(circle at 84% 0%, rgba(14,165,233,0.24), transparent 14rem),
+      linear-gradient(135deg, rgba(15,23,42,0.95), rgba(30,41,59,0.92)) !important;
+    box-shadow: 0 18px 46px rgba(15,23,42,0.22) !important;
+  }
+
+  .app-navigation-dock .brand {
+    min-height: 52px !important;
+    border-radius: 24px !important;
+    padding: 0.48rem 0.58rem !important;
+  }
+
+  .app-navigation-dock .brand::after,
+  .app-navigation-dock .nav-dock-title,
+  .app-navigation-dock .sidebar-footer,
+  .app-navigation-dock .sidebar-mobile-balance-pill,
+  .app-navigation-dock .nav-orbit-indicator {
+    display: none !important;
+  }
+
+  .app-navigation-dock .sidebar-nav {
+    display: flex !important;
+    gap: 0.42rem !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    padding: 0 0 0.12rem !important;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .app-navigation-dock .sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-navigation-dock .nav-group {
+    flex: 0 0 auto;
+    min-width: 9.2rem;
+    border-radius: 22px !important;
+    overflow: hidden !important;
+    scroll-snap-align: start;
+    background: rgba(255,255,255,0.075) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+  }
+
+  .app-navigation-dock .nav-group > summary.nav-label {
+    min-height: 44px !important;
+    padding: 0.58rem 0.72rem !important;
+    border-radius: 22px !important;
+    color: rgba(248,250,252,0.86) !important;
+  }
+
+  .app-navigation-dock .nav-group > summary.nav-label::before {
+    border-radius: 14px !important;
+  }
+
+  .app-navigation-dock .nav-group .nav-items {
+    min-width: 0 !important;
+    padding: 0 0.42rem 0.5rem !important;
+    display: grid !important;
+  }
+
+  .app-navigation-dock .nav-items a,
+  .app-navigation-dock .sidebar-nav a {
+    min-height: 36px !important;
+    border-radius: 16px !important;
+    color: rgba(226,232,240,0.82) !important;
+  }
+
+  .app-content-canvas.app-main {
+    margin-left: 0 !important;
+    padding: 0.66rem 0.66rem 5.8rem !important;
+  }
+
+  .app-command-deck.topbar {
+    position: relative !important;
+    top: auto !important;
+    margin-top: 0 !important;
+    grid-template-columns: minmax(0, 1fr) minmax(210px, 0.82fr) !important;
+    gap: 0.58rem !important;
+    padding: 0.62rem !important;
+    border-radius: 30px !important;
+  }
+
+  .app-command-deck .topbar-title {
+    min-height: 104px !important;
+    border-radius: 26px 42px 26px 32px !important;
+    padding: 0.88rem !important;
+  }
+
+  .app-command-deck .topbar-title h1 {
+    font-size: clamp(1.45rem, 5.6vw, 2.5rem) !important;
+  }
+
+  .always-on-balance.topbar-balance-pill,
+  .topbar-balance-pill.always-on-balance {
+    min-height: 104px !important;
+    border-radius: 42px 24px 42px 24px !important;
+    padding: 0.78rem !important;
+  }
+
+  .always-on-balance strong,
+  .topbar-balance-pill.always-on-balance strong {
+    font-size: clamp(1.55rem, 6.8vw, 2.35rem) !important;
+  }
+
+  .command-action-grid.quick-actions {
+    grid-column: 1 / -1 !important;
+    display: flex !important;
+    gap: 0.5rem !important;
+    overflow-x: auto !important;
+    padding-bottom: 0.1rem;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .command-action-grid.quick-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .command-action-grid .quick-action {
+    flex: 1 0 min(12.5rem, 70vw);
+    min-height: 62px !important;
+    scroll-snap-align: start;
+  }
+
+  .summary,
+  .summary-grid,
+  .dashboard-summary,
+  .yearly-kpi-grid,
+  .account-summary-grid,
+  .investment-kpi-grid,
+  .forecast-summary,
+  .receivables-summary,
+  .debts-summary,
+  .payables-summary,
+  .pending-summary,
+  .project-summary-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
+
+  .summary > *,
+  .summary-grid > *,
+  .dashboard-summary > *,
+  .yearly-kpi-grid > *,
+  .account-summary-grid > *,
+  .investment-kpi-grid > *,
+  .forecast-summary > *,
+  .receivables-summary > *,
+  .debts-summary > *,
+  .payables-summary > *,
+  .pending-summary > *,
+  .project-summary-grid > *,
+  .summary > *:first-child,
+  .summary-grid > *:first-child,
+  .dashboard-summary > *:first-child,
+  .yearly-kpi-grid > *:first-child,
+  .account-summary-grid > *:first-child,
+  .investment-kpi-grid > *:first-child,
+  .forecast-summary > *:first-child,
+  .receivables-summary > *:first-child,
+  .debts-summary > *:first-child,
+  .payables-summary > *:first-child,
+  .pending-summary > *:first-child,
+  .project-summary-grid > *:first-child,
+  .summary > *:nth-child(2),
+  .summary-grid > *:nth-child(2),
+  .dashboard-summary > *:nth-child(2),
+  .yearly-kpi-grid > *:nth-child(2),
+  .account-summary-grid > *:nth-child(2),
+  .investment-kpi-grid > *:nth-child(2),
+  .forecast-summary > *:nth-child(2),
+  .receivables-summary > *:nth-child(2),
+  .debts-summary > *:nth-child(2),
+  .payables-summary > *:nth-child(2),
+  .pending-summary > *:nth-child(2),
+  .project-summary-grid > *:nth-child(2) {
+    grid-column: span 3;
+  }
+}
+
+@media (max-width: 720px) {
+  body.app-body {
+    overflow-x: hidden !important;
+  }
+
+  .app-navigation-dock.sidebar {
+    border-radius: 0 0 26px 26px !important;
+  }
+
+  .app-navigation-dock .sidebar-nav {
+    margin-inline: -0.12rem;
+  }
+
+  .app-navigation-dock .nav-group {
+    min-width: 8.6rem;
+  }
+
+  .app-command-deck.topbar {
+    grid-template-columns: 1fr !important;
+    border-radius: 28px !important;
+  }
+
+  .app-command-deck .topbar-title {
+    grid-column: 1 !important;
+    min-height: auto !important;
+    padding: 0.88rem 0.9rem !important;
+    border-radius: 24px 38px 24px 30px !important;
+  }
+
+  .always-on-balance.topbar-balance-pill,
+  .topbar-balance-pill.always-on-balance {
+    grid-column: 1 !important;
+    min-height: 112px !important;
+    border-radius: 46px 24px 46px 24px !important;
+  }
+
+  .always-on-balance span {
+    font-size: 0.62rem !important;
+  }
+
+  .always-on-balance strong,
+  .topbar-balance-pill.always-on-balance strong {
+    font-size: clamp(1.82rem, 12vw, 2.65rem) !important;
+  }
+
+  .command-action-grid.quick-actions {
+    grid-column: 1 !important;
+    margin-inline: -0.1rem;
+  }
+
+  .command-action-grid .quick-action {
+    flex-basis: min(11.7rem, 72vw);
+    border-radius: 999px 24px 24px 999px !important;
+  }
+
+  .content-stage.container {
+    padding-top: 0.62rem !important;
+  }
+
+  .page-heading,
+  .professional-heading {
+    grid-template-columns: minmax(0, 1fr) !important;
+    border-radius: 30px 48px 30px 38px !important;
+    padding: 1rem !important;
+  }
+
+  .page-heading::before,
+  .professional-heading::before {
+    width: 100%;
+    height: 0.28rem;
+    min-height: 0;
+  }
+
+  .summary,
+  .summary-grid,
+  .dashboard-summary,
+  .yearly-kpi-grid,
+  .account-summary-grid,
+  .investment-kpi-grid,
+  .forecast-summary,
+  .receivables-summary,
+  .debts-summary,
+  .payables-summary,
+  .pending-summary,
+  .project-summary-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .summary > *,
+  .summary-grid > *,
+  .dashboard-summary > *,
+  .yearly-kpi-grid > *,
+  .account-summary-grid > *,
+  .investment-kpi-grid > *,
+  .forecast-summary > *,
+  .receivables-summary > *,
+  .debts-summary > *,
+  .payables-summary > *,
+  .pending-summary > *,
+  .project-summary-grid > *,
+  .summary > *:first-child,
+  .summary-grid > *:first-child,
+  .dashboard-summary > *:first-child,
+  .yearly-kpi-grid > *:first-child,
+  .account-summary-grid > *:first-child,
+  .investment-kpi-grid > *:first-child,
+  .forecast-summary > *:first-child,
+  .receivables-summary > *:first-child,
+  .debts-summary > *:first-child,
+  .payables-summary > *:first-child,
+  .pending-summary > *:first-child,
+  .project-summary-grid > *:first-child,
+  .summary > *:nth-child(2),
+  .summary-grid > *:nth-child(2),
+  .dashboard-summary > *:nth-child(2),
+  .yearly-kpi-grid > *:nth-child(2),
+  .account-summary-grid > *:nth-child(2),
+  .investment-kpi-grid > *:nth-child(2),
+  .forecast-summary > *:nth-child(2),
+  .receivables-summary > *:nth-child(2),
+  .debts-summary > *:nth-child(2),
+  .payables-summary > *:nth-child(2),
+  .pending-summary > *:nth-child(2),
+  .project-summary-grid > *:nth-child(2) {
+    grid-column: auto !important;
+  }
+
+  .summary-card,
+  .card,
+  .panel-card,
+  .chart-card,
+  .kpi-card,
+  .pending-card,
+  .payment-card,
+  .recurring-rule-card,
+  .account-directory-card,
+  .analysis-preview-card,
+  .priority-card,
+  .liquid-account-card,
+  .asset-card,
+  .document-card,
+  .year-card,
+  .initial-condition-card,
+  .flow-card,
+  .top-category-card,
+  .investment-card,
+  .form-section,
+  .filters,
+  .transactions,
+  .table-panel,
+  .table-shell,
+  .money-table-wrapper {
+    border-radius: 28px 40px 28px 34px !important;
+  }
+
+  table {
+    border-spacing: 0 !important;
+  }
+
+  tbody tr {
+    box-shadow: none !important;
+  }
+
+  tbody td:first-child,
+  tbody td:last-child {
+    border-radius: 0 !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .app-content-canvas.app-main {
+    padding-inline: 0.5rem !important;
+  }
+
+  .app-command-deck.topbar {
+    padding: 0.5rem !important;
+  }
+
+  .app-command-deck .topbar-title .eyebrow {
+    font-size: 0.58rem !important;
+  }
+
+  .app-command-deck .topbar-title h1 {
+    font-size: clamp(1.32rem, 12vw, 2.02rem) !important;
+  }
+
+  .command-action-grid .quick-action {
+    flex-basis: 10.8rem;
+    padding: 0.64rem !important;
+  }
+
+  .command-action-grid .quick-action::before {
+    flex-basis: 2.12rem;
+    width: 2.12rem !important;
+    height: 2.12rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-grid,
+  .always-on-balance.topbar-balance-pill::before,
+  .command-action-grid .quick-action::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (min-width: 1001px) {
+  .app-navigation-dock .nav-group.nav-group-has-active > summary.nav-label {
+    border-color: rgba(103, 232, 249, 0.28) !important;
+    background:
+      radial-gradient(circle at 0% 50%, rgba(103,232,249,0.18), transparent 3.6rem),
+      rgba(255,255,255,0.10) !important;
+  }
+}
+
+.command-action-grid.quick-actions.quick-actions-tight .quick-action {
+  padding-inline: 0.68rem !important;
+  gap: 0.52rem !important;
+}
+
+.command-action-grid.quick-actions.quick-actions-tight .quick-action::before {
+  flex-basis: 2.05rem !important;
+  width: 2.05rem !important;
+  height: 2.05rem !important;
+}
+
+.command-action-grid.quick-actions.quick-actions-tight .quick-action strong {
+  font-size: 0.92rem !important;
+}
