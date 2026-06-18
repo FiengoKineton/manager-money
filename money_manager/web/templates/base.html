@@ -25,7 +25,7 @@
       {% set home_open = ep in ['dashboard.overview', 'dashboard.overview_detailed', 'dashboard.index', 'transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction', 'net_explanation.net_explanation'] %}
       {% set planning_open = ep in ['pending.pending_page', 'pending.recurring_page', 'debts.debts_page', 'payables.payables_page', 'expense_projects.expense_projects_page', 'expense_projects.expense_project_detail', 'receivables.receivables_page'] %}
       {% set accounts_open = ep in ['accounts.accounts_page', 'accounts.account_detail', 'currencies.currencies_page', 'internal_transfers.internal_transfers_page', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
-      {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'forecast.forecast', 'documents.documents'] %}
+      {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'yearly_summary.yearly_summary_page', 'forecast.forecast', 'documents.documents'] %}
       <nav class="sidebar-nav" aria-label="Main navigation">
         <a class="sidebar-mobile-balance-pill" href="{{ url_for('dashboard.overview') }}" aria-label="Open quick overview">
           <span>Main bank net</span>
@@ -81,6 +81,7 @@
           <div class="nav-items">
             <a href="{{ url_for('investments.investments_page') }}" class="{{ 'active' if ep == 'investments.investments_page' else '' }}">Investments</a>
             <a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if ep == 'analysis.analysis' else '' }}">Analysis</a>
+            <a href="{{ url_for('yearly_summary.yearly_summary_page') }}" class="{{ 'active' if ep == 'yearly_summary.yearly_summary_page' else '' }}">Yearly Summary</a>
             <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if ep == 'forecast.forecast' else '' }}">Forecast</a>
             <a href="{{ url_for('documents.documents') }}" class="{{ 'active' if ep == 'documents.documents' else '' }}">Documents</a>
           </div>

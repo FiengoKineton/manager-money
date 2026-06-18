@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+{% block page_title %}Yearly Summary{% endblock %}
+
+{% block content %}
+<section class="yearly-hero panel-card">
+  <div class="yearly-hero-copy">
+    <span class="eyebrow">Year archive</span>
+    <h2>{{ selected_year }} financial summary</h2>
+    <p>
+      Review each year from the first saved log. The report shows the selected year only,
+      while the opening net balance is carried forward from the full previous history.
+    </p>
+    <div class="year-switcher" aria-label="Choose year">
+      {% for year in available_years %}
+        <a href="{{ url_for('yearly_summary.yearly_summary_page', year=year) }}"
+           class="year-pill {{ 'active' if year == selected_year else '' }}">
+          {{ year }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="yearly-hero-balance">
+    <span>Opening main net</span>
+    <strong>€ {{ '%.2f'|format(initial_conditions.main_net) }}</strong>
+    <small>{{ period.label }}</small>
+    <small>Closing: € {{ '%.2f'|format(initial_conditions.closing_net) }}</small>
+  </div>
+</section>
+
+<section class="yearly-kpi-grid">
+  <article class="analysis-kpi tone-net">
+    <span>Opening net</span>
+    <strong>€ {{ '%.2f'|format(totals.opening_net) }}</strong>
+    <small>Main-bank balance before January 1st.</small>
+  </article>
+  <article class="analysis-kpi tone-income">
+    <span>Income received</span>
+    <strong>€ {{ '%.2f'|format(totals.income) }}</strong>
+    <small>Main-net income during {{ selected_year }}.</small>
+  </article>
+  <article class="analysis-kpi tone-expense">
+    <span>Expenses</span>
+    <strong>€ {{ '%.2f'|format(totals.expenses) }}</strong>
+    <small>Main-net expenses during {{ selected_year }}.</small>
+  </article>
+  <article class="analysis-kpi tone-investment">
+    <span>Invested</span>
+    <strong>€ {{ '%.2f'|format(totals.investments) }}</strong>
+    <small>Investment outflow counted in main net.</small>
+  </article>
+  <article class="analysis-kpi {{ 'tone-good' if totals.net_change >= 0 else 'tone-danger' }}">
+    <span>Year net change</span>
+    <strong>€ {{ '%.2f'|format(totals.net_change) }}</strong>
+    <small>Closing minus opening main net.</small>
+  </article>
+  <article class="analysis-kpi tone-profit {{ 'positive' if totals.savings_rate >= 0 else 'negative' }}">
+    <span>Savings rate</span>
+    <strong>{{ '%.1f'|format(totals.savings_rate) }}%</strong>
+    <small>Calculated on tracked main income.</small>
+  </article>
+</section>
+
+<section class="analysis-insight-grid yearly-insight-grid">
+  {% for card in insight_cards %}
+    <article class="analysis-insight-card tone-{{ card.tone }}">
+      <span>{{ card.label }}</span>
+      <strong>{{ card.value }}</strong>
+      <p>{{ card.text }}</p>
+    </article>
+  {% endfor %}
+</section>
+
+<section class="yearly-initial-grid">
+  <article class="panel-card yearly-initial-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">Initial conditions</span>
+        <h2>Main net carried into {{ selected_year }}</h2>
+      </div>
+    </div>
+    <dl class="yearly-definition-grid">
+      <div><dt>Opening main net</dt><dd>€ {{ '%.2f'|format(initial_conditions.main_net) }}</dd></div>
+      <div><dt>Year movement</dt><dd>€ {{ '%.2f'|format(totals.net_change) }}</dd></div>
+      <div><dt>Closing main net</dt><dd>€ {{ '%.2f'|format(initial_conditions.closing_net) }}</dd></div>
+      <div><dt>Period shown</dt><dd>{{ period.label }}</dd></div>
+    </dl>
+  </article>
+
+  <article class="panel-card yearly-initial-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">Separate liquid accounts</span>
+        <h2>Auxiliary balances</h2>
+      </div>
+    </div>
+    <dl class="yearly-definition-grid three-cols">
+      <div><dt>Opening</dt><dd>€ {{ '%.2f'|format(initial_conditions.auxiliary.opening_total) }}</dd></div>
+      <div><dt>Change</dt><dd>€ {{ '%.2f'|format(initial_conditions.auxiliary.net_change) }}</dd></div>
+      <div><dt>Closing</dt><dd>€ {{ '%.2f'|format(initial_conditions.auxiliary.closing_total) }}</dd></div>
+    </dl>
+    {% if initial_conditions.auxiliary.accounts %}
+      <table class="standard-table compact-table">
+        <thead>
+          <tr><th>Account</th><th>Opening</th><th>Change</th><th>Closing</th></tr>
+        </thead>
+        <tbody>
+          {% for account in initial_conditions.auxiliary.accounts %}
+            <tr>
+              <td>{{ account.account }}</td>
+              <td>€ {{ '%.2f'|format(account.opening) }}</td>
+              <td>€ {{ '%.2f'|format(account.yearly_change) }}</td>
+              <td><strong>€ {{ '%.2f'|format(account.closing) }}</strong></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">No separate liquid-account movements for this year.</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="analysis-section-heading">
+  <div>
+    <span class="eyebrow">Visual summary</span>
+    <h2>Year money flow</h2>
+  </div>
+</section>
+
+<div class="analysis-plots-grid yearly-chart-grid">
+  <div class="chart-card chart-wide">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.monthly_summary|safe }}
+  </div>
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.expenses_by_category|safe }}
+  </div>
+  <div class="chart-card">
+    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
+    {{ charts.cumulative_balance|safe }}
+  </div>
+</div>
+
+<section class="yearly-two-column-grid">
+  <article class="panel-card yearly-table-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">Income</span>
+        <h2>Money received and from who</h2>
+      </div>
+    </div>
+    {% if income_sources %}
+      <div class="rank-list">
+        {% for source in income_sources %}
+          <div class="rank-row">
+            <div>
+              <strong>{{ source.source }}</strong>
+              <small>{{ source.count }} movement{{ '' if source.count == 1 else 's' }} · {{ '%.1f'|format(source.share_pct) }}%</small>
+            </div>
+            <span>€ {{ '%.2f'|format(source.total) }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No main-net income saved for this year.</p>
+    {% endif %}
+  </article>
+
+  <article class="panel-card yearly-table-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">Spending</span>
+        <h2>Top spending categories</h2>
+      </div>
+    </div>
+    {% if top_categories %}
+      <div class="rank-list">
+        {% for cat in top_categories %}
+          <div class="rank-row">
+            <div>
+              <strong>{{ cat.category or 'Uncategorized' }}</strong>
+              <small>Category total</small>
+            </div>
+            <span>€ {{ '%.2f'|format(cat.total) }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No expenses saved for this year.</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="panel-card yearly-table-card">
+  <div class="panel-header compact-panel-header">
+    <div>
+      <span class="eyebrow">Recurring</span>
+      <h2>Recurring expenses and scheduled rules</h2>
+      <p>Executed rows are counted as spent. Still-open generated rows stay in the scheduled column.</p>
+    </div>
+    <div class="yearly-section-total">€ {{ '%.2f'|format(recurring.spent_total) }} spent</div>
+  </div>
+  {% if recurring["items"] %}
+    <table class="standard-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Executed</th>
+          <th>Spent</th>
+          <th>Scheduled</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in recurring["items"] %}
+          <tr>
+            <td><strong>{{ item.name }}</strong><br><small>{{ item.type }}</small></td>
+            <td>{{ item.category }}</td>
+            <td>{{ item.executed_count }}</td>
+            <td>€ {{ '%.2f'|format(item.spent) }}</td>
+            <td>€ {{ '%.2f'|format(item.scheduled) }}{% if item.pending_count %}<br><small>{{ item.pending_count }} pending</small>{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty">No recurring rows found for this year.</p>
+  {% endif %}
+</section>
+
+<section class="yearly-three-column-grid">
+  <article class="panel-card yearly-mini-report">
+    <span class="eyebrow">Debts I owe</span>
+    <h2>Debt summary</h2>
+    <dl class="yearly-definition-grid one-col">
+      <div><dt>Created</dt><dd>€ {{ '%.2f'|format(debts.created_total) }}</dd></div>
+      <div><dt>Paid this year</dt><dd>€ {{ '%.2f'|format(debts.paid_total) }}</dd></div>
+      <div><dt>Remaining end</dt><dd>€ {{ '%.2f'|format(debts.remaining_end) }}</dd></div>
+    </dl>
+    {% for item in debts["items"][:5] %}
+      <div class="mini-liability-row">
+        <strong>{{ item.name }}</strong>
+        <small>{{ item.party }} · paid € {{ '%.2f'|format(item.paid_year) }}</small>
+        <span>Remaining € {{ '%.2f'|format(item.remaining_end) }}</span>
+      </div>
+    {% else %}
+      <p class="empty">No debt activity for this year.</p>
+    {% endfor %}
+  </article>
+
+  <article class="panel-card yearly-mini-report">
+    <span class="eyebrow">Credits to be paid</span>
+    <h2>Payables</h2>
+    <dl class="yearly-definition-grid one-col">
+      <div><dt>Created</dt><dd>€ {{ '%.2f'|format(payables.created_total) }}</dd></div>
+      <div><dt>Paid this year</dt><dd>€ {{ '%.2f'|format(payables.paid_total) }}</dd></div>
+      <div><dt>Remaining end</dt><dd>€ {{ '%.2f'|format(payables.remaining_end) }}</dd></div>
+    </dl>
+    {% for item in payables["items"][:5] %}
+      <div class="mini-liability-row">
+        <strong>{{ item.name }}</strong>
+        <small>{{ item.party }} · paid € {{ '%.2f'|format(item.paid_year) }}</small>
+        <span>Remaining € {{ '%.2f'|format(item.remaining_end) }}</span>
+      </div>
+    {% else %}
+      <p class="empty">No payable activity for this year.</p>
+    {% endfor %}
+  </article>
+
+  <article class="panel-card yearly-mini-report">
+    <span class="eyebrow">Money owed to me</span>
+    <h2>Receivables</h2>
+    <dl class="yearly-definition-grid one-col">
+      <div><dt>Created</dt><dd>€ {{ '%.2f'|format(receivables.created_total) }}</dd></div>
+      <div><dt>Collected</dt><dd>€ {{ '%.2f'|format(receivables.collected_total) }}</dd></div>
+      <div><dt>Still to collect</dt><dd>€ {{ '%.2f'|format(receivables.remaining_end) }}</dd></div>
+    </dl>
+    {% for item in receivables["items"][:5] %}
+      <div class="mini-liability-row">
+        <strong>{{ item.name }}</strong>
+        <small>{{ item.party }} · collected € {{ '%.2f'|format(item.collected_year) }}</small>
+        <span>Remaining € {{ '%.2f'|format(item.remaining_end) }}</span>
+      </div>
+    {% else %}
+      <p class="empty">No receivable activity for this year.</p>
+    {% endfor %}
+  </article>
+</section>
+
+<section class="yearly-two-column-grid">
+  <article class="panel-card yearly-table-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">Investments</span>
+        <h2>Investment activity</h2>
+      </div>
+    </div>
+    <dl class="yearly-definition-grid three-cols">
+      <div><dt>Invested</dt><dd>€ {{ '%.2f'|format(investment.invested_total) }}</dd></div>
+      <div><dt>Dividends</dt><dd>€ {{ '%.2f'|format(investment.dividends) }}</dd></div>
+      <div><dt>Net flow</dt><dd>€ {{ '%.2f'|format(investment.net_flow) }}</dd></div>
+    </dl>
+    {% if investment.by_category %}
+      <div class="rank-list">
+        {% for item in investment.by_category %}
+          <div class="rank-row">
+            <div><strong>{{ item.category }}</strong><small>Investment category</small></div>
+            <span>€ {{ '%.2f'|format(item.total) }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No investment rows for this year.</p>
+    {% endif %}
+  </article>
+
+  <article class="panel-card yearly-table-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">Internal transfers</span>
+        <h2>Money moved between accounts</h2>
+      </div>
+      <div class="yearly-section-total">€ {{ '%.2f'|format(transfers.total) }}</div>
+    </div>
+    {% if transfers.by_route %}
+      <div class="rank-list">
+        {% for route in transfers.by_route %}
+          <div class="rank-row">
+            <div><strong>{{ route.route }}</strong><small>{{ route.count }} transfer{{ '' if route.count == 1 else 's' }}</small></div>
+            <span>€ {{ '%.2f'|format(route.amount) }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No internal transfers for this year.</p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}

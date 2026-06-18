@@ -288,3 +288,4 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 298,2026-06-16,Bank fees,Pre-paid card top-up fee,1.0,,EUR,1.0,0.0,1.0,,Automatic €1 fee for internal transfer #1 from Main bank to Pre-paid card.,2026-06-16T17:58:54
 299,2026-06-16,Family,Amzn,19.85,,EUR,1.0,0.0,1.0,,Coso capelli per Sofia,2026-06-16T18:09:34
 300,2026-06-17,Payable,Condominio 2nd rata,259.83,,,,,,,Payable payment to Condominio: Condominio 2nd rata,2026-06-17T13:19:21
+301,2026-06-18,Other,,5.0,,EUR,1.0,0.0,1.0,,,2026-06-18T09:58:39

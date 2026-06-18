@@ -2,7 +2,7 @@ from money_manager.web import auth
 from money_manager.web.routes import net_explanation
 from money_manager.web.routes.accounts import accounts, currencies, internal_transfers
 from money_manager.web.routes.assets import investments
-from money_manager.web.routes.core import analysis, dashboard, transactions
+from money_manager.web.routes.core import analysis, dashboard, transactions, yearly_summary
 from money_manager.web.routes.planning import expense_projects, forecast, payables, pending
 from money_manager.web.routes.support import debts, documents, parent_support, receivables, sparagnat
 
@@ -13,6 +13,7 @@ def register_routes(app):
     app.register_blueprint(dashboard.bp)
     app.register_blueprint(transactions.bp)
     app.register_blueprint(analysis.bp)
+    app.register_blueprint(yearly_summary.bp)
     app.register_blueprint(net_explanation.bp)
 
     app.register_blueprint(accounts.bp)
