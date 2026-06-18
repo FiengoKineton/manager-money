@@ -29,6 +29,7 @@
 @import url("pages/parent_support.css");
 @import url("responsive.css");
 @import url("modern-ui.css");
+@import url("pro-ui-refresh.css");
 
 .logout-form {
   display: inline-flex;

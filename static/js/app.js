@@ -977,3 +977,174 @@
 
   document.addEventListener("DOMContentLoaded", enhanceMobileSpecialLog);
 })();
+
+/* --------------------------------------------------------------------------
+   Pro UI refresh helpers
+   Visual-only: reveal animations, pointer glow, button ripple, card lighting.
+-------------------------------------------------------------------------- */
+(function () {
+  const reduceMotionMedia = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const finePointerMedia = window.matchMedia("(hover: hover) and (pointer: fine)");
+  const revealSelector = [
+    ".page-heading",
+    ".panel-card",
+    ".card",
+    ".summary-card",
+    ".filters",
+    ".form-section",
+    ".transactions",
+    ".chart-card",
+    ".pending-card",
+    ".account-directory-card",
+    ".analysis-preview-card",
+    ".priority-card",
+    ".hero-copy",
+    ".hero-balance-card",
+    ".mini-priority-card",
+    ".liquid-account-card",
+    ".kpi-card",
+    ".professional-heading",
+    ".payment-card",
+    ".rule-card",
+    ".asset-card",
+    ".document-card",
+    ".year-card",
+    ".initial-condition-card",
+    ".flow-card",
+    ".top-category-card",
+    ".investment-card",
+    ".yearly-empty-state",
+    ".quick-special-panel"
+  ].join(", ");
+
+  const interactiveSelector = [
+    ".quick-action",
+    ".primary-btn",
+    ".secondary-btn",
+    ".danger-btn",
+    ".compact-btn",
+    ".icon-action-btn",
+    ".icon-link-btn",
+    ".mobile-action-item",
+    ".transaction-form button",
+    ".recurring-form button",
+    ".debt-form button",
+    ".entry-form button",
+    ".form-actions button",
+    ".form-actions-row button",
+    ".sidebar-logout-action"
+  ].join(", ");
+
+  function initTopbarState() {
+    const sync = () => {
+      document.body.classList.toggle("ui-topbar-scrolled", window.scrollY > 12);
+    };
+
+    sync();
+    window.addEventListener("scroll", sync, { passive: true });
+  }
+
+  function initRevealAnimations() {
+    const nodes = Array.from(document.querySelectorAll(revealSelector));
+    if (!nodes.length) return;
+
+    nodes.forEach((node, index) => {
+      node.classList.add("ui-reveal");
+      node.style.setProperty("--ui-delay", `${Math.min(index % 8, 7) * 42}ms`);
+    });
+
+    if (reduceMotionMedia.matches || !("IntersectionObserver" in window)) {
+      nodes.forEach((node) => node.classList.add("is-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+
+    nodes.forEach((node) => observer.observe(node));
+  }
+
+  function initPointerGlow() {
+    if (reduceMotionMedia.matches || !finePointerMedia.matches) return;
+
+    const glow = document.createElement("div");
+    glow.className = "ui-pointer-glow";
+    glow.setAttribute("aria-hidden", "true");
+    document.body.appendChild(glow);
+
+    let raf = 0;
+    let x = -999;
+    let y = -999;
+
+    const render = () => {
+      glow.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+      raf = 0;
+    };
+
+    window.addEventListener("pointermove", (event) => {
+      x = event.clientX;
+      y = event.clientY;
+      document.body.classList.add("ui-pointer-active");
+      if (!raf) raf = window.requestAnimationFrame(render);
+    }, { passive: true });
+
+    window.addEventListener("pointerleave", () => {
+      document.body.classList.remove("ui-pointer-active");
+    }, { passive: true });
+  }
+
+  function initCardLighting() {
+    if (reduceMotionMedia.matches || !finePointerMedia.matches) return;
+
+    document.querySelectorAll(revealSelector).forEach((node) => {
+      node.addEventListener("pointermove", (event) => {
+        const rect = node.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * 100;
+        const y = ((event.clientY - rect.top) / Math.max(rect.height, 1)) * 100;
+        node.style.setProperty("--ui-x", `${x.toFixed(1)}%`);
+        node.style.setProperty("--ui-y", `${y.toFixed(1)}%`);
+      }, { passive: true });
+    });
+  }
+
+  function initButtonRipple() {
+    if (reduceMotionMedia.matches) return;
+
+    document.addEventListener("click", (event) => {
+      const target = event.target.closest(interactiveSelector);
+      if (!target || target.disabled || target.getAttribute("aria-disabled") === "true") return;
+
+      const rect = target.getBoundingClientRect();
+      const ripple = document.createElement("span");
+      ripple.className = "ui-ripple";
+      ripple.style.left = `${event.clientX - rect.left}px`;
+      ripple.style.top = `${event.clientY - rect.top}px`;
+      target.appendChild(ripple);
+      window.setTimeout(() => ripple.remove(), 680);
+    });
+  }
+
+  function bootVisualRefresh() {
+    document.body.classList.add("ui-has-js");
+    initTopbarState();
+    initRevealAnimations();
+    initPointerGlow();
+    initCardLighting();
+    initButtonRipple();
+
+    window.requestAnimationFrame(() => {
+      document.body.classList.add("ui-ready");
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootVisualRefresh);
+  } else {
+    bootVisualRefresh();
+  }
+})();
