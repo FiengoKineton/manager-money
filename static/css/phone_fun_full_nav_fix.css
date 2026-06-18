@@ -1433,3 +1433,90 @@
     animation: none !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Phone performance patch v4
+   Mobile browsers lag badly when fixed bars use large backdrop blurs, huge
+   shadows, continuous reveal animations, and permanent will-change layers.
+   These overrides keep the phone UI fun but make it cheaper to paint.
+-------------------------------------------------------------------------- */
+@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+  .app-topbar,
+  .mobile-bottom-nav.mobile-tabbar,
+  .mobile-sheet-panel,
+  .mobile-page-panel,
+  .mobile-add-panel,
+  .mobile-sheet-backdrop {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .app-topbar,
+  .mobile-bottom-nav.mobile-tabbar,
+  .mobile-sheet-panel,
+  .mobile-page-panel,
+  .mobile-add-panel {
+    will-change: auto !important;
+    backface-visibility: visible !important;
+    -webkit-backface-visibility: visible !important;
+  }
+
+  .mobile-sheet-backdrop {
+    background: rgba(6, 14, 29, 0.34) !important;
+    transition: opacity 0.12s ease !important;
+  }
+
+  .mobile-sheet-panel,
+  .mobile-page-panel,
+  .mobile-add-panel {
+    transition: transform 0.14s ease, opacity 0.12s ease !important;
+    transform: translate3d(0, 12px, 0) !important;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18) !important;
+    contain: layout paint !important;
+  }
+
+  .mobile-sheet.is-open .mobile-sheet-panel,
+  .mobile-sheet.is-open .mobile-page-panel,
+  .mobile-sheet.is-open .mobile-add-panel {
+    transform: translate3d(0, 0, 0) !important;
+  }
+
+  .mobile-tabbar .mobile-tab,
+  .mobile-tabbar a,
+  .mobile-tabbar button,
+  .phone-transaction-card,
+  .mobile-page-grid a,
+  .mobile-add-panel a,
+  .mobile-action-card {
+    transition: transform 0.10s ease, background-color 0.10s ease !important;
+    box-shadow: none !important;
+  }
+
+  .phone-transaction-card {
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  html[data-theme="night"] .app-topbar,
+  html[data-theme="night"] .mobile-bottom-nav,
+  html[data-theme="night"] .mobile-sheet-panel,
+  html[data-theme="night"] .mobile-page-panel,
+  html[data-theme="night"] .mobile-add-panel {
+    box-shadow: 0 14px 30px rgba(0,0,0,0.28) !important;
+  }
+
+  html[data-theme="night"] body.app-body-clean::before,
+  html[data-theme="night"] body.app-body-clean::after,
+  html[data-theme="night"] body.app-body-clean .app-layout::before,
+  html[data-theme="night"] body.app-body-clean .app-layout::after,
+  html[data-theme="night"] .desktop-pointer-glow {
+    display: none !important;
+    filter: none !important;
+  }
+
+  .reveal-on-scroll,
+  .reveal-on-scroll.is-visible {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

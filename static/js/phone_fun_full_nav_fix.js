@@ -1,57 +1,72 @@
 /* --------------------------------------------------------------------------
-   Phone Fun Shell v3
-   Reliable frontend-only mobile shell controller.
-   - Uses plain hidden panels instead of native <details> for mobile sheets.
-   - Handles click + pointerup so phone taps are dependable.
-   - Keeps Add/Plan/More panels inside the viewport and closes them cleanly.
+   Phone Fun Shell v4 - performance and reliability controller.
+   Frontend-only. No backend route/data logic is touched.
+
+   What changed from v3:
+   - single click path instead of pointerup + click double handling
+   - no capture-phase global toggling
+   - no viewport-height recalculation on every mobile browser chrome resize
+   - backdrop handles outside close, so sheets do not fight with document clicks
 -------------------------------------------------------------------------- */
 (function () {
   const phoneMedia = window.matchMedia("(max-width: 1120px), (hover: none) and (pointer: coarse)");
   const sheetSelector = ".mobile-sheet[data-mobile-sheet], .mobile-add-menu[data-mobile-sheet], .mobile-plan-menu[data-mobile-sheet], .mobile-page-menu[data-mobile-sheet]";
   const triggerSelector = "[data-mobile-open-sheet]";
   const closeSelector = "[data-mobile-close-sheets]";
-  let lastPointerToggleAt = 0;
+  let initialViewportWidth = window.innerWidth;
+  let initialViewportHeight = window.innerHeight;
+  let resizeTimer = null;
 
   function isPhoneShell() {
     return phoneMedia.matches;
   }
 
-  function sheets() {
+  function allSheets() {
     return Array.from(document.querySelectorAll(sheetSelector));
   }
 
-  function triggers() {
+  function allTriggers() {
     return Array.from(document.querySelectorAll(triggerSelector));
   }
 
   function getSheetByName(name) {
-    return sheets().find((sheet) => sheet.dataset.mobileSheet === name) || null;
+    return allSheets().find((sheet) => sheet.dataset.mobileSheet === name) || null;
   }
 
-  function isSheetOpen(sheet) {
+  function isOpen(sheet) {
     return Boolean(sheet && sheet.classList.contains("is-open") && !sheet.hidden);
   }
 
-  function setViewportHeightVariable() {
-    document.documentElement.style.setProperty("--phone-vh", `${window.innerHeight * 0.01}px`);
+  function setViewportHeightVariable(force) {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Mobile browsers fire resize while the URL bar hides/shows during scroll.
+    // Updating --phone-vh every time causes layout jumps and stuck-feeling sheets.
+    if (!force && Math.abs(width - initialViewportWidth) < 24 && Math.abs(height - initialViewportHeight) < 120) {
+      return;
+    }
+
+    initialViewportWidth = width;
+    initialViewportHeight = height;
+    document.documentElement.style.setProperty("--phone-vh", `${height * 0.01}px`);
   }
 
   function syncShellClass() {
-    const active = isPhoneShell();
-    document.documentElement.classList.toggle("phone-shell-active", active);
-    if (document.body) document.body.classList.toggle("phone-shell-active", active);
-    if (!active) closeAllSheets();
+    const enabled = isPhoneShell();
+    document.documentElement.classList.toggle("phone-shell-active", enabled);
+    if (document.body) document.body.classList.toggle("phone-shell-active", enabled);
+    if (!enabled) closeAllSheets();
   }
 
   function syncTriggers() {
-    const anyOpen = sheets().some(isSheetOpen);
+    const anyOpen = allSheets().some(isOpen);
     document.documentElement.classList.toggle("mobile-sheet-open", anyOpen);
     if (document.body) document.body.classList.toggle("mobile-sheet-open", anyOpen);
 
-    triggers().forEach((trigger) => {
-      const name = trigger.getAttribute("data-mobile-open-sheet");
-      const sheet = name ? getSheetByName(name) : null;
-      const expanded = Boolean(sheet && isSheetOpen(sheet) && isPhoneShell());
+    allTriggers().forEach((trigger) => {
+      const sheet = getSheetByName(trigger.getAttribute("data-mobile-open-sheet"));
+      const expanded = Boolean(sheet && isOpen(sheet) && isPhoneShell());
       trigger.setAttribute("aria-expanded", expanded ? "true" : "false");
       trigger.classList.toggle("sheet-open", expanded);
     });
@@ -65,7 +80,7 @@
   }
 
   function closeAllSheets(except) {
-    sheets().forEach((sheet) => {
+    allSheets().forEach((sheet) => {
       if (sheet !== except) closeSheet(sheet);
     });
     syncTriggers();
@@ -77,17 +92,16 @@
     sheet.hidden = false;
     sheet.setAttribute("aria-hidden", "false");
 
-    // Let the browser apply the non-open styles first, then transition in.
     window.requestAnimationFrame(() => {
       sheet.classList.add("is-open");
       syncTriggers();
     });
   }
 
-  function toggleSheetByName(name) {
+  function toggleSheet(name) {
     const sheet = getSheetByName(name);
     if (!sheet) return;
-    if (isSheetOpen(sheet)) {
+    if (isOpen(sheet)) {
       closeSheet(sheet);
       syncTriggers();
     } else {
@@ -95,85 +109,61 @@
     }
   }
 
-  function handleTriggerActivation(event) {
+  function handleTriggerClick(event) {
     const trigger = event.target.closest(triggerSelector);
     if (!trigger || !isPhoneShell()) return;
-
     event.preventDefault();
-    event.stopPropagation();
-
-    if (event.type === "pointerup") {
-      lastPointerToggleAt = Date.now();
-    } else if (event.type === "click" && Date.now() - lastPointerToggleAt < 450) {
-      return;
-    }
-
-    toggleSheetByName(trigger.getAttribute("data-mobile-open-sheet"));
+    toggleSheet(trigger.getAttribute("data-mobile-open-sheet"));
   }
 
-  function handleCloseActivation(event) {
-    if (!isPhoneShell()) return;
-    if (!event.target.closest(closeSelector)) return;
-    event.preventDefault();
-    closeAllSheets();
-  }
-
-  function wireSheetLinks() {
-    sheets().forEach((sheet) => {
+  function wireSheetLinksAndBackdrop() {
+    allSheets().forEach((sheet) => {
       if (sheet.dataset.phoneFunSheetWired === "true") return;
       sheet.dataset.phoneFunSheetWired = "true";
+
       sheet.querySelectorAll("a").forEach((link) => {
         link.addEventListener("click", () => closeAllSheets());
+      });
+
+      sheet.querySelectorAll(closeSelector).forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          closeAllSheets();
+        });
       });
     });
   }
 
   function wirePhoneShell() {
-    setViewportHeightVariable();
+    setViewportHeightVariable(true);
     syncShellClass();
-    wireSheetLinks();
-    sheets().forEach((sheet) => {
+    wireSheetLinksAndBackdrop();
+    allSheets().forEach((sheet) => {
       if (!sheet.classList.contains("is-open")) closeSheet(sheet);
     });
     syncTriggers();
   }
 
-  document.addEventListener("pointerup", handleTriggerActivation, true);
-  document.addEventListener("click", handleTriggerActivation, true);
-  document.addEventListener("click", handleCloseActivation, true);
-
-  document.addEventListener("click", (event) => {
-    if (!isPhoneShell()) return;
-    const insideSheetPanel = event.target.closest(".mobile-sheet-panel, .mobile-page-panel, .mobile-add-panel");
-    const insideTrigger = event.target.closest(triggerSelector);
-    const insideTabbarLink = event.target.closest(".mobile-tabbar a");
-
-    if (insideTabbarLink) {
-      closeAllSheets();
-      return;
-    }
-
-    if (!insideSheetPanel && !insideTrigger && !event.target.closest(closeSelector)) {
-      closeAllSheets();
-    }
-  }, true);
-
+  document.addEventListener("click", handleTriggerClick);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeAllSheets();
   });
 
-  window.addEventListener("resize", () => {
-    setViewportHeightVariable();
-    syncShellClass();
-    syncTriggers();
-  }, { passive: true });
-
   window.addEventListener("orientationchange", () => {
     window.setTimeout(() => {
-      setViewportHeightVariable();
+      setViewportHeightVariable(true);
       syncShellClass();
       syncTriggers();
-    }, 140);
+    }, 180);
+  }, { passive: true });
+
+  window.addEventListener("resize", () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      setViewportHeightVariable(false);
+      syncShellClass();
+      syncTriggers();
+    }, 220);
   }, { passive: true });
 
   document.addEventListener("DOMContentLoaded", wirePhoneShell);

@@ -1047,7 +1047,9 @@
     });
   }
 
-  document.addEventListener("pointermove", updateBodyPointer, { passive: true });
+  if (!coarsePointer.matches) {
+    document.addEventListener("pointermove", updateBodyPointer, { passive: true });
+  }
   document.addEventListener("DOMContentLoaded", wireLocalGlow);
 })();
 
@@ -1126,7 +1128,7 @@
     const nodes = Array.from(document.querySelectorAll(revealSelector));
     if (!nodes.length) return;
 
-    if (reducedMotion.matches || !("IntersectionObserver" in window)) {
+    if (!desktopPointer.matches || reducedMotion.matches || !("IntersectionObserver" in window)) {
       nodes.forEach((node) => node.classList.add("is-visible"));
       return;
     }
@@ -1173,8 +1175,10 @@
   }
 
   function wireAuroraInteractions() {
-    document.addEventListener("pointerdown", createRipple, { passive: true });
-    document.addEventListener("pointermove", activatePointerGlow, { passive: true });
+    if (desktopPointer.matches && !reducedMotion.matches) {
+      document.addEventListener("pointerdown", createRipple, { passive: true });
+      document.addEventListener("pointermove", activatePointerGlow, { passive: true });
+    }
     wireScrollReveal();
   }
 
@@ -1224,73 +1228,4 @@
       });
     });
   });
-})();
-
-
-/* --------------------------------------------------------------------------
-   Phone shell reliability: keep the mobile add sheet and bottom navigation
-   tappable on real mobile browsers/PWA windows.
--------------------------------------------------------------------------- */
-(function () {
-  const phoneMedia = window.matchMedia("(max-width: 900px)");
-
-  function closeMobileAddMenus() {
-    document.querySelectorAll(".mobile-add-menu[open]").forEach((menu) => {
-      menu.removeAttribute("open");
-    });
-  }
-
-  function syncPhoneShellClass() {
-    const enabled = phoneMedia.matches;
-    document.documentElement.classList.toggle("phone-shell-active", enabled);
-    if (document.body) document.body.classList.toggle("phone-shell-active", enabled);
-    if (!enabled) closeMobileAddMenus();
-  }
-
-  function wirePhoneShell() {
-    syncPhoneShellClass();
-
-    document.querySelectorAll(".mobile-add-menu").forEach((menu) => {
-      if (menu.dataset.phoneShellWired === "true") return;
-      menu.dataset.phoneShellWired = "true";
-
-      const summary = menu.querySelector(":scope > summary");
-      if (summary) {
-        summary.addEventListener("click", () => {
-          if (!phoneMedia.matches) return;
-          window.setTimeout(() => {
-            if (menu.open) {
-              document.querySelectorAll(".mobile-add-menu[open]").forEach((other) => {
-                if (other !== menu) other.removeAttribute("open");
-              });
-            }
-          }, 0);
-        });
-      }
-    });
-  }
-
-  document.addEventListener("click", (event) => {
-    if (!phoneMedia.matches) return;
-
-    const clickedAddMenu = event.target.closest(".mobile-add-menu");
-    const clickedBottomNav = event.target.closest(".mobile-bottom-nav a");
-    const clickedAddLink = event.target.closest(".mobile-add-panel a");
-
-    if (clickedBottomNav || clickedAddLink || !clickedAddMenu) {
-      closeMobileAddMenus();
-    }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeMobileAddMenus();
-  });
-
-  document.addEventListener("DOMContentLoaded", wirePhoneShell);
-  window.addEventListener("pageshow", wirePhoneShell);
-  window.addEventListener("resize", syncPhoneShellClass, { passive: true });
-
-  if (phoneMedia.addEventListener) {
-    phoneMedia.addEventListener("change", syncPhoneShellClass);
-  }
 })();
