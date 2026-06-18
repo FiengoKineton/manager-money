@@ -539,3 +539,626 @@ html[data-theme="night"] .nav-items a.active {
     border-radius: 19px !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Final mobile shell + low-glare night palette
+   This is intentionally last in the imported CSS stack.
+-------------------------------------------------------------------------- */
+
+html[data-theme="night"] {
+  --bg: #07111c;
+  --ink: #dde8f2;
+  --ink-soft: #c6d5e3;
+  --muted: #91a3b4;
+  --surface: rgba(12, 24, 38, 0.82);
+  --surface-soft: rgba(15, 33, 51, 0.66);
+  --surface-muted: rgba(20, 44, 62, 0.54);
+  --line: rgba(118, 175, 207, 0.16);
+  --line-strong: rgba(91, 168, 219, 0.26);
+  --brand: #65a9e8;
+  --brand-dark: #45b6c9;
+  --brand-soft: rgba(37, 99, 235, 0.22);
+  --good: #5fd6a3;
+  --good-soft: rgba(21, 113, 82, 0.25);
+  --bad: #f08a98;
+  --bad-soft: rgba(136, 38, 55, 0.24);
+  --warning: #e8bd63;
+  --warning-soft: rgba(126, 83, 28, 0.26);
+  --glass-main: rgba(10, 22, 36, 0.66);
+  --glass-main-strong: rgba(16, 31, 48, 0.84);
+  --glass-border: rgba(117, 176, 206, 0.15);
+  --glass-line: rgba(92, 188, 199, 0.12);
+  --glass-shadow: 0 26px 74px rgba(0, 0, 0, 0.34), 0 10px 28px rgba(7, 64, 86, 0.08);
+  --night-surface-a: rgba(16, 30, 47, 0.88);
+  --night-surface-b: rgba(8, 20, 34, 0.76);
+  --night-surface-c: rgba(17, 44, 60, 0.58);
+  --night-border: rgba(120, 190, 217, 0.15);
+}
+
+html[data-theme="night"] body.app-body-clean {
+  background:
+    radial-gradient(circle at 8% 8%, rgba(42, 105, 190, 0.16), transparent 24rem),
+    radial-gradient(circle at 82% 6%, rgba(18, 133, 151, 0.12), transparent 26rem),
+    radial-gradient(circle at 95% 64%, rgba(22, 126, 94, 0.10), transparent 28rem),
+    linear-gradient(135deg, #06101a 0%, #081725 48%, #0a1220 100%) !important;
+}
+
+html[data-theme="night"] body.app-body-clean::before {
+  opacity: 0.18 !important;
+  background:
+    radial-gradient(ellipse at 18% 16%, rgba(86, 147, 211, 0.12), transparent 31rem),
+    radial-gradient(ellipse at 82% 18%, rgba(82, 194, 199, 0.08), transparent 30rem),
+    radial-gradient(ellipse at 66% 92%, rgba(91, 214, 163, 0.06), transparent 31rem) !important;
+}
+
+html[data-theme="night"] body.app-body-clean::after,
+html[data-theme="night"] body.app-body-clean .app-layout::before,
+html[data-theme="night"] body.app-body-clean .app-layout::after,
+html[data-theme="night"] .desktop-pointer-glow {
+  opacity: 0.10 !important;
+  filter: blur(28px) saturate(0.95) !important;
+}
+
+html[data-theme="night"] body.pointer-active .desktop-pointer-glow {
+  opacity: 0.14 !important;
+}
+
+html[data-theme="night"] .app-sidebar,
+html[data-theme="night"] .app-topbar,
+html[data-theme="night"] .mobile-bottom-nav,
+html[data-theme="night"] .mobile-add-panel,
+html[data-theme="night"] .quick-add-panel,
+html[data-theme="night"] .desktop-detail-shell,
+html[data-theme="night"] .page-heading,
+html[data-theme="night"] .panel-card,
+html[data-theme="night"] .card,
+html[data-theme="night"] .filters,
+html[data-theme="night"] .form-section,
+html[data-theme="night"] .transactions,
+html[data-theme="night"] .chart-card,
+html[data-theme="night"] .summary-card,
+html[data-theme="night"] .priority-card,
+html[data-theme="night"] .mini-priority-card,
+html[data-theme="night"] .account-overview-card,
+html[data-theme="night"] .analysis-decision-card,
+html[data-theme="night"] .analysis-kpi,
+html[data-theme="night"] .analysis-health-card,
+html[data-theme="night"] .investment-behaviour-card,
+html[data-theme="night"] .payment-card,
+html[data-theme="night"] .recurring-rule-card,
+html[data-theme="night"] .document-card,
+html[data-theme="night"] .asset-card,
+html[data-theme="night"] .year-card,
+html[data-theme="night"] .initial-condition-card,
+html[data-theme="night"] .flow-card,
+html[data-theme="night"] .top-category-card,
+html[data-theme="night"] .investment-card,
+html[data-theme="night"] .quick-special-panel,
+html[data-theme="night"] .smart-log-studio,
+html[data-theme="night"] .normal-add-polished,
+html[data-theme="night"] .standard-table,
+html[data-theme="night"] .overview-primary-card,
+html[data-theme="night"] .overview-status-card,
+html[data-theme="night"] .hero-copy,
+html[data-theme="night"] .hero-balance-card,
+html[data-theme="night"] .prism-studio-hero,
+html[data-theme="night"] .prism-ledger-main,
+html[data-theme="night"] .prism-stress-chip,
+html[data-theme="night"] .account-mini-card,
+html[data-theme="night"] .analysis-preview-card,
+html[data-theme="night"] .normal-add-panel,
+html[data-theme="night"] .table-panel,
+html[data-theme="night"] .modal-card,
+html[data-theme="night"] .empty-state {
+  background:
+    linear-gradient(135deg, var(--night-surface-a), var(--night-surface-b)),
+    radial-gradient(circle at 0% 0%, rgba(77, 139, 210, 0.07), transparent 18rem),
+    radial-gradient(circle at 100% 0%, rgba(70, 190, 199, 0.045), transparent 17rem),
+    radial-gradient(circle at 100% 100%, rgba(74, 197, 143, 0.04), transparent 18rem) !important;
+  border-color: var(--night-border) !important;
+  color: var(--ink) !important;
+  box-shadow:
+    0 24px 62px rgba(0, 0, 0, 0.30),
+    0 8px 22px rgba(6, 69, 91, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045) !important;
+}
+
+html[data-theme="night"] .app-topbar,
+html[data-theme="night"] .app-topbar::before {
+  background:
+    linear-gradient(90deg, rgba(7, 18, 31, 0.92), rgba(10, 35, 50, 0.80), rgba(8, 42, 39, 0.62)),
+    radial-gradient(circle at 18% 0%, rgba(65, 128, 204, 0.10), transparent 16rem),
+    radial-gradient(circle at 92% 82%, rgba(58, 180, 157, 0.075), transparent 16rem) !important;
+  border-bottom-color: rgba(116, 184, 211, 0.13) !important;
+}
+
+html[data-theme="night"] .overview-primary-value,
+html[data-theme="night"] .overview-status-list div,
+html[data-theme="night"] .overview-shortcut-list a,
+html[data-theme="night"] .prism-lane-link,
+html[data-theme="night"] .balance-subgrid div,
+html[data-theme="night"] .mini-metrics > div,
+html[data-theme="night"] .comparison-row,
+html[data-theme="night"] .health-pill,
+html[data-theme="night"] .recent-row,
+html[data-theme="night"] .category-bar-row,
+html[data-theme="night"] .account-flow-line,
+html[data-theme="night"] .desktop-detail-head,
+html[data-theme="night"] .desktop-detail-actions {
+  background: rgba(8, 20, 33, 0.52) !important;
+  border-color: rgba(118, 188, 216, 0.12) !important;
+  color: var(--ink) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
+}
+
+html[data-theme="night"] .overview-status-list div {
+  background: rgba(123, 142, 157, 0.20) !important;
+}
+
+html[data-theme="night"] .overview-shortcut-list a:hover,
+html[data-theme="night"] .prism-lane-link:hover,
+html[data-theme="night"] .quick-add-panel a:hover,
+html[data-theme="night"] .mobile-add-panel a:hover {
+  background: rgba(19, 48, 70, 0.68) !important;
+  border-color: rgba(108, 187, 214, 0.22) !important;
+}
+
+html[data-theme="night"] .app-topbar-title h1,
+html[data-theme="night"] .overview-primary-card h2,
+html[data-theme="night"] .overview-status-main strong,
+html[data-theme="night"] .overview-primary-value strong,
+html[data-theme="night"] .page-heading h2,
+html[data-theme="night"] .panel-header h2,
+html[data-theme="night"] .panel-header h3,
+html[data-theme="night"] .normal-add-header h2,
+html[data-theme="night"] .smart-log-hero h2,
+html[data-theme="night"] h1,
+html[data-theme="night"] h2,
+html[data-theme="night"] h3,
+html[data-theme="night"] h4 {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: #e2ecf5 !important;
+  text-shadow: none !important;
+}
+
+html[data-theme="night"] p,
+html[data-theme="night"] small,
+html[data-theme="night"] .muted,
+html[data-theme="night"] .small-text,
+html[data-theme="night"] .panel-header p,
+html[data-theme="night"] .page-heading p,
+html[data-theme="night"] .overview-primary-card p,
+html[data-theme="night"] .overview-primary-value small,
+html[data-theme="night"] .overview-status-main small,
+html[data-theme="night"] .overview-shortcut-list span,
+html[data-theme="night"] .prism-lane-link small,
+html[data-theme="night"] .overview-status-list dt,
+html[data-theme="night"] .mobile-summary-meta,
+html[data-theme="night"] .desktop-detail-subtitle,
+html[data-theme="night"] .desktop-detail-line-label {
+  color: #92a4b6 !important;
+}
+
+html[data-theme="night"] strong,
+html[data-theme="night"] b,
+html[data-theme="night"] label,
+html[data-theme="night"] .overview-status-list dd,
+html[data-theme="night"] .mobile-summary-title,
+html[data-theme="night"] .mobile-summary-amount,
+html[data-theme="night"] .desktop-detail-title,
+html[data-theme="night"] .desktop-detail-line-value,
+html[data-theme="night"] .desktop-detail-amount,
+html[data-theme="night"] .summary-card p,
+html[data-theme="night"] .summary-card strong,
+html[data-theme="night"] .analysis-kpi strong {
+  color: #dde8f2 !important;
+}
+
+html[data-theme="night"] .eyebrow,
+html[data-theme="night"] .metric-label,
+html[data-theme="night"] .overview-primary-value span,
+html[data-theme="night"] .overview-status-main span,
+html[data-theme="night"] .summary-card > span,
+html[data-theme="night"] .mini-priority-card > span {
+  color: #a7dacb !important;
+  background: rgba(58, 164, 132, 0.13) !important;
+  border-color: rgba(125, 211, 183, 0.18) !important;
+}
+
+html[data-theme="night"] .primary-btn,
+html[data-theme="night"] .mobile-add-menu > summary,
+html[data-theme="night"] .transaction-form button,
+html[data-theme="night"] .recurring-form button,
+html[data-theme="night"] .debt-form button,
+html[data-theme="night"] .entry-form button,
+html[data-theme="night"] .form-actions button,
+html[data-theme="night"] .desktop-drawer-primary-action {
+  background: linear-gradient(135deg, #2c68b8 0%, #16899d 55%, #18835f 100%) !important;
+  color: #f6fbff !important;
+  box-shadow:
+    0 14px 30px rgba(37, 99, 235, 0.16),
+    0 8px 20px rgba(16, 131, 95, 0.10),
+    inset 0 1px 0 rgba(255,255,255,0.16) !important;
+}
+
+html[data-theme="night"] .secondary-btn,
+html[data-theme="night"] .compact-btn,
+html[data-theme="night"] .desktop-drawer-secondary-action,
+html[data-theme="night"] .mobile-detail-action-secondary {
+  background: rgba(118, 142, 159, 0.22) !important;
+  border-color: rgba(118, 188, 216, 0.16) !important;
+  color: #d5e2ee !important;
+}
+
+html[data-theme="night"] .nav-items a.active,
+html[data-theme="night"] .mobile-bottom-nav a.active {
+  background: linear-gradient(135deg, rgba(43, 104, 184, 0.80), rgba(22, 137, 157, 0.70), rgba(24, 131, 95, 0.66)) !important;
+  color: #f4f9ff !important;
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.14), inset 0 1px 0 rgba(255,255,255,0.13) !important;
+}
+
+html[data-theme="night"] input,
+html[data-theme="night"] select,
+html[data-theme="night"] textarea,
+html[data-theme="night"] .inline-edit-table input,
+html[data-theme="night"] .inline-edit-table select {
+  color: #dde8f2 !important;
+  background: rgba(5, 15, 27, 0.62) !important;
+  border-color: rgba(118, 188, 216, 0.15) !important;
+}
+
+html[data-theme="night"] .standard-table th,
+html[data-theme="night"] .transactions table th,
+html[data-theme="night"] .inline-edit-table th {
+  color: #b2c5d7 !important;
+  background: rgba(5, 15, 27, 0.72) !important;
+  border-bottom-color: rgba(118, 188, 216, 0.14) !important;
+}
+
+html[data-theme="night"] .standard-table td,
+html[data-theme="night"] .transactions table td,
+html[data-theme="night"] .inline-edit-table td {
+  color: #d8e4ef !important;
+  background: rgba(9, 22, 36, 0.48) !important;
+  border-bottom-color: rgba(118, 188, 216, 0.09) !important;
+}
+
+/* Make decorative layers incapable of blocking phone taps. */
+body.app-body-clean::before,
+body.app-body-clean::after,
+body.app-body-clean .app-layout::before,
+body.app-body-clean .app-layout::after,
+.desktop-pointer-glow,
+.ripple-dot {
+  pointer-events: none !important;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --phone-topbar-height: 76px;
+    --phone-bottom-nav-height: 68px;
+  }
+
+  html,
+  body.app-body-clean {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 100dvh !important;
+    overflow-x: hidden !important;
+  }
+
+  .app-layout,
+  .app-workspace {
+    display: block !important;
+    min-height: 100dvh !important;
+    max-width: 100vw !important;
+    overflow-x: clip !important;
+  }
+
+  .app-sidebar {
+    display: none !important;
+  }
+
+  .app-topbar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    min-height: var(--phone-topbar-height) !important;
+    z-index: 2147483000 !important;
+    padding: calc(0.55rem + env(safe-area-inset-top, 0px)) 0.72rem 0.55rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    border-radius: 0 0 22px 22px !important;
+    transform: translate3d(0, 0, 0) !important;
+    will-change: transform;
+    pointer-events: auto !important;
+    backdrop-filter: blur(18px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+  }
+
+  .app-main {
+    padding-top: calc(var(--phone-topbar-height) + env(safe-area-inset-top, 0px) + 0.5rem) !important;
+  }
+
+  .app-topbar-title {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .app-topbar-title .eyebrow {
+    display: none !important;
+  }
+
+  .app-topbar-title h1 {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: clamp(1.02rem, 5vw, 1.32rem) !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  .app-topbar-actions {
+    flex: 0 0 auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.42rem !important;
+    min-width: 0 !important;
+  }
+
+  .quick-add-menu {
+    display: none !important;
+  }
+
+  .topbar-net-pill {
+    display: inline-flex !important;
+    min-height: 39px !important;
+    max-width: 37vw !important;
+    padding: 0.42rem 0.58rem !important;
+    border-radius: 15px !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+  }
+
+  .topbar-net-pill span {
+    display: none !important;
+  }
+
+  .topbar-net-pill strong {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 0.78rem !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  .theme-toggle-btn {
+    width: 39px !important;
+    min-width: 39px !important;
+    height: 39px !important;
+    min-height: 39px !important;
+    border-radius: 15px !important;
+    padding: 0 !important;
+  }
+
+  .theme-toggle-orb {
+    width: 25px !important;
+    height: 25px !important;
+  }
+
+  .container,
+  .app-content-stage {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    padding-bottom: calc(var(--phone-bottom-nav-height) + 3.4rem + env(safe-area-inset-bottom, 0px)) !important;
+    overflow-x: clip !important;
+  }
+
+  .mobile-bottom-nav {
+    position: fixed !important;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    left: max(0.56rem, env(safe-area-inset-left, 0px)) !important;
+    right: max(0.56rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: max(0.58rem, env(safe-area-inset-bottom, 0px)) !important;
+    min-height: var(--phone-bottom-nav-height) !important;
+    gap: 0.24rem !important;
+    padding: 0.34rem !important;
+    border-radius: 24px !important;
+    z-index: 2147483000 !important;
+    pointer-events: auto !important;
+    transform: translate3d(0, 0, 0) !important;
+    contain: layout paint style !important;
+    touch-action: manipulation !important;
+    backdrop-filter: blur(18px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+  }
+
+  .mobile-bottom-nav a {
+    position: relative !important;
+    z-index: 1 !important;
+    min-height: 50px !important;
+    display: grid !important;
+    place-items: center !important;
+    gap: 0.05rem !important;
+    padding: 0.32rem 0.08rem !important;
+    border-radius: 18px !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .mobile-add-menu {
+    position: fixed !important;
+    display: block !important;
+    right: max(0.78rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: calc(max(0.58rem, env(safe-area-inset-bottom, 0px)) + var(--phone-bottom-nav-height) + 0.8rem) !important;
+    left: auto !important;
+    z-index: 2147483100 !important;
+    pointer-events: auto !important;
+    transform: translate3d(0, 0, 0) !important;
+  }
+
+  .mobile-add-menu > summary {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+    border-radius: 19px !important;
+    list-style: none !important;
+    display: grid !important;
+    place-items: center !important;
+    position: relative !important;
+    z-index: 2147483300 !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .mobile-add-menu > summary::-webkit-details-marker {
+    display: none !important;
+  }
+
+  .mobile-add-menu[open]::before {
+    content: "" !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147482900 !important;
+    background: rgba(3, 10, 20, 0.24) !important;
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+    pointer-events: none !important;
+  }
+
+  .mobile-add-panel {
+    position: fixed !important;
+    left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+    right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: calc(max(0.58rem, env(safe-area-inset-bottom, 0px)) + var(--phone-bottom-nav-height) + 0.85rem) !important;
+    top: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-height: min(56dvh, calc(100dvh - var(--phone-topbar-height) - var(--phone-bottom-nav-height) - 2.4rem)) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 0.45rem !important;
+    padding: 0.68rem !important;
+    border-radius: 24px !important;
+    z-index: 2147483200 !important;
+    transform-origin: bottom right !important;
+    pointer-events: auto !important;
+  }
+
+  .mobile-add-panel a {
+    min-height: 54px !important;
+    padding: 0.72rem 0.78rem !important;
+    display: grid !important;
+    grid-template-columns: 2rem minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 0.62rem !important;
+    border-radius: 17px !important;
+    text-decoration: none !important;
+    pointer-events: auto !important;
+  }
+
+  .mobile-add-panel a span {
+    width: 2rem !important;
+    height: 2rem !important;
+    display: grid !important;
+    place-items: center !important;
+  }
+
+  .mobile-add-panel a b {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-topbar {
+    padding-left: 0.56rem !important;
+    padding-right: 0.56rem !important;
+  }
+
+  .app-topbar-title h1 {
+    font-size: clamp(0.96rem, 5vw, 1.18rem) !important;
+  }
+
+  .topbar-net-pill {
+    max-width: 35vw !important;
+    padding-left: 0.46rem !important;
+    padding-right: 0.46rem !important;
+  }
+
+  .topbar-net-pill strong {
+    font-size: 0.72rem !important;
+  }
+
+  .theme-toggle-btn {
+    width: 37px !important;
+    min-width: 37px !important;
+    height: 37px !important;
+    min-height: 37px !important;
+  }
+
+  .theme-toggle-orb {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .mobile-bottom-nav {
+    left: 0.42rem !important;
+    right: 0.42rem !important;
+    gap: 0.16rem !important;
+    padding: 0.30rem !important;
+  }
+
+  .mobile-bottom-nav a {
+    min-height: 48px !important;
+    font-size: 0.58rem !important;
+  }
+
+  .mobile-bottom-nav a span {
+    width: 21px !important;
+    height: 21px !important;
+  }
+}
+
+@media (max-height: 660px) and (max-width: 900px) {
+  :root {
+    --phone-topbar-height: 68px;
+    --phone-bottom-nav-height: 62px;
+  }
+
+  .app-topbar {
+    min-height: var(--phone-topbar-height) !important;
+    padding-top: calc(0.42rem + env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: 0.42rem !important;
+  }
+
+  .mobile-add-menu > summary {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+  }
+
+  .mobile-add-panel a {
+    min-height: 48px !important;
+    padding-top: 0.58rem !important;
+    padding-bottom: 0.58rem !important;
+  }
+}
