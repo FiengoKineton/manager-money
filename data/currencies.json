@@ -7,92 +7,92 @@
       "rate_to_eur": 1.0,
       "correction_to_eur": 0.0,
       "source": "fixed",
-      "updated_at": "2026-06-18T12:51:11+00:00",
+      "updated_at": "2026-06-18T13:11:23+00:00",
       "active": true
     },
     {
       "code": "USD",
       "name": "US Dollar",
-      "rate_to_eur": 0.8641548565502938,
+      "rate_to_eur": 0.8646779074794638,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T12:51:11+00:00",
+      "updated_at": "2026-06-18T13:11:23+00:00",
       "active": true
     },
     {
       "code": "GBP",
       "name": "British Pound",
-      "rate_to_eur": 1.1560960947073922,
+      "rate_to_eur": 1.1558689244639657,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T12:51:11+00:00",
+      "updated_at": "2026-06-18T13:11:23+00:00",
       "active": true
     },
     {
       "code": "CHF",
       "name": "Swiss Franc",
-      "rate_to_eur": 1.0869210786604784,
+      "rate_to_eur": 1.0866021949364337,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T12:51:11+00:00",
+      "updated_at": "2026-06-18T13:11:23+00:00",
       "active": true
     },
     {
       "code": "SEK",
       "name": "Swedish Krona",
-      "rate_to_eur": 0.0917044183188746,
+      "rate_to_eur": 0.09163047262997782,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T12:51:11+00:00",
+      "updated_at": "2026-06-18T13:11:23+00:00",
       "active": true
     },
     {
       "code": "NOK",
       "name": "Norwegian Krone",
-      "rate_to_eur": 0.09067005168192946,
+      "rate_to_eur": 0.09058873619654133,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T12:51:11+00:00",
+      "updated_at": "2026-06-18T13:11:23+00:00",
       "active": true
     },
     {
       "code": "DKK",
       "name": "Danish Krone",
-      "rate_to_eur": 0.1338132769533393,
+      "rate_to_eur": 0.13378105392714285,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T12:51:11+00:00",
+      "updated_at": "2026-06-18T13:11:23+00:00",
       "active": true
     },
     {
       "code": "CAD",
       "name": "Canadian Dollar",
-      "rate_to_eur": 0.6154224875376946,
+      "rate_to_eur": 0.6154603643525357,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T12:51:11+00:00",
+      "updated_at": "2026-06-18T13:11:23+00:00",
       "active": true
     },
     {
       "code": "AUD",
       "name": "Australian Dollar",
-      "rate_to_eur": 0.6087538808059901,
+      "rate_to_eur": 0.60882800608828,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T12:51:11+00:00",
+      "updated_at": "2026-06-18T13:11:23+00:00",
       "active": true
     },
     {
       "code": "JPY",
       "name": "Japanese Yen",
-      "rate_to_eur": 0.005383869925702595,
+      "rate_to_eur": 0.005385899714547316,
       "correction_to_eur": 0.0,
       "source": "Frankfurter",
-      "updated_at": "2026-06-18T12:51:11+00:00",
+      "updated_at": "2026-06-18T13:11:23+00:00",
       "active": true
     }
   ],
-  "last_refresh_attempt": "2026-06-18T12:51:11+00:00",
-  "last_successful_refresh": "2026-06-18T12:51:11+00:00",
+  "last_refresh_attempt": "2026-06-18T13:11:23+00:00",
+  "last_successful_refresh": "2026-06-18T13:11:23+00:00",
   "last_error": ""
 }
