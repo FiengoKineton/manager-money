@@ -20,102 +20,294 @@ table {
 th,
 td {
   border-bottom: 1px solid var(--line);
-  padding: 0.72rem 0.7rem;
+  padding: 0.74rem 0.72rem;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 th {
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  background: var(--surface-soft);
-  font-weight: 850;
+  letter-spacing: 0.065em;
+  background: #f8fafc;
+  font-weight: 900;
 }
 
-th:first-child {
-  border-radius: 10px 0 0 10px;
-}
+tr:last-child td { border-bottom: none; }
 
-th:last-child {
-  border-radius: 0 10px 10px 0;
+.standard-table {
+  table-layout: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
 }
+.standard-table thead th { position: sticky; top: 0; z-index: 1; }
+.standard-table td,
+.standard-table th { word-break: normal; overflow-wrap: anywhere; }
+.standard-table .desktop-money-cell,
+.standard-table td:last-child { white-space: nowrap; }
 
-tr:last-child td {
-  border-bottom: none;
-}
+.table-component,
+.standard-table-panel { overflow-x: auto; }
 
-tr.row-expense td {
-  background: rgba(254, 242, 242, 0.64);
-  color: #7f1d1d;
-}
+.clickable-row,
+.desktop-detail-row { cursor: pointer; }
+.clickable-row:hover td,
+.desktop-detail-row:hover td { background: #f8fafc; }
 
-tr.row-income td {
-  background: rgba(240, 253, 244, 0.64);
-  color: #14532d;
-}
-
-tr.row-investment td {
-  background: rgba(248, 250, 252, 0.80);
-  color: #111827;
-}
-
+tr.row-expense td { background: rgba(254, 242, 242, 0.52); color: #7f1d1d; }
+tr.row-income td { background: rgba(240, 253, 244, 0.52); color: #14532d; }
+tr.row-investment td { background: rgba(248, 250, 252, 0.86); color: #111827; }
 tr.row-expense td:first-child { box-shadow: inset 4px 0 0 var(--bad); }
 tr.row-income td:first-child { box-shadow: inset 4px 0 0 var(--good); }
 tr.row-investment td:first-child { box-shadow: inset 4px 0 0 #111827; }
 
-.clickable-row {
-  cursor: pointer;
+.inline-edit-table input,
+.inline-edit-table select,
+.inline-edit-table textarea {
+  min-width: 92px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.44rem 0.52rem;
+  border-radius: 10px;
+}
+.inline-edit-table textarea,
+.table-note-input { min-width: 180px; min-height: 2.25rem; }
+
+@media (min-width: 761px) {
+  .desktop-actions-cell,
+  .desktop-actions-heading { display: none !important; }
+}
+.desktop-action-drawer-table tbody tr.desktop-detail-row > td:not(.mobile-row-summary):not(.desktop-actions-cell)::after {
+  content: "";
 }
 
-.clickable-row:hover td {
-  filter: brightness(0.985);
+.desktop-detail-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(15, 23, 42, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
 }
+.desktop-detail-backdrop.is-visible { opacity: 1; pointer-events: auto; }
 
-.transactions input,
-.transactions select {
-  min-width: 120px;
-}
-
-/* Shared table component layer: every table routed through the reorganized
-   templates uses .standard-table. The app.js enhancer then adds mobile cards
-   and the desktop row detail drawer consistently. */
-.standard-table {
-  table-layout: auto;
-  border-radius: 18px;
-  overflow: hidden;
-}
-
-.standard-table thead th {
-  position: sticky;
+.desktop-detail-drawer {
+  position: fixed;
   top: 0;
-  z-index: 1;
+  right: 0;
+  bottom: 0;
+  z-index: 130;
+  width: min(460px, 94vw);
+  transform: translateX(105%);
+  transition: transform 0.22s ease;
+  pointer-events: none;
+}
+.desktop-detail-drawer.is-visible { transform: translateX(0); pointer-events: auto; }
+
+.desktop-detail-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-left: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+}
+.desktop-detail-close {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+.desktop-detail-head { padding: 1.25rem 4rem 1rem 1.25rem; border-bottom: 1px solid var(--line); }
+.desktop-detail-eyebrow { color: var(--brand); font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; }
+.desktop-detail-title { margin: 0.25rem 0 0; letter-spacing: -0.04em; }
+.desktop-detail-subtitle { margin: 0.3rem 0 0; color: var(--muted); }
+.desktop-detail-amount { display: block; margin-top: 0.65rem; font-size: 1.45rem; letter-spacing: -0.05em; }
+.desktop-detail-body { padding: 1rem 1.25rem; overflow-y: auto; display: grid; gap: 0.55rem; }
+.desktop-detail-line {
+  display: grid;
+  grid-template-columns: 135px minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.desktop-detail-line-label { color: var(--muted); font-size: 0.78rem; font-weight: 850; }
+.desktop-detail-line-value { color: var(--ink); overflow-wrap: anywhere; }
+.desktop-detail-actions {
+  margin-top: auto;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--line);
+  background: var(--surface-soft);
+  display: grid;
+  gap: 0.65rem;
+}
+.desktop-drawer-primary-action,
+.desktop-drawer-secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 850;
+}
+.desktop-drawer-primary-action { background: var(--brand); color: #fff; }
+.desktop-drawer-secondary-action { border: 1px solid var(--line); background: #fff; color: var(--ink-soft); }
+.desktop-drawer-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  justify-content: flex-start;
+}
+.desktop-detail-actions form,
+.desktop-detail-actions .row-action-form,
+.desktop-detail-actions .mini-pay-form,
+.desktop-detail-actions .project-mini-pay { margin: 0; display: inline-flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.desktop-detail-actions input,
+.desktop-detail-actions select,
+.desktop-detail-actions textarea { width: auto; min-width: 130px; }
+
+.mobile-row-summary { display: none; }
+
+@media (max-width: 760px) {
+  .transactions { padding: 0.85rem; overflow: visible; }
+  table.mobile-card-table,
+  .transactions table.mobile-card-table,
+  .inline-edit-table.mobile-card-table {
+    display: block;
+    border: 0;
+    background: transparent;
+  }
+  table.mobile-card-table thead { display: none; }
+  table.mobile-card-table tbody { display: grid; gap: 0.75rem; }
+  table.mobile-card-table tbody.is-hidden { display: none; }
+  table.mobile-card-table tbody.is-visible-table { display: grid; }
+  table.mobile-card-table tr.mobile-disclosure-row {
+    display: grid;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  table.mobile-card-table tr.mobile-disclosure-row > td.mobile-row-summary {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+  .mobile-row-toggle {
+    width: 100%;
+    min-height: 76px;
+    border: 0;
+    background: #fff;
+    padding: 0.78rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "main amount chevron"
+      "meta amount chevron";
+    align-items: center;
+    gap: 0.25rem 0.65rem;
+    text-align: left;
+    cursor: pointer;
+  }
+  .mobile-summary-main { grid-area: main; min-width: 0; }
+  .mobile-summary-label { display: block; color: var(--muted); font-size: 0.66rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; }
+  .mobile-summary-title { display: block; color: var(--ink); font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-summary-meta { grid-area: meta; color: var(--muted); font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-summary-amount { grid-area: amount; color: var(--ink); font-weight: 950; white-space: nowrap; }
+  .mobile-summary-chevron { grid-area: chevron; color: var(--muted); transform: rotate(0deg); transition: transform 0.16s ease; }
+  tr.mobile-disclosure-row.is-expanded .mobile-summary-chevron { transform: rotate(180deg); }
+  table.mobile-card-table tr.mobile-disclosure-row:not(.is-expanded) > td:not(.mobile-row-summary) { display: none !important; }
+  table.mobile-card-table tr.mobile-disclosure-row.is-expanded > td:not(.mobile-row-summary) {
+    display: grid;
+    grid-template-columns: minmax(100px, 35%) minmax(0, 1fr);
+    gap: 0.5rem;
+    padding: 0.62rem 0.78rem;
+    border-bottom: 1px solid var(--line);
+    background: #fff;
+    white-space: normal;
+  }
+  table.mobile-card-table tr.mobile-disclosure-row.is-expanded > td:not(.mobile-row-summary)::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 850;
+  }
+  table.mobile-card-table tr.mobile-disclosure-row.is-expanded > td.desktop-actions-cell,
+  table.mobile-card-table tr.mobile-disclosure-row.is-expanded > td.debt-actions {
+    grid-template-columns: 1fr;
+  }
+  table.mobile-card-table tr.mobile-disclosure-row.is-expanded > td.desktop-actions-cell::before,
+  table.mobile-card-table tr.mobile-disclosure-row.is-expanded > td.debt-actions::before { content: "Actions"; }
+  .mobile-row-quick-actions {
+    display: none;
+    padding: 0.65rem 0.78rem;
+    border-top: 1px solid var(--line);
+    background: var(--surface-soft);
+    gap: 0.45rem;
+  }
+  tr.mobile-disclosure-row.is-expanded .mobile-row-quick-actions { display: flex; flex-wrap: wrap; }
+  .mobile-detail-action {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem 0.75rem;
+    border-radius: 10px;
+    background: var(--brand);
+    color: #fff;
+    text-decoration: none;
+    border: 0;
+    font-weight: 850;
+  }
+  .mobile-detail-action-secondary { background: #fff; color: var(--ink-soft); border: 1px solid var(--line); }
+  .desktop-detail-backdrop,
+  .desktop-detail-drawer { display: none; }
 }
 
-.standard-table tbody tr {
-  transition: background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+@media (max-width: 520px) {
+  .mobile-row-toggle { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "main chevron" "meta amount"; }
+  table.mobile-card-table tr.mobile-disclosure-row.is-expanded > td:not(.mobile-row-summary) { grid-template-columns: 1fr; }
 }
 
-.standard-table td,
-.standard-table th {
-  word-break: normal;
-  overflow-wrap: anywhere;
+.transaction-row-actions-source { display: none; }
+.desktop-detail-actions .transaction-row-actions-source,
+.mobile-row-quick-actions .transaction-row-actions-source {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
 }
-
-.standard-table .desktop-money-cell,
-.standard-table td:last-child {
-  white-space: nowrap;
+.mobile-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
 }
-
-.table-component,
-.standard-table-panel {
-  overflow-x: auto;
+.mobile-action-group form,
+.mobile-action-group .row-action-form,
+.mobile-action-group .delay-row-form {
+  margin: 0;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
 }
-
-.table-action-rail,
-.inline-action-rail,
-.card-action-rail,
-.desktop-actions-cell {
-  white-space: nowrap;
+.mobile-action-group input,
+.mobile-action-group select {
+  width: auto;
+  max-width: 150px;
 }

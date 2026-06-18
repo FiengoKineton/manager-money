@@ -18,16 +18,17 @@ button,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 0.62rem 0.95rem;
-  font-size: 0.9rem;
-  border-radius: 999px;
-  border: none;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.62rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--brand);
   background: var(--brand);
   color: #fff;
   cursor: pointer;
   text-decoration: none;
-  font-weight: 800;
+  font-size: 0.9rem;
+  font-weight: 850;
   box-shadow: 0 8px 18px rgba(29, 78, 216, 0.18);
 }
 
@@ -36,98 +37,92 @@ button,
 .recurring-form button:hover,
 .debt-form button:hover,
 .entry-form button:hover,
-.form-actions button:hover {
+.form-actions button:hover:hover {
   background: var(--brand-dark);
+  border-color: var(--brand-dark);
   transform: translateY(-1px);
 }
 
-.secondary-btn {
+.secondary-btn,
+.form-back-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.58rem 0.85rem;
-  font-size: 0.88rem;
-  border-radius: 999px;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0.58rem 0.9rem;
+  border-radius: 12px;
   border: 1px solid var(--line-strong);
-  background: var(--surface);
+  background: #fff;
   color: var(--ink-soft);
   cursor: pointer;
   text-decoration: none;
-  font-weight: 800;
+  font-size: 0.88rem;
+  font-weight: 850;
 }
 
-.secondary-btn:hover {
-  background: var(--surface-muted);
-}
+.secondary-btn:hover,
+.form-back-link:hover { background: var(--surface-soft); color: var(--ink); }
 
 .danger-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.58rem 0.85rem;
-  font-size: 0.88rem;
-  border-radius: 999px;
-  border: none;
+  min-height: 40px;
+  padding: 0.58rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--bad) !important;
   background: var(--bad) !important;
   color: #fff;
   cursor: pointer;
-  font-weight: 800;
-}
-
-.danger-btn:hover {
-  filter: brightness(0.92);
+  text-decoration: none;
+  font-weight: 850;
 }
 
 .compact-btn {
+  min-height: 34px;
   padding: 0.42rem 0.68rem;
   font-size: 0.78rem;
+  border-radius: 10px;
 }
 
-/* Universal compact icon actions used across saved rows */
 .icon-action-btn,
 .icon-link-btn {
-  width: 2.1rem;
-  height: 2.1rem;
-  min-width: 2.1rem;
-  min-height: 2.1rem;
+  width: 2.15rem;
+  height: 2.15rem;
+  min-width: 2.15rem;
+  min-height: 2.15rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
   color: #fff;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 950;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
-  transition: transform 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease;
+  box-shadow: none;
 }
 
 .icon-action-btn:hover,
-.icon-link-btn:hover {
-  transform: translateY(-1px) scale(1.04);
-  box-shadow: 0 11px 22px rgba(15, 23, 42, 0.18);
-}
+.icon-link-btn:hover { transform: translateY(-1px); }
 
 .icon-action-update,
 .icon-action-save,
-.icon-link-edit {
-  background: var(--good);
-}
-
-.icon-action-delete {
-  background: var(--bad);
-}
-
-.icon-action-muted {
-  background: var(--ink-soft);
-}
+.icon-link-edit { background: var(--good); }
+.icon-action-delete { background: var(--bad); }
+.icon-action-muted { background: var(--ink-soft); }
+.icon-action-delay { background: #f59e0b; }
+.icon-action-execute { background: var(--brand); }
 
 .inline-action-rail,
 .table-action-rail,
-.card-action-rail {
+.card-action-rail,
+.payment-action-rail,
+.rule-card-actions,
+.debt-actions {
   display: flex;
   gap: 0.4rem;
   align-items: center;
@@ -135,47 +130,13 @@ button,
   flex-wrap: wrap;
 }
 
-.inline-edit-table input,
-.inline-edit-table select,
-.inline-edit-table textarea {
-  min-width: 92px;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.42rem 0.5rem;
-  border-radius: 10px;
-}
-
-.inline-edit-table textarea,
-.table-note-input {
-  min-width: 180px;
-  min-height: 2.25rem;
-}
-
 .table-mini-form,
-.row-action-form {
-  margin: 0;
-}
+.row-action-form,
+.delay-row-form { margin: 0; }
+.delay-row-form { display: inline-flex; align-items: center; gap: 0.35rem; }
+.transaction-delay-date { width: 8.5rem !important; min-width: 8.5rem !important; }
 
 @media (pointer: coarse) {
   .icon-action-btn,
-  .icon-link-btn {
-    min-width: 44px;
-    min-height: 44px;
-  }
-}
-
-.delay-row-form {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin: 0;
-}
-
-.transaction-delay-date {
-  width: 8.5rem !important;
-  min-width: 8.5rem !important;
-}
-
-.icon-action-delay {
-  background: #f59e0b;
+  .icon-link-btn { min-width: 44px; min-height: 44px; }
 }

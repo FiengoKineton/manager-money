@@ -1,881 +1,100 @@
-/*
-  Responsive layer for tablet and phone.
-  Desktop stays unchanged because every rule below is inside max-width media queries.
-*/
-
-@media (max-width: 1100px) {
-  .container {
-    padding-inline: 1.25rem;
-  }
-
-  .page-heading,
-  .panel-header,
-  .account-directory-head,
-  .analysis-preview-head,
-  .payment-group-heading {
-    gap: 0.75rem;
-  }
-
+/* Final responsive layer: explicit phone/tablet behavior only. */
+@media (max-width: 1180px) {
   .secondary-metrics-strip,
   .liquidity-snapshot-grid,
   .pending-insights-grid,
   .kpi-grid,
   .summary,
-  .charts-grid {
+  .charts-grid,
+  .analysis-kpi-grid-six {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 1000px) {
-  .app-shell {
-    display: block;
-  }
+@media (max-width: 900px) {
+  .panel-card,
+  .card,
+  .summary-card,
+  .analysis-decision-card,
+  .analysis-kpi,
+  .transactions,
+  .filters,
+  .form-section,
+  .chart-card { border-radius: 18px; }
 
-  .sidebar {
-    position: sticky;
-    top: 0;
-    z-index: 60;
-    height: auto;
-    padding: 0.75rem;
-    border-radius: 0;
-    gap: 0.65rem;
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
-  }
-
-  .brand {
-    width: fit-content;
-    padding: 0.35rem 0.45rem;
-  }
-
-  .brand-mark {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    font-size: 0.92rem;
-  }
-
-  .brand small {
-    display: none;
-  }
-
-  .sidebar-nav {
-    display: flex;
-    flex-direction: row;
-    gap: 0.55rem;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 0.05rem 0 0.25rem;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .sidebar-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .nav-group {
-    display: flex;
-    flex-direction: row;
-    gap: 0.35rem;
-    flex: 0 0 auto;
-  }
-
-  .nav-label {
-    display: none;
-  }
-
-  .sidebar-nav a {
-    white-space: nowrap;
-    padding: 0.62rem 0.72rem;
-    font-size: 0.86rem;
-    border-radius: 999px;
-  }
-
-  .sidebar-nav a.active {
-    box-shadow: inset 0 -3px 0 #60a5fa;
-  }
-
-  .topbar {
-    position: relative;
-    padding: 0.9rem 1.25rem;
-    display: grid;
-    grid-template-columns: 1fr;
-    justify-items: stretch;
-    align-items: flex-start;
-  }
-
-  .topbar-balance-pill {
-    justify-self: stretch;
-    align-items: flex-start;
-    width: 100%;
-    min-width: 0;
-    border-radius: 18px;
-  }
-
-  .quick-actions {
-    width: 100%;
-    justify-content: flex-start;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 0.2rem;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .quick-action {
-    flex: 0 0 auto;
-    min-height: 42px;
-  }
-
-  .page-heading,
-  .panel-header,
-  .account-directory-head,
-  .analysis-preview-head,
-  .payment-group-heading {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .page-heading .inline-form,
-  .panel-header a,
-  .compact-btn,
-  .back-link {
-    width: fit-content;
-  }
-
-  .money-priority-grid,
-  .overview-hero,
-  .accounts-hero,
-  .account-detail-hero,
-  .pending-hero-card,
-  .dashboard-grid-large-left,
-  .dashboard-grid-even,
-  .analysis-grid,
-  .account-analysis-layout,
+  .summary,
+  .secondary-metrics-strip,
+  .liquidity-snapshot-grid,
+  .pending-insights-grid,
+  .kpi-grid,
+  .charts-grid,
+  .analysis-kpi-grid-six,
+  .account-card-grid,
   .analysis-preview-grid {
     grid-template-columns: 1fr;
   }
 
-  .priority-card,
-  .hero-balance-card,
-  .account-directory-card,
-  .analysis-preview-card {
-    min-height: auto;
-  }
-
-  .priority-card strong {
-    font-size: clamp(2.4rem, 10vw, 4.4rem);
-  }
-
-  .liquid-card-grid,
-  .account-card-grid,
-  .account-directory-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .chart-card,
-  .panel-card,
-  .filters,
-  .form-section,
-  .transactions,
-  .pending-card,
-  .card {
-    border-radius: 18px;
-  }
+  .mini-metrics { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {
-  .container {
-    padding: 0.85rem 0.85rem 2rem;
+  .mobile-compact-form-card:not(.mobile-form-expanded) > :not(.mobile-form-summary):not(input[type="hidden"]) {
+    display: none !important;
   }
 
-  .topbar {
-    padding-inline: 0.85rem;
-  }
-
-  .topbar .quick-actions {
-    display: none;
-  }
-
-  .eyebrow {
-    font-size: 0.66rem;
-  }
-
-  .topbar h1 {
-    font-size: 1.02rem;
-  }
-
-  .quick-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow: visible;
-    gap: 0.45rem;
-  }
-
-  .quick-action,
-  .logout-form {
+  .mobile-form-summary {
     width: 100%;
-  }
-
-  .quick-action {
-    min-height: 44px;
-    padding: 0.62rem 0.7rem;
-    font-size: 0.82rem;
-  }
-
-  .sidebar {
-    padding: 0.65rem 0.7rem;
-  }
-
-  .brand strong {
-    font-size: 0.92rem;
-  }
-
-  .sidebar-nav a {
-    padding: 0.58rem 0.68rem;
-    font-size: 0.82rem;
-  }
-
-  .hero-copy,
-  .hero-balance-card,
-  .priority-card,
-  .panel-card,
-  .filters,
-  .form-section,
-  .transactions,
-  .pending-card,
-  .card,
-  .account-directory-card,
-  .analysis-preview-card {
-    padding: 0.9rem;
-  }
-
-  .hero-copy h2,
-  .accounts-hero h2,
-  .account-detail-hero h2,
-  .pending-hero-copy h2 {
-    font-size: clamp(1.55rem, 11vw, 2.45rem);
-    line-height: 1;
-  }
-
-  .secondary-metrics-strip,
-  .liquidity-snapshot-grid,
-  .pending-insights-grid,
-  .rule-metric-grid,
-  .balance-subgrid,
-  .account-footer-strip,
-  .mini-metrics,
-  .kpi-grid,
-  .summary,
-  .charts-grid,
-  .account-flow-line,
-  .pending-hero-metrics,
-  .debt-form,
-  .recurring-form,
-  .transaction-form,
-  .entry-form,
-  .designer-form,
-  .filters-form,
-  .compact-filters,
-  .filter-row,
-  .date-inputs {
-    grid-template-columns: 1fr;
-  }
-
-  .recurring-form .form-field-wide,
-  .form-field-wide {
-    grid-column: 1 / -1;
-  }
-
-  .form-actions,
-  .filters-actions,
-  .form-actions-row,
-  .rule-card-actions {
-    justify-content: stretch;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .form-actions a,
-  .form-actions button,
-  .filters-actions a,
-  .filters-actions button,
-  .form-actions-row a,
-  .form-actions-row button,
-  .rule-card-actions button,
-  .rule-card-actions a {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .payment-card,
-  .account-transaction-row,
-  .monthly-flow-row,
-  .bar-line,
-  .mini-month-row {
-    grid-template-columns: 1fr;
-    gap: 0.65rem;
-  }
-
-  .movement-amount,
-  .mini-month-row b,
-  .bar-line b,
-  .rule-amount-stack,
-  .payment-side {
-    text-align: left;
-    align-items: flex-start;
-  }
-
-  .transactions {
-    padding: 0.75rem;
-  }
-
-  .transactions table {
-    min-width: 720px;
-  }
-
-  .transactions input,
-  .transactions select,
-  .mini-pay-form input[type="date"],
-  .mini-pay-form input[type="number"] {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .payment-date-block {
-    width: 100%;
-  }
-}
-
-@media (max-width: 520px) {
-  .container {
-    padding-inline: 0.65rem;
-  }
-
-  .quick-actions {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 0.45rem;
-    padding-bottom: 0.2rem;
-  }
-
-  .quick-action,
-  .logout-form {
-    width: auto;
-    flex: 0 0 auto;
-  }
-  
-  .brand span:not(.brand-mark) {
-    display: none;
-  }
-
-  .brand-mark {
-    width: 34px;
-    height: 34px;
-  }
-
-  .sidebar {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-  }
-
-  .sidebar-nav {
-    padding-bottom: 0;
-  }
-
-  .priority-card strong,
-  .hero-balance-card strong {
-    font-size: clamp(2rem, 14vw, 3.2rem);
-    overflow-wrap: anywhere;
-  }
-
-  .liquidity-snapshot-card strong,
-  .mini-priority-card strong,
-  .pending-insight-card strong,
-  .kpi-card strong {
-    overflow-wrap: anywhere;
-  }
-
-  .type-badge,
-  .soft-badge,
-  .status-badge,
-  .date-pill,
-  .account-table-badge,
-  .auxiliary-inline-badge {
-    white-space: normal;
-    text-align: center;
-  }
-}
-
-/* Extra mobile polish for editable saved rows */
-@media (max-width: 760px) {
-  .transactions {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .inline-edit-table {
-    min-width: 920px;
-  }
-
-  .table-action-rail,
-  .inline-action-rail,
-  .card-action-rail {
-    justify-content: flex-start;
-  }
-
-  .inline-edit-table input,
-  .inline-edit-table select,
-  .inline-edit-table textarea {
-    font-size: 0.86rem;
-  }
-
-  .debt-actions,
-  .asset-delete-row,
-  .payment-edit-grid {
-    min-width: 0;
-  }
-}
-
-@media (max-width: 560px) {
-  .inline-action-rail .icon-action-btn,
-  .inline-action-rail .icon-link-btn,
-  .table-action-rail .icon-action-btn,
-  .table-action-rail .icon-link-btn {
-    flex: 1 1 44px;
-  }
-}
-
-/* More compact navigation and easier tablet/phone pages */
-@media (max-width: 1000px) {
-  .sidebar-nav {
-    align-items: center;
-  }
-
-  .nav-group {
-    flex: 0 0 auto;
-  }
-
-  .nav-group > summary.nav-label {
-    white-space: nowrap;
-    margin: 0;
-    padding: 0.62rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.78rem;
-  }
-
-  .nav-group[open] .nav-items,
-  .nav-group:hover .nav-items,
-  .nav-group:focus-within .nav-items {
-    position: absolute;
-    top: calc(100% + 0.35rem);
-    left: 0;
-    z-index: 80;
-    min-width: 220px;
-    padding: 0.55rem;
+    min-height: 82px;
+    border: 0;
+    background: #fff;
+    padding: 0.8rem;
     border-radius: 16px;
-    background: rgba(15, 23, 42, 0.98);
-    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.3);
-  }
-
-  .nav-items a {
-    margin-left: 0 !important;
-  }
-}
-
-@media (max-width: 760px) {
-  .quick-overview-grid,
-  .quick-link-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .payment-action-rail-wide {
-    justify-content: flex-end;
-    gap: 0.4rem;
-  }
-}
-
-@media (max-width: 1000px) {
-  .nav-group {
-    display: block;
-    flex-direction: initial;
-    gap: 0;
-  }
-}
-
-.amount-range-inputs {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0.55rem;
-}
-
-.amount-range-inputs input {
-  min-width: 0;
-}
-
-@media (max-width: 760px) {
-  .amount-range-inputs {
-    grid-template-columns: 1fr;
-  }
-}
-
-
-
-/* =========================
-   Mobile sidebar dropdown fix
-   ========================= */
-
-@media (max-width: 1000px) {
-  .sidebar {
-    overflow: visible;
-  }
-
-  .sidebar-nav {
-    position: relative;
-    overflow: visible;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "main amount chevron"
+      "meta amount chevron"
+      "chips chips chips";
     align-items: center;
-  }
-
-  .nav-group {
-    position: relative;
-    display: block;
-    flex: 0 0 auto;
-  }
-
-  .nav-group > summary.nav-label {
-    display: inline-flex !important;
-    align-items: center;
-    gap: 0.35rem;
-    margin: 0;
-    padding: 0.6rem 0.75rem;
-    border-radius: 999px;
+    gap: 0.25rem 0.65rem;
+    text-align: left;
     cursor: pointer;
-    list-style: none;
-    color: #e5e7eb;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    font-size: 0.76rem;
-    font-weight: 850;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    white-space: nowrap;
   }
 
-  .nav-group > summary.nav-label::-webkit-details-marker {
-    display: none;
-  }
-
-  .nav-group > summary.nav-label::after {
-    content: "▾";
-    font-size: 0.75rem;
-    transition: transform 0.15s ease;
-  }
-
-  .nav-group[open] > summary.nav-label {
-    background: rgba(96, 165, 250, 0.22);
-    color: #ffffff;
-  }
-
-  .nav-group[open] > summary.nav-label::after {
-    transform: rotate(180deg);
-  }
-
-  .nav-group .nav-items {
-    display: none;
-  }
-
-  .nav-group[open] .nav-items {
-    display: flex !important;
-    flex-direction: column;
-    position: absolute;
-    top: calc(100% + 0.45rem);
-    left: 0;
-    z-index: 200;
-    min-width: 230px;
-    max-width: 85vw;
-    max-height: 70vh;
-    overflow-y: auto;
-    padding: 0.55rem;
-    border-radius: 18px;
-    background: rgba(15, 23, 42, 0.98);
-    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.32);
-  }
-
-  .nav-group[open] .nav-items a {
+  .mobile-form-summary-main { grid-area: main; min-width: 0; }
+  .mobile-form-summary .mobile-summary-meta { grid-area: meta; }
+  .mobile-form-summary .mobile-summary-amount { grid-area: amount; }
+  .mobile-form-summary .mobile-form-chevron { grid-area: chevron; }
+  .mobile-form-summary-chips {
+    grid-area: chips;
     display: flex;
-    width: 100%;
-    border-radius: 12px;
-    white-space: nowrap;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.3rem;
+  }
+  .mobile-form-chip {
+    display: inline-flex;
+    border-radius: 999px;
+    padding: 0.18rem 0.45rem;
+    background: var(--surface-muted);
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 800;
+  }
+  .mobile-compact-form-card.mobile-form-expanded > .mobile-form-summary {
+    border-bottom: 1px solid var(--line);
+    border-radius: 16px 16px 0 0;
   }
 }
 
 @media (max-width: 560px) {
-  .nav-group[open] .nav-items {
-    position: fixed;
-    left: 0.65rem;
-    right: 0.65rem;
-    top: 4.8rem;
-    width: auto;
-    min-width: 0;
-    max-width: none;
-    max-height: calc(100vh - 5.5rem);
-  }
-}
-
-/* =========================
-   Mobile icon action fix
-   ========================= */
-
-@media (max-width: 760px) {
-  .inline-action-rail,
-  .table-action-rail,
-  .card-action-rail,
-  .rule-card-actions,
-  .payment-action-rail-wide,
-  .form-actions-row.inline-action-rail {
-    display: inline-flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    flex-wrap: nowrap !important;
-    gap: 0.32rem !important;
-    width: auto !important;
-    max-width: 100%;
-    overflow-x: auto;
-  }
-
-  .inline-action-rail .icon-action-btn,
-  .inline-action-rail .icon-link-btn,
-  .table-action-rail .icon-action-btn,
-  .table-action-rail .icon-link-btn,
-  .card-action-rail .icon-action-btn,
-  .card-action-rail .icon-link-btn,
-  .rule-card-actions .icon-action-btn,
-  .rule-card-actions .icon-link-btn,
-  .payment-action-rail-wide .icon-action-btn,
-  .payment-action-rail-wide .icon-link-btn,
-  .form-actions-row .icon-action-btn,
-  .form-actions-row .icon-link-btn {
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
-    flex: 0 0 40px !important;
-    padding: 0 !important;
-    border-radius: 999px !important;
-    font-size: 0.95rem !important;
-  }
-
-  .row-action-form,
-  .table-mini-form {
-    display: inline-flex !important;
-    flex: 0 0 auto !important;
-    margin: 0 !important;
-  }
-}
-
-@media (max-width: 560px) {
-  .inline-action-rail .icon-action-btn,
-  .inline-action-rail .icon-link-btn,
-  .table-action-rail .icon-action-btn,
-  .table-action-rail .icon-link-btn {
-    flex: 0 0 40px !important;
-  }
-}
-
-/* =========================
-   Floating mobile action bar
-   ========================= */
-
-.mobile-action-bar {
-  display: none;
-}
-
-@media (max-width: 760px) {
-  body {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom));
-  }
-
-  .mobile-action-bar {
-    position: fixed;
-    left: 0.75rem;
-    right: 0.75rem;
-    bottom: calc(0.65rem + env(safe-area-inset-bottom));
-    z-index: 500;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.45rem;
-    padding: 0.55rem;
-    border-radius: 24px;
-    background: rgba(15, 23, 42, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.32);
-    backdrop-filter: blur(18px);
-  }
-
-  .mobile-action-item {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.15rem;
-    min-height: 54px;
-    border-radius: 18px;
-    text-decoration: none;
-    color: #f8fafc;
-    font-weight: 850;
-    background: rgba(255, 255, 255, 0.08);
-    transition: 0.15s ease;
-  }
-
-  .mobile-action-item:active {
-    transform: scale(0.96);
-    background: rgba(255, 255, 255, 0.16);
-  }
-
-  .mobile-action-item span {
-    font-size: 1.15rem;
-    line-height: 1;
-  }
-
-  .mobile-action-item small {
-    font-size: 0.68rem;
-    line-height: 1;
-  }
-
-  .mobile-expense {
-    color: #fecaca;
-  }
-
-  .mobile-income {
-    color: #bbf7d0;
-  }
-
-  .mobile-pending {
-    color: #fde68a;
-  }
-
-  .mobile-investment {
-    color: #bfdbfe;
-  }
-}
-
-/* =========================
-   Mobile top net balance
-   ========================= */
-
-@media (max-width: 1000px) {
-  .topbar {
-    grid-template-columns: 1fr;
-  }
-
-  .topbar-balance-pill {
-    display: none;
-  }
-
-  .sidebar-mobile-balance-pill {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    width: calc(100% - 1rem);
-    margin: 0.55rem 0.5rem 0.35rem;
-    padding: 0.7rem 0.9rem;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.10);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.20);
-  }
-
-  .sidebar-mobile-balance-pill span {
-    color: rgba(226, 232, 240, 0.78);
-  }
-
-  .sidebar-mobile-balance-pill strong {
-    color: #ffffff;
-    font-size: 1.15rem;
-  }
-}
-
-/* =========================
-   Floating mobile action bar
-   ========================= */
-
-.mobile-action-bar {
-  display: none;
-}
-
-@media (max-width: 760px) {
-  body {
-    padding-bottom: calc(92px + env(safe-area-inset-bottom));
-  }
-
-  .mobile-action-bar {
-    position: fixed;
-    left: 0.75rem;
-    right: 0.75rem;
-    bottom: calc(0.65rem + env(safe-area-inset-bottom));
-    z-index: 9999;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.45rem;
-    padding: 0.55rem;
-    border-radius: 24px;
-    background: rgba(15, 23, 42, 0.94);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.35);
-    backdrop-filter: blur(18px);
-  }
-
-  .mobile-action-item {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.16rem;
-    min-height: 54px;
-    border-radius: 18px;
-    text-decoration: none;
-    color: #f8fafc;
-    font-weight: 850;
-    background: rgba(255, 255, 255, 0.08);
-    transition: 0.15s ease;
-  }
-
-  .mobile-action-item:active {
-    transform: scale(0.96);
-    background: rgba(255, 255, 255, 0.16);
-  }
-
-  .mobile-action-item span {
-    font-size: 1.2rem;
-    line-height: 1;
-  }
-
-  .mobile-action-item small {
-    font-size: 0.68rem;
-    line-height: 1;
-  }
-
-  .mobile-expense {
-    color: #fecaca;
-  }
-
-  .mobile-income {
-    color: #bbf7d0;
-  }
-
-  .mobile-pending {
-    color: #fde68a;
-  }
-
-  .mobile-investment {
-    color: #bfdbfe;
-  }
-
-  .topbar .quick-actions {
-    display: none;
-  }
+  .page-heading h2 { font-size: 1.45rem; }
+  .summary-card p,
+  .summary-card strong,
+  .analysis-kpi strong,
+  .mini-priority-card strong,
+  .prism-metric-tile strong,
+  .priority-card strong { font-size: 1.35rem; }
+  .mobile-bottom-nav { left: 0.45rem; right: 0.45rem; bottom: 0.45rem; }
+  .mobile-bottom-nav a { font-size: 0.64rem; min-height: 45px; }
 }

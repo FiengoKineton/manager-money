@@ -108,7 +108,7 @@
 <section class="transactions sparagnat-card">
   <h2>Monthly Summary</h2>
   {% if monthly %}
-  <table class="standard-table">
+  <table class="standard-table" data-mobile-title="Month" data-mobile-amount="Saved expenses" data-mobile-meta="Cash collected">
     <thead>
       <tr>
         <th>Month</th>
@@ -134,7 +134,7 @@
 <section class="transactions sparagnat-card">
   <h2>Entries</h2>
   {% if entries %}
-  <table class="standard-table inline-edit-table">
+  <table class="standard-table inline-edit-table" data-mobile-title="Description" data-mobile-amount="Amount" data-mobile-meta="Date, Type, Person">
     <thead>
       <tr>
         <th>Date</th>

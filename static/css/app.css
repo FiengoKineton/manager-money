@@ -1,8 +1,5 @@
 @import url("../design/tokens.css");
-@import url("../design/shell.css");
-@import url("../design/compositions.css");
 @import url("base.css");
-@import url("layout.css");
 @import url("components/buttons.css");
 @import url("components/cards.css");
 @import url("components/forms.css");
@@ -27,19 +24,6 @@
 @import url("pages/receivables.css");
 @import url("pages/investments.css");
 @import url("pages/parent_support.css");
+@import url("shell-clean.css");
 @import url("responsive.css");
-@import url("modern-ui.css");
-@import url("pro-ui-refresh.css");
-@import url("layout-prism.css");
-@import url("layout-prism-fixes.css");
-
-.logout-form {
-  display: inline-flex;
-  margin: 0;
-}
-
-.logout-action {
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-}
+@import url("glass-fintech.css");

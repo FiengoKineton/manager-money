@@ -5,54 +5,158 @@
   margin-bottom: 1rem;
 }
 
-.summary-spaced {
-  margin-top: 1rem;
-}
+.summary-spaced { margin-top: 1rem; }
 
-.summary-card {
-  padding: 1rem;
+.summary-card,
+.analysis-kpi,
+.mini-priority-card,
+.prism-metric-tile,
+.priority-card {
   position: relative;
   overflow: hidden;
+  padding: 1rem;
+  border-left: 4px solid var(--tone, var(--brand));
 }
 
-.summary-card h3 {
+.summary-card::before,
+.analysis-kpi::before,
+.mini-priority-card::before,
+.prism-metric-tile::before,
+.priority-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 42%;
+  background: linear-gradient(180deg, var(--tone-soft, var(--brand-soft)), transparent);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.summary-card > *,
+.analysis-kpi > *,
+.mini-priority-card > *,
+.prism-metric-tile > *,
+.priority-card > * { position: relative; }
+
+.summary-card h3,
+.summary-card span,
+.analysis-kpi span,
+.mini-priority-card span,
+.prism-metric-tile span,
+.priority-card span {
   margin: 0 0 0.35rem;
-  font-size: 0.85rem;
   color: var(--muted);
-}
-
-.summary-card p {
-  margin: 0;
-  font-size: 1.4rem;
+  font-size: 0.78rem;
   font-weight: 850;
-  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.summary-card small {
+.summary-card p,
+.summary-card strong,
+.analysis-kpi strong,
+.mini-priority-card strong,
+.prism-metric-tile strong,
+.priority-card strong {
   display: block;
-  margin-top: 0.35rem;
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.3rem, 2.6vw, 1.75rem);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 1.05;
 }
 
-.summary-card.income {
-  border-top: 4px solid var(--good);
+.summary-card small,
+.analysis-kpi small,
+.mini-priority-card small,
+.prism-metric-tile small,
+.priority-card small {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
-.summary-card.expense {
-  border-top: 4px solid var(--bad);
+.summary-card.income { --tone: var(--good); --tone-soft: var(--good-soft); }
+.summary-card.expense { --tone: var(--bad); --tone-soft: var(--bad-soft); }
+.summary-card.investment { --tone: #111827; --tone-soft: #eef2ff; }
+.summary-card.net { --tone: var(--brand); --tone-soft: var(--brand-soft); }
+.summary-card.pending,
+.summary-card.warning { --tone: var(--warning); --tone-soft: var(--warning-soft); }
+.summary-card-center { text-align: center; }
+
+.mini-metrics,
+.comparison-list,
+.health-stack,
+.recent-list,
+.category-bars {
+  display: grid;
+  gap: 0.65rem;
 }
 
-.summary-card.investment {
-  border-top: 4px solid #111827;
+.mini-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
-.summary-card.net {
-  border-top: 4px solid var(--brand);
+.mini-metrics > div,
+.comparison-row,
+.health-pill,
+.recent-row,
+.category-bar-row,
+.analysis-action-row,
+.analysis-stack-list > div,
+.investment-behaviour-card dl > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
 }
 
-.summary-card.pending {
-  border-top: 4px solid var(--warning);
+.mini-metrics span,
+.comparison-row span,
+.health-pill span,
+.recent-row span,
+.category-bar-row span,
+.analysis-stack-list dt,
+.investment-behaviour-card dt { color: var(--muted); font-size: 0.82rem; }
+
+.mini-metrics strong,
+.comparison-row strong,
+.health-pill strong,
+.recent-row b,
+.category-bar-row strong,
+.analysis-stack-list dd,
+.investment-behaviour-card dd {
+  color: var(--ink);
+  font-weight: 900;
+  margin: 0;
 }
 
-.summary-card-center {
-  text-align: center;
+.category-bar,
+.account-share-bar,
+.mini-month-row div {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  overflow: hidden;
 }
+.category-bar span,
+.account-share-bar span,
+.mini-month-row i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}
+
+.recent-row {
+  border-left: 4px solid var(--line-strong);
+}
+.recent-income { border-left-color: var(--good); }
+.recent-expense { border-left-color: var(--bad); }
+.recent-investment { border-left-color: #111827; }

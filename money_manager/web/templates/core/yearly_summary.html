@@ -100,7 +100,7 @@
       <div><dt>Closing</dt><dd>€ {{ '%.2f'|format(initial_conditions.auxiliary.closing_total) }}</dd></div>
     </dl>
     {% if initial_conditions.auxiliary.accounts %}
-      <table class="standard-table compact-table">
+      <table class="standard-table compact-table" data-mobile-title="Account" data-mobile-amount="Closing" data-mobile-meta="Opening, Change">
         <thead>
           <tr><th>Account</th><th>Opening</th><th>Change</th><th>Closing</th></tr>
         </thead>
@@ -203,7 +203,7 @@
     <div class="yearly-section-total">€ {{ '%.2f'|format(recurring.spent_total) }} spent</div>
   </div>
   {% if recurring["items"] %}
-    <table class="standard-table">
+    <table class="standard-table" data-mobile-title="Name" data-mobile-amount="Spent" data-mobile-meta="Category, Executed">
       <thead>
         <tr>
           <th>Name</th>

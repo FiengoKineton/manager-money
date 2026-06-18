@@ -2,14 +2,24 @@
 {% block page_title %}Analysis{% endblock %}
 
 {% block content %}
-<section class="analysis-hero analysis-command-hero">
-  <div>
-    <span class="eyebrow">Decision cockpit</span>
+<section class="analysis-hero analysis-executive-hero">
+  <div class="analysis-hero-copy">
+    <span class="eyebrow">Decision report</span>
     <h2>Financial command center</h2>
     <p>
       A professional view of the selected period: cashflow, fixed commitments, income quality,
       spending concentration, obligations, receivables and portfolio behaviour.
     </p>
+
+    {% if action_items %}
+      <div class="analysis-next-action">
+        <span>Next best action</span>
+        <strong>{{ action_items[0].title }}</strong>
+        <p>{{ action_items[0].text }}</p>
+        <em>{{ action_items[0].metric }}</em>
+      </div>
+    {% endif %}
+
     <div class="analysis-period-switcher" aria-label="Analysis period selector">
       {% for option in period_options %}
         <a href="{{ url_for('analysis.analysis', period=option.key) }}" class="analysis-period-chip {{ 'active' if option.active else '' }}">
@@ -58,6 +68,42 @@
   </div>
 </section>
 
+<section class="analysis-command-grid analysis-priority-grid">
+  <article class="analysis-decision-card analysis-action-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">What to do next</span>
+        <h2>Actionable priorities</h2>
+        <p>These are ordered before the raw metrics because this page should guide decisions.</p>
+      </div>
+    </div>
+    <div class="analysis-action-list">
+      {% for item in action_items %}
+        <div class="analysis-action-row">
+          <span class="priority-pill">{{ item.priority }}</span>
+          <div>
+            <strong>{{ item.title }}</strong>
+            <p>{{ item.text }}</p>
+          </div>
+          <em>{{ item.metric }}</em>
+        </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="analysis-decision-card">
+    <span class="eyebrow">Liquidity blockers</span>
+    <h3>Obligation stack</h3>
+    <dl class="analysis-stack-list">
+      <div><dt>Debts I owe</dt><dd>€ {{ '%.2f'|format(liabilities.debts_total) }}</dd></div>
+      <div><dt>Payables</dt><dd>€ {{ '%.2f'|format(liabilities.payables_total) }}</dd></div>
+      <div><dt>Pending payments</dt><dd>€ {{ '%.2f'|format(liabilities.pending_total) }}</dd></div>
+      <div class="positive-line"><dt>Receivables</dt><dd>€ {{ '%.2f'|format(liabilities.receivables_total) }}</dd></div>
+      <div class="strong-line"><dt>Due in 30 days</dt><dd>€ {{ '%.2f'|format(liabilities.due_30) }}</dd></div>
+    </dl>
+  </article>
+</section>
+
 <section class="analysis-kpi-grid analysis-kpi-grid-six">
   <article class="analysis-kpi tone-net">
     <span>Period net</span>
@@ -92,27 +138,6 @@
 </section>
 
 <section class="analysis-command-grid">
-  <article class="analysis-decision-card analysis-action-card">
-    <div class="panel-header compact-panel-header">
-      <div>
-        <span class="eyebrow">What to do next</span>
-        <h2>Actionable priorities</h2>
-      </div>
-    </div>
-    <div class="analysis-action-list">
-      {% for item in action_items %}
-        <div class="analysis-action-row">
-          <span class="priority-pill">{{ item.priority }}</span>
-          <div>
-            <strong>{{ item.title }}</strong>
-            <p>{{ item.text }}</p>
-          </div>
-          <em>{{ item.metric }}</em>
-        </div>
-      {% endfor %}
-    </div>
-  </article>
-
   <article class="analysis-decision-card">
     <span class="eyebrow">Income quality</span>
     <h3>Top income sources</h3>
@@ -132,14 +157,13 @@
   </article>
 
   <article class="analysis-decision-card">
-    <span class="eyebrow">Obligation stack</span>
-    <h3>What is still blocking liquidity</h3>
+    <span class="eyebrow">Cashflow quality</span>
+    <h3>Period interpretation</h3>
     <dl class="analysis-stack-list">
-      <div><dt>Debts I owe</dt><dd>€ {{ '%.2f'|format(liabilities.debts_total) }}</dd></div>
-      <div><dt>Payables</dt><dd>€ {{ '%.2f'|format(liabilities.payables_total) }}</dd></div>
-      <div><dt>Pending payments</dt><dd>€ {{ '%.2f'|format(liabilities.pending_total) }}</dd></div>
-      <div class="positive-line"><dt>Receivables</dt><dd>€ {{ '%.2f'|format(liabilities.receivables_total) }}</dd></div>
-      <div class="strong-line"><dt>Due in 30 days</dt><dd>€ {{ '%.2f'|format(liabilities.due_30) }}</dd></div>
+      <div><dt>Leftover ratio</dt><dd>{{ '%.1f'|format(cashflow_statement.leftover_ratio) }}%</dd></div>
+      <div><dt>Spending ratio</dt><dd>{{ '%.0f'|format(cashflow_statement.spending_ratio) }}%</dd></div>
+      <div><dt>Investment ratio</dt><dd>{{ '%.0f'|format(cashflow_statement.investment_ratio) }}%</dd></div>
+      <div><dt>Runway</dt><dd>{{ '%.1f'|format(health.runway_months) }} mo</dd></div>
     </dl>
   </article>
 </section>
@@ -207,7 +231,7 @@
       </div>
     </div>
     {% if category_rows %}
-      <table class="standard-table compact-analysis-table">
+      <table class="standard-table compact-analysis-table" data-mobile-title="Category" data-mobile-amount="Amount" data-mobile-meta="Share">
         <thead>
           <tr>
             <th>Category</th>
@@ -241,7 +265,7 @@
       </div>
     </div>
     {% if top_expenses %}
-      <table class="standard-table compact-analysis-table">
+      <table class="standard-table compact-analysis-table" data-mobile-title="Description" data-mobile-amount="Amount" data-mobile-meta="Date, Category">
         <thead>
           <tr>
             <th>Date</th>

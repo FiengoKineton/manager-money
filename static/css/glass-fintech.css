@@ -1,0 +1,799 @@
+/* --------------------------------------------------------------------------
+   Glass Fintech Personality Layer
+   Adds controlled colour, glass surfaces, smooth row interactions and geometric
+   accents on top of the cleaned professional shell.
+-------------------------------------------------------------------------- */
+:root {
+  --bg: #eef4ff;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-soft: rgba(255, 255, 255, 0.56);
+  --surface-muted: rgba(226, 232, 240, 0.62);
+  --ink: #0b1220;
+  --ink-soft: #25324a;
+  --muted: #64748b;
+  --line: rgba(148, 163, 184, 0.28);
+  --line-strong: rgba(99, 102, 241, 0.28);
+  --brand: #6554f4;
+  --brand-dark: #4338ca;
+  --brand-soft: rgba(101, 84, 244, 0.13);
+  --good: #059669;
+  --good-soft: rgba(16, 185, 129, 0.14);
+  --bad: #e11d48;
+  --bad-soft: rgba(244, 63, 94, 0.13);
+  --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.16);
+  --cyan: #06b6d4;
+  --violet: #8b5cf6;
+  --pink: #ec4899;
+  --mint: #10b981;
+  --glass-bg: rgba(255, 255, 255, 0.64);
+  --glass-bg-strong: rgba(255, 255, 255, 0.78);
+  --glass-stroke: rgba(255, 255, 255, 0.78);
+  --shadow-sm: 0 12px 30px rgba(15, 23, 42, 0.07);
+  --shadow: 0 22px 52px rgba(30, 41, 59, 0.12);
+  --shadow-lg: 0 32px 90px rgba(30, 41, 59, 0.2);
+  --radius: 18px;
+  --radius-lg: 28px;
+}
+
+body.app-body-glass {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 5% 8%, rgba(139, 92, 246, 0.33), transparent 28rem),
+    radial-gradient(circle at 88% 2%, rgba(6, 182, 212, 0.30), transparent 24rem),
+    radial-gradient(circle at 80% 82%, rgba(236, 72, 153, 0.20), transparent 24rem),
+    radial-gradient(circle at 26% 92%, rgba(16, 185, 129, 0.16), transparent 22rem),
+    linear-gradient(135deg, #f7fbff 0%, #edf2ff 42%, #fff8fb 100%);
+  overflow-x: hidden;
+}
+
+body.app-body-glass::before,
+body.app-body-glass::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -2;
+}
+
+body.app-body-glass::before {
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.06) 1px, transparent 1px);
+  background-size: 58px 58px;
+  mask-image: radial-gradient(circle at 34% 12%, black 0, transparent 55%), radial-gradient(circle at 75% 70%, black 0, transparent 52%);
+  opacity: 0.55;
+}
+
+body.app-body-glass::after {
+  z-index: -1;
+  background:
+    linear-gradient(135deg, rgba(101, 84, 244, 0.16), rgba(6, 182, 212, 0.05) 50%, transparent 50%) 7% 13% / 180px 180px no-repeat,
+    linear-gradient(45deg, rgba(236, 72, 153, 0.14), rgba(245, 158, 11, 0.06) 52%, transparent 52%) 96% 20% / 230px 230px no-repeat,
+    conic-gradient(from 180deg, rgba(6, 182, 212, 0.16), rgba(101, 84, 244, 0.10), transparent 48%) 82% 88% / 260px 260px no-repeat;
+  filter: blur(0.1px);
+  opacity: 0.95;
+}
+
+body.app-body-glass ::selection {
+  background: rgba(101, 84, 244, 0.22);
+}
+
+.app-layout {
+  grid-template-columns: minmax(270px, var(--sidebar-width)) minmax(0, 1fr);
+}
+
+.app-sidebar,
+.app-topbar,
+.mobile-bottom-nav,
+.quick-add-panel,
+.mobile-add-panel,
+.desktop-detail-shell,
+.page-heading,
+.panel-card,
+.card,
+.filters,
+.form-section,
+.transactions,
+.chart-card,
+.summary-card,
+.priority-card,
+.mini-priority-card,
+.account-overview-card,
+.analysis-decision-card,
+.analysis-kpi,
+.analysis-health-card,
+.investment-behaviour-card,
+.payment-card,
+.recurring-rule-card,
+.document-card,
+.asset-card,
+.year-card,
+.initial-condition-card,
+.flow-card,
+.top-category-card,
+.investment-card,
+.quick-special-panel,
+.overview-primary-card,
+.overview-status-card,
+.hero-copy,
+.hero-balance-card,
+.analysis-hero-copy,
+.analysis-context-strip > div,
+.analysis-next-action,
+.account-mini-card,
+.analysis-preview-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.50));
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+}
+
+.app-sidebar {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.74), rgba(255,255,255,0.54)),
+    radial-gradient(circle at 16% 7%, rgba(101,84,244,0.18), transparent 42%),
+    radial-gradient(circle at 92% 36%, rgba(6,182,212,0.14), transparent 44%);
+  border-right: 1px solid rgba(255,255,255,0.76);
+}
+
+.app-brand {
+  position: relative;
+  overflow: hidden;
+  min-height: 64px;
+  background:
+    linear-gradient(135deg, rgba(101, 84, 244, 0.16), rgba(6, 182, 212, 0.10)),
+    rgba(255,255,255,0.65);
+  border-color: rgba(255,255,255,0.72);
+}
+
+.app-brand::after {
+  content: "";
+  position: absolute;
+  right: -42px;
+  top: -46px;
+  width: 130px;
+  height: 130px;
+  border-radius: 32px;
+  transform: rotate(24deg);
+  background: linear-gradient(135deg, rgba(101,84,244,0.32), rgba(6,182,212,0.14));
+}
+
+.app-brand > * { position: relative; z-index: 1; }
+
+.app-brand-avatar,
+.brand-mark {
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--brand), var(--cyan));
+  box-shadow: 0 14px 35px rgba(101, 84, 244, 0.22);
+}
+
+.app-topbar {
+  background: rgba(248, 250, 252, 0.58);
+  border-bottom: 1px solid rgba(255,255,255,0.74);
+}
+
+.app-topbar-title h1,
+.page-heading h2,
+.overview-primary-card h2,
+.analysis-hero-copy h2 {
+  letter-spacing: -0.075em;
+}
+
+.eyebrow {
+  color: var(--brand);
+}
+
+.eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: linear-gradient(135deg, var(--brand), var(--cyan));
+  box-shadow: 0 0 0 4px rgba(101, 84, 244, 0.11);
+}
+
+.app-nav-group {
+  border-radius: 18px;
+}
+
+.app-nav-group[open],
+.app-nav-group.is-active {
+  background: rgba(255,255,255,0.55);
+  border-color: rgba(255,255,255,0.75);
+  box-shadow: 0 16px 42px rgba(30, 41, 59, 0.08);
+}
+
+.app-nav-group summary {
+  min-height: 44px;
+  color: #1f2a44;
+}
+
+.app-nav-group summary::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, rgba(101,84,244,0.92), rgba(6,182,212,0.88));
+  box-shadow: 0 6px 16px rgba(101,84,244,0.24);
+}
+
+.nav-folder-stack {
+  gap: 0.55rem;
+}
+
+.nav-subfolder {
+  display: grid;
+  gap: 0.22rem;
+  padding: 0.42rem;
+  border-radius: 15px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255,255,255,0.34);
+}
+
+.nav-folder-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.28rem 0.42rem 0.18rem;
+  color: rgba(71, 85, 105, 0.90);
+  font-size: 0.67rem;
+  font-weight: 950;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+}
+
+.nav-folder-label::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: rgba(101, 84, 244, 0.55);
+  transform: rotate(45deg);
+}
+
+.nav-items a {
+  min-height: 38px;
+  border: 1px solid transparent;
+  color: rgba(51,65,85,0.86);
+}
+
+.nav-items a:hover {
+  background: rgba(255,255,255,0.62);
+  border-color: rgba(255,255,255,0.72);
+  transform: translateX(2px);
+}
+
+.nav-items a.active {
+  color: var(--brand-dark);
+  background:
+    linear-gradient(135deg, rgba(101,84,244,0.17), rgba(6,182,212,0.12)),
+    rgba(255,255,255,0.74);
+  border-color: rgba(101,84,244,0.22);
+  box-shadow: inset 3px 0 0 var(--brand), 0 10px 24px rgba(101,84,244,0.10);
+}
+
+.net-pill {
+  background:
+    linear-gradient(135deg, rgba(101,84,244,0.12), rgba(16,185,129,0.08)),
+    rgba(255,255,255,0.68);
+  border-color: rgba(255,255,255,0.72);
+  box-shadow: 0 16px 36px rgba(30, 41, 59, 0.08);
+}
+
+.primary-btn,
+.transaction-form button,
+.recurring-form button,
+.debt-form button,
+.entry-form button,
+.form-actions button,
+.mobile-add-menu > summary,
+.desktop-drawer-primary-action {
+  border: 0;
+  background: linear-gradient(135deg, #6554f4, #06b6d4);
+  color: #fff;
+  box-shadow: 0 16px 36px rgba(101, 84, 244, 0.24);
+}
+
+.primary-btn:hover,
+.transaction-form button:hover,
+.recurring-form button:hover,
+.debt-form button:hover,
+.entry-form button:hover,
+.form-actions button:hover,
+.desktop-drawer-primary-action:hover {
+  background: linear-gradient(135deg, #4f46e5, #0891b2);
+  transform: translateY(-2px);
+}
+
+.secondary-btn,
+.form-back-link,
+.logout-action,
+.desktop-drawer-secondary-action {
+  background: rgba(255,255,255,0.58);
+  border-color: rgba(255,255,255,0.74);
+  backdrop-filter: blur(16px);
+}
+
+.page-heading,
+.panel-card,
+.card,
+.filters,
+.form-section,
+.transactions,
+.chart-card,
+.payment-card,
+.recurring-rule-card,
+.document-card,
+.asset-card,
+.quick-special-panel,
+.overview-primary-card,
+.overview-status-card,
+.hero-copy,
+.hero-balance-card,
+.analysis-hero-copy,
+.analysis-health-card,
+.analysis-decision-card,
+.investment-behaviour-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.page-heading::after,
+.panel-card::after,
+.form-section::after,
+.transactions::after,
+.chart-card::after,
+.payment-card::after,
+.recurring-rule-card::after,
+.hero-copy::after,
+.hero-balance-card::after,
+.analysis-hero-copy::after,
+.analysis-health-card::after,
+.analysis-decision-card::after {
+  content: "";
+  position: absolute;
+  right: -64px;
+  top: -72px;
+  width: 170px;
+  height: 170px;
+  border-radius: 38px;
+  transform: rotate(24deg);
+  background:
+    linear-gradient(135deg, rgba(101,84,244,0.16), rgba(6,182,212,0.08)),
+    linear-gradient(45deg, transparent 0 48%, rgba(255,255,255,0.34) 48% 52%, transparent 52% 100%);
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.page-heading > *,
+.panel-card > *,
+.form-section > *,
+.transactions > *,
+.chart-card > *,
+.payment-card > *,
+.recurring-rule-card > *,
+.hero-copy > *,
+.hero-balance-card > *,
+.analysis-hero-copy > *,
+.analysis-health-card > *,
+.analysis-decision-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.overview-hero,
+.analysis-hero,
+.analysis-executive-hero {
+  gap: 1.15rem;
+}
+
+.hero-copy,
+.analysis-hero-copy,
+.overview-primary-card {
+  min-height: 270px;
+  align-content: center;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.82), rgba(255,255,255,0.48)),
+    radial-gradient(circle at 12% 12%, rgba(101,84,244,0.22), transparent 35%),
+    radial-gradient(circle at 96% 8%, rgba(6,182,212,0.16), transparent 38%);
+}
+
+.hero-copy h2,
+.analysis-hero-copy h2,
+.overview-primary-card h2 {
+  background: linear-gradient(135deg, #0f172a 0%, #4f46e5 58%, #0891b2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-balance-card,
+.analysis-health-card,
+.overview-status-card {
+  background:
+    linear-gradient(150deg, rgba(255,255,255,0.76), rgba(255,255,255,0.42)),
+    conic-gradient(from 180deg at 84% 10%, rgba(101,84,244,0.18), rgba(6,182,212,0.13), rgba(236,72,153,0.10), transparent 42%);
+}
+
+.hero-balance-card strong,
+.overview-primary-value strong,
+.analysis-health-card .health-score-ring strong,
+.priority-card strong,
+.summary-card p,
+.summary-card strong,
+.analysis-kpi strong,
+.mini-priority-card strong {
+  background: linear-gradient(135deg, #0f172a, #3730a3 72%, #0891b2);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.summary-card,
+.analysis-kpi,
+.mini-priority-card,
+.priority-card {
+  border-left: 0;
+  border-top: 1px solid rgba(255,255,255,0.88);
+}
+
+.summary-card::before,
+.analysis-kpi::before,
+.mini-priority-card::before,
+.priority-card::before {
+  inset: auto 0 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--tone, var(--brand)), var(--cyan));
+  opacity: 0.86;
+}
+
+.summary-card::after,
+.analysis-kpi::after,
+.mini-priority-card::after,
+.priority-card::after {
+  content: "";
+  position: absolute;
+  right: -34px;
+  top: -38px;
+  width: 92px;
+  height: 92px;
+  border-radius: 24px;
+  transform: rotate(28deg);
+  background: linear-gradient(135deg, var(--tone-soft, var(--brand-soft)), rgba(255,255,255,0.18));
+  opacity: 0.82;
+}
+
+.mini-metrics > div,
+.comparison-row,
+.health-pill,
+.recent-row,
+.category-bar-row,
+.analysis-action-row,
+.analysis-stack-list > div,
+.investment-behaviour-card dl > div,
+.overview-status-list div {
+  background: rgba(255,255,255,0.46);
+  border-color: rgba(255,255,255,0.74);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.04);
+}
+
+.category-bar,
+.account-share-bar,
+.mini-month-row div,
+.analysis-mini-bar-row > span {
+  background: rgba(148,163,184,0.20);
+}
+.category-bar span,
+.account-share-bar span,
+.mini-month-row i,
+.analysis-mini-bar-row i {
+  background: linear-gradient(90deg, #6554f4, #06b6d4);
+}
+
+input[type="text"],
+input[type="date"],
+input[type="number"],
+input[type="email"],
+textarea,
+select {
+  background: rgba(255,255,255,0.66);
+  border-color: rgba(148,163,184,0.38);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(101,84,244,0.55);
+  box-shadow: 0 0 0 4px rgba(101,84,244,0.12), 0 14px 28px rgba(101,84,244,0.08);
+  background: rgba(255,255,255,0.86);
+}
+
+.standard-table,
+.transactions table,
+.inline-edit-table {
+  border-collapse: separate;
+  border-spacing: 0 0.45rem;
+}
+
+.standard-table thead th,
+.transactions table thead th,
+.inline-edit-table thead th {
+  color: rgba(51,65,85,0.78);
+  background: rgba(255,255,255,0.42);
+  border-top: 1px solid rgba(255,255,255,0.72);
+  border-bottom: 1px solid rgba(148,163,184,0.20);
+}
+
+.standard-table tbody tr,
+.transactions table tbody tr,
+.inline-edit-table tbody tr {
+  background: rgba(255,255,255,0.50);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.standard-table tbody tr td:first-child,
+.transactions table tbody tr td:first-child,
+.inline-edit-table tbody tr td:first-child {
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+}
+
+.standard-table tbody tr td:last-child,
+.transactions table tbody tr td:last-child,
+.inline-edit-table tbody tr td:last-child {
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.standard-table tbody tr:hover,
+.transactions table tbody tr:hover,
+.inline-edit-table tbody tr:hover,
+.clickable-row:hover,
+.desktop-detail-row:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.76);
+  box-shadow: 0 18px 42px rgba(101, 84, 244, 0.12);
+}
+
+.clickable-row:hover {
+  background: rgba(255,255,255,0.76);
+}
+
+tr.is-desktop-selected,
+tr.desktop-detail-row.is-desktop-selected {
+  background: rgba(255,255,255,0.90) !important;
+  box-shadow: 0 18px 42px rgba(101, 84, 244, 0.18), inset 4px 0 0 var(--brand) !important;
+}
+
+.desktop-detail-backdrop {
+  background: rgba(15, 23, 42, 0.26);
+  backdrop-filter: blur(7px);
+}
+
+.desktop-detail-drawer {
+  padding: 0.75rem;
+}
+
+.desktop-detail-shell {
+  height: calc(100% - 1.5rem);
+  border-radius: 28px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.74);
+  background:
+    linear-gradient(160deg, rgba(255,255,255,0.86), rgba(255,255,255,0.64)),
+    radial-gradient(circle at top right, rgba(101,84,244,0.22), transparent 38%);
+}
+
+.desktop-detail-head {
+  border-bottom-color: rgba(148,163,184,0.22);
+}
+
+.desktop-detail-actions {
+  background: rgba(255,255,255,0.42);
+  border-top-color: rgba(148,163,184,0.22);
+}
+
+.mobile-row-toggle,
+.mobile-form-summary {
+  background: linear-gradient(135deg, rgba(255,255,255,0.82), rgba(255,255,255,0.52));
+}
+
+.recent-row {
+  border-left: 0;
+  position: relative;
+}
+
+.recent-row::before {
+  content: "";
+  width: 6px;
+  align-self: stretch;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+
+.recent-income::before { background: linear-gradient(180deg, var(--good), var(--mint)); }
+.recent-expense::before { background: linear-gradient(180deg, var(--bad), var(--pink)); }
+.recent-investment::before { background: linear-gradient(180deg, var(--brand), var(--cyan)); }
+
+.type-badge,
+.account-badge-soft,
+.next-badge,
+.status-badge,
+.priority-pill,
+.auxiliary-inline-badge,
+.checkbox-inline {
+  background: rgba(255,255,255,0.58);
+  border: 1px solid rgba(255,255,255,0.72);
+  box-shadow: 0 8px 18px rgba(15,23,42,0.04);
+}
+
+.health-score-ring {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.74), 0 22px 52px rgba(101,84,244,0.14);
+}
+
+.analysis-period-chip {
+  background: rgba(255,255,255,0.48);
+  border-color: rgba(255,255,255,0.72);
+}
+
+.analysis-period-chip.active {
+  background: linear-gradient(135deg, rgba(101,84,244,0.16), rgba(6,182,212,0.10));
+  box-shadow: inset 0 -3px 0 var(--brand), 0 12px 28px rgba(101,84,244,0.10);
+}
+
+.chart-card img,
+.plot-card img,
+.panel-card img {
+  border-radius: 18px;
+}
+
+@media (min-width: 1121px) {
+  .app-sidebar-nav::-webkit-scrollbar { width: 8px; }
+  .app-sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+  .app-sidebar-nav::-webkit-scrollbar-thumb { background: rgba(101,84,244,0.20); border-radius: 999px; }
+}
+
+@media (max-width: 1120px) {
+  .mobile-bottom-nav {
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.74), rgba(255,255,255,0.50)),
+      radial-gradient(circle at 10% 0%, rgba(101,84,244,0.18), transparent 55%);
+    border-color: rgba(255,255,255,0.76);
+  }
+
+  .mobile-bottom-nav a.active {
+    background: linear-gradient(135deg, rgba(101,84,244,0.17), rgba(6,182,212,0.11));
+    color: var(--brand-dark);
+  }
+
+  .mobile-add-menu > summary {
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 760px) {
+  body.app-body-glass {
+    background:
+      radial-gradient(circle at 0% 0%, rgba(101,84,244,0.25), transparent 18rem),
+      radial-gradient(circle at 100% 10%, rgba(6,182,212,0.22), transparent 17rem),
+      linear-gradient(135deg, #f7fbff, #eff4ff 54%, #fff8fb);
+  }
+
+  body.app-body-glass::before {
+    background-size: 42px 42px;
+    opacity: 0.42;
+  }
+
+  .app-topbar {
+    background: rgba(255,255,255,0.58);
+  }
+
+  .page-heading,
+  .panel-card,
+  .form-section,
+  .transactions,
+  .chart-card,
+  .payment-card,
+  .recurring-rule-card,
+  .hero-copy,
+  .hero-balance-card,
+  .analysis-hero-copy,
+  .analysis-health-card,
+  .analysis-decision-card {
+    border-radius: 22px;
+  }
+
+  table.mobile-card-table tr.mobile-disclosure-row {
+    border-color: rgba(255,255,255,0.76);
+    background: rgba(255,255,255,0.62);
+    backdrop-filter: blur(18px) saturate(1.28);
+    -webkit-backdrop-filter: blur(18px) saturate(1.28);
+    box-shadow: 0 14px 32px rgba(15,23,42,0.08);
+  }
+
+  .mobile-row-toggle {
+    min-height: 82px;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.82), rgba(255,255,255,0.50)),
+      radial-gradient(circle at 95% 0%, rgba(101,84,244,0.14), transparent 45%);
+  }
+
+  table.mobile-card-table tr.mobile-disclosure-row.is-expanded > td:not(.mobile-row-summary),
+  .mobile-row-quick-actions {
+    background: rgba(255,255,255,0.50);
+    border-color: rgba(148,163,184,0.20);
+  }
+
+  .mobile-summary-amount {
+    color: var(--brand-dark);
+  }
+
+  .mobile-form-summary-chips {
+    gap: 0.3rem;
+  }
+
+  .mobile-form-chip,
+  .mobile-detail-action {
+    background: rgba(255,255,255,0.62);
+    border-color: rgba(255,255,255,0.72);
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .app-sidebar,
+  .app-topbar,
+  .mobile-bottom-nav,
+  .quick-add-panel,
+  .mobile-add-panel,
+  .desktop-detail-shell,
+  .page-heading,
+  .panel-card,
+  .card,
+  .filters,
+  .form-section,
+  .transactions,
+  .chart-card,
+  .summary-card,
+  .priority-card,
+  .mini-priority-card,
+  .analysis-kpi,
+  .analysis-health-card,
+  .analysis-decision-card,
+  .payment-card,
+  .recurring-rule-card {
+    background: rgba(255,255,255,0.92);
+  }
+}
+
+@media (min-width: 761px) {
+  .standard-table td,
+  .transactions table td,
+  .inline-edit-table td {
+    background: rgba(255,255,255,0.50);
+    border-bottom-color: rgba(148,163,184,0.15);
+  }
+
+  .standard-table tbody tr:hover td,
+  .transactions table tbody tr:hover td,
+  .inline-edit-table tbody tr:hover td,
+  .clickable-row:hover td,
+  .desktop-detail-row:hover td {
+    background: rgba(255,255,255,0.78);
+  }
+
+  tr.row-expense td { background: rgba(255, 228, 230, 0.42); color: #7f1d1d; }
+  tr.row-income td { background: rgba(209, 250, 229, 0.42); color: #064e3b; }
+  tr.row-investment td { background: rgba(224, 231, 255, 0.46); color: #1e1b4b; }
+
+  tr.row-expense:hover td { background: rgba(255, 228, 230, 0.64); }
+  tr.row-income:hover td { background: rgba(209, 250, 229, 0.64); }
+  tr.row-investment:hover td { background: rgba(224, 231, 255, 0.68); }
+
+  tr.row-expense td:first-child { box-shadow: inset 4px 0 0 var(--bad); }
+  tr.row-income td:first-child { box-shadow: inset 4px 0 0 var(--good); }
+  tr.row-investment td:first-child { box-shadow: inset 4px 0 0 var(--brand); }
+}

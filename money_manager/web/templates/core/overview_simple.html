@@ -2,107 +2,175 @@
 {% block page_title %}Overview{% endblock %}
 
 {% block content %}
-<section class="prism-simple-studio">
-  <article class="prism-studio-hero">
-    <span class="eyebrow">Quick view</span>
-    <h2>Money map</h2>
-    <p>The fast version: available position, stress position, recoverable money, investment P/L, and the main shortcuts.</p>
-    <div class="prism-studio-actions">
-      <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Add expense</a>
-      <a class="secondary-btn" href="{{ url_for('dashboard.overview_detailed') }}">Detailed overview</a>
-    </div>
-  </article>
-
-  <article class="prism-ledger-focus">
-    <div class="prism-ledger-main">
+<section class="overview-decision-hero">
+  <article class="overview-primary-card">
+    <span class="eyebrow">Decision view</span>
+    <h2>Can I spend, should I wait, or should I fix something?</h2>
+    <p>
+      This quick overview keeps the same money information, but orders it around decisions:
+      available position, pressure, recoverable money, investments and next actions.
+    </p>
+    <div class="overview-primary-value">
       <span>Main available position</span>
       <strong>€ {{ '%.2f'|format(cash_position) }}</strong>
       <small>All account nets + invested capital. Market P/L is shown separately.</small>
     </div>
-    <div class="prism-stress-stack">
-      <div class="prism-stress-chip">
-        <span>Stress position</span>
-        <strong>€ {{ '%.2f'|format(stress_position) }}</strong>
-        <small>Fast risk pressure check.</small>
-      </div>
-      <div class="prism-stress-chip">
-        <span>Adjusted stress</span>
-        <strong>€ {{ '%.2f'|format(adjusted_stress_position) }}</strong>
-        <small>Stress + owed to me + investment P/L.</small>
-      </div>
+    <div class="overview-action-row">
+      <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Add expense</a>
+      <a class="secondary-btn" href="{{ url_for('dashboard.overview_detailed') }}">Detailed overview</a>
+      <a class="secondary-btn" href="{{ url_for('analysis.analysis') }}">Open analysis</a>
     </div>
+  </article>
+
+  <article class="overview-status-card">
+    <span class="eyebrow">Pressure check</span>
+    <div class="overview-status-main">
+      <span>Adjusted stress position</span>
+      <strong>€ {{ '%.2f'|format(adjusted_stress_position) }}</strong>
+      <small>Stress + owed to me + investment P/L.</small>
+    </div>
+    <dl class="overview-status-list">
+      <div><dt>Stress position</dt><dd>€ {{ '%.2f'|format(stress_position) }}</dd></div>
+      <div><dt>Credit pending</dt><dd>€ {{ '%.2f'|format(credit_pending_amount) }}</dd></div>
+      <div><dt>Active debts</dt><dd>€ {{ '%.2f'|format(active_debt) }}</dd></div>
+      <div><dt>Owed to me</dt><dd>€ {{ '%.2f'|format(receivable_active_remaining) }}</dd></div>
+    </dl>
   </article>
 </section>
 
-<section class="prism-metric-ribbon" aria-label="Quick financial metrics">
-  <article class="prism-metric-tile tone-net">
+<section class="overview-metric-grid" aria-label="Financial metrics">
+  <article class="summary-card net">
     <span>Net balance</span>
     <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
     <small>Main bank net only.</small>
   </article>
-  <article class="prism-metric-tile tone-aux">
+  <article class="summary-card tone-aux">
     <span>Separate liquid</span>
     <strong>€ {{ '%.2f'|format(auxiliary_balance) }}</strong>
     <small>Cash Flow, EdenRed, Pre-paid, Other/custom.</small>
   </article>
-  <article class="prism-metric-tile tone-warning">
+  <article class="summary-card tone-net">
+    <span>Visible liquidity</span>
+    <strong>€ {{ '%.2f'|format(combined_visible_liquidity) }}</strong>
+    <small>Main-bank net + separate liquid accounts.</small>
+  </article>
+  <article class="summary-card warning">
     <span>Credit pending</span>
     <strong>€ {{ '%.2f'|format(credit_pending_amount) }}</strong>
     <small>Credit card / PayPal-credit still to settle.</small>
   </article>
-  <article class="prism-metric-tile tone-expense">
+  <article class="summary-card expense">
     <span>Active debts</span>
     <strong>€ {{ '%.2f'|format(active_debt) }}</strong>
     <small>Debt still to pay.</small>
   </article>
-  <article class="prism-metric-tile tone-income">
+  <article class="summary-card income">
     <span>Owed to me</span>
     <strong>€ {{ '%.2f'|format(receivable_active_remaining) }}</strong>
     <small>Net if repaid: € {{ '%.2f'|format(net_if_receivables_repaid) }}</small>
   </article>
-  <article class="prism-metric-tile tone-investment">
-    <span>Adjusted stress</span>
-    <strong>€ {{ '%.2f'|format(adjusted_stress_position) }}</strong>
-    <small>Stress + owed to me + investment P/L.</small>
+  <article class="summary-card investment">
+    <span>Investment capital</span>
+    <strong>€ {{ '%.2f'|format(investment_capital) }}</strong>
+    <small>Deposits/buys minus withdrawals/sells.</small>
+  </article>
+  <article class="summary-card investment">
+    <span>Investment P/L</span>
+    <strong>€ {{ '%.2f'|format(investment_profit_loss) }}</strong>
+    <small>{{ '%.2f'|format(investment_profit_loss_pct) }} % estimated market move.</small>
   </article>
 </section>
 
-<section class="prism-link-lanes" aria-label="Main shortcuts">
-  <a href="{{ url_for('transactions.transactions_page') }}" class="prism-lane-link path-transactions">
-    <span>01</span>
-    <b>Transactions</b>
-    <strong>Open transaction log</strong>
-    <small>Search, edit, delete, and review every saved movement.</small>
-  </a>
-  <a href="{{ url_for('pending.pending_page') }}" class="prism-lane-link path-pending">
-    <span>02</span>
-    <b>Pending</b>
-    <strong>Pay or delay scheduled items</strong>
-    <small>Generated items stay pending until you execute them.</small>
-  </a>
-  <a href="{{ url_for('pending.recurring_page') }}" class="prism-lane-link path-recurring">
-    <span>03</span>
-    <b>Recurring</b>
-    <strong>Manage automatic rules</strong>
-    <small>Rules generate the queue, but do not silently pay it.</small>
-  </a>
-  <a href="{{ url_for('accounts.accounts_page') }}" class="prism-lane-link path-accounts">
-    <span>04</span>
-    <b>Accounts</b>
-    <strong>Separate liquid accounts</strong>
-    <small>Cash Flow, EdenRed, cards and other custom accounts.</small>
-  </a>
-  <a href="{{ url_for('investments.investments_page') }}" class="prism-lane-link path-investments">
-    <span>05</span>
-    <b>Investments</b>
-    <strong>Market and deposits</strong>
-    <small>Deposits, buy/sell, withdrawals and profit/loss analysis.</small>
-  </a>
-  <a href="{{ url_for('dashboard.index') }}" class="prism-lane-link path-dashboard">
-    <span>06</span>
-    <b>Dashboard</b>
-    <strong>Charts and filtered totals</strong>
-    <small>Detailed plots without crowding the transaction list.</small>
-  </a>
+<section class="overview-decision-grid">
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Next actions</span>
+        <h3>Use the app from here</h3>
+        <p>Fast links ordered by what you usually need to do first.</p>
+      </div>
+    </div>
+    <div class="overview-shortcut-list">
+      <a href="{{ url_for('pending.pending_page') }}"><b>Pay or delay scheduled items</b><span>Pending payments stay pending until you execute them.</span></a>
+      <a href="{{ url_for('transactions.transactions_page') }}"><b>Review transaction log</b><span>Search, edit, delay or delete saved movements.</span></a>
+      <a href="{{ url_for('pending.recurring_page') }}"><b>Manage recurring rules</b><span>Control what gets generated automatically.</span></a>
+      <a href="{{ url_for('accounts.accounts_page') }}"><b>Check liquid accounts</b><span>Cash Flow, EdenRed, Pre-paid and custom accounts.</span></a>
+      <a href="{{ url_for('investments.investments_page') }}"><b>Review investments</b><span>Deposits, buy/sell, withdrawals and profit/loss.</span></a>
+      <a href="{{ url_for('dashboard.index') }}"><b>Open dashboard</b><span>Detailed charts and filtered totals.</span></a>
+    </div>
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Health</span>
+        <h3>What deserves attention</h3>
+      </div>
+    </div>
+    <div class="health-stack">
+      {% for card in quick_health %}
+        <div class="health-pill health-{{ card.tone }}">
+          <div>
+            <span>{{ card.label }}</span>
+            <strong>{{ card.value }}</strong>
+          </div>
+          <p>{{ card.text }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section class="overview-decision-grid">
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Top categories</span>
+        <h3>Current-year spending concentration</h3>
+      </div>
+      <a href="{{ url_for('analysis.analysis') }}">Full analysis</a>
+    </div>
+    {% if top_categories %}
+      <div class="category-bars">
+      {% for row in top_categories %}
+        <div class="category-bar-row">
+          <div>
+            <span>{{ row.category }}</span>
+            <strong>€ {{ '%.2f'|format(row.total) }}</strong>
+          </div>
+          <div class="category-bar"><span style="width: {{ (row.total / top_categories[0].total * 100) if top_categories[0].total else 0 }}%"></span></div>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No expense categories yet.</p>
+    {% endif %}
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">Latest</span>
+        <h3>Recent transactions</h3>
+      </div>
+      <a href="{{ url_for('transactions.transactions_page') }}">View all</a>
+    </div>
+    {% if recent_transactions %}
+      <div class="recent-list">
+      {% for tx in recent_transactions %}
+        <div class="recent-row recent-{{ tx.type }}">
+          <div>
+            <strong>{{ tx.category }}</strong>
+            <span>{{ tx.date_str }}{% if tx.description %} · {{ tx.description }}{% endif %}</span>
+            {% if tx.is_auxiliary_account %}<em class="auxiliary-inline-badge">{{ tx.account_label }}</em>{% endif %}
+          </div>
+          <b>€ {{ tx.amount_str }}</b>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No transactions yet.</p>
+    {% endif %}
+  </article>
 </section>
 {% endblock %}
