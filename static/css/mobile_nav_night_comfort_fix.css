@@ -1,0 +1,541 @@
+/* --------------------------------------------------------------------------
+   Mobile Navigation + Night Comfort Fix
+   Imported last. UI-only: calmer night colors, fixed mobile chrome, visible
+   mobile net/theme actions, and safer spacing so the add button never covers
+   the page tabs.
+-------------------------------------------------------------------------- */
+
+:root,
+html[data-theme="day"] {
+  --comfort-blue: #2563eb;
+  --comfort-cyan: #0891b2;
+  --comfort-teal: #0d9488;
+  --comfort-green: #059669;
+  --comfort-violet: #6d5dfc;
+  --comfort-ink: #111827;
+  --comfort-muted: #52647a;
+}
+
+/* Night mode: vivid accents, but less glare and less eye strain. */
+html[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #0b1420;
+  --ink: #d7e3ee;
+  --ink-soft: #c1d0de;
+  --muted: #93a6b8;
+  --surface: rgba(13, 25, 40, 0.74);
+  --surface-soft: rgba(16, 38, 58, 0.58);
+  --surface-muted: rgba(18, 47, 68, 0.42);
+  --line: rgba(94, 178, 205, 0.18);
+  --line-strong: rgba(56, 189, 248, 0.28);
+  --brand: #5ab8ff;
+  --brand-dark: #2dd4bf;
+  --brand-soft: rgba(31, 90, 135, 0.34);
+  --good: #4ade80;
+  --good-soft: rgba(20, 83, 45, 0.34);
+  --bad: #fb7185;
+  --bad-soft: rgba(127, 29, 29, 0.30);
+  --warning: #fbbf24;
+  --warning-soft: rgba(120, 72, 18, 0.32);
+  --glass-main: rgba(13, 25, 40, 0.58);
+  --glass-main-strong: rgba(16, 31, 49, 0.78);
+  --glass-border: rgba(125, 211, 252, 0.16);
+  --glass-line: rgba(45, 212, 191, 0.14);
+  --glass-shadow: 0 28px 74px rgba(0, 0, 0, 0.30), 0 12px 32px rgba(8, 145, 178, 0.08);
+}
+
+html[data-theme="night"] body.app-body-clean {
+  background:
+    radial-gradient(circle at 8% 7%, rgba(37, 99, 235, 0.20), transparent 24rem),
+    radial-gradient(circle at 84% 8%, rgba(8, 145, 178, 0.14), transparent 26rem),
+    radial-gradient(circle at 96% 65%, rgba(5, 150, 105, 0.13), transparent 28rem),
+    radial-gradient(circle at 20% 92%, rgba(109, 93, 252, 0.11), transparent 26rem),
+    linear-gradient(135deg, #08111c 0%, #0a1724 45%, #0d1422 100%) !important;
+}
+
+html[data-theme="night"] body.app-body-clean::before {
+  opacity: 0.24 !important;
+  background:
+    radial-gradient(ellipse at 18% 16%, rgba(59, 130, 246, 0.12), transparent 30rem),
+    radial-gradient(ellipse at 80% 20%, rgba(45, 212, 191, 0.09), transparent 29rem),
+    radial-gradient(ellipse at 66% 92%, rgba(74, 222, 128, 0.07), transparent 30rem),
+    radial-gradient(circle at var(--pointer-x, 55%) var(--pointer-y, 32%), rgba(56, 189, 248, 0.055), transparent 16rem) !important;
+}
+
+html[data-theme="night"] body.app-body-clean::after {
+  opacity: 0.14 !important;
+  background:
+    radial-gradient(circle, rgba(56, 189, 248, 0.10), rgba(45, 212, 191, 0.055) 34%, rgba(99, 102, 241, 0.045) 56%, transparent 75%) !important;
+  filter: blur(24px) saturate(1.02) !important;
+}
+
+html[data-theme="night"] body.app-body-clean .app-layout::before,
+html[data-theme="night"] body.app-body-clean .app-layout::after {
+  opacity: 0.16 !important;
+  filter: blur(44px) saturate(1.08) !important;
+}
+
+html[data-theme="night"] .desktop-pointer-glow {
+  opacity: 0.18 !important;
+  background:
+    radial-gradient(circle, rgba(56, 189, 248, 0.12), rgba(45, 212, 191, 0.06) 36%, rgba(99, 102, 241, 0.04) 58%, transparent 74%) !important;
+  filter: blur(26px) saturate(1.02) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme="night"] body.pointer-active .desktop-pointer-glow {
+    opacity: 0.22 !important;
+  }
+}
+
+html[data-theme="night"] .app-sidebar,
+html[data-theme="night"] .app-topbar,
+html[data-theme="night"] .mobile-bottom-nav,
+html[data-theme="night"] .mobile-add-panel,
+html[data-theme="night"] .quick-add-panel,
+html[data-theme="night"] .desktop-detail-shell,
+html[data-theme="night"] .page-heading,
+html[data-theme="night"] .panel-card,
+html[data-theme="night"] .card,
+html[data-theme="night"] .filters,
+html[data-theme="night"] .form-section,
+html[data-theme="night"] .transactions,
+html[data-theme="night"] .chart-card,
+html[data-theme="night"] .summary-card,
+html[data-theme="night"] .priority-card,
+html[data-theme="night"] .mini-priority-card,
+html[data-theme="night"] .account-overview-card,
+html[data-theme="night"] .analysis-decision-card,
+html[data-theme="night"] .analysis-kpi,
+html[data-theme="night"] .analysis-health-card,
+html[data-theme="night"] .investment-behaviour-card,
+html[data-theme="night"] .payment-card,
+html[data-theme="night"] .recurring-rule-card,
+html[data-theme="night"] .document-card,
+html[data-theme="night"] .asset-card,
+html[data-theme="night"] .year-card,
+html[data-theme="night"] .initial-condition-card,
+html[data-theme="night"] .flow-card,
+html[data-theme="night"] .top-category-card,
+html[data-theme="night"] .investment-card,
+html[data-theme="night"] .quick-special-panel,
+html[data-theme="night"] .smart-log-studio,
+html[data-theme="night"] .normal-add-polished,
+html[data-theme="night"] .standard-table {
+  background:
+    linear-gradient(135deg, rgba(17, 32, 50, 0.82), rgba(8, 20, 34, 0.66)),
+    radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.075), transparent 18rem),
+    radial-gradient(circle at 100% 0%, rgba(45, 212, 191, 0.055), transparent 16rem),
+    radial-gradient(circle at 100% 100%, rgba(74, 222, 128, 0.045), transparent 18rem) !important;
+  border-color: rgba(125, 211, 252, 0.15) !important;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.30),
+    0 8px 22px rgba(8, 145, 178, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055) !important;
+}
+
+html[data-theme="night"] .app-topbar::before {
+  background:
+    linear-gradient(90deg, rgba(12, 24, 38, 0.90), rgba(11, 42, 55, 0.64), rgba(9, 43, 38, 0.50)) !important;
+  border-bottom-color: rgba(125, 211, 252, 0.15) !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.055) !important;
+}
+
+html[data-theme="night"] .app-topbar-title h1,
+html[data-theme="night"] .page-heading h2,
+html[data-theme="night"] .panel-header h2,
+html[data-theme="night"] .panel-header h3,
+html[data-theme="night"] .normal-add-header h2,
+html[data-theme="night"] .smart-log-hero h2 {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: #e3edf7 !important;
+  text-shadow: none !important;
+}
+
+html[data-theme="night"] p,
+html[data-theme="night"] small,
+html[data-theme="night"] .muted,
+html[data-theme="night"] .small-text,
+html[data-theme="night"] .panel-header p,
+html[data-theme="night"] .page-heading p,
+html[data-theme="night"] .mobile-summary-meta,
+html[data-theme="night"] .desktop-detail-subtitle,
+html[data-theme="night"] .desktop-detail-line-label {
+  color: #9dafc0 !important;
+}
+
+html[data-theme="night"] strong,
+html[data-theme="night"] b,
+html[data-theme="night"] h1,
+html[data-theme="night"] h2,
+html[data-theme="night"] h3,
+html[data-theme="night"] h4,
+html[data-theme="night"] label,
+html[data-theme="night"] .mobile-summary-title,
+html[data-theme="night"] .desktop-detail-title,
+html[data-theme="night"] .desktop-detail-line-value,
+html[data-theme="night"] .desktop-detail-amount,
+html[data-theme="night"] .summary-card p,
+html[data-theme="night"] .summary-card strong,
+html[data-theme="night"] .analysis-kpi strong {
+  color: #e1ebf5 !important;
+}
+
+html[data-theme="night"] input,
+html[data-theme="night"] select,
+html[data-theme="night"] textarea,
+html[data-theme="night"] .inline-edit-table input,
+html[data-theme="night"] .inline-edit-table select {
+  color: #e1ebf5 !important;
+  background: rgba(6, 17, 30, 0.58) !important;
+  border-color: rgba(125, 211, 252, 0.16) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 24px rgba(0,0,0,0.12) !important;
+}
+
+html[data-theme="night"] input::placeholder,
+html[data-theme="night"] textarea::placeholder {
+  color: #8093a5 !important;
+}
+
+html[data-theme="night"] .standard-table th,
+html[data-theme="night"] .transactions table th,
+html[data-theme="night"] .inline-edit-table th {
+  color: #a6bacd !important;
+  background: rgba(7, 18, 32, 0.66) !important;
+}
+
+html[data-theme="night"] .standard-table td,
+html[data-theme="night"] .transactions table td,
+html[data-theme="night"] .inline-edit-table td {
+  color: #d4e1ec !important;
+  background: rgba(10, 24, 39, 0.44) !important;
+}
+
+html[data-theme="night"] .primary-btn,
+html[data-theme="night"] .mobile-add-menu > summary,
+html[data-theme="night"] .transaction-form button,
+html[data-theme="night"] .recurring-form button,
+html[data-theme="night"] .debt-form button,
+html[data-theme="night"] .entry-form button,
+html[data-theme="night"] .form-actions button,
+html[data-theme="night"] .desktop-drawer-primary-action {
+  background: linear-gradient(135deg, #2563eb 0%, #0891b2 52%, #059669 100%) !important;
+  color: #f8fbff !important;
+  box-shadow:
+    0 15px 32px rgba(37, 99, 235, 0.20),
+    0 8px 22px rgba(5, 150, 105, 0.12),
+    inset 0 1px 0 rgba(255,255,255,0.22) !important;
+}
+
+html[data-theme="night"] .mobile-bottom-nav a.active,
+html[data-theme="night"] .nav-items a.active {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.82), rgba(8, 145, 178, 0.74), rgba(5, 150, 105, 0.70)) !important;
+  color: #f7fbff !important;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.18), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+}
+
+/* Phone app chrome: fixed bottom navigation and floating add that never covers it. */
+@media (max-width: 1120px) {
+  .mobile-bottom-nav {
+    position: fixed !important;
+    display: grid !important;
+    left: max(0.72rem, env(safe-area-inset-left, 0px)) !important;
+    right: max(0.72rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: max(0.78rem, env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 5000 !important;
+    pointer-events: auto !important;
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  .mobile-add-menu {
+    position: fixed !important;
+    display: block !important;
+    right: max(1rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: calc(max(0.78rem, env(safe-area-inset-bottom, 0px)) + 5.55rem) !important;
+    left: auto !important;
+    z-index: 5100 !important;
+    pointer-events: auto !important;
+    transform: translateZ(0);
+  }
+
+  .mobile-add-menu > summary {
+    position: relative !important;
+    z-index: 5120 !important;
+  }
+
+  .mobile-add-menu[open] {
+    z-index: 5800 !important;
+  }
+
+  .mobile-add-menu[open]::before {
+    z-index: 5790 !important;
+  }
+
+  .mobile-add-panel {
+    z-index: 5900 !important;
+  }
+
+  .container,
+  .app-content-stage {
+    padding-bottom: calc(9.4rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  html,
+  body.app-body-clean {
+    overflow-x: hidden !important;
+  }
+
+  .app-topbar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 4900 !important;
+    min-height: 74px !important;
+    padding: 0.62rem 0.72rem !important;
+    gap: 0.5rem !important;
+    align-items: center !important;
+  }
+
+  .app-topbar-title {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .app-topbar-title .eyebrow {
+    display: none !important;
+  }
+
+  .app-topbar-title h1 {
+    max-width: 100% !important;
+    font-size: clamp(1.08rem, 5.1vw, 1.42rem) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.045em !important;
+    color: var(--comfort-ink) !important;
+    background: none !important;
+    -webkit-background-clip: initial !important;
+    background-clip: initial !important;
+    text-overflow: ellipsis;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+  }
+
+  html[data-theme="night"] .app-topbar-title h1 {
+    color: #e3edf7 !important;
+  }
+
+  .app-topbar-actions {
+    flex: 0 0 auto !important;
+    gap: 0.42rem !important;
+  }
+
+  .quick-add-menu {
+    display: none !important;
+  }
+
+  .topbar-net-pill {
+    display: inline-flex !important;
+    min-height: 40px !important;
+    padding: 0.45rem 0.64rem !important;
+    border-radius: 16px !important;
+    gap: 0.28rem !important;
+    white-space: nowrap !important;
+    max-width: 38vw;
+  }
+
+  .topbar-net-pill span {
+    display: none !important;
+  }
+
+  .topbar-net-pill strong {
+    font-size: 0.86rem !important;
+    letter-spacing: -0.02em;
+  }
+
+  .theme-toggle-btn {
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    border-radius: 16px !important;
+    padding: 0 !important;
+  }
+
+  .theme-toggle-orb {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .mobile-bottom-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 0.26rem !important;
+    padding: 0.38rem !important;
+    border-radius: 24px !important;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.76), rgba(219, 242, 255, 0.58)),
+      radial-gradient(circle at 16% 0%, rgba(37,99,235,0.14), transparent 7rem),
+      radial-gradient(circle at 100% 100%, rgba(5,150,105,0.13), transparent 8rem) !important;
+    box-shadow: 0 22px 58px rgba(15, 23, 42, 0.24), inset 0 1px 0 rgba(255,255,255,0.78) !important;
+    border-color: rgba(255,255,255,0.70) !important;
+  }
+
+  html[data-theme="night"] .mobile-bottom-nav {
+    background:
+      linear-gradient(135deg, rgba(14, 28, 45, 0.92), rgba(10, 51, 61, 0.64)),
+      radial-gradient(circle at 12% 0%, rgba(37,99,235,0.10), transparent 7rem),
+      radial-gradient(circle at 100% 100%, rgba(5,150,105,0.09), transparent 8rem) !important;
+    border-color: rgba(125,211,252,0.16) !important;
+    box-shadow: 0 22px 58px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.06) !important;
+  }
+
+  .mobile-bottom-nav a {
+    min-height: 50px !important;
+    padding: 0.36rem 0.12rem !important;
+    color: #0f172a !important;
+    font-size: 0.66rem !important;
+    font-weight: 900 !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html[data-theme="night"] .mobile-bottom-nav a {
+    color: #d5e2ef !important;
+  }
+
+  .mobile-bottom-nav a span {
+    opacity: 1 !important;
+  }
+
+  .mobile-add-menu {
+    right: max(0.95rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: calc(max(0.78rem, env(safe-area-inset-bottom, 0px)) + 5.35rem) !important;
+  }
+
+  .mobile-add-menu > summary {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 20px !important;
+    box-shadow:
+      0 18px 40px rgba(37,99,235,0.26),
+      0 8px 22px rgba(5,150,105,0.18),
+      inset 0 1px 0 rgba(255,255,255,0.36) !important;
+  }
+
+  .mobile-add-panel {
+    position: fixed !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    bottom: calc(max(0.78rem, env(safe-area-inset-bottom, 0px)) + 6.1rem) !important;
+  }
+
+  .page-heading h2,
+  .panel-header h2,
+  .panel-header h3,
+  .normal-add-header h2,
+  .smart-log-hero h2 {
+    background: none !important;
+    -webkit-background-clip: initial !important;
+    background-clip: initial !important;
+    color: #111827 !important;
+    text-shadow: none !important;
+  }
+
+  html[data-theme="night"] .page-heading h2,
+  html[data-theme="night"] .panel-header h2,
+  html[data-theme="night"] .panel-header h3,
+  html[data-theme="night"] .normal-add-header h2,
+  html[data-theme="night"] .smart-log-hero h2 {
+    color: #e3edf7 !important;
+  }
+
+  .page-heading p,
+  .panel-header p,
+  .summary-card small,
+  .priority-card small,
+  .mini-priority-card small {
+    color: #52647a !important;
+  }
+
+  html[data-theme="night"] .page-heading p,
+  html[data-theme="night"] .panel-header p,
+  html[data-theme="night"] .summary-card small,
+  html[data-theme="night"] .priority-card small,
+  html[data-theme="night"] .mini-priority-card small {
+    color: #9dafc0 !important;
+  }
+
+  .summary-card p,
+  .summary-card strong,
+  .priority-card strong,
+  .mini-priority-card strong {
+    color: #111827 !important;
+  }
+
+  html[data-theme="night"] .summary-card p,
+  html[data-theme="night"] .summary-card strong,
+  html[data-theme="night"] .priority-card strong,
+  html[data-theme="night"] .mini-priority-card strong {
+    color: #e1ebf5 !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-topbar {
+    padding-left: 0.62rem !important;
+    padding-right: 0.62rem !important;
+  }
+
+  .app-topbar-title h1 {
+    font-size: clamp(1rem, 5.2vw, 1.28rem) !important;
+  }
+
+  .topbar-net-pill {
+    max-width: 34vw !important;
+    padding-left: 0.52rem !important;
+    padding-right: 0.52rem !important;
+  }
+
+  .topbar-net-pill strong {
+    font-size: 0.78rem !important;
+  }
+
+  .theme-toggle-btn {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+  }
+
+  .theme-toggle-orb {
+    width: 25px !important;
+    height: 25px !important;
+  }
+
+  .mobile-bottom-nav {
+    left: 0.48rem !important;
+    right: 0.48rem !important;
+    padding: 0.32rem !important;
+  }
+
+  .mobile-bottom-nav a {
+    min-height: 48px !important;
+    font-size: 0.58rem !important;
+  }
+
+  .mobile-bottom-nav a span {
+    width: 21px !important;
+    height: 21px !important;
+  }
+
+  .mobile-add-menu {
+    right: 0.72rem !important;
+    bottom: calc(max(0.70rem, env(safe-area-inset-bottom, 0px)) + 5.15rem) !important;
+  }
+
+  .mobile-add-menu > summary {
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 19px !important;
+  }
+}
