@@ -1,0 +1,1700 @@
+/* --------------------------------------------------------------------------
+   Nebula layout refresh
+   Visual-only layer. Navigation and quick logging are reorganized without
+   changing routes, calculations, form fields, or server logic.
+-------------------------------------------------------------------------- */
+:root {
+  --nebula-bg-0: #eef4ff;
+  --nebula-bg-1: #f8fbff;
+  --nebula-ink: #0c1428;
+  --nebula-muted: #65738d;
+  --nebula-line: rgba(95, 110, 145, 0.18);
+  --nebula-panel: rgba(255, 255, 255, 0.72);
+  --nebula-panel-strong: rgba(255, 255, 255, 0.9);
+  --nebula-dark: rgba(12, 18, 38, 0.82);
+  --nebula-blue: #3268ff;
+  --nebula-cyan: #14b8ff;
+  --nebula-violet: #7a52ff;
+  --nebula-pink: #f25fb7;
+  --nebula-green: #1eb980;
+  --nebula-orange: #ff9f43;
+  --nebula-red: #ff5f57;
+  --nebula-shadow: 0 24px 70px rgba(43, 60, 102, 0.18);
+  --nebula-soft-shadow: 0 16px 44px rgba(43, 60, 102, 0.12);
+  --nebula-radius: 34px;
+  --nebula-bottom-space: 112px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body.app-body-nebula {
+  min-height: 100vh;
+  color: var(--nebula-ink);
+  overflow-x: hidden;
+  padding-bottom: var(--nebula-bottom-space);
+  background:
+    radial-gradient(circle at 8% 4%, rgba(75, 115, 255, 0.32), transparent 28rem),
+    radial-gradient(circle at 88% 10%, rgba(242, 95, 183, 0.22), transparent 30rem),
+    radial-gradient(circle at 52% 78%, rgba(20, 184, 255, 0.2), transparent 32rem),
+    linear-gradient(135deg, var(--nebula-bg-0), var(--nebula-bg-1) 44%, #eff7f5 100%);
+}
+
+body.app-body-nebula::before,
+body.app-body-nebula::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -4;
+}
+
+body.app-body-nebula::before {
+  background-image:
+    linear-gradient(rgba(55, 75, 120, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(55, 75, 120, 0.055) 1px, transparent 1px);
+  background-size: 58px 58px;
+  mask-image: radial-gradient(circle at 50% 12%, #000 0 54%, transparent 86%);
+}
+
+body.app-body-nebula::after {
+  background:
+    conic-gradient(from 130deg at 75% 0%, rgba(48, 104, 255, 0.18), transparent 18%, rgba(122, 82, 255, 0.16), transparent 46%),
+    linear-gradient(120deg, transparent 0 42%, rgba(255, 255, 255, 0.38) 42% 44%, transparent 44% 100%);
+  opacity: 0.72;
+  animation: nebulaSweep 18s ease-in-out infinite alternate;
+}
+
+.ambient-grid {
+  display: none !important;
+}
+
+.nebula-orb {
+  position: fixed;
+  width: 34rem;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: -3;
+  filter: blur(28px);
+  opacity: 0.32;
+  mix-blend-mode: multiply;
+  animation: nebulaFloat 16s ease-in-out infinite alternate;
+}
+
+.nebula-orb-one {
+  top: 7rem;
+  left: -9rem;
+  background: radial-gradient(circle, rgba(50, 104, 255, 0.7), rgba(20, 184, 255, 0.2), transparent 70%);
+}
+
+.nebula-orb-two {
+  right: -10rem;
+  top: 30vh;
+  background: radial-gradient(circle, rgba(242, 95, 183, 0.58), rgba(122, 82, 255, 0.22), transparent 72%);
+  animation-delay: -4s;
+}
+
+.nebula-orb-three {
+  left: 38vw;
+  bottom: -15rem;
+  background: radial-gradient(circle, rgba(30, 185, 128, 0.52), rgba(255, 159, 67, 0.14), transparent 72%);
+  animation-delay: -8s;
+}
+
+@keyframes nebulaFloat {
+  from { transform: translate3d(-2%, -1%, 0) scale(0.92); }
+  to { transform: translate3d(4%, 3%, 0) scale(1.08); }
+}
+
+@keyframes nebulaSweep {
+  from { transform: translate3d(-1%, -1%, 0) rotate(0deg); }
+  to { transform: translate3d(1%, 1%, 0) rotate(2deg); }
+}
+
+/* --------------------------------------------------------------------------
+   App shell: slim top navigation + bottom command dock
+-------------------------------------------------------------------------- */
+.app-shell-nebula,
+.app-shell.app-shell-nebula,
+.app-shell-command-layout {
+  display: block !important;
+  min-height: 100vh;
+  width: min(100%, 1680px);
+  margin: 0 auto;
+  padding: 16px clamp(14px, 2vw, 30px) 0 !important;
+}
+
+.nebula-topnav.sidebar,
+.sidebar.nebula-topnav,
+.app-navigation-dock.sidebar {
+  position: sticky !important;
+  top: 12px !important;
+  left: auto !important;
+  right: auto !important;
+  z-index: 210;
+  width: 100% !important;
+  height: 72px !important;
+  min-height: 72px !important;
+  max-height: 72px !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: clamp(10px, 1.4vw, 18px);
+  padding: 8px 10px !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  border: 1px solid rgba(255, 255, 255, 0.78) !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.83), rgba(255, 255, 255, 0.56)),
+    radial-gradient(circle at var(--nebula-x, 20%) var(--nebula-y, 45%), rgba(255, 255, 255, 0.85), transparent 18rem) !important;
+  box-shadow: 0 24px 60px rgba(38, 55, 92, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(28px) saturate(1.32);
+  -webkit-backdrop-filter: blur(28px) saturate(1.32);
+}
+
+.nebula-topnav::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(50, 104, 255, 0.16), transparent 22%, rgba(122, 82, 255, 0.12) 55%, rgba(20, 184, 255, 0.12));
+  opacity: 0.85;
+}
+
+.nebula-topnav::after {
+  content: "";
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: -8px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(50, 104, 255, 0.5), rgba(242, 95, 183, 0.26), transparent);
+  opacity: 0.75;
+}
+
+.nebula-brand.brand,
+.sidebar .nebula-brand.brand {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 56px;
+  max-width: 250px;
+  padding: 6px 14px 6px 6px !important;
+  border-radius: 999px !important;
+  color: var(--nebula-ink) !important;
+  background: rgba(255, 255, 255, 0.58) !important;
+  box-shadow: inset 0 0 0 1px rgba(75, 92, 130, 0.08);
+  text-decoration: none;
+}
+
+.nebula-brand .brand-avatar-wrap {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(19, 28, 50, 0.18);
+}
+
+.nebula-brand .brand-avatar,
+.nebula-brand .brand-mark {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  object-fit: cover;
+}
+
+.nebula-brand .brand-text {
+  min-width: 0;
+  display: grid;
+  line-height: 1.05;
+}
+
+.nebula-brand .brand-text strong {
+  font-size: 0.96rem;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nebula-brand .brand-text small {
+  font-size: 0.74rem;
+  color: var(--nebula-muted);
+  white-space: nowrap;
+}
+
+.nebula-nav-lane.sidebar-nav,
+.sidebar-nav.nebula-nav-lane,
+.app-navigation-dock .sidebar-nav {
+  position: relative;
+  width: 100% !important;
+  min-width: 0;
+  height: 56px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.nav-dock-title,
+.sidebar-mobile-balance-pill,
+.nav-orbit-indicator {
+  display: none !important;
+}
+
+.nebula-nav-lane .nav-group,
+.app-navigation-dock .nav-group {
+  position: relative;
+  flex: 0 0 auto;
+  margin: 0 !important;
+}
+
+.nebula-nav-lane .nav-group summary,
+.nebula-nav-lane .nav-label,
+.app-navigation-dock .nav-label {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  height: 48px;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 15px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(71, 84, 120, 0.12) !important;
+  background: rgba(255, 255, 255, 0.54) !important;
+  color: rgba(13, 20, 40, 0.84) !important;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 10px 22px rgba(42, 58, 96, 0.08) !important;
+  transition: transform 180ms ease, background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.nebula-nav-lane .nav-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.nebula-nav-lane .nav-group[open] > summary,
+.nebula-nav-lane .nav-group.nav-group-has-active > summary,
+.nebula-nav-lane .nav-group summary:hover,
+.app-navigation-dock .nav-group[open] > .nav-label {
+  color: #fff !important;
+  background:
+    linear-gradient(135deg, rgba(49, 78, 212, 0.94), rgba(122, 82, 255, 0.88)) !important;
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  box-shadow: 0 16px 34px rgba(67, 75, 190, 0.28) !important;
+  transform: translateY(-1px);
+}
+
+.nav-dot {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.34);
+  font-size: 0.82rem;
+  letter-spacing: 0;
+}
+
+.nebula-nav-lane .nav-items,
+.app-navigation-dock .nav-items {
+  position: absolute !important;
+  top: calc(100% + 14px) !important;
+  left: 50% !important;
+  z-index: 260;
+  width: min(520px, calc(100vw - 44px));
+  max-height: min(72vh, 540px);
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 14px !important;
+  margin: 0 !important;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.74) !important;
+  border-radius: 28px !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.93), rgba(247, 250, 255, 0.74)),
+    radial-gradient(circle at 18% 0%, rgba(50, 104, 255, 0.18), transparent 18rem) !important;
+  box-shadow: 0 28px 80px rgba(18, 27, 48, 0.22) !important;
+  backdrop-filter: blur(26px) saturate(1.25);
+  -webkit-backdrop-filter: blur(26px) saturate(1.25);
+  transform: translateX(-50%) translateY(-4px) scale(0.98);
+  transform-origin: top center;
+  animation: navNebulaPop 160ms ease forwards;
+}
+
+.nebula-nav-lane .nav-group:not([open]) .nav-items,
+.app-navigation-dock .nav-group:not([open]) .nav-items {
+  display: none !important;
+}
+
+@keyframes navNebulaPop {
+  to { transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+.nebula-nav-lane .nav-items::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translateX(-50%) rotate(45deg);
+  border-left: 1px solid rgba(255, 255, 255, 0.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.nebula-nav-lane .nav-items a,
+.app-navigation-dock .nav-items a {
+  position: relative;
+  min-height: 46px;
+  display: flex !important;
+  align-items: center;
+  padding: 12px 13px !important;
+  border-radius: 18px !important;
+  color: rgba(14, 22, 43, 0.82) !important;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.54) !important;
+  box-shadow: inset 0 0 0 1px rgba(62, 74, 112, 0.08) !important;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  transition: transform 170ms ease, background 170ms ease, color 170ms ease, box-shadow 170ms ease;
+}
+
+.nebula-nav-lane .nav-items a::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-right: 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--nebula-cyan), var(--nebula-violet));
+  box-shadow: 0 0 0 5px rgba(50, 104, 255, 0.08);
+}
+
+.nebula-nav-lane .nav-items a:hover,
+.nebula-nav-lane .nav-items a.active,
+.app-navigation-dock .nav-items a.active {
+  color: #fff !important;
+  background: linear-gradient(135deg, rgba(50, 104, 255, 0.94), rgba(13, 20, 40, 0.88)) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(50, 104, 255, 0.22) !important;
+}
+
+.nebula-nav-lane .nav-items a.active::before,
+.nebula-nav-lane .nav-items a:hover::before {
+  background: #fff;
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.9);
+}
+
+.nebula-nav-lane .nav-items-grouped {
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  width: min(760px, calc(100vw - 44px));
+}
+
+.nebula-nav-lane .nav-cluster {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(69, 83, 124, 0.08);
+}
+
+.nebula-nav-lane .nav-cluster-label {
+  padding: 0 4px 4px;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--nebula-muted);
+}
+
+.nebula-status-zone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.nebula-net-chip.topbar-balance-pill,
+.topbar-balance-pill.nebula-net-chip,
+.always-on-balance.nebula-net-chip {
+  min-width: 176px !important;
+  height: 56px !important;
+  display: grid !important;
+  align-content: center;
+  justify-items: start;
+  gap: 1px;
+  padding: 8px 18px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  text-decoration: none;
+  color: #fff !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.38), transparent 48%),
+    linear-gradient(135deg, #0d1428, #253a78 52%, #5939c7) !important;
+  box-shadow: 0 18px 45px rgba(28, 42, 86, 0.3) !important;
+}
+
+.nebula-net-chip span {
+  font-size: 0.64rem !important;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+.nebula-net-chip strong {
+  font-size: clamp(1rem, 1.25vw, 1.22rem) !important;
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+}
+
+.nebula-logout-form,
+.sidebar-footer {
+  display: inline-flex !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.nebula-logout-action.sidebar-logout-action,
+.sidebar-logout-action.nebula-logout-action {
+  height: 46px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(13, 20, 40, 0.7);
+  background: rgba(255, 255, 255, 0.54);
+  box-shadow: inset 0 0 0 1px rgba(62, 74, 112, 0.09);
+}
+
+.nebula-main.app-main,
+.app-main.nebula-main,
+.app-content-canvas {
+  width: 100% !important;
+  max-width: 1540px;
+  margin: 28px auto 0 !important;
+  padding: 0 !important;
+}
+
+.nebula-page-header.topbar,
+.topbar.nebula-page-header,
+.app-command-deck.topbar {
+  position: relative !important;
+  top: auto !important;
+  z-index: 1;
+  display: flex !important;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 82px !important;
+  height: auto !important;
+  padding: 0 4px 16px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.nebula-page-header .topbar-title .eyebrow {
+  color: rgba(73, 85, 126, 0.7);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+}
+
+.nebula-page-header .topbar-title h1 {
+  margin: 4px 0 0;
+  font-size: clamp(2.2rem, 5.8vw, 5.6rem);
+  line-height: 0.88;
+  letter-spacing: -0.09em;
+  color: transparent;
+  background: linear-gradient(135deg, #0b1227 0%, #172c72 42%, #784cff 64%, #0b1227 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 14px 24px rgba(42, 58, 96, 0.12));
+}
+
+.nebula-page-signal {
+  width: min(34vw, 420px);
+  height: 42px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.9;
+}
+
+.nebula-page-signal span {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(50, 104, 255, 0.16), rgba(122, 82, 255, 0.78));
+  box-shadow: 0 10px 24px rgba(50, 104, 255, 0.18);
+}
+
+.nebula-page-signal span:nth-child(1) { width: 22%; }
+.nebula-page-signal span:nth-child(2) { width: 46%; background: linear-gradient(90deg, rgba(20, 184, 255, 0.18), rgba(50, 104, 255, 0.7)); }
+.nebula-page-signal span:nth-child(3) { width: 12%; background: linear-gradient(90deg, rgba(242, 95, 183, 0.26), rgba(255, 159, 67, 0.72)); }
+
+.nebula-content-stage.container,
+.content-stage.nebula-content-stage,
+.container.content-stage {
+  width: 100% !important;
+  max-width: none !important;
+  padding: 0 0 24px !important;
+  margin: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   Always-visible bottom quick actions
+-------------------------------------------------------------------------- */
+.nebula-action-dock.quick-actions,
+.quick-actions.nebula-action-dock,
+.mobile-action-bar {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: 18px !important;
+  z-index: 320;
+  width: min(760px, calc(100vw - 28px)) !important;
+  min-height: 74px;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px !important;
+  margin: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(135deg, rgba(13, 20, 40, 0.86), rgba(32, 47, 86, 0.78)),
+    radial-gradient(circle at var(--dock-x, 50%) var(--dock-y, 50%), rgba(255, 255, 255, 0.18), transparent 15rem) !important;
+  box-shadow: 0 24px 70px rgba(8, 12, 24, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  backdrop-filter: blur(28px) saturate(1.35);
+  -webkit-backdrop-filter: blur(28px) saturate(1.35);
+  transform: translateX(-50%) translateY(calc(var(--dock-lift, 0) * -1px)) !important;
+}
+
+.nebula-action-dock::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(50, 104, 255, 0.5), rgba(20, 184, 255, 0.32), rgba(242, 95, 183, 0.45), rgba(255, 159, 67, 0.34));
+  filter: blur(13px);
+  opacity: 0.42;
+}
+
+.nebula-action-dock .quick-action {
+  position: relative;
+  min-width: 0;
+  min-height: 56px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 12px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  text-decoration: none;
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  overflow: hidden;
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.nebula-action-dock .quick-action::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 0 35%, rgba(255, 255, 255, 0.24) 48%, transparent 62% 100%);
+  transform: translateX(-130%);
+  transition: transform 480ms ease;
+}
+
+.nebula-action-dock .quick-action:hover {
+  transform: translateY(-4px) scale(1.02);
+  background: rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.22) !important;
+}
+
+.nebula-action-dock .quick-action:hover::after {
+  transform: translateX(130%);
+}
+
+.nebula-action-dock .action-symbol {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  border-radius: 50%;
+  font-size: 1.15rem;
+  font-weight: 950;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.nebula-action-dock .quick-action-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: grid;
+  line-height: 1.08;
+}
+
+.nebula-action-dock .quick-action-copy small {
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  opacity: 0.66;
+}
+
+.nebula-action-dock .quick-action-copy strong {
+  font-size: 0.98rem;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+.nebula-action-dock .expense-action { background: linear-gradient(135deg, rgba(255, 95, 87, 0.22), rgba(255, 255, 255, 0.06)) !important; }
+.nebula-action-dock .income-action { background: linear-gradient(135deg, rgba(30, 185, 128, 0.24), rgba(255, 255, 255, 0.06)) !important; }
+.nebula-action-dock .special-action { background: linear-gradient(135deg, rgba(122, 82, 255, 0.26), rgba(255, 255, 255, 0.06)) !important; }
+.nebula-action-dock .investment-action { background: linear-gradient(135deg, rgba(255, 159, 67, 0.24), rgba(255, 255, 255, 0.06)) !important; }
+
+/* --------------------------------------------------------------------------
+   Re-skin existing content into a more geometric / non-blocky interface
+-------------------------------------------------------------------------- */
+.overview-hero,
+.dashboard-hero,
+.panel-card.dashboard-hero {
+  position: relative;
+  min-height: 330px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(340px, 0.88fr);
+  gap: clamp(18px, 3vw, 34px);
+  align-items: stretch;
+  padding: clamp(22px, 4vw, 54px) !important;
+  margin-bottom: clamp(20px, 3vw, 36px);
+  border: 0 !important;
+  border-radius: 48px 96px 48px 96px !important;
+  background:
+    linear-gradient(118deg, rgba(255, 255, 255, 0.88) 0 52%, rgba(25, 36, 70, 0.88) 52% 100%),
+    radial-gradient(circle at 26% 24%, rgba(20, 184, 255, 0.22), transparent 24rem) !important;
+  box-shadow: var(--nebula-shadow) !important;
+  overflow: hidden;
+  isolation: isolate;
+  clip-path: polygon(0 0, calc(100% - 46px) 0, 100% 46px, 100% 100%, 46px 100%, 0 calc(100% - 46px));
+}
+
+.overview-hero::before,
+.dashboard-hero::before {
+  content: "";
+  position: absolute;
+  inset: -25% -8% auto auto;
+  width: 54%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: conic-gradient(from 130deg, rgba(50, 104, 255, 0.44), rgba(242, 95, 183, 0.2), rgba(20, 184, 255, 0.35), rgba(50, 104, 255, 0.44));
+  filter: blur(2px);
+  opacity: 0.42;
+  z-index: -1;
+  animation: orbitSpin 18s linear infinite;
+}
+
+.overview-hero::after,
+.dashboard-hero::after {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 38px 82px 38px 82px;
+  pointer-events: none;
+}
+
+@keyframes orbitSpin { to { transform: rotate(1turn); } }
+
+.hero-copy,
+.dashboard-hero-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  max-width: 720px;
+}
+
+.hero-copy h2,
+.dashboard-hero-copy h2,
+.panel-header h2 {
+  letter-spacing: -0.065em;
+}
+
+.hero-copy p,
+.dashboard-hero-copy p {
+  max-width: 58ch;
+  color: rgba(82, 96, 126, 0.92) !important;
+  font-size: clamp(1rem, 1.3vw, 1.2rem);
+}
+
+.hero-balance-card,
+.dashboard-hero .hero-balance-card,
+.dashboard-main-card {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  display: grid;
+  align-content: center;
+  gap: 18px;
+  padding: clamp(18px, 2.5vw, 34px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  border-radius: 38px 76px 38px 76px !important;
+  color: #fff !important;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 255, 255, 0.28), transparent 14rem),
+    linear-gradient(145deg, rgba(11, 18, 39, 0.78), rgba(34, 52, 99, 0.72)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 22px 60px rgba(9, 15, 30, 0.24) !important;
+  overflow: hidden;
+}
+
+.hero-balance-card::before,
+.dashboard-main-card::before {
+  content: "";
+  position: absolute;
+  width: 190px;
+  height: 190px;
+  right: -50px;
+  top: -50px;
+  border-radius: 50%;
+  border: 28px solid rgba(255, 255, 255, 0.1);
+  opacity: 0.9;
+}
+
+.hero-balance-card .metric-label,
+.hero-balance-card span,
+.hero-balance-card small,
+.dashboard-main-card span,
+.dashboard-main-card small {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.hero-balance-card strong,
+.dashboard-main-card strong {
+  color: #fff !important;
+  font-size: clamp(2.1rem, 4vw, 4rem) !important;
+  letter-spacing: -0.08em;
+}
+
+.balance-subgrid,
+.dashboard-main-card .balance-subgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.balance-subgrid > div,
+.dashboard-main-card .balance-subgrid > div,
+.dashboard-stat-pill {
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 22px !important;
+  padding: 15px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(18px);
+}
+
+.hero-actions,
+.dashboard-hero-actions,
+.filters-actions,
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.primary-btn,
+.secondary-btn,
+button.primary-btn,
+button.secondary-btn,
+.btn,
+.icon-link-btn,
+.icon-action-btn {
+  border-radius: 999px !important;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.primary-btn:hover,
+.secondary-btn:hover,
+button.primary-btn:hover,
+button.secondary-btn:hover,
+.btn:hover,
+.icon-link-btn:hover,
+.icon-action-btn:hover {
+  transform: translateY(-2px);
+}
+
+.money-priority-grid,
+.dashboard-kpi-grid,
+.quick-overview-grid,
+.secondary-metrics-strip,
+.summary,
+.summary-grid,
+.accounts-summary,
+.receivables-summary,
+.payables-summary,
+.pending-summary,
+.investment-summary,
+.debts-summary,
+.project-summary-grid {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(12px, 1.6vw, 20px) !important;
+  align-items: stretch;
+}
+
+.money-priority-grid > *,
+.dashboard-kpi-grid > *,
+.quick-overview-grid > *,
+.secondary-metrics-strip > *,
+.summary > *,
+.summary-grid > *,
+.accounts-summary > *,
+.receivables-summary > *,
+.payables-summary > *,
+.pending-summary > *,
+.investment-summary > *,
+.debts-summary > *,
+.project-summary-grid > * {
+  grid-column: span 4;
+}
+
+.money-priority-grid .priority-card {
+  grid-column: span 6;
+  min-height: 240px;
+}
+
+.secondary-metrics-strip > *:nth-child(1),
+.quick-overview-grid > *:nth-child(1),
+.dashboard-kpi-grid > *:nth-child(1) { grid-column: span 5; }
+.secondary-metrics-strip > *:nth-child(2),
+.quick-overview-grid > *:nth-child(2),
+.dashboard-kpi-grid > *:nth-child(2) { grid-column: span 4; }
+.secondary-metrics-strip > *:nth-child(3),
+.quick-overview-grid > *:nth-child(3),
+.dashboard-kpi-grid > *:nth-child(3) { grid-column: span 3; }
+.secondary-metrics-strip > *:nth-child(4),
+.quick-overview-grid > *:nth-child(4),
+.dashboard-kpi-grid > *:nth-child(4) { grid-column: span 3; }
+.secondary-metrics-strip > *:nth-child(5),
+.quick-overview-grid > *:nth-child(5),
+.dashboard-kpi-grid > *:nth-child(5) { grid-column: span 4; }
+.secondary-metrics-strip > *:nth-child(6),
+.quick-overview-grid > *:nth-child(6),
+.dashboard-kpi-grid > *:nth-child(6) { grid-column: span 5; }
+
+.priority-card,
+.mini-priority-card,
+.summary-card,
+.quick-link-card,
+.kpi-card,
+.card,
+.chart-card,
+.pending-card,
+.payment-card,
+.recurring-rule-card,
+.liquid-account-card,
+.asset-card,
+.document-card,
+.panel-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  border-radius: 34px 56px 30px 46px !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(247, 250, 255, 0.62)),
+    radial-gradient(circle at 0% 0%, rgba(50, 104, 255, 0.1), transparent 13rem) !important;
+  box-shadow: var(--nebula-soft-shadow) !important;
+  backdrop-filter: blur(22px) saturate(1.18);
+  -webkit-backdrop-filter: blur(22px) saturate(1.18);
+  transition: transform 210ms ease, box-shadow 210ms ease, border-color 210ms ease;
+}
+
+.priority-card::before,
+.mini-priority-card::before,
+.summary-card::before,
+.quick-link-card::before,
+.kpi-card::before,
+.card::before,
+.panel-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--card-accent, var(--nebula-blue)), transparent 72%);
+}
+
+.priority-card::after,
+.mini-priority-card::after,
+.summary-card::after,
+.quick-link-card::after,
+.kpi-card::after,
+.card::after,
+.panel-card::after {
+  content: "";
+  position: absolute;
+  right: -36px;
+  bottom: -36px;
+  width: 120px;
+  height: 120px;
+  border-radius: 999px;
+  border: 18px solid color-mix(in srgb, var(--card-accent, var(--nebula-blue)) 17%, transparent);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.priority-card:hover,
+.mini-priority-card:hover,
+.summary-card:hover,
+.quick-link-card:hover,
+.kpi-card:hover,
+.card:hover,
+.panel-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 64px rgba(43, 60, 102, 0.18) !important;
+}
+
+.tone-income,
+.income,
+.income-action { --card-accent: var(--nebula-green); }
+.tone-expense,
+.expense,
+.expense-action { --card-accent: var(--nebula-red); }
+.tone-warning,
+.tone-pending,
+.pending,
+.warning { --card-accent: var(--nebula-orange); }
+.tone-investment,
+.investment,
+.investment-action { --card-accent: var(--nebula-violet); }
+.tone-net,
+.tone-availability,
+.priority-main,
+.special-action { --card-accent: var(--nebula-blue); }
+.tone-aux,
+.priority-visible { --card-accent: var(--nebula-cyan); }
+
+.mini-priority-card,
+.summary-card,
+.dashboard-kpi,
+.kpi-card {
+  min-height: 152px;
+  padding: clamp(18px, 2vw, 26px) !important;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px));
+}
+
+.mini-priority-card span,
+.summary-card span,
+.dashboard-kpi span,
+.kpi-card span,
+.priority-card .eyebrow,
+.quick-link-card span {
+  font-size: 0.76rem !important;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(86, 98, 130, 0.84) !important;
+}
+
+.mini-priority-card strong,
+.summary-card strong,
+.dashboard-kpi strong,
+.kpi-card strong,
+.priority-card strong {
+  color: var(--nebula-ink) !important;
+  font-size: clamp(1.65rem, 2.5vw, 2.55rem) !important;
+  letter-spacing: -0.075em;
+  line-height: 0.98;
+}
+
+.mini-priority-card small,
+.summary-card small,
+.dashboard-kpi small,
+.kpi-card small,
+.quick-link-card small {
+  color: rgba(88, 104, 138, 0.88) !important;
+  line-height: 1.45;
+}
+
+.priority-card {
+  padding: clamp(22px, 3vw, 34px) !important;
+  display: grid;
+  align-content: space-between;
+  clip-path: polygon(0 0, calc(100% - 42px) 0, 100% 42px, 100% 100%, 42px 100%, 0 calc(100% - 42px));
+}
+
+.priority-card h3,
+.panel-card h3,
+.quick-link-card strong {
+  color: var(--nebula-ink) !important;
+  letter-spacing: -0.055em;
+}
+
+.priority-card a,
+.panel-header a,
+.quick-link-card,
+.comparison-row a {
+  color: var(--nebula-blue) !important;
+  font-weight: 900;
+}
+
+.dashboard-grid,
+.dashboard-grid-even,
+.dashboard-grid-large-left,
+.cards-grid,
+.accounts-grid,
+.investment-grid,
+.documents-grid,
+.project-grid,
+.pending-grid,
+.recurring-grid {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(14px, 1.7vw, 22px) !important;
+}
+
+.dashboard-grid > *,
+.cards-grid > *,
+.accounts-grid > *,
+.investment-grid > *,
+.documents-grid > *,
+.project-grid > *,
+.pending-grid > *,
+.recurring-grid > * {
+  grid-column: span 6;
+}
+
+.dashboard-grid-large-left > *:first-child,
+.dashboard-grid > .chart-full,
+.dashboard-charts .chart-full {
+  grid-column: span 7;
+}
+
+.dashboard-grid-large-left > *:last-child {
+  grid-column: span 5;
+}
+
+.panel-card {
+  padding: clamp(20px, 2.4vw, 32px) !important;
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mini-metrics,
+.balance-subgrid,
+.comparison-list,
+.health-stack,
+.recent-list,
+.category-bars {
+  position: relative;
+  z-index: 1;
+}
+
+.mini-metrics > div,
+.comparison-row,
+.health-item,
+.recent-row,
+.category-bar-row,
+.table-panel,
+.filter-toolbar,
+.filters-panel,
+.form-card,
+.form-panel,
+.detail-panel {
+  border-radius: 24px 34px 22px 30px !important;
+  background: rgba(255, 255, 255, 0.58) !important;
+  box-shadow: inset 0 0 0 1px rgba(76, 88, 124, 0.08) !important;
+}
+
+.quick-link-grid {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(12px, 1.5vw, 18px) !important;
+  align-items: stretch;
+}
+
+.quick-link-card {
+  min-height: 118px;
+  display: grid;
+  align-content: center;
+  grid-column: span 4;
+  padding: 20px 24px !important;
+  text-decoration: none !important;
+  border-radius: 999px 48px 999px 48px !important;
+  clip-path: none;
+}
+
+.quick-link-card:nth-child(2n) {
+  border-radius: 48px 999px 48px 999px !important;
+}
+
+.quick-link-card:nth-child(1),
+.quick-link-card:nth-child(6) {
+  grid-column: span 5;
+}
+
+.quick-link-card:nth-child(2),
+.quick-link-card:nth-child(5) {
+  grid-column: span 3;
+}
+
+.quick-link-card:nth-child(3),
+.quick-link-card:nth-child(4) {
+  grid-column: span 4;
+}
+
+.dashboard-charts,
+.dashboard-charts-home,
+.dashboard-charts-redesigned {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(14px, 1.8vw, 22px) !important;
+}
+
+.chart-card {
+  min-height: 370px;
+  grid-column: span 6;
+  padding: 14px !important;
+  border-radius: 44px 68px 34px 52px !important;
+  clip-path: polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 34px 100%, 0 calc(100% - 34px));
+}
+
+.chart-full,
+.dashboard-charts .chart-full {
+  grid-column: span 12;
+}
+
+.expand-chart-btn {
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: var(--nebula-ink) !important;
+  box-shadow: 0 10px 24px rgba(43, 60, 102, 0.12) !important;
+}
+
+/* Tables become softer data lanes, without changing table structure. */
+.table-responsive,
+.table-scroll,
+.table-panel {
+  border-radius: 34px !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.55) !important;
+  box-shadow: var(--nebula-soft-shadow) !important;
+  backdrop-filter: blur(18px);
+}
+
+table,
+.data-table,
+.transactions-table,
+.money-table {
+  border-collapse: separate !important;
+  border-spacing: 0 8px !important;
+}
+
+thead th {
+  background: transparent !important;
+  color: rgba(82, 94, 126, 0.86) !important;
+  font-size: 0.74rem !important;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 0 !important;
+}
+
+tbody tr {
+  border-radius: 22px !important;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+tbody tr:hover {
+  transform: translateY(-1px);
+}
+
+tbody td {
+  background: rgba(255, 255, 255, 0.72) !important;
+  border-top: 1px solid rgba(78, 90, 126, 0.06) !important;
+  border-bottom: 1px solid rgba(78, 90, 126, 0.06) !important;
+}
+
+tbody td:first-child {
+  border-radius: 18px 0 0 18px !important;
+  border-left: 1px solid rgba(78, 90, 126, 0.06) !important;
+}
+
+tbody td:last-child {
+  border-radius: 0 18px 18px 0 !important;
+  border-right: 1px solid rgba(78, 90, 126, 0.06) !important;
+}
+
+input,
+select,
+textarea,
+.filter-field input,
+.filter-field select,
+.filter-field textarea {
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.74) !important;
+  border-color: rgba(88, 103, 140, 0.16) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 4px rgba(50, 104, 255, 0.12) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive layout
+-------------------------------------------------------------------------- */
+@media (max-width: 1240px) {
+  .nebula-topnav.sidebar,
+  .sidebar.nebula-topnav,
+  .app-navigation-dock.sidebar {
+    grid-template-columns: auto minmax(180px, 1fr) auto;
+  }
+
+  .nebula-brand .brand-text small,
+  .nebula-logout-action {
+    display: none !important;
+  }
+
+  .nebula-brand.brand {
+    max-width: 64px;
+    padding-right: 6px !important;
+  }
+
+  .nebula-net-chip.topbar-balance-pill {
+    min-width: 146px !important;
+    padding-inline: 15px !important;
+  }
+
+  .nebula-nav-lane .nav-group summary,
+  .nebula-nav-lane .nav-label {
+    padding: 0 11px !important;
+    letter-spacing: 0.1em;
+  }
+}
+
+@media (max-width: 1000px) {
+  :root { --nebula-bottom-space: 108px; }
+
+  .app-shell-nebula,
+  .app-shell.app-shell-nebula,
+  .app-shell-command-layout {
+    padding: 10px 10px 0 !important;
+  }
+
+  .nebula-topnav.sidebar,
+  .sidebar.nebula-topnav,
+  .app-navigation-dock.sidebar {
+    top: 8px !important;
+    height: auto !important;
+    min-height: 112px !important;
+    max-height: none !important;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "brand status"
+      "nav nav";
+    gap: 8px;
+    padding: 8px !important;
+    border-radius: 28px !important;
+  }
+
+  .nebula-brand { grid-area: brand; }
+  .nebula-status-zone { grid-area: status; }
+  .nebula-nav-lane { grid-area: nav; }
+
+  .nebula-nav-lane.sidebar-nav,
+  .sidebar-nav.nebula-nav-lane,
+  .app-navigation-dock .sidebar-nav {
+    justify-content: flex-start;
+    height: 48px !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    padding-bottom: 2px !important;
+    scrollbar-width: none;
+  }
+
+  .nebula-nav-lane::-webkit-scrollbar { display: none; }
+
+  .nebula-nav-lane .nav-group summary,
+  .nebula-nav-lane .nav-label {
+    height: 44px;
+    font-size: 0.66rem;
+    padding: 0 11px !important;
+    white-space: nowrap;
+  }
+
+  .nav-dot {
+    width: 24px;
+    height: 24px;
+  }
+
+  .nebula-nav-lane .nav-items,
+  .app-navigation-dock .nav-items {
+    position: fixed !important;
+    top: 118px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    transform: none !important;
+    grid-template-columns: 1fr 1fr;
+    max-height: min(62vh, 480px);
+    animation: navNebulaMobilePop 160ms ease forwards;
+  }
+
+  .nebula-nav-lane .nav-items::before { display: none; }
+
+  .nebula-nav-lane .nav-items-grouped {
+    grid-template-columns: 1fr;
+  }
+
+  @keyframes navNebulaMobilePop {
+    from { transform: translateY(-5px) scale(0.985); opacity: 0.4; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
+  .nebula-net-chip.topbar-balance-pill,
+  .topbar-balance-pill.nebula-net-chip {
+    min-width: 132px !important;
+    height: 48px !important;
+    padding: 6px 13px !important;
+  }
+
+  .nebula-net-chip span { font-size: 0.56rem !important; }
+  .nebula-net-chip strong { font-size: 0.95rem !important; }
+
+  .nebula-page-header.topbar,
+  .topbar.nebula-page-header {
+    min-height: 62px !important;
+    padding-top: 8px !important;
+  }
+
+  .nebula-page-signal {
+    display: none;
+  }
+
+  .overview-hero,
+  .dashboard-hero,
+  .panel-card.dashboard-hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    padding: 24px !important;
+    border-radius: 32px 52px 32px 52px !important;
+    clip-path: polygon(0 0, calc(100% - 28px) 0, 100% 28px, 100% 100%, 28px 100%, 0 calc(100% - 28px));
+    background:
+      linear-gradient(160deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.76) 52%, rgba(24, 36, 72, 0.9) 52% 100%) !important;
+  }
+
+  .hero-balance-card,
+  .dashboard-main-card {
+    min-height: 240px;
+  }
+
+  .money-priority-grid,
+  .dashboard-kpi-grid,
+  .quick-overview-grid,
+  .secondary-metrics-strip,
+  .summary,
+  .summary-grid,
+  .dashboard-grid,
+  .quick-link-grid,
+  .dashboard-charts,
+  .cards-grid,
+  .accounts-grid,
+  .investment-grid,
+  .documents-grid,
+  .project-grid,
+  .pending-grid,
+  .recurring-grid,
+  .accounts-summary,
+  .receivables-summary,
+  .payables-summary,
+  .pending-summary,
+  .investment-summary,
+  .debts-summary,
+  .project-summary-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
+
+  .money-priority-grid > *,
+  .dashboard-kpi-grid > *,
+  .quick-overview-grid > *,
+  .secondary-metrics-strip > *,
+  .summary > *,
+  .summary-grid > *,
+  .dashboard-grid > *,
+  .quick-link-grid > *,
+  .dashboard-charts > *,
+  .cards-grid > *,
+  .accounts-grid > *,
+  .investment-grid > *,
+  .documents-grid > *,
+  .project-grid > *,
+  .pending-grid > *,
+  .recurring-grid > *,
+  .accounts-summary > *,
+  .receivables-summary > *,
+  .payables-summary > *,
+  .pending-summary > *,
+  .investment-summary > *,
+  .debts-summary > *,
+  .project-summary-grid > * {
+    grid-column: span 3 !important;
+  }
+
+  .money-priority-grid .priority-card,
+  .dashboard-grid-large-left > *:first-child,
+  .dashboard-grid-large-left > *:last-child,
+  .dashboard-charts .chart-full,
+  .chart-full {
+    grid-column: span 6 !important;
+  }
+}
+
+@media (max-width: 700px) {
+  :root { --nebula-bottom-space: 96px; }
+
+  body.app-body-nebula {
+    background:
+      radial-gradient(circle at 20% 0%, rgba(50, 104, 255, 0.28), transparent 22rem),
+      radial-gradient(circle at 100% 34%, rgba(242, 95, 183, 0.18), transparent 22rem),
+      linear-gradient(180deg, #eef4ff, #f8fbff);
+  }
+
+  .nebula-topnav.sidebar,
+  .sidebar.nebula-topnav,
+  .app-navigation-dock.sidebar {
+    min-height: 104px !important;
+    border-radius: 24px !important;
+  }
+
+  .nebula-brand.brand {
+    max-width: 168px;
+  }
+
+  .nebula-brand .brand-text small {
+    display: block !important;
+  }
+
+  .nebula-logout-form { display: none !important; }
+
+  .nebula-nav-lane .nav-items,
+  .app-navigation-dock .nav-items {
+    top: 110px !important;
+    grid-template-columns: 1fr;
+    border-radius: 24px !important;
+  }
+
+  .nebula-page-header .topbar-title h1 {
+    font-size: clamp(2rem, 15vw, 3.6rem);
+  }
+
+  .overview-hero,
+  .dashboard-hero,
+  .panel-card.dashboard-hero {
+    margin-inline: -1px;
+    padding: 20px !important;
+    border-radius: 28px !important;
+    clip-path: none;
+  }
+
+  .overview-hero::after,
+  .dashboard-hero::after {
+    inset: 11px;
+    border-radius: 22px;
+  }
+
+  .balance-subgrid {
+    grid-template-columns: 1fr;
+  }
+
+  .money-priority-grid,
+  .dashboard-kpi-grid,
+  .quick-overview-grid,
+  .secondary-metrics-strip,
+  .summary,
+  .summary-grid,
+  .dashboard-grid,
+  .quick-link-grid,
+  .dashboard-charts,
+  .cards-grid,
+  .accounts-grid,
+  .investment-grid,
+  .documents-grid,
+  .project-grid,
+  .pending-grid,
+  .recurring-grid,
+  .accounts-summary,
+  .receivables-summary,
+  .payables-summary,
+  .pending-summary,
+  .investment-summary,
+  .debts-summary,
+  .project-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .money-priority-grid > *,
+  .dashboard-kpi-grid > *,
+  .quick-overview-grid > *,
+  .secondary-metrics-strip > *,
+  .summary > *,
+  .summary-grid > *,
+  .dashboard-grid > *,
+  .quick-link-grid > *,
+  .dashboard-charts > *,
+  .cards-grid > *,
+  .accounts-grid > *,
+  .investment-grid > *,
+  .documents-grid > *,
+  .project-grid > *,
+  .pending-grid > *,
+  .recurring-grid > *,
+  .accounts-summary > *,
+  .receivables-summary > *,
+  .payables-summary > *,
+  .pending-summary > *,
+  .investment-summary > *,
+  .debts-summary > *,
+  .project-summary-grid > * {
+    grid-column: 1 / -1 !important;
+  }
+
+  .mini-priority-card,
+  .summary-card,
+  .dashboard-kpi,
+  .kpi-card,
+  .priority-card,
+  .panel-card,
+  .quick-link-card,
+  .chart-card {
+    clip-path: none;
+    border-radius: 26px 38px 24px 34px !important;
+  }
+
+  .quick-link-card,
+  .quick-link-card:nth-child(2n) {
+    border-radius: 999px 34px 999px 34px !important;
+    min-height: 104px;
+  }
+
+  .nebula-action-dock.quick-actions,
+  .quick-actions.nebula-action-dock {
+    bottom: 10px !important;
+    width: calc(100vw - 16px) !important;
+    min-height: 68px;
+    padding: 7px !important;
+    gap: 6px;
+    border-radius: 26px !important;
+  }
+
+  .nebula-action-dock .quick-action {
+    min-height: 54px;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 4px !important;
+    border-radius: 20px !important;
+  }
+
+  .nebula-action-dock .action-symbol {
+    width: 26px;
+    height: 26px;
+    flex-basis: 26px;
+    font-size: 0.92rem;
+  }
+
+  .nebula-action-dock .quick-action-copy {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .nebula-action-dock .quick-action-copy small {
+    display: none;
+  }
+
+  .nebula-action-dock .quick-action-copy strong {
+    max-width: 58px;
+    font-size: 0.72rem;
+    letter-spacing: -0.03em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  tbody td:first-child,
+  tbody td:last-child,
+  tbody td {
+    border-radius: 0 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .nebula-brand .brand-text {
+    display: none;
+  }
+
+  .nebula-brand.brand {
+    max-width: 56px;
+  }
+
+  .nebula-net-chip.topbar-balance-pill {
+    min-width: 122px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
