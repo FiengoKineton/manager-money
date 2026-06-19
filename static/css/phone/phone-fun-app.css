@@ -1,0 +1,827 @@
+/* --------------------------------------------------------------------------
+   Phone Fun App Layer v1
+   Phone-only experience layer. It does not affect desktop because it is loaded
+   through static/css/phone/phone.css, which is media-gated in base.html.
+-------------------------------------------------------------------------- */
+@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+  html.phone-shell-active.phone-fun-active {
+    --fun-bg-a: #130f40;
+    --fun-bg-b: #4b1fa2;
+    --fun-bg-c: #008b8b;
+    --fun-card: rgba(255, 255, 255, 0.135);
+    --fun-card-strong: rgba(255, 255, 255, 0.205);
+    --fun-border: rgba(255, 255, 255, 0.22);
+    --fun-text: #fff7ff;
+    --fun-muted: rgba(255, 247, 255, 0.72);
+    --fun-good: #38f2ad;
+    --fun-bad: #ff6b9f;
+    --fun-warn: #ffd166;
+    --fun-info: #55ddff;
+    --fun-invest: #c7a2ff;
+    --fun-shadow: 0 22px 60px rgba(2, 4, 18, 0.32);
+    --fun-radius: 30px;
+    background: var(--fun-bg-a);
+  }
+
+  html[data-theme="day"].phone-shell-active.phone-fun-active {
+    --fun-bg-a: #fff7fb;
+    --fun-bg-b: #f4edff;
+    --fun-bg-c: #e6fbff;
+    --fun-card: rgba(255, 255, 255, 0.72);
+    --fun-card-strong: rgba(255, 255, 255, 0.9);
+    --fun-border: rgba(80, 54, 140, 0.16);
+    --fun-text: #24133a;
+    --fun-muted: rgba(36, 19, 58, 0.68);
+    --fun-shadow: 0 18px 46px rgba(79, 39, 134, 0.14);
+  }
+
+  html.phone-shell-active.phone-fun-active body.app-body {
+    overflow-x: hidden !important;
+    color: var(--fun-text) !important;
+    background:
+      radial-gradient(circle at 18% -4%, rgba(255, 82, 168, 0.28), transparent 16rem),
+      radial-gradient(circle at 96% 4%, rgba(85, 221, 255, 0.24), transparent 18rem),
+      linear-gradient(155deg, var(--fun-bg-a), var(--fun-bg-b) 52%, var(--fun-bg-c)) !important;
+    background-attachment: fixed !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .app-main {
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .container,
+  html.phone-shell-active.phone-fun-active .app-content-stage {
+    width: min(100%, 100vw) !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    padding-left: max(0.88rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.88rem, env(safe-area-inset-right, 0px)) !important;
+    box-sizing: border-box !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .app-content-stage > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .app-topbar {
+    backdrop-filter: blur(22px) saturate(1.35) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .app-topbar-title .eyebrow {
+    color: var(--fun-muted) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .app-topbar-title h1 {
+    max-width: 42vw !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .topbar-net-pill {
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.16) !important;
+    border: 1px solid var(--fun-border) !important;
+    min-width: 0 !important;
+    max-width: 30vw !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .theme-toggle-btn,
+  html.phone-shell-active.phone-fun-active .notification-trigger {
+    flex: 0 0 auto !important;
+  }
+
+  /* Phone Today cockpit ---------------------------------------------------- */
+  .phone-today-cockpit {
+    display: grid;
+    gap: 0.92rem;
+    margin: 0 0 1rem;
+    animation: phone-rise-in 520ms cubic-bezier(.18,.9,.2,1) both;
+  }
+
+  .phone-today-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 34px;
+    padding: 1.08rem;
+    background:
+      radial-gradient(circle at 16% 14%, rgba(255, 107, 159, 0.34), transparent 9rem),
+      radial-gradient(circle at 90% 0%, rgba(85, 221, 255, 0.32), transparent 10rem),
+      linear-gradient(145deg, rgba(255,255,255,0.24), rgba(255,255,255,0.10));
+    border: 1px solid var(--fun-border);
+    box-shadow: var(--fun-shadow);
+    isolation: isolate;
+  }
+
+  .phone-today-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto -18% -42% auto;
+    width: 12rem;
+    height: 12rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(255,255,255,0.20), transparent 66%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .phone-greeting-row,
+  .phone-mood-row,
+  .phone-action-row,
+  .phone-section-head,
+  .phone-week-bars,
+  .phone-mini-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.62rem;
+  }
+
+  .phone-greeting-row {
+    justify-content: space-between;
+    margin-bottom: 0.9rem;
+  }
+
+  .phone-greeting-row strong {
+    display: block;
+    font-size: 1.06rem;
+    letter-spacing: -0.04em;
+  }
+
+  .phone-greeting-row small,
+  .phone-net-label,
+  .phone-mood-copy small,
+  .phone-section-head small,
+  .phone-mini-stat small {
+    color: var(--fun-muted);
+  }
+
+  .phone-mood-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    border-radius: 999px;
+    padding: 0.42rem 0.62rem;
+    background: rgba(255,255,255,0.16);
+    border: 1px solid var(--fun-border);
+    font-weight: 900;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .phone-net-block {
+    margin: 0.4rem 0 0.84rem;
+  }
+
+  .phone-net-block strong {
+    display: block;
+    font-size: clamp(2.1rem, 11.5vw, 3.4rem);
+    letter-spacing: -0.085em;
+    line-height: 0.95;
+    color: var(--fun-text);
+  }
+
+  .phone-mood-row {
+    align-items: stretch;
+    border-radius: 24px;
+    padding: 0.72rem;
+    background: rgba(255, 255, 255, 0.13);
+    border: 1px solid rgba(255,255,255,0.16);
+  }
+
+  .phone-mood-icon {
+    width: 2.8rem;
+    min-width: 2.8rem;
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+    font-size: 1.3rem;
+    background: rgba(255,255,255,0.18);
+  }
+
+  .phone-mood-copy strong,
+  .phone-mini-stat strong {
+    display: block;
+    letter-spacing: -0.035em;
+  }
+
+  .phone-action-row {
+    margin-top: 0.85rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .phone-action-row a,
+  .phone-action-row button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.72rem 0.8rem;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 950;
+    letter-spacing: -0.035em;
+    background: linear-gradient(135deg, #ff4d9d, #7c3aed 56%, #00d4ff);
+    box-shadow: 0 14px 30px rgba(124, 58, 237, 0.28);
+  }
+
+  .phone-action-row a:last-child,
+  .phone-action-row button:last-child {
+    color: var(--fun-text);
+    background: rgba(255,255,255,0.15);
+    border: 1px solid var(--fun-border);
+    box-shadow: none;
+  }
+
+  .phone-mini-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .phone-mini-stat {
+    min-width: 0;
+    border-radius: 22px;
+    padding: 0.78rem;
+    background: var(--fun-card);
+    border: 1px solid var(--fun-border);
+    box-shadow: 0 14px 34px rgba(4, 7, 24, 0.12);
+  }
+
+  .phone-mini-stat strong {
+    font-size: 0.98rem;
+    overflow-wrap: anywhere;
+  }
+
+  .phone-section-card {
+    overflow: hidden;
+    border-radius: 28px;
+    padding: 0.94rem;
+    background: var(--fun-card);
+    border: 1px solid var(--fun-border);
+    box-shadow: 0 14px 38px rgba(2, 4, 18, 0.16);
+    backdrop-filter: blur(18px) saturate(1.25);
+  }
+
+  .phone-section-head {
+    justify-content: space-between;
+    margin-bottom: 0.74rem;
+  }
+
+  .phone-section-head strong {
+    letter-spacing: -0.04em;
+  }
+
+  .phone-week-bars {
+    align-items: end;
+    justify-content: space-between;
+    min-height: 5.5rem;
+    padding: 0.35rem 0 0;
+  }
+
+  .phone-week-bar {
+    flex: 1 1 0;
+    min-width: 0;
+    display: grid;
+    justify-items: center;
+    gap: 0.38rem;
+    color: var(--fun-muted);
+    font-size: 0.72rem;
+  }
+
+  .phone-week-bar span {
+    display: block;
+    width: min(1.15rem, 70%);
+    height: max(0.45rem, calc(var(--bar-value, 0) * 4.2rem));
+    border-radius: 999px;
+    background: linear-gradient(180deg, #55ddff, #ff4d9d);
+    box-shadow: 0 8px 18px rgba(85, 221, 255, 0.2);
+  }
+
+  .phone-upcoming-list {
+    display: grid;
+    gap: 0.58rem;
+  }
+
+  .phone-upcoming-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.58rem;
+    min-width: 0;
+    border-radius: 20px;
+    padding: 0.66rem;
+    color: inherit;
+    text-decoration: none;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.14);
+  }
+
+  .phone-upcoming-item b,
+  .phone-upcoming-item small {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .phone-upcoming-icon {
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.17);
+  }
+
+  /* Phone-first page simplification -------------------------------------- */
+  html.phone-shell-active.phone-fun-active .overview-decision-hero,
+  html.phone-shell-active.phone-fun-active .dashboard-hero {
+    display: none !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .overview-metric-grid,
+  html.phone-shell-active.phone-fun-active .dashboard-kpi-grid,
+  html.phone-shell-active.phone-fun-active .transactions-summary-grid,
+  html.phone-shell-active.phone-fun-active .summary,
+  html.phone-shell-active.phone-fun-active .summary-grid,
+  html.phone-shell-active.phone-fun-active .analysis-kpi-grid,
+  html.phone-shell-active.phone-fun-active .account-kpi-grid,
+  html.phone-shell-active.phone-fun-active .currency-kpi-grid,
+  html.phone-shell-active.phone-fun-active .investment-summary-grid,
+  html.phone-shell-active.phone-fun-active .debts-summary,
+  html.phone-shell-active.phone-fun-active .payables-summary,
+  html.phone-shell-active.phone-fun-active .receivables-summary,
+  html.phone-shell-active.phone-fun-active .parent-support-summary,
+  html.phone-shell-active.phone-fun-active .sparagnat-summary,
+  html.phone-shell-active.phone-fun-active .forecast-summary-strip {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr)) !important;
+    gap: 0.75rem !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .summary-card,
+  html.phone-shell-active.phone-fun-active .panel-card,
+  html.phone-shell-active.phone-fun-active .chart-card,
+  html.phone-shell-active.phone-fun-active .form-section,
+  html.phone-shell-active.phone-fun-active .transactions,
+  html.phone-shell-active.phone-fun-active .payment-card,
+  html.phone-shell-active.phone-fun-active .recurring-rule-card,
+  html.phone-shell-active.phone-fun-active .finished-rule-card,
+  html.phone-shell-active.phone-fun-active .account-directory-card,
+  html.phone-shell-active.phone-fun-active .currency-table-card,
+  html.phone-shell-active.phone-fun-active .professional-table-card {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    border-radius: 28px !important;
+    background: var(--fun-card) !important;
+    border: 1px solid var(--fun-border) !important;
+    box-shadow: 0 14px 36px rgba(4, 7, 24, 0.15) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .summary-card {
+    position: relative;
+    padding: 0.86rem !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .summary-card::after,
+  html.phone-shell-active.phone-fun-active .panel-card::after {
+    content: "";
+    position: absolute;
+    inset: -3.8rem -3.8rem auto auto;
+    width: 7rem;
+    height: 7rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(255,255,255,0.14), transparent 70%);
+    pointer-events: none;
+  }
+
+  html.phone-shell-active.phone-fun-active .summary-card strong,
+  html.phone-shell-active.phone-fun-active .summary-card p {
+    overflow-wrap: anywhere;
+  }
+
+  /* Colorful categories and transaction feed ----------------------------- */
+  .phone-category-chip,
+  .phone-card-emoji {
+    display: inline-grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 17px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--chip-a, #7c3aed), var(--chip-b, #00d4ff));
+    box-shadow: 0 12px 24px rgba(2, 4, 18, 0.16);
+  }
+
+  .phone-transaction-card {
+    position: relative !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 0.7rem !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    border-radius: 26px !important;
+    padding: 0.78rem !important;
+    color: var(--fun-text) !important;
+    text-decoration: none !important;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(255,255,255,0.16), transparent 8rem),
+      linear-gradient(145deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08)) !important;
+    border: 1px solid var(--fun-border) !important;
+    box-shadow: 0 16px 38px rgba(2, 4, 18, 0.18) !important;
+    transform: translate3d(var(--swipe-x, 0), 0, 0) scale(var(--card-scale, 1));
+    transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    animation: phone-card-pop 480ms cubic-bezier(.18,.9,.2,1) both;
+    animation-delay: calc(min(var(--phone-card-index, 0), 12) * 30ms);
+  }
+
+  .phone-transaction-card:active {
+    --card-scale: 0.985;
+  }
+
+  .phone-transaction-card.is-expanded {
+    box-shadow: 0 24px 58px rgba(2, 4, 18, 0.28) !important;
+  }
+
+  .phone-transaction-card::after {
+    content: "Tap again to open";
+    grid-column: 1 / -1;
+    display: none;
+    margin-top: 0.3rem;
+    padding: 0.55rem 0.64rem;
+    border-radius: 18px;
+    color: var(--fun-muted);
+    background: rgba(255,255,255,0.10);
+  }
+
+  .phone-transaction-card.is-expanded::after {
+    display: block;
+  }
+
+  .phone-transaction-card.is-swiped::before {
+    content: "Open details →";
+    position: absolute;
+    inset: 0.55rem 0.55rem 0.55rem auto;
+    display: grid;
+    place-items: center;
+    width: 7rem;
+    border-radius: 20px;
+    color: #fff;
+    font-weight: 900;
+    background: linear-gradient(135deg, #00d4ff, #7c3aed);
+    z-index: -1;
+  }
+
+  .phone-transaction-copy {
+    min-width: 0 !important;
+  }
+
+  .phone-transaction-copy b,
+  .phone-transaction-copy small,
+  .phone-transaction-copy em {
+    display: block !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .phone-transaction-amount,
+  .mobile-row-amount,
+  .transaction-amount-cell {
+    white-space: nowrap !important;
+  }
+
+  .phone-money-feed-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    margin: 0.2rem 0 0.7rem;
+  }
+
+  .phone-money-feed-head strong {
+    font-size: 1.18rem;
+    letter-spacing: -0.045em;
+  }
+
+  .phone-filter-chips {
+    display: flex;
+    gap: 0.45rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.1rem;
+  }
+
+  .phone-filter-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .phone-filter-chip {
+    flex: 0 0 auto;
+    min-height: 2.35rem;
+    border: 1px solid var(--fun-border);
+    border-radius: 999px;
+    padding: 0.58rem 0.72rem;
+    color: var(--fun-text);
+    background: rgba(255,255,255,0.12);
+    font-weight: 850;
+  }
+
+  .phone-filter-chip.is-active {
+    color: #fff;
+    background: linear-gradient(135deg, #ff4d9d, #7c3aed 58%, #00d4ff);
+  }
+
+  /* Add flow: calculator/stepper feeling -------------------------------- */
+  html.phone-shell-active.phone-fun-active .normal-add-polished .transaction-form.phone-flow-paged {
+    display: grid !important;
+    gap: 0.82rem !important;
+    overflow: hidden !important;
+  }
+
+  .phone-flow-nav {
+    position: sticky;
+    bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+    z-index: 25;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+    padding: 0.62rem;
+    border-radius: 24px;
+    background: rgba(18, 12, 42, 0.72);
+    border: 1px solid var(--fun-border);
+    backdrop-filter: blur(18px) saturate(1.3);
+    box-shadow: 0 18px 44px rgba(2, 4, 18, 0.28);
+  }
+
+  html[data-theme="day"].phone-shell-active .phone-flow-nav {
+    background: rgba(255,255,255,0.78);
+  }
+
+  .phone-flow-nav button {
+    min-height: 2.9rem;
+    border: 0;
+    border-radius: 999px;
+    font-weight: 950;
+    color: var(--fun-text);
+    background: rgba(255,255,255,0.14);
+  }
+
+  .phone-flow-nav button[data-phone-flow-next] {
+    color: #fff;
+    background: linear-gradient(135deg, #ff4d9d, #7c3aed 58%, #00d4ff);
+  }
+
+  .phone-add-step {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    border-radius: 30px !important;
+    padding: 1rem !important;
+    background: var(--fun-card) !important;
+    border: 1px solid var(--fun-border) !important;
+    box-shadow: 0 14px 34px rgba(2, 4, 18, 0.16) !important;
+  }
+
+  .phone-add-step::before {
+    content: attr(data-phone-step-title);
+    display: block;
+    margin-bottom: 0.72rem;
+    color: var(--fun-muted);
+    font-weight: 950;
+    letter-spacing: -0.03em;
+  }
+
+  .phone-flow-paged .phone-add-step:not(.is-active) {
+    display: none !important;
+  }
+
+  .phone-add-primary-amount input[name="amount"],
+  html.phone-shell-active.phone-fun-active input[name="amount"] {
+    min-height: 4.2rem !important;
+    border-radius: 24px !important;
+    font-size: 2rem !important;
+    font-weight: 950 !important;
+    letter-spacing: -0.06em !important;
+    text-align: center !important;
+    background: rgba(255,255,255,0.16) !important;
+  }
+
+  .phone-calculator-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.72rem;
+  }
+
+  .phone-calculator-pad button {
+    min-height: 3.15rem;
+    border: 1px solid var(--fun-border);
+    border-radius: 22px;
+    color: var(--fun-text);
+    background: rgba(255,255,255,0.12);
+    font-size: 1.08rem;
+    font-weight: 950;
+  }
+
+  .phone-mode-card-row,
+  .phone-category-card-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.62rem;
+    margin: 0.7rem 0;
+  }
+
+  .phone-mode-card-row a,
+  .phone-category-card {
+    min-height: 4.2rem;
+    border: 1px solid var(--fun-border);
+    border-radius: 24px;
+    padding: 0.76rem;
+    display: grid;
+    align-content: center;
+    gap: 0.18rem;
+    color: var(--fun-text);
+    text-decoration: none;
+    background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+  }
+
+  .phone-category-card.is-selected {
+    outline: 2px solid rgba(85, 221, 255, 0.72);
+    background: linear-gradient(135deg, rgba(85,221,255,0.20), rgba(255,77,157,0.14));
+  }
+
+  /* Floating smart notifications ---------------------------------------- */
+  html.phone-shell-active.phone-fun-active .notification-panel {
+    position: fixed !important;
+    left: max(0.78rem, env(safe-area-inset-left, 0px)) !important;
+    right: max(0.78rem, env(safe-area-inset-right, 0px)) !important;
+    top: calc(4.9rem + env(safe-area-inset-top, 0px)) !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: min(70svh, 38rem) !important;
+    overflow: auto !important;
+    border-radius: 30px !important;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(255,77,157,0.22), transparent 12rem),
+      rgba(18, 12, 42, 0.88) !important;
+    border: 1px solid var(--fun-border) !important;
+    box-shadow: var(--fun-shadow) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .notification-card {
+    border-radius: 22px !important;
+    background: rgba(255,255,255,0.11) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .notification-card.is-unread {
+    background: linear-gradient(135deg, rgba(255, 209, 102, 0.18), rgba(255,255,255,0.11)) !important;
+    outline: 1px solid rgba(255, 209, 102, 0.22);
+  }
+
+  /* All tables/forms stay inside the available phone screen -------------- */
+  html.phone-shell-active.phone-fun-active :is(.transactions, .standard-table-panel, .table-component, .table-shell, .project-table-card, .currency-table-wrap, .professional-table-card, .panel-card:has(table)) {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html.phone-shell-active.phone-fun-active :is(table, .standard-table, .transactions-table, .inline-edit-table, .currency-table, .internal-transfer-table, .debt-tracked-table, .debt-rules-table, .payables-tracked-table, .money-owed-table, .project-table) {
+    width: max-content !important;
+    min-width: 100% !important;
+    max-width: none !important;
+  }
+
+  html.phone-shell-active.phone-fun-active :is(input, select, textarea, button) {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  html.phone-shell-active.phone-fun-active :is(.filters-form, .filter-row, .dashboard-filter-row, .transactions-filter-row, .payment-card, .recurring-rule-card, .payment-edit-grid, .rule-fields-grid, .forecast-form-grid, .currency-add-form, .investment-asset-form, .expense-project-form, .debt-form, .entry-form) {
+    grid-template-columns: 1fr !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  html.phone-shell-active.phone-fun-active :is(.dashboard-charts-home, .dashboard-charts, .analysis-plots-grid, .forecast-chart-grid, .investment-plot-grid, .yearly-chart-grid) {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  html.phone-shell-active.phone-fun-active :is(.chart-embed, .js-plotly-plot, .plot-container, .svg-container) {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .chart-embed {
+    overflow: hidden !important;
+    border-radius: 24px;
+  }
+
+  html.phone-shell-active.phone-fun-active .plotly-graph-div {
+    max-width: 100% !important;
+  }
+
+  /* Toast/success feedback ------------------------------------------------ */
+  .phone-toast-stack {
+    position: fixed;
+    left: max(0.86rem, env(safe-area-inset-left, 0px));
+    right: max(0.86rem, env(safe-area-inset-right, 0px));
+    bottom: calc(6.35rem + env(safe-area-inset-bottom, 0px));
+    z-index: 1200;
+    display: grid;
+    gap: 0.52rem;
+    pointer-events: none;
+  }
+
+  .phone-toast {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.58rem;
+    align-items: center;
+    border-radius: 24px;
+    padding: 0.76rem 0.82rem;
+    color: var(--fun-text);
+    background: rgba(18, 12, 42, 0.82);
+    border: 1px solid var(--fun-border);
+    box-shadow: var(--fun-shadow);
+    backdrop-filter: blur(18px) saturate(1.25);
+    animation: phone-toast-in 280ms ease both;
+  }
+
+  html[data-theme="day"].phone-shell-active .phone-toast {
+    background: rgba(255,255,255,0.86);
+  }
+
+  .phone-toast small {
+    color: var(--fun-muted);
+  }
+
+  /* Safer mobile nav ------------------------------------------------------ */
+  html.phone-shell-active.phone-fun-active .mobile-bottom-nav.mobile-tabbar {
+    left: max(0.76rem, env(safe-area-inset-left, 0px)) !important;
+    right: max(0.76rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: max(0.72rem, env(safe-area-inset-bottom, 0px)) !important;
+    width: auto !important;
+    max-width: calc(100vw - 1.52rem) !important;
+    overflow: visible !important;
+    border-radius: 30px !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .mobile-tabbar .mobile-tab {
+    min-width: 0 !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .mobile-tabbar .mobile-tab-add {
+    transform: translateY(-0.5rem);
+  }
+
+  html.phone-shell-active.phone-fun-active .mobile-tabbar .mobile-tab-add span {
+    width: 3.2rem !important;
+    height: 3.2rem !important;
+    animation: phone-add-pulse 2.8s ease-in-out infinite;
+  }
+
+  @keyframes phone-rise-in {
+    from { opacity: 0; transform: translate3d(0, 1rem, 0) scale(0.98); }
+    to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  }
+
+  @keyframes phone-card-pop {
+    from { opacity: 0; transform: translate3d(0, 0.8rem, 0) scale(0.985); }
+    to { opacity: 1; transform: translate3d(var(--swipe-x, 0), 0, 0) scale(var(--card-scale, 1)); }
+  }
+
+  @keyframes phone-toast-in {
+    from { opacity: 0; transform: translate3d(0, 0.8rem, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+
+  @keyframes phone-add-pulse {
+    0%, 100% { box-shadow: 0 12px 28px rgba(247, 37, 133, 0.38); }
+    50% { box-shadow: 0 18px 42px rgba(0, 212, 255, 0.36); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .phone-today-cockpit,
+    .phone-transaction-card,
+    .phone-toast,
+    html.phone-shell-active.phone-fun-active .mobile-tabbar .mobile-tab-add span {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}

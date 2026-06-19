@@ -21,6 +21,16 @@
     return phoneMedia.matches;
   }
 
+  function ensurePhoneFunAppLoaded() {
+    if (!isPhoneShell()) return;
+    if (document.querySelector('script[data-phone-fun-app="true"]')) return;
+    const script = document.createElement("script");
+    script.src = "/static/js/phone/phone-fun-app.js?v=phone-fun-app-1";
+    script.defer = true;
+    script.dataset.phoneFunApp = "true";
+    document.head.appendChild(script);
+  }
+
   function allSheets() {
     return Array.from(document.querySelectorAll(sheetSelector));
   }
@@ -137,6 +147,7 @@
   function wirePhoneShell() {
     setViewportHeightVariable(true);
     syncShellClass();
+    ensurePhoneFunAppLoaded();
     wireSheetLinksAndBackdrop();
     allSheets().forEach((sheet) => {
       if (!sheet.classList.contains("is-open")) closeSheet(sheet);
