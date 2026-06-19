@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "read": {
+    "mmn-1080d61b8a3e1852": "2026-06-19T17:32:20"
+  },
+  "history": [
+    {
+      "id": "mmn-1080d61b8a3e1852",
+      "tone": "info",
+      "label": "Created 29 days ago",
+      "icon": "◇",
+      "title": "Payable still open: Infissi",
+      "summary": "€ 2500.00 remaining · Giuseppe",
+      "detail": "This payable has been open for a while. Check whether it should be paid now, delayed, linked to a project, or closed.",
+      "meta": "Payable review",
+      "href": "/payables",
+      "href_label": "Review payable",
+      "read_at": "2026-06-19T17:32:20",
+      "last_seen_at": "2026-06-19T17:32:20"
+    }
+  ]
+}

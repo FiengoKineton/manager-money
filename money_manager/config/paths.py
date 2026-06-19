@@ -5,6 +5,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 DOCUMENTS_DIR = PROJECT_ROOT / "documents"
 PLOTS_DIR = PROJECT_ROOT / "static" / "plots"
 CACHE_DIR = DATA_DIR / "cache"
+NOTIFICATIONS_STATE_JSON = DATA_DIR / "notification_state.json"
 
 TRANSACTION_FILES = {
     "expense": DATA_DIR / "expenses.csv",

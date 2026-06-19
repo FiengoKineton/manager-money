@@ -114,7 +114,7 @@
           <div class="notification-menu" data-notification-menu>
             <button
               type="button"
-              class="notification-trigger {{ 'has-notifications' if topbar_notifications.count else '' }} {{ 'has-alerts' if topbar_notifications.has_unread_candidate else '' }}"
+              class="notification-trigger {{ 'has-notifications' if topbar_notifications['count'] else '' }} {{ 'has-alerts' if topbar_notifications['has_unread_candidate'] else '' }}"
               data-notification-trigger
               aria-label="Open reminders and notifications"
               aria-controls="topbar-notifications-panel"
@@ -123,7 +123,7 @@
               <span class="notification-trigger-icon" aria-hidden="true">🔔</span>
               <span class="notification-trigger-text">Alerts</span>
               <span class="notification-dot" data-notification-dot aria-hidden="true"></span>
-              <span class="notification-count" data-notification-count>{{ topbar_notifications.urgent_count }}</span>
+              <span class="notification-count" data-notification-count>{{ topbar_notifications['unread_count'] }}</span>
             </button>
 
             <section
@@ -139,15 +139,15 @@
                   <strong>Notifications</strong>
                 </div>
                 <div class="notification-panel-actions">
-                  <button type="button" class="notification-small-action" data-notification-mark-read>Mark read</button>
+                  <button type="button" class="notification-small-action" data-notification-mark-read>Mark all read</button>
                   <button type="button" class="notification-close" data-notification-close aria-label="Close notifications">×</button>
                 </div>
               </header>
 
               <div class="notification-current-list" data-current-notification-list>
-                {% for item in topbar_notifications["items"] %}
+                {% for item in topbar_notifications['items'] %}
                   <article
-                    class="notification-card notification-card-{{ item.tone }} {{ 'is-urgent' if item.is_urgent else '' }}"
+                    class="notification-card notification-card-{{ item.tone }} {{ 'is-read' if item.is_read else 'is-unread' }} {{ 'is-urgent' if item.is_urgent else '' }}"
                     data-notification-card
                     data-current-notification="true"
                     data-notification-id="{{ item.id }}"
@@ -184,7 +184,11 @@
                   <span>Older notifications</span>
                   <button type="button" class="notification-small-action" data-notification-clear-history>Clear</button>
                 </div>
-                <div class="notification-history-list" data-notification-history-list></div>
+                <div
+                  class="notification-history-list"
+                  data-notification-history-list
+                  data-notification-history-seed='{{ topbar_notifications["history"]|tojson|forceescape }}'
+                ></div>
               </section>
             </section>
           </div>
@@ -348,7 +352,7 @@
   </section>
 
   <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=web-phone-split-1"></script>
-  <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-1"></script>
+  <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=web-phone-split-1"></script>
   <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=web-phone-split-1"></script>
   <script src="{{ url_for('static', filename='js/phone/phone-transactions.js') }}?v=web-phone-split-1"></script>

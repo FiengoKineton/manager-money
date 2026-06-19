@@ -18,32 +18,77 @@ DEBT_STALE_DAYS = 45
 PAYABLE_STALE_DAYS = 21
 
 
+def attach_notification_state(context: dict[str, Any]) -> dict[str, Any]:
+    try:
+        from copy import deepcopy
+        from money_manager.services.notification_state_service import (
+            notification_history,
+            read_notification_ids,
+        )
+
+        output = deepcopy(context)
+        items = output.get("items", [])
+        if not isinstance(items, list):
+            items = []
+            output["items"] = items
+
+        read_ids = read_notification_ids()
+
+        unread_count = 0
+        unread_urgent_count = 0
+        current_ids = set()
+
+        for item in items:
+            item_id = str(item.get("id", ""))
+            current_ids.add(item_id)
+
+            is_read = item_id in read_ids
+            item["is_read"] = is_read
+            item["is_unread"] = not is_read
+
+            if not is_read:
+                unread_count += 1
+                if item.get("tone") in {"critical", "warning"}:
+                    unread_urgent_count += 1
+
+        history = [
+            item
+            for item in notification_history(limit=20)
+            if str(item.get("id", "")) not in current_ids
+        ]
+
+        output["history"] = history
+        output["unread_count"] = unread_count
+        output["urgent_count"] = unread_urgent_count
+        output["has_unread_candidate"] = unread_count > 0
+
+        return output
+    except Exception:
+        return context
+
 def build_notification_context_cached(today: date | None = None) -> dict[str, Any]:
-    """Return notification context through the app disk cache.
-
-    The extra fingerprint includes the date because reminder urgency changes at
-    midnight even when no CSV file changes. The cache is still invalidated by
-    the normal data-file fingerprint when pending/debt/payable/recurring data is
-    edited.
-    """
-
     today = today or date.today()
 
     try:
         from money_manager.services.cache_service import cached_calculation
 
-        return cached_calculation(
+        raw_context = cached_calculation(
             "notifications.context",
-            lambda: build_notification_context(today),
+            lambda: build_notification_context(today, include_state=False),
             extra_fingerprint={"today": today.isoformat()},
             allow_stale_on_error=True,
         )
     except Exception:
-        # The notification surface must never be able to break page rendering.
-        return build_notification_context(today)
+        raw_context = build_notification_context(today, include_state=False)
+
+    return attach_notification_state(raw_context)
 
 
-def build_notification_context(today: date | None = None) -> dict[str, Any]:
+def build_notification_context(
+    today: date | None = None,
+    *,
+    include_state: bool = True,
+) -> dict[str, Any]:
     """Build topbar reminder notifications without mutating app data.
 
     This service intentionally reads CSV state only. It does not generate, execute,
@@ -93,12 +138,16 @@ def build_notification_context(today: date | None = None) -> dict[str, Any]:
         item["sort_date"] = sort_date.isoformat() if isinstance(sort_date, date) else str(sort_date or "")
         item["is_urgent"] = item.get("tone") in {"critical", "warning"}
 
-    return {
+    context = {
         "items": current,
         "count": len(current),
         "urgent_count": urgent_count,
         "has_unread_candidate": urgent_count > 0,
+        "history": [],
+        "unread_count": urgent_count,
     }
+
+    return attach_notification_state(context) if include_state else context
 
 
 def _pending_notifications(today: date) -> list[dict[str, Any]]:

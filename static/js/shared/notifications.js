@@ -98,21 +98,29 @@
   }
 
   function markCardRead(menu, card) {
-    const id = card && card.getAttribute("data-notification-id");
+    const payload = payloadFromCard(card);
+    const id = payload.id;
+
     if (!id) return;
+
     const readIds = loadReadIds();
     readIds.add(id);
     saveReadIds(readIds);
+
+    postReadToServer([payload]);
     updateUnreadState(menu);
   }
 
   function markAllRead(menu) {
+    const payloads = currentCards(menu).map(payloadFromCard).filter((item) => item.id);
+
     const readIds = loadReadIds();
-    currentCards(menu).forEach((card) => {
-      const id = card.getAttribute("data-notification-id");
-      if (id) readIds.add(id);
+    payloads.forEach((item) => {
+      readIds.add(item.id);
     });
+
     saveReadIds(readIds);
+    postReadToServer(payloads);
     updateUnreadState(menu);
   }
 
@@ -185,10 +193,32 @@
     const list = menu.querySelector("[data-notification-history-list]");
     if (!holder || !list) return;
 
-    const currentIds = new Set(currentCards(menu).map((card) => card.getAttribute("data-notification-id")));
-    const history = loadHistory()
-      .filter((item) => item && item.id && !currentIds.has(item.id))
-      .slice(0, 8);
+    const currentIds = new Set(
+      currentCards(menu).map((card) => card.getAttribute("data-notification-id"))
+    );
+
+    const serverSeed = safeParse(
+      list.getAttribute("data-notification-history-seed") || "[]",
+      []
+    );
+
+    const byId = new Map();
+
+    if (Array.isArray(serverSeed)) {
+      serverSeed.forEach((item) => {
+        if (item && item.id && !currentIds.has(item.id)) {
+          byId.set(item.id, item);
+        }
+      });
+    }
+
+    loadHistory().forEach((item) => {
+      if (item && item.id && !currentIds.has(item.id) && !byId.has(item.id)) {
+        byId.set(item.id, item);
+      }
+    });
+
+    const history = Array.from(byId.values()).slice(0, 8);
 
     list.innerHTML = "";
     history.forEach((item) => list.appendChild(cardTemplate(item)));
@@ -271,6 +301,23 @@
 
   function wireAll() {
     document.querySelectorAll("[data-notification-menu]").forEach(wireMenu);
+  }
+
+  function postReadToServer(items) {
+    if (!items || !items.length) return;
+
+    try {
+      window.fetch("/notifications/read", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ items }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch (error) {
+      // LocalStorage fallback still works.
+    }
   }
 
   document.addEventListener("click", (event) => {
