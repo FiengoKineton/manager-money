@@ -1,24 +1,26 @@
 /* --------------------------------------------------------------------------
-   Phone Fun App v1
-   Frontend-only phone experience layer. It reads existing DOM/data and adds a
-   native-feeling mobile cockpit, feed polish, gestures and add-flow controls.
+   Phone Fun App v2
+   Phone-only experience layer with read-only backend summary data, smoother
+   gestures, richer colors/animations, and stronger overflow guards.
 -------------------------------------------------------------------------- */
 (function () {
   const phoneMedia = window.matchMedia("(max-width: 1120px), (hover: none) and (pointer: coarse)");
+  const SUMMARY_URL = "/phone/api/summary";
   const MONEY_RE = /[-+]?\s*(?:€\s*)?([0-9]+(?:[.,][0-9]{1,2})?)/;
+  const state = { summary: null, summaryStarted: false, summaryFailed: false };
 
   const categoryMap = [
-    { test: /food|restaurant|lunch|dinner|pizza|bar|coffee|cafe|grocery|supermarket|drink/i, emoji: "🍔", a: "#ff6b6b", b: "#feca57" },
-    { test: /transport|metro|train|bus|taxi|fuel|gas|parking|car|flight|travel/i, emoji: "🚆", a: "#38bdf8", b: "#2563eb" },
-    { test: /salary|stipend|income|paycheck|work|bonus/i, emoji: "💼", a: "#22c55e", b: "#14b8a6" },
-    { test: /invest|stock|etf|portfolio|trading|crypto|market/i, emoji: "📈", a: "#a78bfa", b: "#7c3aed" },
-    { test: /home|rent|house|utility|bill|electric|water|gas/i, emoji: "🏠", a: "#fb7185", b: "#f97316" },
+    { test: /food|restaurant|lunch|dinner|pizza|bar|coffee|cafe|grocery|supermarket|drink/i, emoji: "🍔", a: "#ff2e93", b: "#ffb703" },
+    { test: /transport|metro|train|bus|taxi|fuel|gas|parking|car|flight|travel/i, emoji: "🚆", a: "#00d4ff", b: "#4361ee" },
+    { test: /salary|stipend|income|paycheck|work|bonus|polimi|kineton/i, emoji: "💼", a: "#00f5a0", b: "#00d9f5" },
+    { test: /invest|stock|etf|portfolio|trading|crypto|market|deposit/i, emoji: "📈", a: "#c77dff", b: "#7209b7" },
+    { test: /home|rent|house|utility|bill|electric|water|gas|onedrive|subscription/i, emoji: "🏠", a: "#ff6b6b", b: "#f97316" },
     { test: /health|doctor|medicine|pharmacy|gym|sport/i, emoji: "💪", a: "#2dd4bf", b: "#0f766e" },
-    { test: /study|book|course|school|university|kth|exam/i, emoji: "📚", a: "#60a5fa", b: "#6366f1" },
-    { test: /fun|game|cinema|movie|party|gift|shopping|clothes/i, emoji: "🎮", a: "#f472b6", b: "#c026d3" },
-    { test: /debt|payable|loan|credit|paypal|card/i, emoji: "⚠️", a: "#facc15", b: "#fb7185" },
+    { test: /study|book|course|school|university|kth|exam/i, emoji: "📚", a: "#60a5fa", b: "#7c3aed" },
+    { test: /fun|game|cinema|movie|party|gift|shopping|clothes|vinted/i, emoji: "🎮", a: "#f72585", b: "#b5179e" },
+    { test: /debt|payable|loan|credit|paypal|card|cila|infissi/i, emoji: "⚠️", a: "#ffd166", b: "#ef476f" },
     { test: /charity|donation|zakat|sadaqah|mosque/i, emoji: "🤲", a: "#34d399", b: "#22d3ee" },
-    { test: /transfer|internal|move/i, emoji: "🔁", a: "#22d3ee", b: "#818cf8" },
+    { test: /transfer|internal|move|pre-paid|prepaid/i, emoji: "🔁", a: "#22d3ee", b: "#818cf8" },
   ];
 
   function isPhone() {
@@ -27,6 +29,15 @@
 
   function safeText(node) {
     return String(node ? node.textContent || "" : "").replace(/\s+/g, " ").trim();
+  }
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   function parseMoney(text) {
@@ -38,14 +49,15 @@
     return Number.isFinite(value) ? sign * value : 0;
   }
 
-  function formatMoney(value) {
-    const abs = Math.abs(Number(value) || 0);
-    return `€ ${abs.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  function formatMoney(value, signed) {
+    const num = Number(value) || 0;
+    const abs = Math.abs(num);
+    const prefix = signed ? (num < 0 ? "−" : "+") : "";
+    return `${prefix}€ ${abs.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   function categoryFor(text) {
-    const match = categoryMap.find((entry) => entry.test.test(text || ""));
-    return match || { emoji: "💸", a: "#7c3aed", b: "#00d4ff" };
+    return categoryMap.find((entry) => entry.test.test(text || "")) || { emoji: "💸", a: "#7c3aed", b: "#00d4ff" };
   }
 
   function getPageKind() {
@@ -58,6 +70,15 @@
     if (/pending|recurring|payable|debt|owed|project/.test(title + path)) return "plan";
     if (/analysis|investment|forecast|yearly/.test(title + path)) return "analysis";
     return "other";
+  }
+
+  function addGlobalState() {
+    const enabled = isPhone();
+    document.documentElement.classList.toggle("phone-fun-active", enabled);
+    if (document.body) {
+      document.body.classList.toggle("phone-fun-active", enabled);
+      document.body.dataset.phonePage = enabled ? getPageKind() : "";
+    }
   }
 
   function ensureToastStack() {
@@ -73,171 +94,231 @@
 
   function showToast(icon, title, detail) {
     if (!isPhone()) return;
-    const stack = ensureToastStack();
     const toast = document.createElement("div");
     toast.className = "phone-toast";
     toast.innerHTML = `<span aria-hidden="true">${icon}</span><span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail || "")}</small></span>`;
-    stack.appendChild(toast);
+    ensureToastStack().appendChild(toast);
     window.setTimeout(() => {
-      toast.style.opacity = "0";
-      toast.style.transform = "translate3d(0, 0.8rem, 0)";
-      window.setTimeout(() => toast.remove(), 220);
-    }, 2600);
+      toast.classList.add("is-leaving");
+      window.setTimeout(() => toast.remove(), 240);
+    }, 2500);
   }
 
-  function escapeHtml(value) {
-    return String(value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  function addGlobalState() {
-    document.documentElement.classList.toggle("phone-fun-active", isPhone());
-    if (document.body) {
-      document.body.classList.toggle("phone-fun-active", isPhone());
-      document.body.dataset.phonePage = isPhone() ? getPageKind() : "";
-    }
+  function loadSummary() {
+    if (!isPhone() || state.summaryStarted) return;
+    state.summaryStarted = true;
+    window.fetch(SUMMARY_URL, { headers: { Accept: "application/json" }, credentials: "same-origin" })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("summary failed")))
+      .then((data) => {
+        state.summary = data || null;
+        updateTodayCockpit();
+        decorateCards();
+      })
+      .catch(() => {
+        state.summaryFailed = true;
+      });
   }
 
   function extractNetText() {
     return safeText(document.querySelector(".topbar-net-pill strong")) || safeText(document.querySelector(".net-pill strong")) || "€ 0.00";
   }
 
-  function extractMiniStats() {
+  function extractMiniStatsFallback() {
     const cards = Array.from(document.querySelectorAll(".overview-metric-grid .summary-card, .dashboard-kpi-grid .summary-card, .summary .summary-card, .transactions-summary-grid .summary-card"));
-    const preferred = ["visible", "pending", "debt", "owed", "spent", "income", "investment", "net"];
     const picked = [];
-
-    preferred.forEach((needle) => {
+    ["visible", "pending", "debt", "owed", "spent", "income", "investment", "net"].forEach((needle) => {
       const card = cards.find((node) => safeText(node).toLowerCase().includes(needle) && !picked.includes(node));
       if (card && picked.length < 3) picked.push(card);
     });
-
     while (picked.length < 3 && cards[picked.length]) picked.push(cards[picked.length]);
-
-    return picked.slice(0, 3).map((card) => {
-      const label = safeText(card.querySelector("span, h3, dt")) || "Metric";
-      const value = safeText(card.querySelector("strong, p, dd")) || "—";
-      return { label, value };
-    });
+    return picked.slice(0, 3).map((card) => ({
+      label: safeText(card.querySelector("span, h3, dt")) || "Metric",
+      value: safeText(card.querySelector("strong, p, dd")) || "—",
+    }));
   }
 
-  function extractRecentTransactions(limit) {
-    const result = [];
-    document.querySelectorAll(".recent-row, .phone-transaction-card").forEach((row) => {
-      if (result.length >= limit) return;
-      const title = safeText(row.querySelector("strong, b")) || safeText(row);
-      const amount = safeText(row.querySelector("b:last-child, .phone-transaction-amount, .transaction-amount-cell"));
-      const detail = safeText(row.querySelector("span, small"));
-      result.push({ title, amount, detail, kind: amountKind(amount + " " + safeText(row)), category: categoryFor(title + " " + detail) });
-    });
-    return result;
-  }
-
-  function amountKind(text) {
-    const lower = String(text || "").toLowerCase();
-    if (/income|salary|\+/.test(lower)) return "income";
-    if (/expense|paid|spent|debt|payable|-/.test(lower)) return "expense";
-    if (/investment|invest/.test(lower)) return "investment";
-    return "neutral";
-  }
-
-  function extractNotifications(limit) {
+  function extractNotificationsFallback(limit) {
     const items = [];
     document.querySelectorAll(".notification-card").forEach((card) => {
       if (items.length >= limit) return;
       const title = safeText(card.querySelector("strong")) || "Reminder";
       const detail = safeText(card.querySelector("small, p"));
       const href = card.querySelector("a") ? card.querySelector("a").getAttribute("href") : "#";
-      items.push({ title, detail, href, icon: card.classList.contains("notification-card-critical") ? "🔴" : card.classList.contains("notification-card-warning") ? "🟡" : "🔔" });
+      const icon = card.classList.contains("notification-card-critical") ? "🔴" : card.classList.contains("notification-card-warning") ? "🟡" : "🔔";
+      items.push({ title, detail, href, icon });
     });
     return items;
   }
 
-  function buildMoneyMood(netText, alerts) {
+  function buildMoneyMoodFallback(netText, alerts) {
     const net = parseMoney(netText);
-    const alertCount = alerts.length;
-    if (alertCount >= 2 || net < 0) {
-      return { icon: "🔴", label: "Pressure", title: "Check money pressure", detail: "You have reminders that deserve attention before spending freely." };
-    }
-    if (alertCount === 1 || net < 350) {
-      return { icon: "🟡", label: "Careful", title: "Stay sharp today", detail: "You are okay, but one thing may need a quick check." };
-    }
+    if (alerts.length >= 2 || net < 0) return { icon: "🔴", label: "Pressure", title: "Check money pressure", detail: "You have reminders that deserve attention before spending freely." };
+    if (alerts.length === 1 || net < 350) return { icon: "🟡", label: "Careful", title: "Stay sharp today", detail: "You are okay, but one thing may need a quick check." };
     return { icon: "🟢", label: "Safe", title: "You look safe today", detail: "No heavy warning is visible from the current page state." };
   }
 
-  function buildWeekBars(recent) {
-    const amounts = recent.slice(0, 7).map((item) => Math.abs(parseMoney(item.amount || item.detail || item.title))).reverse();
-    while (amounts.length < 7) amounts.unshift(0);
-    const max = Math.max(1, ...amounts);
-    const labels = ["M", "T", "W", "T", "F", "S", "S"];
-    return labels.map((label, index) => {
-      const value = Math.min(1, amounts[index] / max);
-      return `<span class="phone-week-bar"><span style="--bar-value:${value.toFixed(3)}"></span>${label}</span>`;
+  function extractRecentTransactionsFallback(limit) {
+    const result = [];
+    document.querySelectorAll(".recent-row, .phone-transaction-card").forEach((row) => {
+      if (result.length >= limit) return;
+      const title = safeText(row.querySelector("strong, b")) || safeText(row);
+      const amount = safeText(row.querySelector("b:last-child, .phone-transaction-amount, .transaction-amount-cell"));
+      const detail = safeText(row.querySelector("span, small"));
+      result.push({ title, amount, detail, category: categoryFor(title + " " + detail) });
+    });
+    return result;
+  }
+
+  function cockpitData() {
+    const net = extractNetText();
+    if (state.summary) {
+      const metrics = state.summary.metrics || {};
+      return {
+        net,
+        mood: state.summary.mood || buildMoneyMoodFallback(net, []),
+        stats: [
+          { label: "Today spent", value: formatMoney(metrics.today_spent || 0) },
+          { label: "This week", value: formatMoney(metrics.week_spent || 0) },
+          { label: "This month", value: formatMoney(metrics.month_spent || 0) },
+        ],
+        daily: Array.isArray(state.summary.daily_spending) ? state.summary.daily_spending : [],
+        checks: Array.isArray(state.summary.smart_checks) ? state.summary.smart_checks : [],
+        categories: Array.isArray(state.summary.category_spending) ? state.summary.category_spending : [],
+        recent: Array.isArray(state.summary.recent) ? state.summary.recent : [],
+        quickActions: Array.isArray(state.summary.quick_actions) ? state.summary.quick_actions : [],
+        source: "api",
+      };
+    }
+    const alerts = extractNotificationsFallback(4);
+    return {
+      net,
+      mood: buildMoneyMoodFallback(net, alerts),
+      stats: extractMiniStatsFallback(),
+      daily: [],
+      checks: alerts,
+      categories: [],
+      recent: extractRecentTransactionsFallback(6),
+      quickActions: [
+        { label: "Add expense", href: document.querySelector(".quick-add-expense")?.getAttribute("href") || "/add?type=expense", icon: "💸" },
+        { label: "Open logs", href: document.querySelector('a[href*="transactions"]')?.getAttribute("href") || "/transactions", icon: "≡" },
+      ],
+      source: "dom",
+    };
+  }
+
+  function weekBars(daily, recent) {
+    let rows = Array.isArray(daily) && daily.length ? daily : [];
+    if (!rows.length) {
+      const amounts = recent.slice(0, 7).map((item) => Math.abs(parseMoney(item.amount || item.detail || item.title))).reverse();
+      while (amounts.length < 7) amounts.unshift(0);
+      rows = ["M", "T", "W", "T", "F", "S", "S"].map((label, index) => ({ label, amount: amounts[index] }));
+    }
+    const max = Math.max(1, ...rows.map((item) => Number(item.amount) || 0));
+    return rows.slice(-7).map((item, index) => {
+      const value = Math.min(1, (Number(item.amount) || 0) / max);
+      const label = item.label || ["M", "T", "W", "T", "F", "S", "S"][index] || "•";
+      return `<span class="phone-week-bar" style="--bar-value:${value.toFixed(3)}"><span></span>${escapeHtml(label)}</span>`;
     }).join("");
+  }
+
+  function categoriesHtml(categories) {
+    if (!categories || !categories.length) return "";
+    return `<article class="phone-section-card phone-category-pulse-card">
+      <div class="phone-section-head"><span><strong>Color map</strong><small>Top spending this month</small></span></div>
+      <div class="phone-category-pulse-row">
+        ${categories.slice(0, 6).map((item) => {
+          const cat = categoryFor(item.category);
+          return `<span class="phone-category-pulse" style="--chip-a:${cat.a};--chip-b:${cat.b}"><b>${cat.emoji} ${escapeHtml(item.category)}</b><small>${formatMoney(item.amount || 0)}</small></span>`;
+        }).join("")}
+      </div>
+    </article>`;
+  }
+
+  function recentHtml(recent) {
+    if (!recent || !recent.length) return "";
+    return `<article class="phone-section-card phone-mini-feed-card">
+      <div class="phone-section-head"><span><strong>Latest moves</strong><small>Recent money activity</small></span><a href="/transactions">View all</a></div>
+      <div class="phone-mini-feed">
+        ${recent.slice(0, 5).map((item) => {
+          const cat = categoryFor(`${item.category || ""} ${item.title || ""}`);
+          const amount = item.signed_amount !== undefined ? formatMoney(item.signed_amount, true) : escapeHtml(item.amount || "");
+          return `<a class="phone-mini-feed-item" href="${item.href || "/transactions"}" style="--chip-a:${cat.a};--chip-b:${cat.b}"><span>${cat.emoji}</span><b>${escapeHtml(item.title || item.category || "Money log")}</b><small>${escapeHtml(item.subtitle || item.detail || "")}</small><em>${amount}</em></a>`;
+        }).join("")}
+      </div>
+    </article>`;
+  }
+
+  function checksHtml(checks) {
+    const rows = checks && checks.length ? checks : [{ title: "Nothing urgent", detail: "No due payment or old debt warning is visible right now.", href: "#", icon: "✅" }];
+    return rows.slice(0, 4).map((item) => `
+      <a class="phone-upcoming-item phone-tone-${item.tone || "info"}" href="${item.href || "#"}">
+        <span class="phone-upcoming-icon" aria-hidden="true">${item.icon || "🔔"}</span>
+        <span><b>${escapeHtml(item.title)}</b><small>${escapeHtml(item.detail || item.summary || "")}</small></span>
+        <span aria-hidden="true">›</span>
+      </a>`).join("");
+  }
+
+  function quickActionsHtml(actions) {
+    const rows = actions && actions.length ? actions : [];
+    return rows.slice(0, 4).map((action, index) => `<a class="phone-quick-pill phone-quick-${index}" href="${action.href || "#"}"><span>${action.icon || "＋"}</span>${escapeHtml(action.label || "Open")}</a>`).join("");
+  }
+
+  function renderCockpit(cockpit) {
+    const data = cockpitData();
+    const hour = new Date().getHours();
+    const daypart = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+    cockpit.dataset.phoneSummarySource = data.source;
+    cockpit.innerHTML = `
+      <article class="phone-today-hero">
+        <span class="phone-hero-orb phone-hero-orb-a" aria-hidden="true"></span>
+        <span class="phone-hero-orb phone-hero-orb-b" aria-hidden="true"></span>
+        <div class="phone-greeting-row">
+          <span><strong>Good ${daypart} 👋</strong><small>Today money cockpit</small></span>
+          <span class="phone-mood-pill">${data.mood.icon} ${escapeHtml(data.mood.label)}</span>
+        </div>
+        <div class="phone-net-block">
+          <span class="phone-net-label">Main net</span>
+          <strong>${escapeHtml(data.net)}</strong>
+        </div>
+        <div class="phone-mood-row">
+          <span class="phone-mood-icon" aria-hidden="true">${data.mood.icon}</span>
+          <span class="phone-mood-copy"><strong>${escapeHtml(data.mood.title)}</strong><small>${escapeHtml(data.mood.detail)}</small></span>
+        </div>
+        <div class="phone-action-row">${quickActionsHtml(data.quickActions)}</div>
+      </article>
+      ${data.stats.length ? `<div class="phone-mini-stats">${data.stats.map((item) => `<article class="phone-mini-stat"><small>${escapeHtml(item.label)}</small><strong>${escapeHtml(item.value)}</strong></article>`).join("")}</div>` : ""}
+      <article class="phone-section-card phone-week-card">
+        <div class="phone-section-head"><span><strong>This week pulse</strong><small>${data.source === "api" ? "Live from your data" : "Based on visible rows"}</small></span></div>
+        <div class="phone-week-bars">${weekBars(data.daily, data.recent)}</div>
+      </article>
+      ${categoriesHtml(data.categories)}
+      <article class="phone-section-card">
+        <div class="phone-section-head"><span><strong>Smart checks</strong><small>Things to remember</small></span></div>
+        <div class="phone-upcoming-list">${checksHtml(data.checks)}</div>
+      </article>
+      ${recentHtml(data.recent)}
+    `;
   }
 
   function createTodayCockpit() {
     if (!isPhone()) return;
     const stage = document.querySelector(".app-content-stage");
-    if (!stage || stage.querySelector(":scope > .phone-today-cockpit")) return;
-
+    if (!stage) return;
     const pageKind = getPageKind();
     if (!["today", "dashboard"].includes(pageKind)) return;
+    let cockpit = stage.querySelector(":scope > .phone-today-cockpit");
+    if (!cockpit) {
+      cockpit = document.createElement("section");
+      cockpit.className = "phone-today-cockpit";
+      stage.insertBefore(cockpit, stage.firstElementChild);
+    }
+    renderCockpit(cockpit);
+    loadSummary();
+  }
 
-    const net = extractNetText();
-    const miniStats = extractMiniStats();
-    const recent = extractRecentTransactions(7);
-    const alerts = extractNotifications(3);
-    const mood = buildMoneyMood(net, alerts);
-    const hour = new Date().getHours();
-    const daypart = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
-
-    const expenseLink = document.querySelector('a[href*="add"][href*="expense"], .quick-add-expense')?.getAttribute("href") || "/add?type=expense";
-    const logsLink = document.querySelector('a[href*="transactions"]')?.getAttribute("href") || "/transactions";
-
-    const cockpit = document.createElement("section");
-    cockpit.className = "phone-today-cockpit";
-    cockpit.innerHTML = `
-      <article class="phone-today-hero">
-        <div class="phone-greeting-row">
-          <span><strong>Good ${daypart} 👋</strong><small>Today money cockpit</small></span>
-          <span class="phone-mood-pill">${mood.icon} ${mood.label}</span>
-        </div>
-        <div class="phone-net-block">
-          <span class="phone-net-label">Main net</span>
-          <strong>${escapeHtml(net)}</strong>
-        </div>
-        <div class="phone-mood-row">
-          <span class="phone-mood-icon" aria-hidden="true">${mood.icon}</span>
-          <span class="phone-mood-copy"><strong>${escapeHtml(mood.title)}</strong><small>${escapeHtml(mood.detail)}</small></span>
-        </div>
-        <div class="phone-action-row">
-          <a href="${expenseLink}">＋ Add expense</a>
-          <a href="${logsLink}">Open logs</a>
-        </div>
-      </article>
-      ${miniStats.length ? `<div class="phone-mini-stats">${miniStats.map((item) => `<article class="phone-mini-stat"><small>${escapeHtml(item.label)}</small><strong>${escapeHtml(item.value)}</strong></article>`).join("")}</div>` : ""}
-      <article class="phone-section-card">
-        <div class="phone-section-head"><span><strong>This week pulse</strong><small>Based on the visible recent rows</small></span></div>
-        <div class="phone-week-bars">${buildWeekBars(recent)}</div>
-      </article>
-      <article class="phone-section-card">
-        <div class="phone-section-head"><span><strong>Smart checks</strong><small>Things to remember</small></span></div>
-        <div class="phone-upcoming-list">
-          ${(alerts.length ? alerts : [{ title: "Nothing urgent", detail: "No due payment or old debt warning is visible right now.", href: "#", icon: "✅" }]).map((item) => `
-            <a class="phone-upcoming-item" href="${item.href || "#"}">
-              <span class="phone-upcoming-icon" aria-hidden="true">${item.icon}</span>
-              <span><b>${escapeHtml(item.title)}</b><small>${escapeHtml(item.detail)}</small></span>
-              <span aria-hidden="true">›</span>
-            </a>`).join("")}
-        </div>
-      </article>
-    `;
-    stage.insertBefore(cockpit, stage.firstElementChild);
+  function updateTodayCockpit() {
+    const cockpit = document.querySelector(".phone-today-cockpit");
+    if (cockpit && isPhone()) renderCockpit(cockpit);
   }
 
   function addFeedHeader() {
@@ -245,23 +326,18 @@
     const list = document.querySelector(".phone-transaction-list");
     if (!list || list.dataset.funFeedReady === "true") return;
     list.dataset.funFeedReady = "true";
-
     const header = document.createElement("div");
     header.className = "phone-money-feed-head";
-    header.innerHTML = `<strong>Money feed</strong><small>Tap once to peek, tap again to open</small>`;
-
+    header.innerHTML = `<strong>Money feed</strong><small>Tap to peek. Swipe left for quick action.</small>`;
     const chips = document.createElement("div");
     chips.className = "phone-filter-chips";
     chips.innerHTML = `
-      <button class="phone-filter-chip is-active" data-phone-feed-filter="all" type="button">All</button>
-      <button class="phone-filter-chip" data-phone-feed-filter="expense" type="button">Expenses</button>
-      <button class="phone-filter-chip" data-phone-feed-filter="income" type="button">Income</button>
-      <button class="phone-filter-chip" data-phone-feed-filter="investment" type="button">Investing</button>
-    `;
-
+      <button class="phone-filter-chip is-active" data-phone-feed-filter="all" type="button">✨ All</button>
+      <button class="phone-filter-chip" data-phone-feed-filter="expense" type="button">💸 Expenses</button>
+      <button class="phone-filter-chip" data-phone-feed-filter="income" type="button">💰 Income</button>
+      <button class="phone-filter-chip" data-phone-feed-filter="investment" type="button">📈 Investing</button>`;
     list.parentNode.insertBefore(header, list);
     list.parentNode.insertBefore(chips, list);
-
     chips.addEventListener("click", (event) => {
       const button = event.target.closest("[data-phone-feed-filter]");
       if (!button) return;
@@ -286,13 +362,26 @@
       const category = categoryFor(label + " " + safeText(card));
       card.style.setProperty("--chip-a", category.a);
       card.style.setProperty("--chip-b", category.b);
-
       if (card.matches(".phone-transaction-card")) {
         const icon = document.createElement("span");
         icon.className = "phone-card-emoji";
         icon.textContent = category.emoji;
         card.insertBefore(icon, card.firstElementChild);
+        if (!card.querySelector(":scope > .phone-swipe-action")) {
+          const action = document.createElement("span");
+          action.className = "phone-swipe-action";
+          action.textContent = "Open";
+          card.appendChild(action);
+        }
       }
+    });
+  }
+
+  function closeOpenSwipes(except) {
+    document.querySelectorAll(".phone-transaction-card.is-swiped").forEach((card) => {
+      if (card === except) return;
+      card.classList.remove("is-swiped", "is-swiping");
+      card.style.setProperty("--swipe-x", "0px");
     });
   }
 
@@ -304,9 +393,22 @@
       let lastExpandedTap = 0;
       card.addEventListener("click", (event) => {
         if (!isPhone()) return;
+        if (card.dataset.justSwiped === "true") {
+          event.preventDefault();
+          event.stopPropagation();
+          card.dataset.justSwiped = "false";
+          return;
+        }
+        if (card.classList.contains("is-swiped")) {
+          event.preventDefault();
+          card.classList.remove("is-swiped", "is-swiping");
+          card.style.setProperty("--swipe-x", "0px");
+          return;
+        }
         const now = Date.now();
         if (!card.classList.contains("is-expanded")) {
           event.preventDefault();
+          closeOpenSwipes(card);
           document.querySelectorAll(".phone-transaction-card.is-expanded").forEach((open) => {
             if (open !== card) open.classList.remove("is-expanded");
           });
@@ -314,56 +416,95 @@
           lastExpandedTap = now;
           return;
         }
-        if (now - lastExpandedTap < 260) {
-          event.preventDefault();
-        }
+        if (now - lastExpandedTap < 260) event.preventDefault();
       });
     });
   }
 
   function wireSwipeGestures() {
     if (!isPhone()) return;
-    document.querySelectorAll(".phone-transaction-card, .notification-card").forEach((card) => {
+    document.querySelectorAll(".phone-transaction-card").forEach((card) => {
       if (card.dataset.phoneSwipeReady === "true") return;
       card.dataset.phoneSwipeReady = "true";
       let startX = 0;
       let startY = 0;
-      let currentX = 0;
-      let tracking = false;
+      let lastX = 0;
+      let pointerId = null;
+      let locked = false;
+      let dragging = false;
+      let raf = 0;
+      let pendingX = 0;
 
-      card.addEventListener("touchstart", (event) => {
-        const touch = event.touches[0];
-        if (!touch) return;
-        tracking = true;
-        startX = touch.clientX;
-        startY = touch.clientY;
-        currentX = startX;
-      }, { passive: true });
+      function applyX(x) {
+        pendingX = x;
+        if (raf) return;
+        raf = window.requestAnimationFrame(() => {
+          card.style.setProperty("--swipe-x", `${pendingX}px`);
+          raf = 0;
+        });
+      }
 
-      card.addEventListener("touchmove", (event) => {
-        if (!tracking) return;
-        const touch = event.touches[0];
-        if (!touch) return;
-        currentX = touch.clientX;
-        const dx = Math.max(-86, Math.min(0, currentX - startX));
-        const dy = Math.abs(touch.clientY - startY);
-        if (Math.abs(dx) > 12 && dy < 48) {
-          card.style.setProperty("--swipe-x", `${dx}px`);
+      function finish(open) {
+        dragging = false;
+        locked = false;
+        pointerId = null;
+        if (raf) {
+          window.cancelAnimationFrame(raf);
+          raf = 0;
         }
-      }, { passive: true });
+        card.classList.remove("is-swiping");
+        card.classList.toggle("is-swiped", open);
+        card.style.setProperty("--swipe-x", open ? "-82px" : "0px");
+        if (open) {
+          card.dataset.justSwiped = "true";
+          window.setTimeout(() => { card.dataset.justSwiped = "false"; }, 180);
+        }
+      }
 
-      card.addEventListener("touchend", () => {
-        if (!tracking) return;
-        tracking = false;
-        const dx = currentX - startX;
-        const swiped = dx < -48;
-        card.classList.toggle("is-swiped", swiped);
-        card.style.setProperty("--swipe-x", swiped ? "-5.2rem" : "0px");
-        window.setTimeout(() => {
-          card.classList.remove("is-swiped");
-          card.style.setProperty("--swipe-x", "0px");
-        }, swiped ? 2200 : 0);
-      }, { passive: true });
+      card.addEventListener("pointerdown", (event) => {
+        if (!isPhone() || event.pointerType === "mouse") return;
+        pointerId = event.pointerId;
+        startX = event.clientX;
+        startY = event.clientY;
+        lastX = startX;
+        locked = false;
+        dragging = true;
+        card.classList.add("is-swipe-ready");
+        try { card.setPointerCapture(pointerId); } catch (error) {}
+      });
+
+      card.addEventListener("pointermove", (event) => {
+        if (!dragging || event.pointerId !== pointerId) return;
+        const dxRaw = event.clientX - startX;
+        const dy = Math.abs(event.clientY - startY);
+        lastX = event.clientX;
+        if (!locked) {
+          if (dy > 18 && Math.abs(dxRaw) < 18) {
+            finish(false);
+            return;
+          }
+          if (Math.abs(dxRaw) > 10 && dy < 28) locked = true;
+        }
+        if (!locked) return;
+        event.preventDefault();
+        const base = card.classList.contains("is-swiped") ? -82 : 0;
+        const dx = Math.max(-92, Math.min(0, base + dxRaw));
+        card.classList.add("is-swiping");
+        applyX(dx);
+      });
+
+      function end(event) {
+        if (!dragging || (event && event.pointerId !== pointerId)) return;
+        const dx = lastX - startX;
+        const wasOpen = card.classList.contains("is-swiped");
+        const open = wasOpen ? dx > 34 ? false : true : dx < -46;
+        if (open) closeOpenSwipes(card);
+        finish(open);
+      }
+
+      card.addEventListener("pointerup", end);
+      card.addEventListener("pointercancel", () => finish(card.classList.contains("is-swiped")));
+      card.addEventListener("lostpointercapture", end);
     });
   }
 
@@ -374,7 +515,7 @@
     row.className = "phone-mode-card-row";
     row.innerHTML = Array.from(tabs.querySelectorAll("a")).map((link) => {
       const text = safeText(link);
-      const icon = /income/i.test(text) ? "💰" : /invest/i.test(text) ? "📈" : "💸";
+      const icon = /income/i.test(text) ? "💰" : /invest/i.test(text) ? "📈" : /special/i.test(text) ? "⭐" : "💸";
       return `<a href="${link.getAttribute("href") || "#"}" class="${link.classList.contains("active") ? "active" : ""}"><b>${icon} ${escapeHtml(text)}</b><small>Choose type</small></a>`;
     }).join("");
     form.insertBefore(row, form.firstElementChild?.nextSibling || form.firstElementChild);
@@ -406,7 +547,7 @@
     if (!select || form.querySelector(".phone-category-card-row")) return;
     const row = document.createElement("div");
     row.className = "phone-category-card-row";
-    Array.from(select.options).filter((option) => option.value).slice(0, 8).forEach((option) => {
+    Array.from(select.options).filter((option) => option.value).slice(0, 10).forEach((option) => {
       const cat = categoryFor(option.textContent || option.value);
       const btn = document.createElement("button");
       btn.type = "button";
@@ -433,30 +574,24 @@
       if (!steps.length) return;
       form.dataset.phoneFunPaged = "true";
       form.classList.add("phone-flow-paged");
-
       let active = 0;
       const nav = document.createElement("div");
       nav.className = "phone-flow-nav";
       nav.innerHTML = `<button type="button" data-phone-flow-prev>Back</button><button type="button" data-phone-flow-next>Next</button>`;
       form.appendChild(nav);
-
       const prev = nav.querySelector("[data-phone-flow-prev]");
       const next = nav.querySelector("[data-phone-flow-next]");
-
       function sync() {
         steps.forEach((step, index) => step.classList.toggle("is-active", index === active));
         prev.disabled = active === 0;
-        next.textContent = active >= steps.length - 1 ? "Review / Save" : "Next";
-        const dots = form.querySelectorAll(".phone-add-progress-dots span");
-        dots.forEach((dot, index) => dot.classList.toggle("is-active", index <= active));
+        next.textContent = active >= steps.length - 1 ? "Review" : "Next";
+        form.querySelectorAll(".phone-add-progress-dots span").forEach((dot, index) => dot.classList.toggle("is-active", index <= active));
       }
-
       prev.addEventListener("click", () => {
         active = Math.max(0, active - 1);
         sync();
         steps[active].scrollIntoView({ block: "center", behavior: "smooth" });
       });
-
       next.addEventListener("click", () => {
         if (active >= steps.length - 1) {
           const submit = form.querySelector('button[type="submit"], input[type="submit"]');
@@ -468,7 +603,6 @@
         sync();
         steps[active].scrollIntoView({ block: "center", behavior: "smooth" });
       });
-
       addModeCards(form);
       addCalculatorPad(form);
       addCategoryCards(form);
@@ -491,13 +625,12 @@
   }
 
   function resizePlotlyCharts() {
-    if (!isPhone()) return;
-    if (!window.Plotly) return;
+    if (!isPhone() || !window.Plotly) return;
     window.setTimeout(() => {
       document.querySelectorAll(".js-plotly-plot, .plotly-graph-div").forEach((plot) => {
         try { window.Plotly.Plots.resize(plot); } catch (error) {}
       });
-    }, 320);
+    }, 260);
   }
 
   function boot() {
@@ -511,16 +644,16 @@
     setupPagedAddFlow();
     wireFormFeedback();
     resizePlotlyCharts();
+    loadSummary();
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => window.setTimeout(boot, 120));
+    document.addEventListener("DOMContentLoaded", () => window.setTimeout(boot, 80));
   } else {
-    window.setTimeout(boot, 120);
+    window.setTimeout(boot, 80);
   }
-
-  window.addEventListener("pageshow", () => window.setTimeout(boot, 120));
-  window.addEventListener("orientationchange", () => window.setTimeout(() => { boot(); resizePlotlyCharts(); }, 360), { passive: true });
-  window.addEventListener("resize", () => window.setTimeout(() => { addGlobalState(); resizePlotlyCharts(); }, 260), { passive: true });
+  window.addEventListener("pageshow", () => window.setTimeout(boot, 80));
+  window.addEventListener("orientationchange", () => window.setTimeout(() => { boot(); resizePlotlyCharts(); }, 260), { passive: true });
+  window.addEventListener("resize", () => window.setTimeout(() => { addGlobalState(); resizePlotlyCharts(); }, 220), { passive: true });
   if (phoneMedia.addEventListener) phoneMedia.addEventListener("change", boot);
 })();

@@ -15,7 +15,7 @@
     })();
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=web-phone-split-3" media="screen and (min-width: 1121px) and (hover: hover) and (pointer: fine)">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=web-phone-split-2" media="screen and (max-width: 1120px), (hover: none) and (pointer: coarse)">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=phone-fun-v2" media="screen and (max-width: 1120px), (hover: none) and (pointer: coarse)">
   <script src="{{ url_for('static', filename='js/vendor/plotly.min.js') }}?v=plotly-6.5.2"></script>
 </head>
 <body class="app-body app-body-clean" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
@@ -354,7 +354,7 @@
   <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=web-phone-split-1"></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=web-phone-split-1"></script>
-  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=web-phone-split-1"></script>
+  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=phone-fun-v2"></script>
   <script src="{{ url_for('static', filename='js/phone/phone-transactions.js') }}?v=web-phone-split-1"></script>
   <script src="{{ url_for('static', filename='js/phone/phone-add-flow.js') }}?v=web-phone-split-1"></script>
   {% block scripts %}{% endblock %}

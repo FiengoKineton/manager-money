@@ -825,3 +825,381 @@
     }
   }
 }
+
+/* --------------------------------------------------------------------------
+   Phone Fun App v2 polish: smoother swipe, stronger nav, richer color motion.
+   Phone-only file; desktop/web CSS is not touched.
+-------------------------------------------------------------------------- */
+@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+  html.phone-shell-active.phone-fun-active {
+    --fun-bg-a: #10002b;
+    --fun-bg-b: #3c096c;
+    --fun-bg-c: #7b2cbf;
+    --fun-bg-d: #00d4ff;
+    --fun-hot: #ff2e93;
+    --fun-sun: #ffb703;
+    --fun-good: #00f5a0;
+    --fun-card: rgba(255, 255, 255, 0.165);
+    --fun-card-strong: rgba(255, 255, 255, 0.245);
+    --fun-border: rgba(255, 255, 255, 0.28);
+    --fun-nav-bg: rgba(13, 8, 35, 0.965);
+    --fun-nav-border: rgba(255, 255, 255, 0.30);
+  }
+
+  html[data-theme="day"].phone-shell-active.phone-fun-active {
+    --fun-bg-a: #fff2fb;
+    --fun-bg-b: #efe6ff;
+    --fun-bg-c: #dbf7ff;
+    --fun-bg-d: #fff1be;
+    --fun-card: rgba(255, 255, 255, 0.84);
+    --fun-card-strong: rgba(255, 255, 255, 0.96);
+    --fun-border: rgba(93, 49, 151, 0.20);
+    --fun-nav-bg: rgba(255, 255, 255, 0.965);
+    --fun-nav-border: rgba(85, 57, 142, 0.18);
+  }
+
+  html.phone-shell-active.phone-fun-active body.app-body::before,
+  html.phone-shell-active.phone-fun-active body.app-body-clean::before {
+    content: "";
+    position: fixed;
+    inset: -18% -22% auto -22%;
+    height: 44svh;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      radial-gradient(circle at 16% 20%, rgba(255, 46, 147, 0.34), transparent 14rem),
+      radial-gradient(circle at 54% 0%, rgba(255, 183, 3, 0.22), transparent 16rem),
+      radial-gradient(circle at 92% 24%, rgba(0, 212, 255, 0.34), transparent 15rem);
+    filter: saturate(1.22);
+    animation: phone-aurora-drift 11s ease-in-out infinite alternate;
+  }
+
+  html.phone-shell-active.phone-fun-active .app-main {
+    padding-bottom: calc(7.8rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .app-content-stage {
+    padding-bottom: calc(7.2rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .phone-today-cockpit,
+  html.phone-shell-active.phone-fun-active .phone-section-card,
+  html.phone-shell-active.phone-fun-active .phone-mini-stat,
+  html.phone-shell-active.phone-fun-active .phone-transaction-card {
+    contain: layout paint style;
+  }
+
+  html.phone-shell-active.phone-fun-active .phone-today-hero {
+    background:
+      radial-gradient(circle at 12% 8%, rgba(255, 46, 147, 0.44), transparent 9.5rem),
+      radial-gradient(circle at 84% 0%, rgba(0, 212, 255, 0.40), transparent 10.5rem),
+      radial-gradient(circle at 58% 96%, rgba(255, 183, 3, 0.20), transparent 12rem),
+      linear-gradient(145deg, rgba(255,255,255,0.30), rgba(255,255,255,0.10)) !important;
+  }
+
+  .phone-hero-orb {
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+    filter: blur(0.2px);
+    opacity: 0.72;
+    mix-blend-mode: screen;
+  }
+
+  .phone-hero-orb-a {
+    width: 6rem;
+    height: 6rem;
+    right: -1.2rem;
+    top: -1.4rem;
+    background: radial-gradient(circle, rgba(0, 212, 255, 0.48), transparent 64%);
+    animation: phone-float-orb 5.8s ease-in-out infinite;
+  }
+
+  .phone-hero-orb-b {
+    width: 4.4rem;
+    height: 4.4rem;
+    left: 46%;
+    bottom: -1.6rem;
+    background: radial-gradient(circle, rgba(255, 183, 3, 0.42), transparent 65%);
+    animation: phone-float-orb 6.8s ease-in-out infinite reverse;
+  }
+
+  .phone-mood-pill,
+  .phone-net-block strong,
+  .phone-action-row a,
+  .phone-quick-pill,
+  .phone-category-pulse,
+  .phone-filter-chip.is-active {
+    transform: translateZ(0);
+  }
+
+  .phone-action-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .phone-action-row .phone-quick-pill,
+  .phone-action-row a {
+    min-width: 0;
+    gap: 0.38rem;
+    background: linear-gradient(135deg, var(--fun-hot), #7c3aed 52%, var(--fun-bg-d)) !important;
+    box-shadow: 0 18px 40px rgba(124, 58, 237, 0.32), inset 0 1px 0 rgba(255,255,255,0.24) !important;
+  }
+
+  .phone-action-row .phone-quick-pill:nth-child(2),
+  .phone-action-row .phone-quick-pill:nth-child(4) {
+    color: var(--fun-text) !important;
+    background: linear-gradient(135deg, rgba(255,255,255,0.20), rgba(255,255,255,0.10)) !important;
+    border: 1px solid var(--fun-border) !important;
+    box-shadow: none !important;
+  }
+
+  .phone-category-pulse-row,
+  .phone-mini-feed,
+  .phone-upcoming-list {
+    min-width: 0;
+  }
+
+  .phone-category-pulse-row {
+    display: flex;
+    gap: 0.58rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding: 0.1rem 0 0.3rem;
+  }
+
+  .phone-category-pulse-row::-webkit-scrollbar { display: none; }
+
+  .phone-category-pulse {
+    flex: 0 0 auto;
+    min-width: 8.4rem;
+    max-width: 10.5rem;
+    border-radius: 22px;
+    padding: 0.72rem;
+    color: #fff;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(255,255,255,0.22), transparent 5rem),
+      linear-gradient(135deg, var(--chip-a), var(--chip-b));
+    box-shadow: 0 14px 30px rgba(6, 10, 28, 0.20);
+  }
+
+  .phone-category-pulse b,
+  .phone-category-pulse small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .phone-category-pulse small { opacity: 0.84; margin-top: 0.16rem; }
+
+  .phone-mini-feed {
+    display: grid;
+    gap: 0.52rem;
+  }
+
+  .phone-mini-feed-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.58rem;
+    min-width: 0;
+    border-radius: 22px;
+    padding: 0.62rem;
+    color: var(--fun-text);
+    text-decoration: none;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--chip-a) 18%, transparent), rgba(255,255,255,0.08));
+    border: 1px solid var(--fun-border);
+  }
+
+  .phone-mini-feed-item span {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 17px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, var(--chip-a), var(--chip-b));
+  }
+
+  .phone-mini-feed-item b,
+  .phone-mini-feed-item small {
+    grid-column: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .phone-mini-feed-item em {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    font-style: normal;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .phone-section-head a {
+    color: inherit;
+    text-decoration: none;
+    font-weight: 900;
+    opacity: 0.8;
+  }
+
+  /* Smooth swipe cards ---------------------------------------------------- */
+  .phone-transaction-card {
+    touch-action: pan-y !important;
+    will-change: contents !important;
+    isolation: isolate !important;
+    overflow: hidden !important;
+    background:
+      radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--chip-a, #7c3aed) 26%, transparent), transparent 8.5rem),
+      linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.09)) !important;
+    transform: translate3d(0, 0, 0) scale(var(--card-scale, 1)) !important;
+    transition: box-shadow 180ms ease, background 180ms ease, transform 160ms ease !important;
+  }
+
+  .phone-transaction-card > :not(.phone-swipe-action) {
+    position: relative;
+    z-index: 2;
+    transform: translate3d(var(--swipe-x, 0px), 0, 0);
+    transition: transform 180ms cubic-bezier(.2,.8,.2,1);
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  .phone-transaction-card.is-swiping > :not(.phone-swipe-action) {
+    transition: none !important;
+  }
+
+  .phone-swipe-action {
+    position: absolute;
+    z-index: 1;
+    right: 0.58rem;
+    top: 50%;
+    transform: translate3d(0, -50%, 0) scale(0.94);
+    display: grid;
+    place-items: center;
+    width: 4.8rem;
+    min-height: 3.2rem;
+    border-radius: 20px;
+    color: #fff;
+    font-weight: 950;
+    background: linear-gradient(135deg, var(--chip-a, #00d4ff), var(--chip-b, #7c3aed));
+    box-shadow: 0 14px 30px color-mix(in srgb, var(--chip-b, #7c3aed) 34%, transparent);
+    opacity: 0;
+    transition: opacity 130ms ease, transform 180ms ease;
+    pointer-events: none;
+  }
+
+  .phone-transaction-card.is-swiping .phone-swipe-action,
+  .phone-transaction-card.is-swiped .phone-swipe-action {
+    opacity: 1;
+    transform: translate3d(0, -50%, 0) scale(1);
+  }
+
+  .phone-transaction-card.is-swiped {
+    box-shadow: 0 22px 56px color-mix(in srgb, var(--chip-b, #7c3aed) 26%, rgba(2, 4, 18, 0.24)) !important;
+  }
+
+  .phone-transaction-card.is-swiped::before,
+  .phone-transaction-card.is-swiped::after {
+    display: none !important;
+  }
+
+  .phone-card-emoji {
+    background: linear-gradient(135deg, var(--chip-a, #ff2e93), var(--chip-b, #00d4ff)) !important;
+    box-shadow: 0 12px 24px color-mix(in srgb, var(--chip-b, #7c3aed) 30%, transparent) !important;
+  }
+
+  .phone-week-bar span {
+    animation: phone-bar-grow 780ms cubic-bezier(.18,.9,.2,1) both;
+    animation-delay: calc(var(--bar-value, 0) * 130ms);
+  }
+
+  /* Solid nav / overlap repair ------------------------------------------ */
+  html.phone-shell-active.phone-fun-active .mobile-bottom-nav.mobile-tabbar {
+    z-index: 1150 !important;
+    opacity: 1 !important;
+    background:
+      radial-gradient(circle at 50% -24%, rgba(255, 46, 147, 0.42), transparent 46%),
+      linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06)),
+      var(--fun-nav-bg) !important;
+    border: 1px solid var(--fun-nav-border) !important;
+    box-shadow: 0 22px 60px rgba(2, 4, 18, 0.42), inset 0 1px 0 rgba(255,255,255,0.28) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(1.45) !important;
+    backdrop-filter: blur(24px) saturate(1.45) !important;
+  }
+
+  html[data-theme="day"].phone-shell-active.phone-fun-active .mobile-bottom-nav.mobile-tabbar {
+    background:
+      radial-gradient(circle at 50% -24%, rgba(247, 37, 133, 0.24), transparent 46%),
+      linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92)),
+      var(--fun-nav-bg) !important;
+    box-shadow: 0 18px 44px rgba(102, 75, 150, 0.22), inset 0 1px 0 rgba(255,255,255,0.7) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .mobile-tabbar .mobile-tab {
+    color: var(--fun-text) !important;
+    border-radius: 20px !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .mobile-tabbar .mobile-tab.active,
+  html.phone-shell-active.phone-fun-active .mobile-tabbar .mobile-tab.sheet-open {
+    background: rgba(255, 255, 255, 0.20) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .mobile-tabbar .mobile-tab-add span {
+    background: linear-gradient(135deg, #ff2e93, #7c3aed 48%, #00d4ff) !important;
+    box-shadow: 0 16px 36px rgba(255, 46, 147, 0.34), 0 0 0 7px rgba(255,255,255,0.08) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .mobile-sheet-panel {
+    max-height: min(78svh, 45rem) !important;
+    overflow-y: auto !important;
+    padding-bottom: calc(1.1rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .phone-flow-nav {
+    bottom: calc(6.4rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active :is(.payment-action-rail, .rule-action-rail) {
+    z-index: 5 !important;
+  }
+
+  html.phone-shell-active.phone-fun-active :is(.panel-card, .transactions, .filters, .chart-card, .summary-card, .payment-card, .recurring-rule-card, .normal-add-polished) {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  html.phone-shell-active.phone-fun-active :is(.quick-add-panel, .notification-panel) {
+    max-width: calc(100vw - 1.4rem) !important;
+  }
+
+  @keyframes phone-aurora-drift {
+    from { transform: translate3d(-2%, -1%, 0) scale(1); }
+    to { transform: translate3d(3%, 2%, 0) scale(1.06); }
+  }
+
+  @keyframes phone-float-orb {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(0.4rem, -0.55rem, 0) scale(1.06); }
+  }
+
+  @keyframes phone-bar-grow {
+    from { transform: scaleY(0.12); opacity: 0.42; }
+    to { transform: scaleY(1); opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html.phone-shell-active.phone-fun-active body.app-body::before,
+    html.phone-shell-active.phone-fun-active body.app-body-clean::before,
+    .phone-hero-orb,
+    .phone-week-bar span {
+      animation: none !important;
+    }
+  }
+}

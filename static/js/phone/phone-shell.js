@@ -25,7 +25,7 @@
     if (!isPhoneShell()) return;
     if (document.querySelector('script[data-phone-fun-app="true"]')) return;
     const script = document.createElement("script");
-    script.src = "/static/js/phone/phone-fun-app.js?v=phone-fun-app-1";
+    script.src = "/static/js/phone/phone-fun-app.js?v=phone-fun-app-2";
     script.defer = true;
     script.dataset.phoneFunApp = "true";
     document.head.appendChild(script);
