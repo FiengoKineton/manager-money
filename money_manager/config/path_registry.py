@@ -71,6 +71,7 @@ CALCULATION_ENTRYPOINTS: dict[str, str] = {
     "forecast.defaults": "money_manager.services.forecast_service.build_forecast_defaults",
     "quick_log.context": "money_manager.services.quick_log_service.quick_log_context",
     "notifications.context": "money_manager.services.notification_service.build_notification_context_cached",
+    "phone.experience.summary": "money_manager.services.phone_experience_service.build_phone_experience_summary_cached",
     "investment.overview_snapshot": "money_manager.services.investment_service.overview_snapshot",
     "investment.habit_snapshot": "money_manager.services.investment_service.investment_habit_snapshot",
 }

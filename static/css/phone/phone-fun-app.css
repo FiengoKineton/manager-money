@@ -1203,3 +1203,119 @@
     }
   }
 }
+
+/* --------------------------------------------------------------------------
+   Phone performance repair v3
+   Keeps the colorful phone redesign, but removes the worst jank sources:
+   - one moving swipe layer instead of moving every child
+   - solid cheaper bottom nav
+   - no fixed mobile background attachment
+   - lighter shadows/filters while scrolling/swiping
+-------------------------------------------------------------------------- */
+@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+  html.phone-shell-active.phone-fun-active body.app-body {
+    background-attachment: scroll !important;
+  }
+
+  html.phone-shell-active.phone-fun-active body.app-body::before,
+  html.phone-shell-active.phone-fun-active body.app-body-clean::before {
+    animation-duration: 18s !important;
+    filter: none !important;
+    opacity: 0.82 !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .app-topbar,
+  html.phone-shell-active.phone-fun-active .mobile-bottom-nav.mobile-tabbar,
+  html.phone-shell-active.phone-fun-active .phone-section-card {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .phone-transaction-list,
+  html.phone-shell-active.phone-fun-active .phone-mini-feed,
+  html.phone-shell-active.phone-fun-active .phone-upcoming-list {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 680px;
+  }
+
+  html.phone-shell-active.phone-fun-active .phone-transaction-card {
+    display: block !important;
+    position: relative !important;
+    overflow: hidden !important;
+    contain: layout paint !important;
+    content-visibility: auto;
+    contain-intrinsic-size: 74px;
+    will-change: auto !important;
+    transform: translateZ(0) scale(var(--card-scale, 1)) !important;
+    transition: transform 120ms ease, background 120ms ease !important;
+    box-shadow: 0 10px 24px rgba(2, 4, 18, 0.16) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .phone-transaction-card.is-expanded,
+  html.phone-shell-active.phone-fun-active .phone-transaction-card.is-swiped {
+    box-shadow: 0 14px 32px rgba(2, 4, 18, 0.22) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .phone-transaction-card.is-swiping {
+    transition: none !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .phone-swipe-front {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+    width: 100%;
+    padding: 0.78rem;
+    box-sizing: border-box;
+    transform: translate3d(0, 0, 0);
+    transition: transform 150ms cubic-bezier(.2,.8,.2,1);
+    will-change: transform;
+    backface-visibility: hidden;
+    position: relative;
+    z-index: 2;
+  }
+
+  html.phone-shell-active.phone-fun-active .phone-transaction-card.is-swiping .phone-swipe-front {
+    transition: none !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .phone-transaction-card > :not(.phone-swipe-front):not(.phone-swipe-action) {
+    transform: none !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .phone-card-emoji {
+    width: 2.25rem;
+    min-width: 2.25rem;
+  }
+
+  html.phone-shell-active.phone-fun-active .phone-swipe-action {
+    right: 0.62rem !important;
+    width: 4.45rem !important;
+    min-height: 2.9rem !important;
+    box-shadow: none !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .mobile-bottom-nav.mobile-tabbar {
+    background: linear-gradient(135deg, #171034, #27124c 55%, #12364f) !important;
+    border: 1px solid rgba(255,255,255,0.22) !important;
+    box-shadow: 0 14px 38px rgba(2, 4, 18, 0.38), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+    opacity: 1 !important;
+  }
+
+  html[data-theme="day"].phone-shell-active.phone-fun-active .mobile-bottom-nav.mobile-tabbar {
+    background: linear-gradient(135deg, #ffffff, #f8f2ff 58%, #eefbff) !important;
+    border-color: rgba(85, 57, 142, 0.18) !important;
+    box-shadow: 0 12px 30px rgba(102, 75, 150, 0.20), inset 0 1px 0 rgba(255,255,255,0.92) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active .mobile-tabbar .mobile-tab-add span {
+    animation: phone-add-breathe 3.8s ease-in-out infinite !important;
+  }
+
+  @keyframes phone-add-breathe {
+    0%, 100% { transform: translateZ(0) scale(1); }
+    50% { transform: translateZ(0) scale(1.05); }
+  }
+}

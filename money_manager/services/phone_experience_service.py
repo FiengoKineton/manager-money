@@ -324,3 +324,24 @@ def build_phone_experience_summary(today: date | None = None) -> dict[str, Any]:
             {"label": "Plan", "href": "/pending", "icon": "◷"},
         ],
     }
+
+
+def build_phone_experience_summary_cached(today: date | None = None) -> dict[str, Any]:
+    """Cached read-only phone summary.
+
+    The phone app asks for this data on load. Caching prevents the app from
+    re-reading all CSV files on every navigation/reload while still refreshing
+    when source data or the day changes.
+    """
+    today = today or date.today()
+    try:
+        from money_manager.services.cache_service import cached_calculation
+
+        return cached_calculation(
+            "phone.experience.summary",
+            lambda: build_phone_experience_summary(today),
+            extra_fingerprint={"today": today.isoformat()},
+            allow_stale_on_error=True,
+        )
+    except Exception:
+        return build_phone_experience_summary(today)

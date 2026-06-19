@@ -104,19 +104,56 @@
     }, 2500);
   }
 
+  function cachedSummaryFromSession() {
+    try {
+      const raw = window.sessionStorage.getItem("phoneExperienceSummary.v1");
+      if (!raw) return null;
+      const record = JSON.parse(raw);
+      if (!record || !record.savedAt || !record.value) return null;
+      if (Date.now() - Number(record.savedAt) > 90 * 1000) return null;
+      return record.value;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function saveSummaryToSession(value) {
+    try {
+      window.sessionStorage.setItem("phoneExperienceSummary.v1", JSON.stringify({ savedAt: Date.now(), value }));
+    } catch (error) {}
+  }
+
   function loadSummary() {
     if (!isPhone() || state.summaryStarted) return;
+    const cached = cachedSummaryFromSession();
+    if (cached) {
+      state.summaryStarted = true;
+      state.summary = cached;
+      updateTodayCockpit();
+      decorateCards();
+      return;
+    }
+
     state.summaryStarted = true;
-    window.fetch(SUMMARY_URL, { headers: { Accept: "application/json" }, credentials: "same-origin" })
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error("summary failed")))
-      .then((data) => {
-        state.summary = data || null;
-        updateTodayCockpit();
-        decorateCards();
-      })
-      .catch(() => {
-        state.summaryFailed = true;
-      });
+    const runFetch = () => {
+      window.fetch(SUMMARY_URL, { headers: { Accept: "application/json" }, credentials: "same-origin" })
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error("summary failed")))
+        .then((data) => {
+          state.summary = data || null;
+          saveSummaryToSession(state.summary);
+          updateTodayCockpit();
+          decorateCards();
+        })
+        .catch(() => {
+          state.summaryFailed = true;
+        });
+    };
+
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(runFetch, { timeout: 900 });
+    } else {
+      window.setTimeout(runFetch, 180);
+    }
   }
 
   function extractNetText() {
@@ -351,6 +388,34 @@
     });
   }
 
+  function ensureSwipeAction(card) {
+    let action = card.querySelector(":scope > .phone-swipe-action");
+    if (!action) {
+      action = document.createElement("span");
+      action.className = "phone-swipe-action";
+      action.textContent = "Open";
+      card.appendChild(action);
+    }
+    return action;
+  }
+
+  function ensureSwipeFront(card) {
+    let front = card.querySelector(":scope > .phone-swipe-front");
+    const action = ensureSwipeAction(card);
+    if (front) return front;
+
+    front = document.createElement("span");
+    front.className = "phone-swipe-front";
+
+    Array.from(card.childNodes).forEach((node) => {
+      if (node === action) return;
+      front.appendChild(node);
+    });
+
+    card.insertBefore(front, action);
+    return front;
+  }
+
   function decorateCards() {
     if (!isPhone()) return;
     const cards = Array.from(document.querySelectorAll(".phone-transaction-card, .recent-row, tr.mobile-disclosure-row"));
@@ -362,17 +427,16 @@
       const category = categoryFor(label + " " + safeText(card));
       card.style.setProperty("--chip-a", category.a);
       card.style.setProperty("--chip-b", category.b);
+
       if (card.matches(".phone-transaction-card")) {
-        const icon = document.createElement("span");
-        icon.className = "phone-card-emoji";
-        icon.textContent = category.emoji;
-        card.insertBefore(icon, card.firstElementChild);
-        if (!card.querySelector(":scope > .phone-swipe-action")) {
-          const action = document.createElement("span");
-          action.className = "phone-swipe-action";
-          action.textContent = "Open";
-          card.appendChild(action);
+        if (!card.querySelector(".phone-card-emoji")) {
+          const icon = document.createElement("span");
+          icon.className = "phone-card-emoji";
+          icon.textContent = category.emoji;
+          card.insertBefore(icon, card.firstElementChild);
         }
+        const front = ensureSwipeFront(card);
+        front.style.transform = card.classList.contains("is-swiped") ? "translate3d(-76px,0,0)" : "translate3d(0,0,0)";
       }
     });
   }
@@ -380,8 +444,10 @@
   function closeOpenSwipes(except) {
     document.querySelectorAll(".phone-transaction-card.is-swiped").forEach((card) => {
       if (card === except) return;
+      const front = card.querySelector(":scope > .phone-swipe-front");
       card.classList.remove("is-swiped", "is-swiping");
-      card.style.setProperty("--swipe-x", "0px");
+      card.style.removeProperty("--swipe-x");
+      if (front) front.style.transform = "translate3d(0,0,0)";
     });
   }
 
@@ -401,8 +467,9 @@
         }
         if (card.classList.contains("is-swiped")) {
           event.preventDefault();
+          const front = card.querySelector(":scope > .phone-swipe-front");
           card.classList.remove("is-swiped", "is-swiping");
-          card.style.setProperty("--swipe-x", "0px");
+          if (front) front.style.transform = "translate3d(0,0,0)";
           return;
         }
         const now = Date.now();
@@ -434,35 +501,47 @@
       let dragging = false;
       let raf = 0;
       let pendingX = 0;
+      let front = null;
 
-      function applyX(x) {
+      function setFrontX(x) {
         pendingX = x;
         if (raf) return;
         raf = window.requestAnimationFrame(() => {
-          card.style.setProperty("--swipe-x", `${pendingX}px`);
+          if (front) front.style.transform = `translate3d(${pendingX}px,0,0)`;
           raf = 0;
         });
       }
 
+      function releasePointer() {
+        try {
+          if (pointerId !== null && card.hasPointerCapture && card.hasPointerCapture(pointerId)) {
+            card.releasePointerCapture(pointerId);
+          }
+        } catch (error) {}
+      }
+
       function finish(open) {
-        dragging = false;
-        locked = false;
-        pointerId = null;
         if (raf) {
           window.cancelAnimationFrame(raf);
           raf = 0;
         }
-        card.classList.remove("is-swiping");
+        releasePointer();
+        dragging = false;
+        locked = false;
+        pointerId = null;
+        card.classList.remove("is-swiping", "is-swipe-ready");
         card.classList.toggle("is-swiped", open);
-        card.style.setProperty("--swipe-x", open ? "-82px" : "0px");
+        if (front) front.style.transform = open ? "translate3d(-76px,0,0)" : "translate3d(0,0,0)";
         if (open) {
           card.dataset.justSwiped = "true";
-          window.setTimeout(() => { card.dataset.justSwiped = "false"; }, 180);
+          window.setTimeout(() => { card.dataset.justSwiped = "false"; }, 140);
         }
       }
 
       card.addEventListener("pointerdown", (event) => {
         if (!isPhone() || event.pointerType === "mouse") return;
+        if (event.target.closest("button, input, select, textarea")) return;
+        front = ensureSwipeFront(card);
         pointerId = event.pointerId;
         startX = event.clientX;
         startY = event.clientY;
@@ -471,7 +550,7 @@
         dragging = true;
         card.classList.add("is-swipe-ready");
         try { card.setPointerCapture(pointerId); } catch (error) {}
-      });
+      }, { passive: true });
 
       card.addEventListener("pointermove", (event) => {
         if (!dragging || event.pointerId !== pointerId) return;
@@ -479,32 +558,33 @@
         const dy = Math.abs(event.clientY - startY);
         lastX = event.clientX;
         if (!locked) {
-          if (dy > 18 && Math.abs(dxRaw) < 18) {
-            finish(false);
+          if (dy > 16 && Math.abs(dxRaw) < 18) {
+            finish(card.classList.contains("is-swiped"));
             return;
           }
-          if (Math.abs(dxRaw) > 10 && dy < 28) locked = true;
+          if (Math.abs(dxRaw) > 9 && dy < 26) {
+            locked = true;
+            closeOpenSwipes(card);
+          }
         }
         if (!locked) return;
         event.preventDefault();
-        const base = card.classList.contains("is-swiped") ? -82 : 0;
-        const dx = Math.max(-92, Math.min(0, base + dxRaw));
+        const base = card.classList.contains("is-swiped") ? -76 : 0;
+        const dx = Math.max(-86, Math.min(0, base + dxRaw));
         card.classList.add("is-swiping");
-        applyX(dx);
-      });
+        setFrontX(dx);
+      }, { passive: false });
 
       function end(event) {
         if (!dragging || (event && event.pointerId !== pointerId)) return;
         const dx = lastX - startX;
         const wasOpen = card.classList.contains("is-swiped");
-        const open = wasOpen ? dx > 34 ? false : true : dx < -46;
-        if (open) closeOpenSwipes(card);
+        const open = wasOpen ? !(dx > 30) : dx < -38;
         finish(open);
       }
 
-      card.addEventListener("pointerup", end);
-      card.addEventListener("pointercancel", () => finish(card.classList.contains("is-swiped")));
-      card.addEventListener("lostpointercapture", end);
+      card.addEventListener("pointerup", end, { passive: true });
+      card.addEventListener("pointercancel", () => finish(card.classList.contains("is-swiped")), { passive: true });
     });
   }
 
