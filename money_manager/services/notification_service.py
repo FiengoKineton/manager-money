@@ -18,6 +18,31 @@ DEBT_STALE_DAYS = 45
 PAYABLE_STALE_DAYS = 21
 
 
+def build_notification_context_cached(today: date | None = None) -> dict[str, Any]:
+    """Return notification context through the app disk cache.
+
+    The extra fingerprint includes the date because reminder urgency changes at
+    midnight even when no CSV file changes. The cache is still invalidated by
+    the normal data-file fingerprint when pending/debt/payable/recurring data is
+    edited.
+    """
+
+    today = today or date.today()
+
+    try:
+        from money_manager.services.cache_service import cached_calculation
+
+        return cached_calculation(
+            "notifications.context",
+            lambda: build_notification_context(today),
+            extra_fingerprint={"today": today.isoformat()},
+            allow_stale_on_error=True,
+        )
+    except Exception:
+        # The notification surface must never be able to break page rendering.
+        return build_notification_context(today)
+
+
 def build_notification_context(today: date | None = None) -> dict[str, Any]:
     """Build topbar reminder notifications without mutating app data.
 
