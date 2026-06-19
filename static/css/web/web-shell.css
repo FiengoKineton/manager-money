@@ -1,0 +1,16 @@
+/* Desktop/web-only visibility rules.
+   The mobile shell exists in the DOM for phones, but it stays fully hidden on PC. */
+@media (min-width: 1121px) {
+  .mobile-bottom-nav,
+  .mobile-sheet {
+    display: none !important;
+  }
+
+  .app-sidebar {
+    display: flex;
+  }
+
+  .app-workspace {
+    min-width: 0;
+  }
+}

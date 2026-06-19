@@ -1,0 +1,104 @@
+/* Phone-only vivid money-app theme. */
+@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+  :root {
+    --phone-bg-a: #150734;
+    --phone-bg-b: #3a0ca3;
+    --phone-bg-c: #f72585;
+    --phone-bg-d: #4cc9f0;
+    --phone-ink: #fff8ff;
+    --phone-muted: rgba(255, 255, 255, 0.72);
+    --phone-card: rgba(255, 255, 255, 0.14);
+    --phone-card-strong: rgba(255, 255, 255, 0.22);
+    --phone-card-border: rgba(255, 255, 255, 0.22);
+    --phone-glow-pink: rgba(247, 37, 133, 0.42);
+    --phone-glow-blue: rgba(76, 201, 240, 0.36);
+    --phone-good: #2ee59d;
+    --phone-bad: #ff5d8f;
+    --phone-warn: #ffd166;
+    --phone-violet: #b8a1ff;
+    --phone-radius: 28px;
+  }
+
+  html.phone-shell-active body.app-body,
+  html.phone-shell-active body.app-body-clean {
+    color: var(--phone-ink) !important;
+    background:
+      radial-gradient(circle at 18% 4%, rgba(247, 37, 133, 0.38), transparent 32rem),
+      radial-gradient(circle at 92% 12%, rgba(76, 201, 240, 0.36), transparent 30rem),
+      linear-gradient(155deg, var(--phone-bg-a) 0%, var(--phone-bg-b) 46%, #0b1026 100%) !important;
+    background-attachment: fixed !important;
+  }
+
+  html[data-theme="day"].phone-shell-active body.app-body,
+  html[data-theme="day"].phone-shell-active body.app-body-clean {
+    background:
+      radial-gradient(circle at 14% 2%, rgba(255, 143, 171, 0.58), transparent 25rem),
+      radial-gradient(circle at 92% 0%, rgba(76, 201, 240, 0.42), transparent 26rem),
+      linear-gradient(155deg, #f9edff 0%, #e8f8ff 45%, #fff8e8 100%) !important;
+    color: #201136 !important;
+  }
+
+  html.phone-shell-active .page-heading,
+  html.phone-shell-active .summary-card,
+  html.phone-shell-active .panel-card,
+  html.phone-shell-active .card,
+  html.phone-shell-active .form-section,
+  html.phone-shell-active .transactions,
+  html.phone-shell-active .filters,
+  html.phone-shell-active .chart-card,
+  html.phone-shell-active .payment-card,
+  html.phone-shell-active .recurring-rule-card,
+  html.phone-shell-active .quick-special-panel,
+  html.phone-shell-active .normal-add-polished {
+    border: 1px solid var(--phone-card-border) !important;
+    border-radius: var(--phone-radius) !important;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.09)) !important;
+    box-shadow: 0 20px 54px rgba(6, 10, 28, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+    backdrop-filter: blur(22px) saturate(1.18) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(1.18) !important;
+  }
+
+  html[data-theme="day"].phone-shell-active .page-heading,
+  html[data-theme="day"].phone-shell-active .summary-card,
+  html[data-theme="day"].phone-shell-active .panel-card,
+  html[data-theme="day"].phone-shell-active .card,
+  html[data-theme="day"].phone-shell-active .form-section,
+  html[data-theme="day"].phone-shell-active .transactions,
+  html[data-theme="day"].phone-shell-active .filters,
+  html[data-theme="day"].phone-shell-active .chart-card,
+  html[data-theme="day"].phone-shell-active .payment-card,
+  html[data-theme="day"].phone-shell-active .recurring-rule-card,
+  html[data-theme="day"].phone-shell-active .quick-special-panel,
+  html[data-theme="day"].phone-shell-active .normal-add-polished {
+    background: rgba(255, 255, 255, 0.76) !important;
+    color: #24133a !important;
+    border-color: rgba(87, 45, 134, 0.12) !important;
+    box-shadow: 0 18px 44px rgba(102, 75, 150, 0.14) !important;
+  }
+
+  html.phone-shell-active .summary-card p,
+  html.phone-shell-active .summary-card strong,
+  html.phone-shell-active .page-heading h2,
+  html.phone-shell-active .page-heading h1,
+  html.phone-shell-active .app-topbar-title h1 {
+    letter-spacing: -0.055em !important;
+  }
+
+  html.phone-shell-active .primary-btn,
+  html.phone-shell-active .transaction-form button[type="submit"],
+  html.phone-shell-active .normal-add-submit-row button,
+  html.phone-shell-active .form-actions button[type="submit"] {
+    border: 0 !important;
+    color: #fff !important;
+    background: linear-gradient(135deg, #ff4d9d, #7c3aed 48%, #00d4ff) !important;
+    box-shadow: 0 16px 36px rgba(124, 58, 237, 0.28) !important;
+  }
+
+  html.phone-shell-active .secondary-btn,
+  html.phone-shell-active .compact-btn {
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: inherit !important;
+  }
+}

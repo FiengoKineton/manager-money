@@ -1,0 +1,91 @@
+/* Phone-only add transaction flow. The backend form is the same; only the phone layout changes. */
+@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+  html.phone-shell-active .transaction-form[data-phone-add-flow="true"] {
+    display: grid !important;
+    gap: 0.86rem !important;
+  }
+
+  html.phone-shell-active .phone-add-progress {
+    position: sticky;
+    top: calc(var(--phone-topbar-height, 66px) + env(safe-area-inset-top, 0px) + 0.78rem);
+    z-index: 20;
+    display: grid;
+    gap: 0.48rem;
+    padding: 0.78rem;
+    margin: 0.1rem 0 0.72rem;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    backdrop-filter: blur(18px) saturate(1.15);
+    -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  }
+
+  html.phone-shell-active .phone-add-progress strong {
+    font-size: 0.82rem;
+    letter-spacing: -0.02em;
+  }
+
+  html.phone-shell-active .phone-add-progress-dots {
+    display: grid;
+    grid-template-columns: repeat(var(--phone-add-steps, 5), minmax(0, 1fr));
+    gap: 0.32rem;
+  }
+
+  html.phone-shell-active .phone-add-progress-dots span {
+    height: 0.38rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.20);
+    transition: background 160ms ease, transform 160ms ease;
+  }
+
+  html.phone-shell-active .phone-add-progress-dots span.is-active {
+    background: linear-gradient(90deg, #ff4d9d, #00d4ff);
+    transform: scaleY(1.28);
+  }
+
+  html.phone-shell-active .phone-add-step {
+    display: grid !important;
+    gap: 0.54rem !important;
+    padding: 0.82rem !important;
+    border-radius: 24px !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  }
+
+  html.phone-shell-active .phone-add-step::before {
+    content: attr(data-phone-step-title);
+    font-size: 0.76rem;
+    font-weight: 950;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.74);
+  }
+
+  html[data-theme="day"].phone-shell-active .phone-add-step::before {
+    color: rgba(36, 19, 58, 0.62);
+  }
+
+  html.phone-shell-active .phone-add-primary-amount .amount-input {
+    min-height: 68px !important;
+    border-radius: 24px !important;
+    font-size: clamp(1.9rem, 12vw, 3.1rem) !important;
+    font-weight: 950 !important;
+    letter-spacing: -0.08em !important;
+    text-align: center !important;
+  }
+
+  html.phone-shell-active .normal-add-submit-row {
+    position: sticky !important;
+    bottom: calc(var(--phone-tabbar-height, 78px) + env(safe-area-inset-bottom, 0px) + 0.92rem) !important;
+    z-index: 25 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  html.phone-shell-active .normal-add-submit-row button {
+    width: 100% !important;
+    min-height: 58px !important;
+    border-radius: 22px !important;
+    font-size: 1rem !important;
+  }
+}

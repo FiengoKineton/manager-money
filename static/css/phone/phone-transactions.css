@@ -1,0 +1,105 @@
+/* Phone-only transaction/cards experience. */
+@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+  html.phone-shell-active table.mobile-card-table {
+    border-collapse: separate !important;
+    border-spacing: 0 0.78rem !important;
+  }
+
+  html.phone-shell-active table.mobile-card-table tbody {
+    display: block !important;
+  }
+
+  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row {
+    position: relative !important;
+    display: grid !important;
+    overflow: hidden !important;
+    border-radius: 28px !important;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.10)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 16px 38px rgba(4, 7, 24, 0.20) !important;
+    isolation: isolate !important;
+    animation: phone-card-pop 460ms cubic-bezier(.2,.9,.2,1) both;
+    animation-delay: calc(min(var(--phone-card-index, 0), 12) * 28ms);
+  }
+
+  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row::before {
+    content: "";
+    position: absolute;
+    inset: -40% auto auto -20%;
+    width: 8.4rem;
+    height: 8.4rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(76, 201, 240, 0.28), transparent 68%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row.row-expense::before,
+  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row.phone-row-expense::before {
+    background: radial-gradient(circle, rgba(255, 93, 143, 0.34), transparent 68%);
+  }
+
+  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row.row-income::before,
+  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row.phone-row-income::before {
+    background: radial-gradient(circle, rgba(46, 229, 157, 0.32), transparent 68%);
+  }
+
+  html.phone-shell-active .mobile-row-title {
+    font-size: 0.98rem !important;
+    letter-spacing: -0.035em !important;
+  }
+
+  html.phone-shell-active .mobile-row-amount {
+    border-radius: 999px !important;
+    padding: 0.38rem 0.6rem !important;
+    background: rgba(255, 255, 255, 0.14) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  }
+
+  html.phone-shell-active .mobile-row-amount.phone-amount-expense {
+    color: var(--phone-bad) !important;
+    background: rgba(255, 93, 143, 0.14) !important;
+  }
+
+  html.phone-shell-active .mobile-row-amount.phone-amount-income {
+    color: var(--phone-good) !important;
+    background: rgba(46, 229, 157, 0.14) !important;
+  }
+
+  html.phone-shell-active tr.mobile-disclosure-row.is-expanded {
+    box-shadow: 0 24px 58px rgba(5, 8, 28, 0.27) !important;
+  }
+
+  html.phone-shell-active tr.mobile-disclosure-row.is-expanded > td:not(.mobile-row-summary) {
+    border-radius: 18px !important;
+    margin: 0.26rem 0.7rem !important;
+    background: rgba(255, 255, 255, 0.10) !important;
+  }
+
+  html.phone-shell-active .mobile-row-quick-actions {
+    gap: 0.48rem !important;
+  }
+
+  html.phone-shell-active .mobile-detail-action {
+    border-radius: 999px !important;
+  }
+
+  .phone-transaction-list {
+    display: grid !important;
+    gap: 0.68rem !important;
+  }
+
+  .phone-extra-transactions {
+    display: grid !important;
+    gap: 0.68rem !important;
+  }
+
+  .phone-extra-transactions.is-hidden {
+    display: none !important;
+  }
+
+  .transactions-with-phone-cards > table.transactions-table {
+    display: none !important;
+  }
+}

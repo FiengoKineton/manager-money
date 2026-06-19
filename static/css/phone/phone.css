@@ -1,0 +1,43 @@
+@import url("../../design/tokens.css");
+@import url("../base.css");
+@import url("../components/buttons.css");
+@import url("../components/cards.css");
+@import url("../components/forms.css");
+@import url("../components/tables.css");
+@import url("../components/charts.css");
+@import url("../pages/overview.css");
+@import url("../pages/dashboard.css");
+@import url("../pages/transactions.css");
+@import url("../pages/analysis.css");
+@import url("../pages/yearly_summary.css");
+@import url("../pages/net_explanation.css");
+@import url("../pages/forecast.css");
+@import url("../pages/accounts.css");
+@import url("../pages/internal_transfers.css");
+@import url("../pages/currencies.css");
+@import url("../pages/pending.css");
+@import url("../pages/documents.css");
+@import url("../pages/sparagnat.css");
+@import url("../pages/debts.css");
+@import url("../pages/payables.css");
+@import url("../pages/expense_projects.css");
+@import url("../pages/receivables.css");
+@import url("../pages/investments.css");
+@import url("../pages/parent_support.css");
+@import url("../shell-clean.css");
+@import url("../responsive.css");
+@import url("../ui-glass-plus.css");
+@import url("../ui-aurora-enhancements.css");
+@import url("../theme-modes.css");
+@import url("../ui-contrast-project-fix.css");
+
+/* Phone layer: after the shared foundation, import only mobile-specific layers.
+   This lets the phone app become its own UI without changing backend logic. */
+@import url("../vivid-night-mobile-polish.css");
+@import url("../mobile_nav_night_comfort_fix.css");
+@import url("../phone_fun_full_nav_fix.css");
+@import url("phone-theme.css");
+@import url("phone-shell.css");
+@import url("phone-transactions.css");
+@import url("phone-add-flow.css");
+@import url("phone-animations.css");

@@ -1,0 +1,80 @@
+/* Phone-only shell. The desktop sidebar is not merely squeezed; the phone app owns the screen. */
+@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+  html.phone-shell-active .app-layout {
+    display: block !important;
+    min-height: 100svh !important;
+  }
+
+  html.phone-shell-active .app-sidebar {
+    display: none !important;
+  }
+
+  html.phone-shell-active .app-workspace {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  html.phone-shell-active .app-topbar {
+    left: max(0.68rem, env(safe-area-inset-left, 0px)) !important;
+    right: max(0.68rem, env(safe-area-inset-right, 0px)) !important;
+    top: max(0.62rem, env(safe-area-inset-top, 0px)) !important;
+    border-radius: 24px !important;
+    background: rgba(19, 10, 44, 0.58) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.20) !important;
+  }
+
+  html[data-theme="day"].phone-shell-active .app-topbar {
+    background: rgba(255, 255, 255, 0.74) !important;
+    color: #24133a !important;
+  }
+
+  html.phone-shell-active .mobile-bottom-nav.mobile-tabbar {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.11)),
+      radial-gradient(circle at 50% 0%, rgba(247, 37, 133, 0.28), transparent 68%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.24) !important;
+    box-shadow: 0 24px 64px rgba(6, 4, 26, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+  }
+
+  html.phone-shell-active .mobile-tabbar .mobile-tab-add span {
+    background: linear-gradient(135deg, #ff4d9d, #7c3aed 48%, #00d4ff) !important;
+    color: #fff !important;
+    box-shadow: 0 12px 28px rgba(247, 37, 133, 0.38) !important;
+  }
+
+  html.phone-shell-active .mobile-tabbar .mobile-tab.active,
+  html.phone-shell-active .mobile-tabbar .mobile-tab.sheet-open {
+    background: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  html.phone-shell-active .mobile-sheet-panel {
+    border-radius: 34px 34px 0 0 !important;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(247, 37, 133, 0.28), transparent 16rem),
+      radial-gradient(circle at 88% 10%, rgba(76, 201, 240, 0.26), transparent 18rem),
+      rgba(22, 13, 49, 0.88) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  }
+
+  html[data-theme="day"].phone-shell-active .mobile-sheet-panel {
+    color: #24133a !important;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(247, 37, 133, 0.18), transparent 16rem),
+      radial-gradient(circle at 88% 10%, rgba(76, 201, 240, 0.18), transparent 18rem),
+      rgba(255, 255, 255, 0.92) !important;
+  }
+
+  html.phone-shell-active .mobile-page-grid a,
+  html.phone-shell-active .mobile-action-card {
+    border-radius: 24px !important;
+    background: rgba(255, 255, 255, 0.13) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    transform: translateZ(0);
+  }
+
+  html.phone-shell-active .mobile-page-grid a:active,
+  html.phone-shell-active .mobile-action-card:active {
+    transform: scale(0.985) translateZ(0) !important;
+  }
+}
