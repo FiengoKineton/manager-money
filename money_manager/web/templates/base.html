@@ -14,8 +14,8 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=web-phone-split-2" media="screen and (min-width: 1121px) and (hover: hover) and (pointer: fine)">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=web-phone-split-1" media="screen and (max-width: 1120px), (hover: none) and (pointer: coarse)">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=web-phone-split-3" media="screen and (min-width: 1121px) and (hover: hover) and (pointer: fine)">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=web-phone-split-2" media="screen and (max-width: 1120px), (hover: none) and (pointer: coarse)">
   <script src="{{ url_for('static', filename='js/vendor/plotly.min.js') }}?v=plotly-6.5.2"></script>
 </head>
 <body class="app-body app-body-clean" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
@@ -110,6 +110,85 @@
             <span>Main net</span>
             <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
           </a>
+
+          <div class="notification-menu" data-notification-menu>
+            <button
+              type="button"
+              class="notification-trigger {{ 'has-notifications' if topbar_notifications.count else '' }} {{ 'has-alerts' if topbar_notifications.has_unread_candidate else '' }}"
+              data-notification-trigger
+              aria-label="Open reminders and notifications"
+              aria-controls="topbar-notifications-panel"
+              aria-expanded="false"
+            >
+              <span class="notification-trigger-icon" aria-hidden="true">🔔</span>
+              <span class="notification-trigger-text">Alerts</span>
+              <span class="notification-dot" data-notification-dot aria-hidden="true"></span>
+              <span class="notification-count" data-notification-count>{{ topbar_notifications.urgent_count }}</span>
+            </button>
+
+            <section
+              id="topbar-notifications-panel"
+              class="notification-panel"
+              data-notification-panel
+              hidden
+              aria-hidden="true"
+            >
+              <header class="notification-panel-head">
+                <div>
+                  <span class="eyebrow">Smart reminders</span>
+                  <strong>Notifications</strong>
+                </div>
+                <div class="notification-panel-actions">
+                  <button type="button" class="notification-small-action" data-notification-mark-read>Mark read</button>
+                  <button type="button" class="notification-close" data-notification-close aria-label="Close notifications">×</button>
+                </div>
+              </header>
+
+              <div class="notification-current-list" data-current-notification-list>
+                {% for item in topbar_notifications["items"] %}
+                  <article
+                    class="notification-card notification-card-{{ item.tone }} {{ 'is-urgent' if item.is_urgent else '' }}"
+                    data-notification-card
+                    data-current-notification="true"
+                    data-notification-id="{{ item.id }}"
+                    data-notification-payload='{{ item|tojson|forceescape }}'
+                  >
+                    <button type="button" class="notification-card-main" data-notification-toggle aria-expanded="false">
+                      <span class="notification-card-icon" aria-hidden="true">{{ item.icon }}</span>
+                      <span class="notification-card-copy">
+                        <span class="notification-card-label">{{ item.label }}</span>
+                        <strong>{{ item.title }}</strong>
+                        <small>{{ item.summary }}</small>
+                      </span>
+                      <span class="notification-card-chevron" aria-hidden="true">⌄</span>
+                    </button>
+                    <div class="notification-card-detail" data-notification-detail hidden>
+                      <p>{{ item.detail }}</p>
+                      <div class="notification-card-meta">
+                        <span>{{ item.meta }}</span>
+                        <a href="{{ url_for(item.href_endpoint) }}">{{ item.href_label }}</a>
+                      </div>
+                    </div>
+                  </article>
+                {% else %}
+                  <div class="notification-empty" data-notification-empty>
+                    <span aria-hidden="true">✓</span>
+                    <strong>Nothing urgent right now</strong>
+                    <small>Due payments, old debts, old payables and recurring checks will appear here.</small>
+                  </div>
+                {% endfor %}
+              </div>
+
+              <section class="notification-history" data-notification-history hidden>
+                <div class="notification-history-title">
+                  <span>Older notifications</span>
+                  <button type="button" class="notification-small-action" data-notification-clear-history>Clear</button>
+                </div>
+                <div class="notification-history-list" data-notification-history-list></div>
+              </section>
+            </section>
+          </div>
+
           <details class="quick-add-menu">
             <summary class="primary-btn">+ Add</summary>
             <div class="quick-add-panel">
@@ -269,6 +348,7 @@
   </section>
 
   <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=web-phone-split-1"></script>
+  <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-1"></script>
   <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=web-phone-split-1"></script>
   <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=web-phone-split-1"></script>
   <script src="{{ url_for('static', filename='js/phone/phone-transactions.js') }}?v=web-phone-split-1"></script>
