@@ -1,10 +1,11 @@
 from flask import Blueprint, redirect, render_template, request, url_for
 
-from money_manager.config import CATEGORY_OPTIONS, DEFAULT_CATEGORY_BY_TYPE, account_options_for_forms
+from money_manager.config import account_options_for_forms
+from money_manager.services.custom_category_service import effective_categories_by_type, default_category_for
 from money_manager.repositories.pending import delay_pending, delete_pending, load_pending, update_pending
 from money_manager.repositories.recurring import load_recurring
 from money_manager.services.debt_service import generate_debt_payments
-from money_manager.services.pending_service import execute_pending_by_id, prepare_pending_for_display, process_pending
+from money_manager.services.pending_service import execute_pending_by_id, prepare_pending_for_display, process_pending, sync_credit_account_statements
 from money_manager.services.recurring_service import (
     append_rule_from_form,
     delete_rule_from_form,
@@ -57,6 +58,7 @@ def pending_page():
 
     generate_recurring()
     generate_debt_payments()
+    sync_credit_account_statements()
     process_pending(credit_only=True)
 
     pending_rows = prepare_pending_for_display(load_pending())
@@ -93,6 +95,7 @@ def recurring_page():
         return redirect(url_for("pending.recurring_page"))
 
     generate_recurring()
+    sync_credit_account_statements()
     process_pending(credit_only=True)
     
     recurring_sections = prepare_recurring_sections(load_recurring())
@@ -102,7 +105,7 @@ def recurring_page():
         recurring=recurring_sections["active"],
         recurring_finished=recurring_sections["finished"],
         recurring_all=recurring_sections["all"],
-        categories_by_type=CATEGORY_OPTIONS,
-        default_category_by_type=DEFAULT_CATEGORY_BY_TYPE,
+        categories_by_type=effective_categories_by_type(),
+        default_category_by_type={transaction_type: default_category_for(transaction_type) for transaction_type in effective_categories_by_type()},
         account_options=account_options_for_forms(),
     )

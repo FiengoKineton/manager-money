@@ -11,8 +11,11 @@ class TransactionInput:
     account: str
     description: str
     currency: str = "EUR"
-    paypal_payment_method: str = "balance"
-    paypal_insufficient_action: str = "stop"
+    account_payment_method: str = ""
+    account_insufficient_action: str = ""
+    # Backward-compatible aliases for old forms/templates.
+    paypal_payment_method: str = ""
+    paypal_insufficient_action: str = ""
 
     @classmethod
     def from_form(cls, form) -> "TransactionInput":
@@ -31,8 +34,20 @@ class TransactionInput:
             account=form.get("account", ""),
             description=form.get("description", ""),
             currency=str(form.get("currency", "EUR") or "EUR").upper(),
-            paypal_payment_method=str(form.get("paypal_payment_method", "balance") or "balance").lower(),
-            paypal_insufficient_action=str(form.get("paypal_insufficient_action", "stop") or "stop").lower(),
+            account_payment_method=str(
+                form.get("account_payment_method")
+                or form.get("payment_method_route")
+                or form.get("paypal_payment_method")
+                or ""
+            ).lower(),
+            account_insufficient_action=str(
+                form.get("account_insufficient_action")
+                or form.get("insufficient_action")
+                or form.get("paypal_insufficient_action")
+                or ""
+            ).lower(),
+            paypal_payment_method=str(form.get("paypal_payment_method", "") or "").lower(),
+            paypal_insufficient_action=str(form.get("paypal_insufficient_action", "") or "").lower(),
         )
 
     def as_dict(self) -> dict:

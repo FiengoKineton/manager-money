@@ -28,17 +28,21 @@ def add_receivable_from_form(form) -> None:
     description = form.get("description", "")
 
     # Register the money leaving the selected account immediately.  If the
-    # account is blank/main/credit/PayPal it affects the main net; if it is a
+    # account is blank/main/credit it affects the main net; if it is a
     # liquid account it affects that account balance instead.
-    save_result = save_transaction_payload({
-        "type": "expense",
-        "date": start_date,
-        "category": DEFAULT_RECEIVABLE_EXPENSE_CATEGORY,
-        "sub_category": name or debtor,
-        "amount": amount,
-        "account": account,
-        "description": _loan_expense_description(name, debtor, description),
-    })
+    save_result = save_transaction_payload(
+        {
+            "type": "expense",
+            "date": start_date,
+            "category": DEFAULT_RECEIVABLE_EXPENSE_CATEGORY,
+            "sub_category": name or debtor,
+            "amount": amount,
+            "account": account,
+            "description": _loan_expense_description(name, debtor, description),
+        },
+        payment_method=form.get("account_payment_method", ""),
+        insufficient_action=form.get("account_insufficient_action", ""),
+    )
     linked_ids = save_result.get("transaction_ids", []) if isinstance(save_result, dict) else []
     linked_expense_id = linked_ids[0] if linked_ids else ""
 

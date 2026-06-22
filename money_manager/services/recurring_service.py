@@ -3,7 +3,19 @@ from __future__ import annotations
 from datetime import date
 import calendar
 
-from money_manager.config import CREDIT_ACCOUNT_KEYWORDS, CREDIT_CARD_DUE_DAY, account_label_for_value, is_auxiliary_account
+from money_manager.config import (
+    CREDIT_ACCOUNT_KEYWORDS,
+    CREDIT_CARD_DUE_DAY,
+    MAIN_NET_CREDIT_PENDING,
+    PAYPAL_CREDIT_ALIASES,
+    PAYPAL_CREDIT_ACCOUNT_VALUE,
+    account_due_day_for_key,
+    account_label_for_key,
+    account_label_for_value,
+    account_policy_for_key,
+    is_auxiliary_account,
+    normalize_account_key,
+)
 
 from money_manager.repositories.pending import append_pending, delete_pending_for_source, load_pending
 from money_manager.repositories.recurring import (
@@ -203,44 +215,48 @@ def is_rule_finished(row: dict, today: date | None = None) -> bool:
     return False
 
 
+def _credit_style_key(account_value: str | None) -> str:
+    account = str(account_value or "").strip().casefold()
+    if account in PAYPAL_CREDIT_ALIASES:
+        return PAYPAL_CREDIT_ACCOUNT_VALUE
+    if account in CREDIT_ACCOUNT_KEYWORDS:
+        return "credit"
+    key = normalize_account_key(account)
+    if account_policy_for_key(key) == MAIN_NET_CREDIT_PENDING:
+        return key
+    return ""
+
+
 def _is_credit_style_recurring(row: dict) -> bool:
-    account = str(row.get("account", "")).strip().lower()
     tx_type = str(row.get("type", "expense")).strip().lower()
-
-    return tx_type == "expense" and account in {
-        *CREDIT_ACCOUNT_KEYWORDS,
-        "paypal",
-        "pay pal",
-        "paypal_credit",
-        "paypal credit",
-        "pay pal credit",
-    }
+    return tx_type == "expense" and bool(_credit_style_key(row.get("account", "")))
 
 
-def _credit_due_date_from_charge_date(charge_date: date) -> date:
-    """Credit-card style settlement: charge this month, pay next month."""
+def _credit_due_date_from_charge_date(charge_date: date, due_day: int = CREDIT_CARD_DUE_DAY) -> date:
+    """Credit-style settlement: charge this month, pay next month."""
     if charge_date.month == 12:
-        return date(charge_date.year + 1, 1, CREDIT_CARD_DUE_DAY)
+        return date(charge_date.year + 1, 1, due_day)
 
-    return date(charge_date.year, charge_date.month + 1, CREDIT_CARD_DUE_DAY)
+    return date(charge_date.year, charge_date.month + 1, due_day)
 
 
 def _pending_due_date_for_rule(row: dict, scheduled_date: date) -> date:
-    if _is_credit_style_recurring(row):
-        return _credit_due_date_from_charge_date(scheduled_date)
+    credit_key = _credit_style_key(row.get("account", ""))
+    if credit_key:
+        due_day = account_due_day_for_key(credit_key, CREDIT_CARD_DUE_DAY) if credit_key not in {"credit", PAYPAL_CREDIT_ACCOUNT_VALUE} else CREDIT_CARD_DUE_DAY
+        return _credit_due_date_from_charge_date(scheduled_date, due_day=due_day)
 
     return scheduled_date
 
 
 def _pending_account_for_rule(row: dict) -> str:
-    account = str(row.get("account", "auto")).strip().lower()
-
-    if account in {"paypal", "pay pal", "paypal_credit", "paypal credit", "pay pal credit"}:
-        return "paypal_credit"
-
-    if _is_credit_style_recurring(row):
+    credit_key = _credit_style_key(row.get("account", ""))
+    if credit_key == PAYPAL_CREDIT_ACCOUNT_VALUE:
+        return PAYPAL_CREDIT_ACCOUNT_VALUE
+    if credit_key == "credit":
         return "credit"
-
+    if credit_key:
+        return account_label_for_key(credit_key)
     return row.get("account", "auto")
 
 

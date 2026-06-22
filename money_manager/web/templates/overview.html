@@ -41,7 +41,7 @@
       <span class="eyebrow">Real tracked money</span>
       <h3>Net balance</h3>
       <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
-      <p>Income minus expenses and investments for the main route only. Explicit liquid accounts like EdenRed, Cash Flow and Pre-paid card are excluded.</p>
+      <p>Income minus expenses and investments for the main route only. Explicit separate accounts are excluded unless their policy says they affect the main net.</p>
     </div>
     <a href="{{ url_for('transactions.transactions_page') }}">See main transactions</a>
   </article>
@@ -61,12 +61,12 @@
   <article class="mini-priority-card tone-aux">
     <span>Separate liquid</span>
     <strong>€ {{ '%.2f'|format(auxiliary_balance) }}</strong>
-    <small>Cash Flow, Pre-paid card, Other/custom</small>
+    <small>Configured separate accounts</small>
   </article>
   <article class="mini-priority-card tone-warning">
     <span>Credit/debt pressure</span>
     <strong>€ {{ '%.2f'|format(credit_pending_amount + active_debt) }}</strong>
-    <small>Credit/PayPal-credit pending plus active debts</small>
+    <small>Credit/pending payments plus active debts</small>
   </article>
   <article class="mini-priority-card tone-income">
     <span>Income</span>
@@ -120,7 +120,7 @@
         <strong>€ {{ '%.2f'|format(pending_debt_payments) }}</strong>
       </div>
       <div>
-        <span>Credit/PayPal-credit pending</span>
+        <span>Credit/pending payments</span>
         <strong>€ {{ '%.2f'|format(credit_pending_amount) }}</strong>
       </div>
       <div>
@@ -275,7 +275,7 @@
   <div class="panel-header account-panel-header">
     <div>
       <span class="eyebrow">Separate liquid accounts</span>
-      <h3>Cash Flow, Pre-paid card and Other account</h3>
+      <h3>Configured accounts</h3>
       <p>
         These balances are built from the normal transaction CSV files and, for Cash Flow, from
         <strong>sparagnat_fottut.csv</strong> cash-collected entries. Top-ups still reduce the tracked

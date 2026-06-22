@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block page_title %}Transactions{% endblock %}
+{% block page_title %}{{ t("page.transactions") }}{% endblock %}
 
 {% block content %}
 <section class="transactions-hero panel-card">
@@ -180,6 +180,11 @@
           {% if tx.description and tx.description != 'nan' %}
             <span class="transaction-description-text">{{ tx.description }}</span>
           {% endif %}
+          {% if tx.payment_method and tx.payment_method != 'nan' %}
+            <br><small class="transaction-meta-pill">{{ tx.payment_method|capitalize }}{% if tx.contact_name and tx.contact_name != 'nan' %} · {{ tx.contact_name }}{% endif %}</small>
+          {% elif tx.contact_name and tx.contact_name != 'nan' %}
+            <br><small class="transaction-meta-pill">{{ tx.contact_name }}</small>
+          {% endif %}
 
           <div class="transaction-row-actions transaction-row-actions-source" aria-hidden="true">
             <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
@@ -242,6 +247,11 @@
         <td class="transaction-description-cell">
           {% if tx.description and tx.description != 'nan' %}
             <span class="transaction-description-text">{{ tx.description }}</span>
+          {% endif %}
+          {% if tx.payment_method and tx.payment_method != 'nan' %}
+            <br><small class="transaction-meta-pill">{{ tx.payment_method|capitalize }}{% if tx.contact_name and tx.contact_name != 'nan' %} · {{ tx.contact_name }}{% endif %}</small>
+          {% elif tx.contact_name and tx.contact_name != 'nan' %}
+            <br><small class="transaction-meta-pill">{{ tx.contact_name }}</small>
           {% endif %}
 
           <div class="transaction-row-actions transaction-row-actions-source" aria-hidden="true">

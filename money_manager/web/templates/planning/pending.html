@@ -23,7 +23,7 @@
     <div>
       <span>All pending impact</span>
       <strong>€ {{ '%.2f'|format(pending_total) }}</strong>
-      <small>Includes Cash Flow, EdenRed, Pre-paid and custom accounts.</small>
+      <small>Includes Configured accounts and custom accounts.</small>
     </div>
   </div>
 </section>
@@ -146,6 +146,19 @@
             <label>Description</label>
             <input type="text" name="description" value="{{ tx.description }}" placeholder="Scheduled payment">
           </div>
+          {% if tx.is_credit_statement %}
+          <div class="payment-description-field form-field-wide">
+            <label>Credit statement details</label>
+            <small>Statement month {{ tx.statement_month }} · {{ tx.credit_charge_count }} transaction{{ '' if tx.credit_charge_count == 1 else 's' }} grouped into this single due payment.</small>
+            {% if tx.credit_charge_details %}
+              <div class="credit-statement-mini-list">
+                {% for charge in tx.credit_charge_details %}
+                  <div><span>{{ charge.date }} · {{ charge.category }}</span><strong>{{ charge.amount_str }}</strong></div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          {% endif %}
         </div>
         <div class="payment-side payment-edit-side">
           <label>Amount</label>

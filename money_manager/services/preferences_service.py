@@ -13,6 +13,7 @@ KNOWN_PREFERENCE_FIELDS = {
     "date_format",
     "privacy_mode",
     "show_sensitive_data",
+    "onboarding_completed",
 }
 
 
@@ -59,6 +60,7 @@ def _normalize_preferences(preferences: Mapping[str, Any]) -> dict[str, Any]:
     clean["date_format"] = str(clean.get("date_format") or "dd/mm/yyyy").strip() or "dd/mm/yyyy"
     clean["privacy_mode"] = _as_bool(clean.get("privacy_mode", False), default=False)
     clean["show_sensitive_data"] = _as_bool(clean.get("show_sensitive_data", True), default=True)
+    clean["onboarding_completed"] = _as_bool(clean.get("onboarding_completed", True), default=True)
     clean["updated_at"] = str(clean.get("updated_at") or "")
     if not clean.get("schema_version"):
         clean["schema_version"] = DEFAULT_PREFERENCES["schema_version"]

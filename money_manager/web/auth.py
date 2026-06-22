@@ -15,6 +15,7 @@ from money_manager.users.user_manager import (
 bp = Blueprint("auth", __name__)
 
 PUBLIC_ENDPOINTS = {"auth.login", "auth.register", "static"}
+ONBOARDING_ALLOWED_ENDPOINTS = {"onboarding.onboarding_page", "onboarding.reset_onboarding", "auth.logout"}
 
 
 def is_authenticated() -> bool:
@@ -51,10 +52,24 @@ def require_login():
 
     if is_authenticated():
         ensure_user_data_folder(str(session.get("user_id")), create_files=True)
+        if _should_redirect_to_onboarding(endpoint):
+            next_url = request.full_path if request.query_string else request.path
+            return redirect(url_for("onboarding.onboarding_page", next=next_url))
         return None
 
     next_url = request.full_path if request.query_string else request.path
     return redirect(url_for("auth.login", next=next_url))
+
+
+def _should_redirect_to_onboarding(endpoint: str) -> bool:
+    if endpoint in ONBOARDING_ALLOWED_ENDPOINTS or endpoint.startswith("static"):
+        return False
+    try:
+        from money_manager.services.onboarding_service import should_start_onboarding
+
+        return should_start_onboarding(str(session.get("user_id") or ""))
+    except Exception:
+        return False
 
 
 @bp.route("/register", methods=["GET", "POST"])

@@ -132,33 +132,53 @@ def create_transfer(form) -> dict:
     if error:
         return {"ok": False, "error": error}
     transfer_id = append_transfer(data)
-    fee_id = _append_prepaid_topup_fee(data, transfer_id)
+    fee_id = _append_configured_topup_fee(data, transfer_id)
     message = "Internal transfer saved."
     if fee_id is not None:
-        message += " A €1.00 pre-paid top-up fee was added as an expense transaction."
+        message += " A configured top-up fee was added as an expense transaction."
     return {"ok": True, "message": message}
 
 
-def _append_prepaid_topup_fee(data: dict, transfer_id: int) -> int | None:
+def _append_configured_topup_fee(data: dict, transfer_id: int) -> int | None:
+    """Append an optional top-up fee defined in the target account metadata.
+
+    This replaces the old hard-coded Pre-paid-card fee.  A user who wants this
+    behavior can set, for example, metadata.topup_fee_amount = 1.00 on that
+    account in accounts.json.
+    """
+    from money_manager.services.account_config_service import account_by_key
+
     from_key = _account_key_from_saved(data.get("from_account", ""))
     to_key = _account_key_from_saved(data.get("to_account", ""))
-    if from_key != MAIN_ACCOUNT_KEY or to_key != "pre_paid_card":
+    if from_key != MAIN_ACCOUNT_KEY or to_key == MAIN_ACCOUNT_KEY:
         return None
+
+    target = account_by_key(to_key)
+    metadata = target.get("metadata", {}) if isinstance(target, dict) else {}
+    if not isinstance(metadata, dict):
+        return None
+    try:
+        fee_amount = float(metadata.get("topup_fee_amount", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        fee_amount = 0.0
+    if fee_amount <= 0:
+        return None
+
+    label = account_label_for_key(to_key)
     return append_transaction({
         "type": "expense",
         "date": data.get("date") or date.today().isoformat(),
-        "category": "Bank fees",
-        "sub_category": "Pre-paid card top-up fee",
-        "amount": 1.0,
+        "category": metadata.get("topup_fee_category") or "Bank fees",
+        "sub_category": metadata.get("topup_fee_sub_category") or f"{label} top-up fee",
+        "amount": fee_amount,
         "original_amount": "",
         "original_currency": "EUR",
         "exchange_rate_to_eur": "1.00000000",
         "exchange_correction_to_eur": "0.00000000",
         "exchange_effective_rate_to_eur": "1.00000000",
         "account": "",
-        "description": f"Automatic €1 fee for internal transfer #{transfer_id} from Main bank to Pre-paid card.",
+        "description": f"Automatic €{fee_amount:.2f} fee for internal transfer #{transfer_id} from Main bank to {label}.",
     })
-
 
 def update_transfer_from_form(form) -> dict:
     data, error = validate_transfer(form, check_balance=False)
@@ -265,7 +285,7 @@ def main_account_transfer_movements() -> pd.DataFrame:
 
 
 def auxiliary_transfer_movements(account_key: str | None = None) -> pd.DataFrame:
-    """Synthetic account movements for Cash Flow / Pre-paid / EdenRed / PayPal etc."""
+    """Synthetic account movements for configured non-main accounts."""
     df = load_all()
     if df.empty:
         return _empty_frame()

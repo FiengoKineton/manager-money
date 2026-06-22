@@ -10,6 +10,15 @@ from werkzeug.utils import secure_filename
 from money_manager.config import account_options_for_forms
 from money_manager.config.user_paths import get_user_data_dir
 from money_manager.services.currency_service import currency_options_for_forms
+from money_manager.services.i18n_service import available_language_codes
+from money_manager.services.navigation_service import (
+    get_effective_navigation,
+    hide_page,
+    move_page,
+    restore_default_navigation,
+    set_group_collapsed,
+    show_page,
+)
 from money_manager.services.preferences_service import load_preferences, update_preferences
 from money_manager.services.profile_service import (
     display_name_from_profile,
@@ -43,10 +52,6 @@ DATE_FORMAT_OPTIONS = [
     {"value": "yyyy-mm-dd", "label": "YYYY-MM-DD"},
     {"value": "mm/dd/yyyy", "label": "MM/DD/YYYY"},
 ]
-LANGUAGE_OPTIONS = [
-    {"value": "en", "label": "English"},
-    {"value": "it", "label": "Italian"},
-]
 THEME_OPTIONS = [
     {"value": "day", "label": "Day"},
     {"value": "night", "label": "Night"},
@@ -78,12 +83,85 @@ def preferences():
 
     updates = {
         "theme": "night" if theme == "night" else "day",
-        "language": language if language in {"en", "it"} else "en",
+        "language": language if language in available_language_codes() else "en",
         "privacy_mode": _checkbox_on("privacy_mode"),
         "show_sensitive_data": _checkbox_on("show_sensitive_data"),
     }
     update_preferences(updates, allow_future_fields=False)
     return redirect(url_for("profile.profile_page", saved="preferences"))
+
+
+@bp.post("/preferences/quick")
+def preferences_quick():
+    preferences = load_preferences()
+    action = str(request.form.get("action") or "").strip()
+
+    updates = {}
+
+    if action == "toggle_theme":
+        current_theme = str(preferences.get("theme") or "day")
+        updates["theme"] = "night" if current_theme != "night" else "day"
+
+    elif action == "toggle_language":
+        current_language = str(preferences.get("language") or "en")
+        updates["language"] = "it" if current_language != "it" else "en"
+
+    elif action == "toggle_privacy":
+        next_privacy_mode = not bool(preferences.get("privacy_mode"))
+        updates["privacy_mode"] = next_privacy_mode
+
+        # Important:
+        # When privacy is turned on from the quick card, actually hide values.
+        if next_privacy_mode:
+            updates["show_sensitive_data"] = False
+
+    if updates:
+        update_preferences(updates, allow_future_fields=False)
+
+    return redirect(url_for("profile.profile_page", saved="preferences"))
+
+@bp.post("/navigation/hide")
+def navigation_hide():
+    hide_page(request.form.get("page_id", ""))
+    return redirect(_profile_navigation_url(saved="navigation"))
+
+
+@bp.post("/navigation/show")
+def navigation_show():
+    show_page(request.form.get("page_id", ""))
+    return redirect(_profile_navigation_url(saved="navigation"))
+
+
+@bp.post("/navigation/move")
+def navigation_move():
+    target_index = request.form.get("target_index")
+    parsed_index = None
+    if target_index not in {None, ""}:
+        try:
+            parsed_index = int(str(target_index))
+        except ValueError:
+            parsed_index = None
+    move_page(
+        request.form.get("page_id", ""),
+        direction=request.form.get("direction", ""),
+        target_index=parsed_index,
+    )
+    return redirect(_profile_navigation_url(saved="navigation"))
+
+
+@bp.post("/navigation/group")
+def navigation_group():
+    set_group_collapsed(
+        request.form.get("group_id", ""),
+        collapsed=_checkbox_on("collapsed"),
+    )
+    return redirect(_profile_navigation_url(saved="navigation"))
+
+
+@bp.post("/navigation/restore")
+def navigation_restore():
+    restore_default_navigation()
+    return redirect(_profile_navigation_url(saved="navigation_restored"))
 
 
 @bp.post("/avatar")
@@ -143,11 +221,15 @@ def _render_profile_page():
         account_options=account_options_for_forms(include_credit=False),
         currency_options=currency_options_for_forms(),
         date_format_options=DATE_FORMAT_OPTIONS,
-        language_options=LANGUAGE_OPTIONS,
         theme_options=THEME_OPTIONS,
         avatar_max_mb=MAX_AVATAR_BYTES // (1024 * 1024),
+        navigation_groups=get_effective_navigation(include_hidden=True),
     )
 
+
+
+def _profile_navigation_url(*, saved: str) -> str:
+    return f"{url_for('profile.profile_page', saved=saved)}#navigation"
 
 def _avatar_dir() -> Path:
     path = get_user_data_dir() / AVATAR_DIRNAME
@@ -229,20 +311,11 @@ def _checkbox_on(name: str) -> bool:
 
 def _status_message(saved: str | None, error: str | None) -> dict[str, str] | None:
     if error:
-        messages = {
-            "avatar_missing": "Choose an image before uploading.",
-            "avatar_type": "Avatar must be a PNG, JPG, JPEG, or WEBP image.",
-            "avatar_empty": "The selected image appears to be empty.",
-            "avatar_too_large": "Avatar image is too large.",
-        }
-        return {"tone": "error", "text": messages.get(error, "Could not update the profile.")}
+        known_errors = {"avatar_missing", "avatar_type", "avatar_empty", "avatar_too_large", "backup_missing", "backup_type", "backup_invalid", "backup_restore_failed"}
+        key = f"profile.status.{error}" if error in known_errors else "profile.status.generic_error"
+        return {"tone": "error", "key": key}
 
-    messages = {
-        "profile": "Profile information saved.",
-        "preferences": "Preferences saved.",
-        "avatar": "Profile image updated.",
-        "avatar_removed": "Profile image removed.",
-    }
-    if saved in messages:
-        return {"tone": "success", "text": messages[saved]}
+    known_saved = {"profile", "preferences", "avatar", "avatar_removed", "navigation", "navigation_restored", "backup_imported"}
+    if saved in known_saved:
+        return {"tone": "success", "key": f"profile.status.{saved}"}
     return None

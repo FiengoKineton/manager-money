@@ -1,0 +1,42 @@
+.bonifico-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.bonifico-warning,
+.form-alert-warning {
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.10);
+  color: var(--text);
+}
+
+.bonifico-contact-preview {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  background: var(--surface-soft);
+}
+
+.bonifico-contact-preview p {
+  margin: 0.25rem 0;
+}
+
+.transaction-meta-pill {
+  display: inline-flex;
+  margin-top: 0.25rem;
+  opacity: 0.85;
+}
+
+.transaction-metadata-box {
+  margin-bottom: 1rem;
+}
+
+.bonifico-linked-payment-panel,
+.bonifico-target-picker {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  background: var(--surface-soft);
+}

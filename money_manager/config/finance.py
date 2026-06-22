@@ -10,6 +10,7 @@ DEBT_PAYMENT_CATEGORY = "Debt"
 CREDIT_ACCOUNT_KEYWORDS = {
     "credit",
     "credit card",
+    "credit cards",
     "card credit",
     "carta credito",
     "carta di credito",
@@ -20,8 +21,6 @@ CREDIT_ACCOUNT_KEYWORDS = {
     "pay pal credit",
     "paypal card",
     "pay pal card",
-    "paypal",
-    "pay pal",
 }
 
 

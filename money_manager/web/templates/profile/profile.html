@@ -1,39 +1,55 @@
 {% extends "base.html" %}
-{% block page_title %}Profile{% endblock %}
+{% block page_title %}{{ t("profile.title") }}{% endblock %}
 
 {% block content %}
 <section class="profile-hero panel-card">
   <div class="profile-hero-main">
     <div class="profile-avatar profile-avatar-large">
       {% if profile.profile_image %}
-        <img src="{{ url_for('profile.avatar') }}?v={{ profile.updated_at|urlencode }}" alt="{{ display_name }} profile image" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+        <img src="{{ url_for('profile.avatar') }}?v={{ profile.updated_at|urlencode }}" alt="{{ display_name }} {{ t('profile.avatar') }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
         <span>{{ initials }}</span>
       {% else %}
         <span>{{ initials }}</span>
       {% endif %}
     </div>
     <div>
-      <span class="eyebrow">Personal settings</span>
+      <span class="eyebrow">{{ t("profile.personal_settings") }}</span>
       <h2>{{ display_name }}</h2>
-      <p>Manage your money profile, avatar, privacy settings, app theme and language from one protected page.</p>
+      <p>{{ t("profile.hero_description") }}</p>
       {% if status %}
-        <div class="profile-status profile-status-{{ status.tone }}" role="status">{{ status.text }}</div>
+        <div class="profile-status profile-status-{{ status.tone }}" role="status">{{ t(status.key) }}</div>
       {% endif %}
     </div>
   </div>
   <div class="profile-hero-meta">
-    <div>
-      <span>Theme</span>
-      <strong>{{ 'Night' if preferences.theme == 'night' else 'Day' }}</strong>
-    </div>
-    <div>
-      <span>Language</span>
-      <strong>{{ preferences.language|upper }}</strong>
-    </div>
-    <div>
-      <span>Privacy</span>
-      <strong>{{ 'On' if preferences.privacy_mode else 'Off' }}</strong>
-    </div>
+    <form method="post" action="{{ url_for('profile.preferences_quick') }}">
+      <input type="hidden" name="action" value="toggle_theme">
+      <button type="submit" class="profile-hero-meta-card">
+        <span>{{ t("profile.theme") }}</span>
+        <strong>{{ t('theme.night') if preferences.theme == 'night' else t('theme.day') }}</strong>
+        <small>
+          {{ t('theme.day') if preferences.theme == 'night' else t('theme.night') }}
+        </small>
+      </button>
+    </form>
+
+    <form method="post" action="{{ url_for('profile.preferences_quick') }}">
+      <input type="hidden" name="action" value="toggle_language">
+      <button type="submit" class="profile-hero-meta-card">
+        <span>{{ t("profile.language") }}</span>
+        <strong>{{ available_languages.get(preferences.language, available_languages.get(current_language, 'English')) }}</strong>
+        <small>{{ "Italiano" if preferences.language != "it" else "English" }}</small>
+      </button>
+    </form>
+
+    <form method="post" action="{{ url_for('profile.preferences_quick') }}">
+      <input type="hidden" name="action" value="toggle_privacy">
+      <button type="submit" class="profile-hero-meta-card">
+        <span>{{ t("common.privacy") }}</span>
+        <strong>{{ t('common.on') if preferences.privacy_mode else t('common.off') }}</strong>
+        <small>{{ t('common.off') if preferences.privacy_mode else t('common.on') }}</small>
+      </button>
+    </form>
   </div>
 </section>
 
@@ -41,41 +57,41 @@
   <article class="profile-card panel-card profile-card-main">
     <div class="panel-header">
       <div>
-        <span class="eyebrow">Identity and money profile</span>
-        <h3>User identity</h3>
-        <p>This is stored in your private <strong>profile.json</strong>.</p>
+        <span class="eyebrow">{{ t("profile.identity_eyebrow") }}</span>
+        <h3>{{ t("profile.identity_title") }}</h3>
+        <p>{{ t("profile.identity_description", file="profile.json") }}</p>
       </div>
     </div>
 
     <form method="post" action="{{ url_for('profile.profile_page') }}" class="profile-form">
       <div>
-        <label for="first_name">First name</label>
+        <label for="first_name">{{ t("common.first_name") }}</label>
         <input id="first_name" type="text" name="first_name" value="{{ profile.first_name }}" autocomplete="given-name">
       </div>
       <div>
-        <label for="last_name">Last name</label>
+        <label for="last_name">{{ t("common.last_name") }}</label>
         <input id="last_name" type="text" name="last_name" value="{{ profile.last_name }}" autocomplete="family-name">
       </div>
       <div>
-        <label for="display_name">Display name</label>
-        <input id="display_name" type="text" name="display_name" value="{{ profile.display_name }}" placeholder="Shown in the sidebar">
+        <label for="display_name">{{ t("profile.display_name") }}</label>
+        <input id="display_name" type="text" name="display_name" value="{{ profile.display_name }}" placeholder="{{ t('profile.display_name_placeholder') }}">
       </div>
       <div>
-        <label for="birth_year">Birth year</label>
-        <input id="birth_year" type="number" name="birth_year" value="{{ profile.birth_year }}" min="1900" max="2100" placeholder="Optional">
+        <label for="birth_year">{{ t("profile.birth_year") }}</label>
+        <input id="birth_year" type="number" name="birth_year" value="{{ profile.birth_year }}" min="1900" max="2100" placeholder="{{ t('common.optional') }}">
       </div>
 
       <div class="profile-section-title form-field-wide">
-        <span class="eyebrow">Money profile</span>
-        <h3>Bank and defaults</h3>
+        <span class="eyebrow">{{ t("profile.money_profile") }}</span>
+        <h3>{{ t("profile.bank_defaults") }}</h3>
       </div>
 
       <div>
-        <label for="bank_name">Main bank name</label>
-        <input id="bank_name" type="text" name="bank_name" value="{{ profile.bank_name }}" placeholder="Example: Intesa, Revolut, UniCredit">
+        <label for="bank_name">{{ t("profile.bank_name") }}</label>
+        <input id="bank_name" type="text" name="bank_name" value="{{ profile.bank_name }}" placeholder="{{ t('profile.bank_name_placeholder') }}">
       </div>
       <div>
-        <label for="default_main_account">Default main account</label>
+        <label for="default_main_account">{{ t("profile.default_main_account") }}</label>
         <select id="default_main_account" name="default_main_account">
           {% for account in account_options %}
             <option value="{{ account.value }}" {% if profile.default_main_account == account.value %}selected{% endif %}>{{ account.label }}</option>
@@ -83,18 +99,18 @@
         </select>
       </div>
       <div>
-        <label for="iban">IBAN</label>
-        <input id="iban" type="text" name="iban" value="{{ profile.iban }}" placeholder="Stored privately">
+        <label for="iban">{{ t("profile.iban") }}</label>
+        <input id="iban" type="text" name="iban" value="{{ profile.iban }}" placeholder="{{ t('profile.iban_placeholder') }}">
         {% if preferences.privacy_mode and profile.iban %}
-          <small>Privacy preview: {{ profile.iban|mask_iban }}</small>
+          <small>{{ t("profile.privacy_preview", value=(profile.iban|mask_iban)) }}</small>
         {% endif %}
       </div>
       <div>
-        <label for="bic_swift">BIC / SWIFT</label>
-        <input id="bic_swift" type="text" name="bic_swift" value="{{ profile.bic_swift }}" placeholder="Optional">
+        <label for="bic_swift">{{ t("profile.bic_swift") }}</label>
+        <input id="bic_swift" type="text" name="bic_swift" value="{{ profile.bic_swift }}" placeholder="{{ t('common.optional') }}">
       </div>
       <div>
-        <label for="currency">Currency</label>
+        <label for="currency">{{ t("common.currency") }}</label>
         <select id="currency" name="currency">
           {% for currency in currency_options %}
             <option value="{{ currency.code }}" {% if preferences.currency == currency.code %}selected{% endif %}>{{ currency.label }}</option>
@@ -102,7 +118,7 @@
         </select>
       </div>
       <div>
-        <label for="date_format">Date format</label>
+        <label for="date_format">{{ t("profile.date_format") }}</label>
         <select id="date_format" name="date_format">
           {% for option in date_format_options %}
             <option value="{{ option.value }}" {% if preferences.date_format == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -111,7 +127,7 @@
       </div>
 
       <div class="form-actions-row form-field-wide">
-        <button type="submit" class="primary-btn">Save profile</button>
+        <button type="submit" class="primary-btn">{{ t("profile.save_profile") }}</button>
       </div>
     </form>
   </article>
@@ -120,9 +136,9 @@
     <article class="profile-card panel-card">
       <div class="panel-header compact-profile-header">
         <div>
-          <span class="eyebrow">Profile image</span>
-          <h3>Avatar</h3>
-          <p>Images stay inside your user folder, not public static files.</p>
+          <span class="eyebrow">{{ t("profile.image_eyebrow") }}</span>
+          <h3>{{ t("profile.avatar") }}</h3>
+          <p>{{ t("profile.avatar_description") }}</p>
         </div>
       </div>
 
@@ -130,25 +146,25 @@
         <label class="avatar-drop" for="avatar">
           <span class="profile-avatar profile-avatar-upload">
             {% if profile.profile_image %}
-              <img src="{{ url_for('profile.avatar') }}?v={{ profile.updated_at|urlencode }}" alt="Current avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+              <img src="{{ url_for('profile.avatar') }}?v={{ profile.updated_at|urlencode }}" alt="{{ t('profile.current_avatar_alt') }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
               <span>{{ initials }}</span>
             {% else %}
               <span>{{ initials }}</span>
             {% endif %}
           </span>
-          <strong>Upload PNG, JPG or WEBP</strong>
-          <small>Maximum {{ avatar_max_mb }} MB.</small>
+          <strong>{{ t("profile.upload_types") }}</strong>
+          <small>{{ t("profile.avatar_max", mb=avatar_max_mb) }}</small>
         </label>
         <input id="avatar" type="file" name="avatar" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp">
         <div class="form-actions-row avatar-actions">
-          <button type="submit" class="primary-btn">Upload image</button>
+          <button type="submit" class="primary-btn">{{ t("profile.upload_image") }}</button>
         </div>
       </form>
 
       {% if profile.profile_image %}
         <form method="post" action="{{ url_for('profile.avatar_upload') }}" class="avatar-remove-form">
           <input type="hidden" name="action" value="remove">
-          <button type="submit" class="secondary-btn">Remove image</button>
+          <button type="submit" class="secondary-btn">{{ t("profile.remove_image") }}</button>
         </form>
       {% endif %}
     </article>
@@ -156,51 +172,126 @@
     <article class="profile-card panel-card">
       <div class="panel-header compact-profile-header">
         <div>
-          <span class="eyebrow">Preferences</span>
-          <h3>Theme, language and privacy</h3>
-          <p>Stored in your private <strong>preferences.json</strong>.</p>
+          <span class="eyebrow">{{ t("contacts.title") }}</span>
+          <h3>{{ t("contacts.manage_contacts") }}</h3>
+          <p>{{ t("contacts.profile_card_description") }}</p>
+        </div>
+      </div>
+      <a class="primary-btn" href="{{ url_for('contacts.contacts_page') }}">{{ t("contacts.manage_contacts") }}</a>
+    </article>
+
+    <article id="backup" class="profile-card panel-card">
+      <div class="panel-header compact-profile-header">
+        <div>
+          <span class="eyebrow">{{ t("backup.eyebrow") }}</span>
+          <h3>{{ t("backup.title") }}</h3>
+          <p>{{ t("backup.description") }}</p>
         </div>
       </div>
 
-      <form method="post" action="{{ url_for('profile.preferences') }}" class="profile-preferences-form">
-        <div>
-          <label for="theme">Theme</label>
-          <select id="theme" name="theme">
-            {% for option in theme_options %}
-              <option value="{{ option.value }}" {% if preferences.theme == option.value %}selected{% endif %}>{{ option.label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label for="language">Language</label>
-          <select id="language" name="language">
-            {% for option in language_options %}
-              <option value="{{ option.value }}" {% if preferences.language == option.value %}selected{% endif %}>{{ option.label }}</option>
-            {% endfor %}
-          </select>
-          <small>Only stored for now. Full translation comes later.</small>
-        </div>
-        <label class="profile-toggle-row">
-          <input type="checkbox" name="privacy_mode" {% if preferences.privacy_mode %}checked{% endif %}>
-          <span>
-            <strong>Privacy mode</strong>
-            <small>Allows pages to mask sensitive values where supported.</small>
-          </span>
-        </label>
-        <label class="profile-toggle-row">
-          <input type="checkbox" name="show_sensitive_data" {% if preferences.show_sensitive_data %}checked{% endif %}>
-          <span>
-            <strong>Show sensitive data</strong>
-            <small>Keep full values visible when privacy mode is off.</small>
-          </span>
-        </label>
+      <div class="profile-backup-actions">
+        <a class="primary-btn" href="{{ url_for('backup.export_backup') }}">{{ t("backup.export") }}</a>
+      </div>
+
+      <form method="post" action="{{ url_for('backup.import_backup') }}" enctype="multipart/form-data" class="profile-backup-form" onsubmit="return confirm('{{ t('backup.import_confirm') }}')">
+        <label for="backup_zip">{{ t("backup.import_label") }}</label>
+        <input id="backup_zip" type="file" name="backup_zip" accept=".zip,application/zip" required>
+        <label for="import_mode">{{ t("backup.import_mode") }}</label>
+        <select id="import_mode" name="import_mode">
+          <option value="replace">{{ t("backup.mode_replace") }}</option>
+          <option value="merge" disabled>{{ t("backup.mode_merge_soon") }}</option>
+        </select>
+        <small>{{ t("backup.import_warning") }}</small>
         <div class="form-actions-row">
-          <button type="submit" class="primary-btn">Save preferences</button>
+          <button type="submit" class="secondary-btn danger-lite">{{ t("backup.import") }}</button>
         </div>
+      </form>
+    </article>
+
+    <article class="profile-card panel-card">
+      <div class="panel-header compact-profile-header">
+        <div>
+          <span class="eyebrow">{{ t("onboarding.eyebrow") }}</span>
+          <h3>{{ t("onboarding.reopen_title") }}</h3>
+          <p>{{ t("onboarding.reopen_description") }}</p>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('onboarding.reset_onboarding') }}">
+        <button type="submit" class="secondary-btn">{{ t("onboarding.reopen") }}</button>
       </form>
     </article>
   </aside>
 </section>
+
+<section id="navigation" class="profile-navigation-panel panel-card">
+  <div class="panel-header navigation-settings-header">
+    <div>
+      <span class="eyebrow">{{ t("profile.navigation_eyebrow") }}</span>
+      <h3>{{ t("profile.navigation_title") }}</h3>
+      <p>{{ t("profile.navigation_description", file="navigation.json") }}</p>
+    </div>
+    <form method="post" action="{{ url_for('profile.navigation_restore') }}">
+      <button type="submit" class="secondary-btn">{{ t("profile.navigation_restore_defaults") }}</button>
+    </form>
+  </div>
+
+  <div class="navigation-settings-list">
+    {% for group in navigation_groups %}
+      <article class="navigation-settings-group">
+        <header class="navigation-settings-group-header">
+          <div>
+            <strong>{{ t(group.label_key) }}</strong>
+            <small>{{ t("profile.navigation_group_hint") }}</small>
+          </div>
+          <form method="post" action="{{ url_for('profile.navigation_group') }}">
+            <input type="hidden" name="group_id" value="{{ group.group_id }}">
+            {% if group.is_collapsed %}
+              <button type="submit" class="secondary-btn small-btn">{{ t("profile.navigation_expand_group") }}</button>
+            {% else %}
+              <input type="hidden" name="collapsed" value="1">
+              <button type="submit" class="secondary-btn small-btn">{{ t("profile.navigation_collapse_group") }}</button>
+            {% endif %}
+          </form>
+        </header>
+
+        <div class="navigation-settings-items">
+          {% for item in group['items'] %}
+            <div class="navigation-settings-row {{ 'is-hidden' if item.is_hidden else '' }}">
+              <div class="navigation-settings-copy">
+                <strong>{{ t(item.label_key) }}{% if item.is_hidden %}<span class="navigation-hidden-badge">{{ t("profile.navigation_hidden") }}</span>{% endif %}</strong>
+                <small>{{ item.endpoint }}</small>
+              </div>
+              <div class="navigation-settings-actions">
+                <form method="post" action="{{ url_for('profile.navigation_move') }}">
+                  <input type="hidden" name="page_id" value="{{ item.page_id }}">
+                  <input type="hidden" name="direction" value="up">
+                  <button type="submit" class="icon-btn" {% if loop.first %}disabled{% endif %} aria-label="{{ t('profile.navigation_move_up') }}">↑</button>
+                </form>
+                <form method="post" action="{{ url_for('profile.navigation_move') }}">
+                  <input type="hidden" name="page_id" value="{{ item.page_id }}">
+                  <input type="hidden" name="direction" value="down">
+                  <button type="submit" class="icon-btn" {% if loop.last %}disabled{% endif %} aria-label="{{ t('profile.navigation_move_down') }}">↓</button>
+                </form>
+                {% if item.is_hidden %}
+                  <form method="post" action="{{ url_for('profile.navigation_show') }}">
+                    <input type="hidden" name="page_id" value="{{ item.page_id }}">
+                    <button type="submit" class="secondary-btn small-btn">{{ t("profile.navigation_show") }}</button>
+                  </form>
+                {% else %}
+                  <form method="post" action="{{ url_for('profile.navigation_hide') }}">
+                    <input type="hidden" name="page_id" value="{{ item.page_id }}">
+                    <button type="submit" class="secondary-btn small-btn">{{ t("profile.navigation_hide") }}</button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
 {% endblock %}
 
 {% block scripts %}

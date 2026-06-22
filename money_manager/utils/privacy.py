@@ -23,6 +23,27 @@ def compute_initials(
     return (initials or "U").upper()[:2]
 
 
+def should_mask_sensitive(preferences: Mapping[str, Any] | None = None, user_id: str | None = None) -> bool:
+    """Return True when sensitive values should be hidden in the UI.
+
+    Privacy mode only affects display.  Data, calculations and backups remain
+    unchanged.  show_sensitive_data acts as the deliberate reveal switch.
+    """
+    prefs: Mapping[str, Any]
+    if preferences is None:
+        try:
+            from money_manager.services.preferences_service import load_preferences
+
+            prefs = load_preferences(user_id=user_id)
+        except Exception:
+            return False
+    else:
+        prefs = preferences
+    privacy_mode = _as_bool(prefs.get("privacy_mode", False), default=False)
+    show_sensitive = _as_bool(prefs.get("show_sensitive_data", True), default=True)
+    return privacy_mode and not show_sensitive
+
+
 def mask_iban(iban: str | None) -> str:
     raw = "".join(str(iban or "").split())
     if not raw:
@@ -33,21 +54,45 @@ def mask_iban(iban: str | None) -> str:
     return " ".join(masked[index : index + 4] for index in range(0, len(masked), 4))
 
 
+def mask_text(value: Any, preferences: Mapping[str, Any] | None = None, *, mask: str = "••••") -> str:
+    text = str(value or "")
+    if not text:
+        return ""
+    return mask if should_mask_sensitive(preferences) else text
+
+
 def mask_amount(value: Any, privacy_mode: bool = False, *, mask: str = "••••") -> Any:
     if privacy_mode:
         return mask
     return value
 
 
+def mask_money(
+    value: Any,
+    preferences: Mapping[str, Any] | None = None,
+    *,
+    currency: str | None = None,
+    mask: str = "••••",
+) -> str:
+    if should_mask_sensitive(preferences):
+        return mask
+    return format_money(value, currency=currency)
+
+
+def format_money(value: Any, *, currency: str | None = None) -> str:
+    try:
+        amount = Decimal(str(value or 0).replace("€", "").replace(",", ""))
+    except (InvalidOperation, ValueError):
+        return str(value or "")
+    code = str(currency or "EUR").upper()
+    symbol = "€" if code == "EUR" else code
+    return f"{symbol} {amount:,.2f}"
+
+
 def format_masked_amount(value: Any, privacy_mode: bool = False, currency: str = "EUR") -> str:
     if privacy_mode:
         return "••••"
-    try:
-        amount = Decimal(str(value or 0))
-    except (InvalidOperation, ValueError):
-        return str(value or "")
-    symbol = "€" if str(currency).upper() == "EUR" else str(currency).upper()
-    return f"{symbol}{amount:,.2f}"
+    return format_money(value, currency=currency)
 
 
 def safe_update_fields(
@@ -68,3 +113,17 @@ def safe_update_fields(
         if isinstance(value, (str, int, float, bool, list, dict)) or value is None:
             result[key_text] = value
     return result
+
+
+def _as_bool(value: Any, *, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        text = value.strip().casefold()
+        if text in {"1", "true", "yes", "y", "on"}:
+            return True
+        if text in {"0", "false", "no", "n", "off"}:
+            return False
+    if value is None:
+        return default
+    return bool(value)

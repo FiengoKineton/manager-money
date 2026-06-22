@@ -52,7 +52,6 @@ CSV_SCHEMAS: dict[str, list[str]] = {
 }
 
 JSON_DEFAULTS: dict[str, Any] = {
-    "accounts.json": {"accounts": []},
     "currencies.json": {},
     "notification_state.json": {"version": 1, "read": {}, "history": []},
     "investment_market_cache.json": {"symbols": {}, "last_refresh_attempt": ""},
@@ -143,6 +142,11 @@ def create_user(username: str, password: str, display_name: str | None = None, f
         migrate_flat_data_to_user(user_id)
     ensure_user_data_folder(user_id, create_files=True)
     _ensure_user_config_files(user_id, user)
+    # New users see the first-login onboarding wizard. Older users repaired by
+    # migrations default to completed so they are not trapped unexpectedly.
+    from money_manager.services.preferences_service import update_preferences
+
+    update_preferences({"onboarding_completed": False}, user_id=user_id, allow_future_fields=True)
 
     users.append(user)
     save_users(users)
@@ -173,6 +177,9 @@ def ensure_user_data_folder(user_id: str, create_files: bool = True) -> Path:
     if create_files:
         _ensure_default_data_files(user_dir)
         _ensure_user_config_files(safe_id, get_user_by_id(safe_id))
+        from money_manager.services.schema_service import ensure_user_schema
+
+        ensure_user_schema(safe_id)
     return user_dir
 
 
@@ -275,6 +282,7 @@ def _ensure_user_config_files(user_id: str, user_hint: dict[str, Any] | None = N
     Imports are local to keep user creation independent from web/request startup and
     to avoid service import cycles. Every call is scoped to the normalized user_id.
     """
+    from money_manager.services.account_config_service import ensure_accounts_config
     from money_manager.services.contact_service import ensure_contacts_config
     from money_manager.services.custom_category_service import ensure_categories_config
     from money_manager.services.document_type_service import ensure_document_types_config
@@ -285,6 +293,7 @@ def _ensure_user_config_files(user_id: str, user_hint: dict[str, Any] | None = N
     ensure_profile_config(user_id=user_id, user_hint=user_hint)
     ensure_preferences_config(user_id=user_id)
     ensure_categories_config(user_id=user_id)
+    ensure_accounts_config(user_id=user_id)
     ensure_contacts_config(user_id=user_id)
     ensure_navigation_config(user_id=user_id)
     ensure_document_types_config(user_id=user_id)

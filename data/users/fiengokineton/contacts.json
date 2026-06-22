@@ -1,4 +1,23 @@
 {
   "schema_version": 1,
-  "contacts": []
+  "contacts": [
+    {
+      "id": "contact_cfee4c3f2bed",
+      "type": "person",
+      "first_name": "Claudia",
+      "last_name": "",
+      "company_name": "",
+      "display_name": "Claudia",
+      "relationship": "",
+      "iban": "IT00A00000000000000000000000",
+      "bic_swift": "",
+      "bank_name": "",
+      "email": "",
+      "phone": "",
+      "notes": "",
+      "is_archived": false,
+      "created_at": "2026-06-22T22:05:24+00:00",
+      "updated_at": "2026-06-22T22:05:24+00:00"
+    }
+  ]
 }

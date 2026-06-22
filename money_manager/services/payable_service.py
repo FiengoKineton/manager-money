@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Any, Mapping
 
 from money_manager.config import account_options_for_forms, normalize_account_key, MAIN_ACCOUNT_KEY
 from money_manager.repositories.payables import (
@@ -86,20 +87,33 @@ def pay_payable_from_form(form) -> None:
         payment_date=form.get("date", date.today().isoformat()),
         account=form.get("account", item.get("account", "")),
         description=form.get("description", ""),
+        payment_method=form.get("account_payment_method", ""),
+        insufficient_action=form.get("account_insufficient_action", ""),
     )
 
 
-def register_payable_payment(payable_id, amount: float, payment_date: str, account: str = "", description: str = "") -> None:
+def register_payable_payment(
+    payable_id,
+    amount: float,
+    payment_date: str,
+    account: str = "",
+    description: str = "",
+    payment_method: str | None = None,
+    insufficient_action: str | None = None,
+    extra_tx_fields: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     item = payable_by_id(payable_id)
     if not item:
-        return
+        return {"ok": False, "error": "Payable was not found."}
 
-    amount = min(_amount(amount), _amount(item.get("remaining_amount")))
+    requested_amount = _amount(amount)
+    remaining_before = _amount(item.get("remaining_amount"))
+    amount = min(requested_amount, remaining_before)
     if amount <= 0:
-        return
+        return {"ok": False, "error": "Payable payment amount must be greater than zero."}
 
     payment_account = account if account is not None else item.get("account", "")
-    save_result = save_transaction_payload({
+    tx_payload = {
         "type": "expense",
         "date": payment_date or date.today().isoformat(),
         "category": item.get("category") or DEFAULT_PAYABLE_EXPENSE_CATEGORY,
@@ -107,7 +121,17 @@ def register_payable_payment(payable_id, amount: float, payment_date: str, accou
         "amount": amount,
         "account": payment_account,
         "description": description or f"Payable payment to {item.get('payee', '')}: {item.get('name', '')}",
-    })
+    }
+    if extra_tx_fields:
+        tx_payload.update(dict(extra_tx_fields))
+
+    save_result = save_transaction_payload(
+        tx_payload,
+        payment_method=payment_method,
+        insufficient_action=insufficient_action,
+    )
+    if isinstance(save_result, dict) and not save_result.get("ok", True):
+        return save_result
     transaction_ids = save_result.get("transaction_ids", []) if isinstance(save_result, dict) else []
 
     # If this payable is linked to an Expense Project, attach this existing
@@ -121,12 +145,16 @@ def register_payable_payment(payable_id, amount: float, payment_date: str, accou
             note=f"Payable payment: {item.get('name', '')}",
         )
 
-    remaining = max(0.0, _amount(item.get("remaining_amount")) - amount)
+    remaining = max(0.0, remaining_before - amount)
     updates = {"remaining_amount": remaining, "account": payment_account}
     if remaining <= 0.005:
         updates["status"] = "paid"
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
     update_payable(int(item["id"]), updates)
+
+    result = dict(save_result or {"ok": True})
+    result.update({"ok": True, "paid_amount": amount, "remaining_amount": remaining, "payable_id": payable_id})
+    return result
 
 
 def payable_by_id(payable_id) -> dict | None:

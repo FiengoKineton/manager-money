@@ -1,15 +1,12 @@
 {% extends "base.html" %}
-{% block page_title %}Internal Transfers{% endblock %}
+{% block page_title %}{{ t("transfers.title") }}{% endblock %}
 
 {% block content %}
 <section class="page-heading internal-transfer-heading">
   <div>
-    <span class="eyebrow">Account movement</span>
-    <h2>Internal Transfers</h2>
-    <p>
-      Move money between Main Bank, Cash Flow, Pre-paid, EdenRed, PayPal, or custom liquid accounts
-      without counting it as income or expense.
-    </p>
+    <span class="eyebrow">{{ t("transfers.eyebrow") }}</span>
+    <h2>{{ t("transfers.title") }}</h2>
+    <p>{{ t("transfers.description") }}</p>
   </div>
 </section>
 
@@ -18,68 +15,68 @@
 
 <section class="summary internal-transfer-summary">
   <div class="summary-card expense">
-    <h3>Main moved out</h3>
+    <h3>{{ t("transfers.main_moved_out") }}</h3>
     <p>{{ '%.2f'|format(totals.main_out) }}</p>
   </div>
   <div class="summary-card income">
-    <h3>Main moved in</h3>
+    <h3>{{ t("transfers.main_moved_in") }}</h3>
     <p>{{ '%.2f'|format(totals.main_in) }}</p>
   </div>
   <div class="summary-card neutral">
-    <h3>Auxiliary moved</h3>
+    <h3>{{ t("transfers.auxiliary_moved") }}</h3>
     <p>{{ '%.2f'|format(totals.auxiliary_moved) }}</p>
   </div>
   <div class="summary-card pending">
-    <h3>Transfers</h3>
+    <h3>{{ t("transfers.count") }}</h3>
     <p>{{ totals.count }}</p>
   </div>
 </section>
 
 <section class="form-section internal-transfer-card">
-  <h2>Add transfer</h2>
+  <h2>{{ t("transfers.add_transfer") }}</h2>
   <form method="post" class="internal-transfer-form" data-transfer-form>
     <input type="hidden" name="action" value="add_transfer">
 
     <div class="form-field">
-      <label>Date</label>
+      <label>{{ t("common.date") }}</label>
       <input type="date" name="date" value="{{ today }}" required>
     </div>
 
     <div class="form-field">
-      <label>From</label>
+      <label>{{ t("common.from") }}</label>
       <select name="from_account" required data-transfer-from>
         {% for account in account_options %}
           <option value="{{ account.key }}" data-key="{{ account.key }}" data-balance="{{ account_balances.get(account.key, 0) }}">{{ account.label }}</option>
         {% endfor %}
       </select>
-      <small class="hint">Available: € <span data-transfer-from-balance>0.00</span></small>
+      <small class="hint">{{ t("transfers.available") }} <span data-transfer-from-balance>0.00</span></small>
     </div>
 
     <div class="form-field">
-      <label>To</label>
+      <label>{{ t("common.to") }}</label>
       <select name="to_account" required>
         {% for account in account_options %}
-          <option value="{{ account.key }}" {% if account.key == 'pre_paid_card' %}selected{% endif %}>{{ account.label }}</option>
+          <option value="{{ account.key }}">{{ account.label }}</option>
         {% endfor %}
       </select>
-      <small class="hint">Main → Pre-paid automatically records a €1.00 fee.</small>
+      <small class="hint">{{ t("transfers.target_hint") }}</small>
     </div>
 
     <div class="form-field">
-      <label>Amount (€)</label>
+      <label>{{ t("transfers.amount_eur") }}</label>
       <input type="number" step="0.01" name="amount" required data-transfer-amount>
       <label class="inline-checkbox transfer-all-toggle">
-        <input type="checkbox" name="move_all" value="1" data-transfer-move-all> Move all available balance
+        <input type="checkbox" name="move_all" value="1" data-transfer-move-all> {{ t("transfers.move_all") }}
       </label>
     </div>
 
     <div class="form-field form-field-wide">
-      <label>Description</label>
-      <input type="text" name="description" placeholder="Example: ATM withdrawal, top up prepaid card, moved money to PayPal">
+      <label>{{ t("common.description") }}</label>
+      <input type="text" name="description" placeholder="{{ t('transfers.description_placeholder') }}">
     </div>
 
     <div class="form-actions form-field-wide">
-      <button type="submit" class="primary-btn">Save transfer</button>
+      <button type="submit" class="primary-btn">{{ t("transfers.save_transfer") }}</button>
     </div>
   </form>
 </section>
@@ -87,22 +84,22 @@
 <section class="transactions internal-transfer-card">
   <div class="panel-header">
     <div>
-      <span class="eyebrow">Saved movements</span>
-      <h2>Transfer log</h2>
-      <p>Click a row on desktop to edit/delete in the side window.</p>
+      <span class="eyebrow">{{ t("transfers.saved_movements") }}</span>
+      <h2>{{ t("transfers.transfer_log") }}</h2>
+      <p>{{ t("transfers.log_hint") }}</p>
     </div>
   </div>
 
   {% if transfers %}
-  <table class="standard-table inline-edit-table internal-transfer-table" data-mobile-title="Description" data-mobile-amount="Amount" data-mobile-meta="Date, From, To">
+  <table class="standard-table inline-edit-table internal-transfer-table" data-mobile-title="{{ t('common.description') }}" data-mobile-amount="{{ t('transfers.amount_eur') }}" data-mobile-meta="{{ t('common.date') }}, {{ t('common.from') }}, {{ t('common.to') }}">
     <thead>
       <tr>
-        <th>Date</th>
-        <th>From</th>
-        <th>To</th>
-        <th>Amount</th>
-        <th>Description</th>
-        <th>Actions</th>
+        <th>{{ t("common.date") }}</th>
+        <th>{{ t("common.from") }}</th>
+        <th>{{ t("common.to") }}</th>
+        <th>{{ t("transfers.amount_eur") }}</th>
+        <th>{{ t("common.description") }}</th>
+        <th>{{ t("common.actions") }}</th>
       </tr>
     </thead>
     <tbody>
@@ -132,11 +129,11 @@
         <td><input form="transfer-update-{{ transfer.id }}" type="text" name="description" value="{{ transfer.description }}" class="table-note-input"></td>
         <td>
           <div class="table-action-rail">
-            <button form="transfer-update-{{ transfer.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update transfer" aria-label="Update transfer">✎</button>
+            <button form="transfer-update-{{ transfer.id }}" type="submit" class="icon-action-btn icon-action-update" title="{{ t('transfers.update_transfer') }}" aria-label="{{ t('transfers.update_transfer') }}">✎</button>
             <form method="post" class="row-action-form">
               <input type="hidden" name="action" value="delete_transfer">
               <input type="hidden" name="id" value="{{ transfer.id }}">
-              <button type="submit" class="icon-action-btn icon-action-delete" title="Delete transfer" aria-label="Delete transfer" onclick="return confirm('Delete this internal transfer?')">×</button>
+              <button type="submit" class="icon-action-btn icon-action-delete" title="{{ t('transfers.delete_transfer') }}" aria-label="{{ t('transfers.delete_transfer') }}" onclick="return confirm({{ t('transfers.delete_confirm')|tojson }})">×</button>
             </form>
           </div>
         </td>
@@ -145,7 +142,7 @@
     </tbody>
   </table>
   {% else %}
-    <p class="empty">No transfers yet.</p>
+    <p class="empty">{{ t("transfers.no_transfers") }}</p>
   {% endif %}
 </section>
 {% endblock %}

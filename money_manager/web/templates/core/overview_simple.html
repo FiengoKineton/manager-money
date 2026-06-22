@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block page_title %}Overview{% endblock %}
+{% block page_title %}{{ t("page.overview") }}{% endblock %}
 
 {% block content %}
 <section class="overview-decision-hero">
@@ -12,7 +12,7 @@
     </p>
     <div class="overview-primary-value">
       <span>Main available position</span>
-      <strong>€ {{ '%.2f'|format(cash_position) }}</strong>
+      <strong>{{ cash_position|money_masked }}</strong>
       <small>All account nets + invested capital. Market P/L is shown separately.</small>
     </div>
     <div class="overview-action-row">
@@ -26,14 +26,14 @@
     <span class="eyebrow">Pressure check</span>
     <div class="overview-status-main">
       <span>Adjusted stress position</span>
-      <strong>€ {{ '%.2f'|format(adjusted_stress_position) }}</strong>
+      <strong>{{ adjusted_stress_position|money_masked }}</strong>
       <small>Stress + owed to me + investment P/L.</small>
     </div>
     <dl class="overview-status-list">
-      <div><dt>Stress position</dt><dd>€ {{ '%.2f'|format(stress_position) }}</dd></div>
-      <div><dt>Credit pending</dt><dd>€ {{ '%.2f'|format(credit_pending_amount) }}</dd></div>
-      <div><dt>Active debts</dt><dd>€ {{ '%.2f'|format(active_debt) }}</dd></div>
-      <div><dt>Owed to me</dt><dd>€ {{ '%.2f'|format(receivable_active_remaining) }}</dd></div>
+      <div><dt>Stress position</dt><dd>{{ stress_position|money_masked }}</dd></div>
+      <div><dt>Credit pending</dt><dd>{{ credit_pending_amount|money_masked }}</dd></div>
+      <div><dt>Active debts</dt><dd>{{ active_debt|money_masked }}</dd></div>
+      <div><dt>Owed to me</dt><dd>{{ receivable_active_remaining|money_masked }}</dd></div>
     </dl>
   </article>
 </section>
@@ -41,42 +41,42 @@
 <section class="overview-metric-grid" aria-label="Financial metrics">
   <article class="summary-card net">
     <span>Net balance</span>
-    <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
+    <strong>{{ totals.net|money_masked }}</strong>
     <small>Main bank net only.</small>
   </article>
   <article class="summary-card tone-aux">
     <span>Separate liquid</span>
-    <strong>€ {{ '%.2f'|format(auxiliary_balance) }}</strong>
-    <small>Cash Flow, EdenRed, Pre-paid, Other/custom.</small>
+    <strong>{{ auxiliary_balance|money_masked }}</strong>
+    <small>Configured separate accounts.</small>
   </article>
   <article class="summary-card tone-net">
     <span>Visible liquidity</span>
-    <strong>€ {{ '%.2f'|format(combined_visible_liquidity) }}</strong>
+    <strong>{{ combined_visible_liquidity|money_masked }}</strong>
     <small>Main-bank net + separate liquid accounts.</small>
   </article>
   <article class="summary-card warning">
     <span>Credit pending</span>
-    <strong>€ {{ '%.2f'|format(credit_pending_amount) }}</strong>
-    <small>Credit card / PayPal-credit still to settle.</small>
+    <strong>{{ credit_pending_amount|money_masked }}</strong>
+    <small>Credit/pending payments still to settle.</small>
   </article>
   <article class="summary-card expense">
     <span>Active debts</span>
-    <strong>€ {{ '%.2f'|format(active_debt) }}</strong>
+    <strong>{{ active_debt|money_masked }}</strong>
     <small>Debt still to pay.</small>
   </article>
   <article class="summary-card income">
     <span>Owed to me</span>
-    <strong>€ {{ '%.2f'|format(receivable_active_remaining) }}</strong>
-    <small>Net if repaid: € {{ '%.2f'|format(net_if_receivables_repaid) }}</small>
+    <strong>{{ receivable_active_remaining|money_masked }}</strong>
+    <small>Net if repaid: {{ net_if_receivables_repaid|money_masked }}</small>
   </article>
   <article class="summary-card investment">
     <span>Investment capital</span>
-    <strong>€ {{ '%.2f'|format(investment_capital) }}</strong>
+    <strong>{{ investment_capital|money_masked }}</strong>
     <small>Deposits/buys minus withdrawals/sells.</small>
   </article>
   <article class="summary-card investment">
     <span>Investment P/L</span>
-    <strong>€ {{ '%.2f'|format(investment_profit_loss) }}</strong>
+    <strong>{{ investment_profit_loss|money_masked }}</strong>
     <small>{{ '%.2f'|format(investment_profit_loss_pct) }} % estimated market move.</small>
   </article>
 </section>
@@ -94,7 +94,7 @@
       <a href="{{ url_for('pending.pending_page') }}"><b>Pay or delay scheduled items</b><span>Pending payments stay pending until you execute them.</span></a>
       <a href="{{ url_for('transactions.transactions_page') }}"><b>Review transaction log</b><span>Search, edit, delay or delete saved movements.</span></a>
       <a href="{{ url_for('pending.recurring_page') }}"><b>Manage recurring rules</b><span>Control what gets generated automatically.</span></a>
-      <a href="{{ url_for('accounts.accounts_page') }}"><b>Check liquid accounts</b><span>Cash Flow, EdenRed, Pre-paid and custom accounts.</span></a>
+      <a href="{{ url_for('accounts.accounts_page') }}"><b>Check liquid accounts</b><span>Configured accounts and custom accounts.</span></a>
       <a href="{{ url_for('investments.investments_page') }}"><b>Review investments</b><span>Deposits, buy/sell, withdrawals and profit/loss.</span></a>
       <a href="{{ url_for('dashboard.index') }}"><b>Open dashboard</b><span>Detailed charts and filtered totals.</span></a>
     </div>
@@ -136,7 +136,7 @@
         <div class="category-bar-row">
           <div>
             <span>{{ row.category }}</span>
-            <strong>€ {{ '%.2f'|format(row.total) }}</strong>
+            <strong>{{ row.total|money_masked }}</strong>
           </div>
           <div class="category-bar"><span style="width: {{ (row.total / top_categories[0].total * 100) if top_categories[0].total else 0 }}%"></span></div>
         </div>

@@ -5,6 +5,25 @@
 <section class="form-section">
   <h2>Transaction #{{ tx.id }} ({{ tx.type|capitalize }})</h2>
 
+  {% if tx.payment_method or tx.contact_name or tx.transfer_status %}
+    <div class="form-field-wide currency-total-box transaction-metadata-box">
+      <strong>{{ t("transaction.bonifico_metadata") if tx.payment_method == 'bonifico' else t("transaction.payment_method") }}</strong>
+      <p>
+        {% if tx.payment_method %}<span>{{ t("transaction.payment_method") }}: <b>{{ tx.payment_method|capitalize }}</b></span>{% endif %}
+        {% if tx.contact_name %}<br><span>{{ t("transaction.contact") }}: <b>{{ tx.contact_name }}</b></span>{% endif %}
+        {% if tx.transfer_status %}<br><span>{{ t("transaction.transfer_status") }}: <b>{{ tx.transfer_status }}</b></span>{% endif %}
+      </p>
+      {% if tx.iban_snapshot or tx.bic_swift_snapshot or tx.bank_name_snapshot or tx.transfer_reference %}
+        <small>
+          {% if tx.iban_snapshot %}{{ t("transaction.iban_snapshot") }}: {{ tx.iban_snapshot|mask_iban }}{% endif %}
+          {% if tx.bic_swift_snapshot %}<br>{{ t("transaction.bic_swift_snapshot") }}: {{ tx.bic_swift_snapshot }}{% endif %}
+          {% if tx.bank_name_snapshot %}<br>{{ t("transaction.bank_name_snapshot") }}: {{ tx.bank_name_snapshot }}{% endif %}
+          {% if tx.transfer_reference %}<br>{{ t("transaction.transfer_reference") }}: {{ tx.transfer_reference }}{% endif %}
+        </small>
+      {% endif %}
+    </div>
+  {% endif %}
+
   <form method="post" class="transaction-form">
     <div>
       <label>Date</label>
@@ -50,7 +69,7 @@
           </option>
         {% endfor %}
       </select>
-      <small class="hint">Blank = main bank. Separate liquid accounts, including PayPal balance, stay out of main net/category charts. Credit card and PayPal-credit pending rows impact the main account when executed.</small>
+      <small class="hint">Blank = main bank. Separate accounts stay out of main net/category charts unless their policy says otherwise. Credit/pending rows impact the main account when executed.</small>
     </div>
 
     <div class="form-field-wide">

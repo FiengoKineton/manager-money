@@ -39,6 +39,7 @@
     return {
       key: (selected && selected.dataset.key) || "main_bank",
       kind: (selected && selected.dataset.kind) || "main",
+      paymentMode: (selected && selected.dataset.paymentMode) || "main_net",
       label: (selected && (selected.dataset.displayLabel || selected.textContent) ? (selected.dataset.displayLabel || selected.textContent).trim() : "Main bank account"),
     };
   }
@@ -83,14 +84,14 @@
   }
 
   function togglePayPalPanel() {
-    const panel = document.getElementById("paypal-payment-panel");
-    const methodSelect = document.getElementById("paypal-payment-method");
-    const insufficientPanel = document.getElementById("paypal-insufficient-panel");
+    const panel = document.getElementById("account-payment-panel") || document.getElementById("paypal-payment-panel");
+    const methodSelect = document.getElementById("account-payment-method") || document.getElementById("paypal-payment-method");
+    const insufficientPanel = document.getElementById("account-insufficient-panel") || document.getElementById("paypal-insufficient-panel");
     const nameLabels = document.querySelectorAll("[data-balance-account-name]");
     const balanceLabels = document.querySelectorAll("[data-selected-account-balance]");
     const meta = selectedAccountMeta();
     const balances = window.moneyManagerAccountBalances || {};
-    const isBalanceAccount = meta.kind === "auxiliary";
+    const isBalanceAccount = meta.paymentMode === "tracked_balance" || (meta.kind === "auxiliary" && meta.paymentMode !== "main_net" && meta.paymentMode !== "credit_statement");
 
     if (!panel) return;
     panel.hidden = !isBalanceAccount;
@@ -114,8 +115,8 @@
     const meta = selectedAccountMeta();
     const balances = window.moneyManagerAccountBalances || {};
     const mainNet = Number(window.moneyManagerMainNet || 0);
-    const methodSelect = document.getElementById("paypal-payment-method");
-    const insufficientSelect = document.getElementById("paypal-insufficient-action");
+    const methodSelect = document.getElementById("account-payment-method") || document.getElementById("paypal-payment-method");
+    const insufficientSelect = document.getElementById("account-insufficient-action") || document.getElementById("paypal-insufficient-action");
     const method = methodSelect ? methodSelect.value : "balance";
     const insufficient = insufficientSelect ? insufficientSelect.value : "stop";
 
@@ -126,13 +127,13 @@
 
     const sign = txType === "income" ? 1 : -1;
 
-    if (meta.kind === "credit") {
+    if (meta.paymentMode === "credit_statement" || meta.kind === "credit") {
       const future = txType === "expense" ? mainNet - amount : mainNet + amount;
       box.innerHTML = `<strong>Future preview</strong><small>Credit route: main net now is unchanged. Future main net after execution/payment: € ${formatMoney(future)}.</small>`;
       return;
     }
 
-    if (meta.kind === "auxiliary") {
+    if (meta.paymentMode === "tracked_balance" || meta.kind === "auxiliary") {
       const balance = Number(balances[meta.key] || 0);
       if (txType !== "expense") {
         box.innerHTML = `<strong>Future preview</strong><small>${meta.label} balance: € ${formatMoney(balance)} → € ${formatMoney(balance + amount)}. Main net preview is not changed by this auxiliary movement.</small>`;
@@ -178,10 +179,10 @@
     const accountSelect = document.getElementById("account-select");
     if (accountSelect) accountSelect.addEventListener("change", togglePayPalPanel);
 
-    const methodSelect = document.getElementById("paypal-payment-method");
+    const methodSelect = document.getElementById("account-payment-method") || document.getElementById("paypal-payment-method");
     if (methodSelect) methodSelect.addEventListener("change", togglePayPalPanel);
 
-    const insufficientSelect = document.getElementById("paypal-insufficient-action");
+    const insufficientSelect = document.getElementById("account-insufficient-action") || document.getElementById("paypal-insufficient-action");
     if (insufficientSelect) insufficientSelect.addEventListener("change", updateFuturePreview);
 
     updateTotal();

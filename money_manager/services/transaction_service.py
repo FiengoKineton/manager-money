@@ -2,14 +2,30 @@ from datetime import date, timedelta
 
 import pandas as pd
 
+from money_manager.services.account_payment_policy_service import (
+    BALANCE_INSUFFICIENT_ANOTHER_CARD,
+    BALANCE_INSUFFICIENT_CREDIT,
+    BALANCE_INSUFFICIENT_STOP,
+    BALANCE_METHOD_ANOTHER_CARD,
+    BALANCE_METHOD_BALANCE,
+    BALANCE_METHOD_CREDIT,
+    payment_selection_from_form,
+    resolve_payment_selection,
+)
+
 from money_manager.config import (
     CREDIT_ACCOUNT_KEYWORDS,
     CREDIT_CARD_DUE_DAY,
     MAIN_ACCOUNT_KEY,
+    MAIN_NET_AFFECTS,
+    MAIN_NET_CREDIT_PENDING,
+    MAIN_NET_SEPARATE,
     PAYPAL_ACCOUNT_KEY,
+    account_due_day_for_key,
     PAYPAL_CREDIT_ACCOUNT_VALUE,
     TRANSACTION_TYPES,
     account_label_for_key,
+    account_policy_for_key,
     auxiliary_account_keys,
     normalize_account_key,
 )
@@ -22,13 +38,6 @@ from money_manager.repositories.transactions import (
     load_all,
     update_transaction,
 )
-
-BALANCE_METHOD_BALANCE = "balance"
-BALANCE_METHOD_CREDIT = "credit"
-BALANCE_METHOD_ANOTHER_CARD = "another_card"
-BALANCE_INSUFFICIENT_STOP = "stop"
-BALANCE_INSUFFICIENT_ANOTHER_CARD = "use_another_card_for_remaining"
-BALANCE_INSUFFICIENT_CREDIT = "use_credit_for_remaining"
 
 # Backwards-compatible names used by templates/forms.
 PAYPAL_METHOD_BALANCE = BALANCE_METHOD_BALANCE
@@ -51,9 +60,9 @@ def next_credit_due(payment_date=None, due_day: int = CREDIT_CARD_DUE_DAY) -> da
 def save_new_transaction(tx_input: TransactionInput) -> dict:
     """Save a new transaction and return a small UI-friendly result.
 
-    PayPal and every Other/custom balance account share the same logic:
+    Every configured balance account shares the same logic:
     - balance method spends from that tracked auxiliary balance;
-    - credit method creates a pending credit-card/PayPal-credit row;
+    - credit method creates a pending credit/pending row;
     - another_card method records a main-bank/card outflow;
     - when the auxiliary balance is too small, the remaining amount can be sent
       either to main bank/card or to pending credit.
@@ -61,42 +70,53 @@ def save_new_transaction(tx_input: TransactionInput) -> dict:
     tx = _transaction_payload_in_eur(tx_input)
     return save_transaction_payload(
         tx,
-        payment_method=tx_input.paypal_payment_method,
-        insufficient_action=tx_input.paypal_insufficient_action,
+        payment_method=tx_input.account_payment_method or tx_input.paypal_payment_method,
+        insufficient_action=tx_input.account_insufficient_action or tx_input.paypal_insufficient_action,
         due_date=_due_date_from_input(tx_input),
     )
 
 
 def save_transaction_payload(
     tx: dict,
-    payment_method: str = BALANCE_METHOD_BALANCE,
-    insufficient_action: str = BALANCE_INSUFFICIENT_STOP,
+    payment_method: str | None = None,
+    insufficient_action: str | None = None,
     due_date: date | None = None,
 ) -> dict:
     """Save an already-normalized transaction dict using the shared account router.
 
     This is intentionally reusable by debts, payables, projects, receivables and
     any future form that records an expense. It avoids the old bug where only the
-    normal Add Transaction page understood PayPal/credit split payments.
+    normal Add Transaction page understood balance/credit split payments.
     """
     tx = dict(tx)
     account_raw = str(tx.get("account", "") or "").strip()
     account_key = normalize_account_key(account_raw)
     tx_type = str(tx.get("type", "") or "").casefold()
-    due_date = due_date or _due_date_from_payload(tx)
+    explicit_due_date = due_date
 
     if tx_type == "expense" and account_key in auxiliary_account_keys():
+        policy = account_policy_for_key(account_key)
+        if policy == MAIN_NET_AFFECTS:
+            tx_id = append_transaction(tx)
+            return {"ok": True, "message": "Transaction saved and included in main net by this account policy.", "transaction_ids": [tx_id], "pending_ids": []}
+        if policy == MAIN_NET_CREDIT_PENDING:
+            return _save_credit_account_charge(tx, account_key=account_key)
+        selection = resolve_payment_selection(
+            account_key,
+            payment_method=payment_method,
+            insufficient_action=insufficient_action,
+        )
         return _save_balance_account_expense(
             tx,
             account_key=account_key,
-            method=(payment_method or BALANCE_METHOD_BALANCE),
-            insufficient_action=(insufficient_action or BALANCE_INSUFFICIENT_STOP),
-            due=due_date,
+            method=selection["payment_method"],
+            insufficient_action=selection["insufficient_action"],
+            due=explicit_due_date or _due_date_from_payload(tx),
         )
 
     if tx_type == "expense" and account_raw.casefold() in CREDIT_ACCOUNT_KEYWORDS:
         tx["account"] = "credit"
-        pending_id = append_pending(tx, due_date)
+        pending_id = append_pending(tx, explicit_due_date or _due_date_from_payload(tx))
         return {"ok": True, "message": "Credit-card payment added to pending.", "transaction_ids": [], "pending_ids": [pending_id] if pending_id is not None else []}
 
     tx_id = append_transaction(tx)
@@ -131,7 +151,7 @@ def main_net_for_preview() -> float:
 
 
 def paypal_balance() -> float:
-    """Current balance of the PayPal auxiliary account."""
+    """Current balance of the legacy PayPal auxiliary account, if this user configured one."""
     return account_balance(PAYPAL_ACCOUNT_KEY)
 
 
@@ -195,6 +215,31 @@ def _save_balance_account_expense(tx: dict, account_key: str, method: str, insuf
     }
 
 
+def _save_credit_account_charge(tx: dict, account_key: str) -> dict:
+    """Log a credit-card purchase now and aggregate settlement separately.
+
+    The purchase row is visible on the real purchase date and in the credit
+    account detail page, but it does not affect the main net. The Pending page
+    later creates one statement row per closed calendar month/account.
+    """
+    from money_manager.services.pending_service import sync_credit_account_statements
+
+    account_label = account_label_for_key(account_key)
+    credit_tx = _with_note(tx, f"Paid with {account_label}; statement settlement is grouped in Pending.")
+    credit_tx["account"] = account_key
+    tx_id = append_transaction(credit_tx)
+    try:
+        sync_credit_account_statements()
+    except Exception:
+        pass
+    return {
+        "ok": True,
+        "message": f"{account_label} credit purchase saved. It will be grouped by statement month in Pending.",
+        "transaction_ids": [tx_id],
+        "pending_ids": [],
+    }
+
+
 def _append_balance_credit_pending(tx: dict, due: date, account_label: str, account_key: str) -> int | None:
     pending_tx = _with_note(tx, f"{account_label} checkout scheduled through credit/card route.")
     pending_tx["account"] = PAYPAL_CREDIT_ACCOUNT_VALUE if account_key == PAYPAL_ACCOUNT_KEY else "credit"
@@ -213,8 +258,8 @@ def _save_paypal_expense(tx: dict, tx_input: TransactionInput) -> dict:
     return _save_balance_account_expense(
         tx,
         account_key=PAYPAL_ACCOUNT_KEY,
-        method=tx_input.paypal_payment_method or BALANCE_METHOD_BALANCE,
-        insufficient_action=tx_input.paypal_insufficient_action or BALANCE_INSUFFICIENT_STOP,
+        method=tx_input.account_payment_method or tx_input.paypal_payment_method or BALANCE_METHOD_BALANCE,
+        insufficient_action=tx_input.account_insufficient_action or tx_input.paypal_insufficient_action or BALANCE_INSUFFICIENT_STOP,
         due=_due_date_from_input(tx_input),
     )
 
@@ -245,7 +290,9 @@ def _due_date_from_input(tx_input: TransactionInput) -> date:
         payment_date = date.fromisoformat(tx_input.date)
     except (TypeError, ValueError):
         payment_date = date.today()
-    return next_credit_due(payment_date)
+    account_key = normalize_account_key(tx_input.account)
+    due_day = account_due_day_for_key(account_key, CREDIT_CARD_DUE_DAY) if account_policy_for_key(account_key) == MAIN_NET_CREDIT_PENDING else CREDIT_CARD_DUE_DAY
+    return next_credit_due(payment_date, due_day=due_day)
 
 
 def _transaction_payload_in_eur(tx_input: TransactionInput) -> dict:
@@ -270,12 +317,12 @@ def _transaction_payload_in_eur(tx_input: TransactionInput) -> dict:
     return tx
 
 
-def _due_date_from_payload(tx: dict) -> date:
+def _due_date_from_payload(tx: dict, due_day: int = CREDIT_CARD_DUE_DAY) -> date:
     try:
         payment_date = date.fromisoformat(str(tx.get("date", "") or ""))
     except (TypeError, ValueError):
         payment_date = date.today()
-    return next_credit_due(payment_date)
+    return next_credit_due(payment_date, due_day=due_day)
 
 
 def load_transactions() -> pd.DataFrame:
@@ -291,6 +338,20 @@ def prepare_transactions_for_display(df: pd.DataFrame) -> pd.DataFrame:
         df["amount_str"] = []
         df["row_index"] = []
         return df
+
+    for column in [
+        "payment_method",
+        "contact_id",
+        "contact_name",
+        "iban_snapshot",
+        "bic_swift_snapshot",
+        "bank_name_snapshot",
+        "transfer_reference",
+        "transfer_status",
+    ]:
+        if column not in df.columns:
+            df[column] = ""
+        df[column] = df[column].fillna("")
 
     df["date_str"] = df["date"].dt.strftime("%Y-%m-%d")
     df["amount_str"] = df["amount"].map(lambda amount: f"{amount:.2f}")
@@ -330,6 +391,14 @@ def transaction_detail_context(row_index: int) -> tuple[dict, list[str]]:
         "account": clean(row.get("account", "")),
         "account_key": clean(row.get("account_key", normalize_account_key(row.get("account", "")))),
         "account_label": clean(row.get("account_label", "")),
+        "payment_method": clean(row.get("payment_method", "")),
+        "contact_id": clean(row.get("contact_id", "")),
+        "contact_name": clean(row.get("contact_name", "")),
+        "iban_snapshot": clean(row.get("iban_snapshot", "")),
+        "bic_swift_snapshot": clean(row.get("bic_swift_snapshot", "")),
+        "bank_name_snapshot": clean(row.get("bank_name_snapshot", "")),
+        "transfer_reference": clean(row.get("transfer_reference", "")),
+        "transfer_status": clean(row.get("transfer_status", "")),
         "description": clean(row.get("description", "")),
         "delay_date_default": (date.today() + timedelta(days=1)).isoformat(),
     }

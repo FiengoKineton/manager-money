@@ -1,12 +1,14 @@
-id,type,date_due,amount,category,account,description,status,source,source_id
-1,investment,2026-05-08,150.0,Deposit,auto,Deposit,executed,,
-2,expense,2025-12-02,49.9,Subscriptions,auto,Amazon Prime,executed,,
-4,expense,2026-05-22,39.33,Housing,auto,Polizza Casa e Famiglia,executed,,
-5,expense,2026-06-04,10.0,Subscriptions,auto,OneDrive,executed,,
-6,investment,2026-06-08,150.0,Deposit,auto,Deposit,executed,,
-8,expense,2026-06-10,100.0,Debt,auto,Debt instalment: Phone Payments,executed,debt,3
-9,expense,2026-06-10,41.6,Debt,auto,Debt extinguishment: Payoff,executed,debt,4
-10,income,2026-06-10,200.0,Kineton,EdenRed,Ticket Restaurants,executed,,
-12,expense,2026-06-15,200.0,Housing,paypal_credit,month 1 [PayPal checkout scheduled through PayPal credit/card route.],executed,,
-13,expense,2026-07-15,200.0,Housing,paypal_credit,Parking Spot,pending,recurring,8
-14,expense,2026-06-22,39.33,Housing,,Polizza Casa e Famiglia,executed,recurring,5
+id,type,date_due,amount,category,account,description,status,source,source_id,pending_kind,account_key,account_label,statement_month,date_charge
+1,investment,2026-05-08,150.0,Deposit,auto,Deposit,executed,,,,,,,
+2,expense,2025-12-02,49.9,Subscriptions,auto,Amazon Prime,executed,,,,,,,
+4,expense,2026-05-22,39.33,Housing,auto,Polizza Casa e Famiglia,executed,,,,,,,
+5,expense,2026-06-04,10.0,Subscriptions,auto,OneDrive,executed,,,,,,,
+6,investment,2026-06-08,150.0,Deposit,auto,Deposit,executed,,,,,,,
+8,expense,2026-06-10,100.0,Debt,auto,Debt instalment: Phone Payments,executed,debt,3,,,,,
+9,expense,2026-06-10,41.6,Debt,auto,Debt extinguishment: Payoff,executed,debt,4,,,,,
+10,income,2026-06-10,200.0,Kineton,EdenRed,Ticket Restaurants,executed,,,,,,,
+12,expense,2026-06-15,200.0,Housing,paypal_credit,month 1 [PayPal checkout scheduled through PayPal credit/card route.],executed,,,,,,,
+13,expense,2026-07-15,200.0,Housing,paypal_credit,Parking Spot,pending,recurring,8,,,,,
+14,expense,2026-06-22,39.33,Housing,,Polizza Casa e Famiglia,executed,recurring,5,,,,,
+15,expense,2026-02-15,283.40,Credit cards,credit_card,Credit Card statement 2026-01 due day 15 (1 transactions),executed,credit_account_statement,credit_card:2026-01:due15,credit_statement,credit_card,Credit Card,2026-01,
+16,expense,2025-11-15,81.95,Credit cards,credit_card,Credit Card statement 2025-10 due day 15 (1 transactions),executed,credit_account_statement,credit_card:2025-10:due15,credit_statement,credit_card,Credit Card,2025-10,

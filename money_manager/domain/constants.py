@@ -10,6 +10,19 @@ TRANSACTION_FIELDS = [
     "exchange_correction_to_eur",
     "exchange_effective_rate_to_eur",
     "account",
+    "account_key_snapshot",
+    "account_name_snapshot",
+    "account_due_day_snapshot",
+    # Optional payment/contact metadata. Older CSVs are migrated automatically
+    # with blank values by repositories.csv_files.ensure_csv().
+    "payment_method",
+    "contact_id",
+    "contact_name",
+    "iban_snapshot",
+    "bic_swift_snapshot",
+    "bank_name_snapshot",
+    "transfer_reference",
+    "transfer_status",
     "description",
     "created_at",
 ]
@@ -36,6 +49,13 @@ PENDING_FIELDS = [
     "status",
     "source",
     "source_id",
+    # Optional metadata used by credit-account statement aggregation.
+    # Older CSVs are migrated automatically and keep working with blanks.
+    "pending_kind",
+    "account_key",
+    "account_label",
+    "statement_month",
+    "date_charge",
 ]
 
 RECURRING_FIELDS = [
@@ -66,6 +86,19 @@ SPARAGNAT_FIELDS = [
     "exchange_correction_to_eur",
     "exchange_effective_rate_to_eur",
     "account",
+    "account_key_snapshot",
+    "account_name_snapshot",
+    "account_due_day_snapshot",
+    # Optional payment/contact metadata. Older CSVs are migrated automatically
+    # with blank values by repositories.csv_files.ensure_csv().
+    "payment_method",
+    "contact_id",
+    "contact_name",
+    "iban_snapshot",
+    "bic_swift_snapshot",
+    "bank_name_snapshot",
+    "transfer_reference",
+    "transfer_status",
     "description",
     "created_at",
 ]

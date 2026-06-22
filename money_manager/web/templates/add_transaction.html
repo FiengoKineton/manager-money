@@ -93,10 +93,10 @@
                 <label>To</label>
                 <select name="to_account">
                   {% for account in quick_log_context.transfer_account_options %}
-                    <option value="{{ account.key }}" {% if account.key == 'pre_paid_card' %}selected{% endif %}>{{ account.label }}</option>
+                    <option value="{{ account.key }}">{{ account.label }}</option>
                   {% endfor %}
                 </select>
-                <small class="hint">Main → Pre-paid automatically records a €1.00 fee.</small>
+                <small class="hint">Configured account top-up fees are added automatically when defined.</small>
               </div>
 
               <div class="form-field" data-modes="internal_transfer">
@@ -224,12 +224,36 @@
 
               <div class="form-field" data-modes="debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay sparagnat">
                 <label>Account</label>
-                <select name="account">
+                <select name="account" id="account-select">
                   {% for account in quick_log_context.account_options %}
-                    <option value="{{ account.value }}" data-key="{{ account.key }}" data-kind="{{ account.kind }}" data-display-label="{{ account.display_label or account.label }}" {% if quick_values.account == account.value %}selected{% endif %}>{{ account.label }}</option>
+                    <option value="{{ account.value }}" data-key="{{ account.key }}" data-kind="{{ account.kind }}" data-payment-mode="{{ account.payment_mode or account.payment_logic.mode }}" data-display-label="{{ account.display_label or account.label }}" {% if quick_values.account == account.value %}selected{% endif %}>{{ account.label }}</option>
                   {% endfor %}
                 </select>
                 <small class="hint">For planned-only items, this is just the expected payment account. It does not create a transaction until you pay.</small>
+              </div>
+
+
+              <div id="account-payment-panel" class="form-field form-field-wide paypal-payment-panel" data-modes="debt_pay receivable_create payable_pay project_pay" hidden>
+                <div class="paypal-panel-grid">
+                  <div>
+                    <label><span data-balance-account-name>Balance account</span> payment method</label>
+                    <select name="account_payment_method" id="account-payment-method">
+                      <option value="balance" {% if (quick_values.account_payment_method or 'balance') == 'balance' %}selected{% endif %}>Use tracked balance first</option>
+                      <option value="credit" {% if quick_values.account_payment_method == 'credit' %}selected{% endif %}>Credit / card route</option>
+                      <option value="another_card" {% if quick_values.account_payment_method == 'another_card' %}selected{% endif %}>Another card / main bank route</option>
+                    </select>
+                    <small class="hint">Current tracked balance: € <span data-selected-account-balance>0.00</span>.</small>
+                  </div>
+                  <div id="account-insufficient-panel">
+                    <label>If the selected balance is not enough</label>
+                    <select name="account_insufficient_action" id="account-insufficient-action">
+                      <option value="stop" {% if (quick_values.account_insufficient_action or 'stop') == 'stop' %}selected{% endif %}>Stop and let me change method</option>
+                      <option value="use_another_card_for_remaining" {% if quick_values.account_insufficient_action == 'use_another_card_for_remaining' %}selected{% endif %}>Use balance, then another card/main bank for the rest</option>
+                      <option value="use_credit_for_remaining" {% if quick_values.account_insufficient_action == 'use_credit_for_remaining' %}selected{% endif %}>Use balance, then credit for the rest</option>
+                    </select>
+                    <small class="hint">If you choose a split, the app creates one balance row and one remaining-route row.</small>
+                  </div>
+                </div>
               </div>
 
               <div class="form-field form-field-wide" data-modes="parent_support sparagnat debt_create debt_pay receivable_create receivable_collect payable_create payable_pay project_plan project_pay internal_transfer">
@@ -326,30 +350,30 @@
             <label>Account</label>
             <select name="account" id="account-select">
               {% for account in account_options %}
-                <option value="{{ account.value }}" data-key="{{ account.key }}" data-kind="{{ account.kind }}" data-display-label="{{ account.display_label or account.label }}" {% if form_values.account == account.value %}selected{% endif %}>{{ account.label }}</option>
+                <option value="{{ account.value }}" data-key="{{ account.key }}" data-kind="{{ account.kind }}" data-payment-mode="{{ account.payment_mode or account.payment_logic.mode }}" data-display-label="{{ account.display_label or account.label }}" {% if form_values.account == account.value %}selected{% endif %}>{{ account.label }}</option>
               {% endfor %}
             </select>
-            <small class="hint">Blank = main bank. Cash Flow, Pre-paid card, PayPal, EdenRed and Other/custom accounts stay outside the main net. Credit card creates a pending payment.</small>
+            <small class="hint">Blank = main bank. Each configured account follows its own routing policy. Credit card creates a pending payment.</small>
           </div>
 
-          <div id="paypal-payment-panel" class="form-field-wide paypal-payment-panel" hidden>
+          <div id="account-payment-panel" class="form-field-wide paypal-payment-panel" hidden>
             <div class="paypal-panel-grid">
               <div>
                 <label><span data-balance-account-name>Balance account</span> payment method</label>
-                <select name="paypal_payment_method" id="paypal-payment-method">
-                  <option value="balance" {% if (form_values.paypal_payment_method or 'balance') == 'balance' %}selected{% endif %}>Use tracked balance first</option>
-                  <option value="credit" {% if form_values.paypal_payment_method == 'credit' %}selected{% endif %}>Credit / card route</option>
-                  <option value="another_card" {% if form_values.paypal_payment_method == 'another_card' %}selected{% endif %}>Another card / main bank route</option>
+                <select name="account_payment_method" id="account-payment-method">
+                  <option value="balance" {% if (form_values.account_payment_method or form_values.paypal_payment_method or 'balance') == 'balance' %}selected{% endif %}>Use tracked balance first</option>
+                  <option value="credit" {% if (form_values.account_payment_method or form_values.paypal_payment_method) == 'credit' %}selected{% endif %}>Credit / card route</option>
+                  <option value="another_card" {% if (form_values.account_payment_method or form_values.paypal_payment_method) == 'another_card' %}selected{% endif %}>Another card / main bank route</option>
                 </select>
                 <small class="hint">Current tracked balance: € <span data-selected-account-balance>{{ '%.2f'|format(paypal_balance or 0) }}</span>.</small>
               </div>
 
-              <div id="paypal-insufficient-panel">
+              <div id="account-insufficient-panel">
                 <label>If the selected balance is not enough</label>
-                <select name="paypal_insufficient_action" id="paypal-insufficient-action">
-                  <option value="stop" {% if (form_values.paypal_insufficient_action or 'stop') == 'stop' %}selected{% endif %}>Stop and let me change method</option>
-                  <option value="use_another_card_for_remaining" {% if form_values.paypal_insufficient_action == 'use_another_card_for_remaining' %}selected{% endif %}>Use balance, then another card/main bank for the rest</option>
-                  <option value="use_credit_for_remaining" {% if form_values.paypal_insufficient_action == 'use_credit_for_remaining' %}selected{% endif %}>Use balance, then credit for the rest</option>
+                <select name="account_insufficient_action" id="account-insufficient-action">
+                  <option value="stop" {% if (form_values.account_insufficient_action or form_values.paypal_insufficient_action or 'stop') == 'stop' %}selected{% endif %}>Stop and let me change method</option>
+                  <option value="use_another_card_for_remaining" {% if (form_values.account_insufficient_action or form_values.paypal_insufficient_action) == 'use_another_card_for_remaining' %}selected{% endif %}>Use balance, then another card/main bank for the rest</option>
+                  <option value="use_credit_for_remaining" {% if (form_values.account_insufficient_action or form_values.paypal_insufficient_action) == 'use_credit_for_remaining' %}selected{% endif %}>Use balance, then credit for the rest</option>
                 </select>
                 <small class="hint">If you choose a split, the app creates one balance row and one remaining-route row.</small>
               </div>

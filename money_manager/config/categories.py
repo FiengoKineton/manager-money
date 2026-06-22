@@ -1,59 +1,44 @@
-"""Editable transaction categories and default selections.
+"""Generic transaction categories.
 
-This is intentionally the single file to change when you want to add, remove,
-rename, or reorder categories. The UI default is controlled explicitly by
-DEFAULT_CATEGORY_BY_TYPE, so it no longer depends on alphabetical order.
+User-specific categories are not defined here.  Effective categories are:
+
+    generic defaults + data/users/{user_id}/categories.json custom - hidden
+
+See money_manager.services.custom_category_service for the per-user layer.
 """
 
 TRANSACTION_TYPES = ["expense", "income", "investment"]
 
 CATEGORY_OPTIONS = {
     "expense": sorted([
-        "Rent",
         "Groceries",
         "Restaurants",
-        "Eating out",
-        "Eating in",
-        "Going out",
-        "Pre-paid card",
-        "Claudia",
-        "Family",
-        "Shopping",
-        "Transportation",
+        "Transport",
+        "Housing",
+        "Utilities",
         "Health",
         "Personal care",
-        "Credit cards",
+        "Shopping",
         "Subscriptions",
-        "Utilities",
+        "Travel",
         "Gifts",
         "Charity",
-        "Travel",
         "Savings",
-        "Other",
-        "Account cleanup",
-        "Lost",
-        "Coffe",
-        "Housing",
         "Debt",
+        "Credit cards",
         "Payable",
-        "Home renovation",
-        "Construction",
-        "Friends",
+        "Account cleanup",
+        "Other",
     ]),
     "income": sorted([
-        "PoliMi",
-        "Kineton",
-        "Deddo",
         "Salary",
         "Scholarship",
-        "Other income",
-        "Account cleanup",
         "Refund",
         "Gift",
-        "Cash",
-        "Other",
         "Family",
         "Friends",
+        "Other income",
+        "Other",
     ]),
     "investment": sorted([
         "Deposit",
@@ -67,23 +52,31 @@ CATEGORY_OPTIONS = {
 
 DEFAULT_CATEGORY_BY_TYPE = {
     "expense": "Other",
-    "income": "Kineton",
+    "income": "Other",
     "investment": "Deposit",
 }
 
 
 def categories_for(transaction_type: str) -> list[str]:
-    return CATEGORY_OPTIONS.get(transaction_type, [])
+    try:
+        from money_manager.services.custom_category_service import effective_categories_for
+
+        return effective_categories_for(transaction_type)
+    except Exception:
+        return CATEGORY_OPTIONS.get(transaction_type, [])
 
 
 def default_category_for(transaction_type: str) -> str:
-    categories = categories_for(transaction_type)
-    configured_default = DEFAULT_CATEGORY_BY_TYPE.get(transaction_type, "")
+    try:
+        from money_manager.services.custom_category_service import default_category_for as user_default_category_for
 
-    if configured_default in categories:
-        return configured_default
-
-    return categories[0] if categories else ""
+        return user_default_category_for(transaction_type)
+    except Exception:
+        categories = CATEGORY_OPTIONS.get(transaction_type, [])
+        configured_default = DEFAULT_CATEGORY_BY_TYPE.get(transaction_type, "")
+        if configured_default in categories:
+            return configured_default
+        return categories[0] if categories else ""
 
 
 PARENT_SUPPORT_KINDS = {

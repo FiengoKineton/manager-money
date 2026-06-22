@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block page_title %}Dashboard{% endblock %}
+{% block page_title %}{{ t("page.dashboard") }}{% endblock %}
 
 {% block content %}
 <section class="dashboard-hero panel-card">
   <div class="dashboard-hero-copy">
     <span class="eyebrow">Financial command center</span>
-    <h2>Dashboard</h2>
+    <h2>{{ t("dashboard.title") }}</h2>
     <p>Charts, totals and short-term risk stay here. The detailed log remains separated in Transactions.</p>
     <div class="dashboard-hero-actions">
       <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">+ Add expense</a>
@@ -16,8 +16,8 @@
 
   <div class="dashboard-hero-balance">
     <span>Tracked net</span>
-    <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
-    <small>After open pending: € {{ '%.2f'|format(net_after_pending) }}</small>
+    <strong>{{ totals.net|money_masked }}</strong>
+    <small>After open pending: {{ net_after_pending|money_masked }}</small>
     <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
   </div>
 </section>
@@ -97,19 +97,19 @@
 <section class="dashboard-kpi-grid">
   <article class="summary-card dashboard-kpi tone-income">
     <span>Income</span>
-    <strong>€ {{ '%.2f'|format(totals.income) }}</strong>
+    <strong>{{ totals.income|money_masked }}</strong>
     <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
   </article>
 
   <article class="summary-card dashboard-kpi tone-expense">
     <span>Expenses</span>
-    <strong>€ {{ '%.2f'|format(totals.expenses) }}</strong>
+    <strong>{{ totals.expenses|money_masked }}</strong>
     <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
   </article>
 
   <article class="summary-card dashboard-kpi tone-investment">
     <span>Investments</span>
-    <strong>€ {{ '%.2f'|format(totals.investments) }}</strong>
+    <strong>{{ totals.investments|money_masked }}</strong>
     <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
   </article>
 
@@ -121,13 +121,13 @@
 
   <article class="summary-card dashboard-kpi tone-pending">
     <span>Open pending impact</span>
-    <strong>€ {{ '%.2f'|format(pending_this_month) }}</strong>
+    <strong>{{ pending_this_month|money_masked }}</strong>
     <small>Pending not yet executed.</small>
   </article>
 
   <article class="summary-card dashboard-kpi tone-availability">
     <span>Main availability</span>
-    <strong>€ {{ '%.2f'|format(totals.total_availability) }}</strong>
+    <strong>{{ totals.total_availability|money_masked }}</strong>
     <small>Uses {{ money_calculation_label|default('full history') }}.</small>
   </article>
 </section>
@@ -137,16 +137,16 @@
   <article class="panel-card period-card-redesigned">
     <span class="eyebrow">Last 3 months</span>
     <div>
-      <p class="income-text">Income: € {{ '%.2f'|format(stats_3_months.income) }}</p>
-      <p class="expense-text">Expenses: € {{ '%.2f'|format(stats_3_months.expenses) }}</p>
+      <p class="income-text">Income: {{ stats_3_months.income|money_masked }}</p>
+      <p class="expense-text">Expenses: {{ stats_3_months.expenses|money_masked }}</p>
     </div>
   </article>
 
   <article class="panel-card period-card-redesigned">
     <span class="eyebrow">This month</span>
     <div>
-      <p class="income-text">Income: € {{ '%.2f'|format(stats_this_month.income) }}</p>
-      <p class="expense-text">Expenses: € {{ '%.2f'|format(stats_this_month.expenses) }}</p>
+      <p class="income-text">Income: {{ stats_this_month.income|money_masked }}</p>
+      <p class="expense-text">Expenses: {{ stats_this_month.expenses|money_masked }}</p>
     </div>
   </article>
 </section>

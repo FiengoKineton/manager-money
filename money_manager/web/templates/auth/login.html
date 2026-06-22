@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ current_language or 'en' }}">
 <head>
   <meta charset="utf-8">
-  <title>Login | Money Manager</title>
+  <title>{{ t("auth.login.title") }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root { color-scheme: dark; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: #e5e7eb; }
@@ -19,17 +19,17 @@
 </head>
 <body>
   <form class="auth-card" method="post">
-    <h1>Money Manager</h1>
-    <p>Log in to open your personal money data.</p>
+    <h1>{{ t("auth.login.heading") }}</h1>
+    <p>{{ t("auth.login.subtitle") }}</p>
 
-    <label for="username">Username</label>
+    <label for="username">{{ t("common.username") }}</label>
     <input id="username" name="username" type="text" autocomplete="username" autofocus required>
 
-    <label for="password">Password</label>
+    <label for="password">{{ t("common.password") }}</label>
     <input id="password" name="password" type="password" autocomplete="current-password" required>
 
-    <button type="submit">Log in</button>
-    <a class="secondary-link" href="{{ url_for('auth.register') }}">Create another user</a>
+    <button type="submit">{{ t("auth.login.submit") }}</button>
+    <a class="secondary-link" href="{{ url_for('auth.register') }}">{{ t("auth.login.create_user") }}</a>
 
     {% if error %}
       <div class="error">{{ error }}</div>

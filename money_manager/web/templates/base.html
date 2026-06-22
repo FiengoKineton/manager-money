@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="{{ selected_language or 'en' }}" data-theme="{{ selected_theme if selected_theme in ['day', 'night'] else 'day' }}">
+<html lang="{{ current_language or selected_language or 'en' }}" data-theme="{{ selected_theme if selected_theme in ['day', 'night'] else 'day' }}">
 <head>
   <meta charset="utf-8">
-  <title>Money Manager</title>
+  <title>{{ t("app.name") }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% set ep = request.endpoint or '' %}
   {% set server_theme = selected_theme if selected_theme in ['day', 'night'] else 'day' %}
@@ -31,92 +31,58 @@
 </head>
 <body class="app-body app-body-clean" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
   {% set ep = request.endpoint or '' %}
-  {% set home_open = ep in ['dashboard.overview', 'dashboard.overview_detailed', 'dashboard.index', 'transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction', 'net_explanation.net_explanation'] %}
-  {% set planning_open = ep in ['pending.pending_page', 'pending.recurring_page', 'debts.debts_page', 'payables.payables_page', 'expense_projects.expense_projects_page', 'expense_projects.expense_project_detail', 'receivables.receivables_page'] %}
-  {% set accounts_open = ep in ['accounts.accounts_page', 'accounts.account_detail', 'currencies.currencies_page', 'internal_transfers.internal_transfers_page', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
-  {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'yearly_summary.yearly_summary_page', 'forecast.forecast', 'documents.documents'] %}
   {% set profile_open = ep.startswith('profile.') %}
 
   <div class="app-layout">
-    <aside class="app-sidebar" aria-label="Main navigation">
+    <aside class="app-sidebar" aria-label="{{ t('nav.overview') }}">
       <a class="app-brand {{ 'is-active' if profile_open else '' }}" href="{{ url_for('profile.profile_page') if endpoint_exists('profile.profile_page') else url_for('dashboard.overview') }}">
         <span class="app-brand-avatar">
           {% if current_user_profile.profile_image and endpoint_exists('profile.avatar') %}
-            <img class="brand-avatar" src="{{ url_for('profile.avatar') }}?v={{ current_user_profile.updated_at|urlencode }}" alt="{{ user_display_name }} profile image" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+            <img class="brand-avatar" src="{{ url_for('profile.avatar') }}?v={{ current_user_profile.updated_at|urlencode }}" alt="{{ user_display_name }} {{ t('profile.avatar') }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
             <span class="brand-mark brand-mark-fallback">{{ user_initials }}</span>
           {% else %}
             <span class="brand-mark">{{ user_initials }}</span>
           {% endif %}
         </span>
         <span>
-          <strong>{{ user_display_name if is_authenticated else "Money Manager" }}</strong>
-          <small>{{ current_user.username if current_user else "Local app" }}</small>
+          <strong>{{ user_display_name if is_authenticated else t("app.name") }}</strong>
+          <small>{{ current_user.username if current_user else t("app.local_app") }}</small>
         </span>
       </a>
 
       <nav class="app-sidebar-nav">
-        <details class="nav-group app-nav-group {{ 'is-active' if home_open else '' }}" {{ 'open' if home_open else '' }}>
-          <summary>Overview</summary>
-          <div class="nav-items">
-            <a href="{{ url_for('dashboard.overview') }}" class="{{ 'active' if ep == 'dashboard.overview' else '' }}">Quick overview</a>
-            <a href="{{ url_for('dashboard.overview_detailed') }}" class="{{ 'active' if ep == 'dashboard.overview_detailed' else '' }}">Detailed overview</a>
-            <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if ep == 'dashboard.index' else '' }}">Dashboard</a>
-            <a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if ep in ['transactions.transactions_page', 'transactions.transaction_detail', 'transactions.add_transaction'] else '' }}">Transactions</a>
-            <a href="{{ url_for('net_explanation.net_explanation') }}" class="{{ 'active' if ep == 'net_explanation.net_explanation' else '' }}">Why this net?</a>
-          </div>
-        </details>
-
-        <details class="nav-group app-nav-group {{ 'is-active' if planning_open else '' }}" {{ 'open' if planning_open else '' }}>
-          <summary>Planning</summary>
-          <div class="nav-items nav-items-foldered">
-            <span class="nav-subfolder-label">Scheduled money</span>
-            <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}">Pending payments</a>
-            <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}">Recurring rules</a>
-            <span class="nav-subfolder-label">Projects & forecast</span>
-            <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if ep in ['expense_projects.expense_projects_page', 'expense_projects.expense_project_detail'] else '' }}">Expense projects</a>
-            <span class="nav-subfolder-label">Obligations</span>
-            <a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if ep == 'payables.payables_page' else '' }}">Payables</a>
-            <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}">Debts I owe</a>
-            <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}">Money owed to me</a>
-          </div>
-        </details>
-
-        <details class="nav-group app-nav-group {{ 'is-active' if accounts_open else '' }}" {{ 'open' if accounts_open else '' }}>
-          <summary>Accounts</summary>
-          <div class="nav-items">
-            <a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if ep in ['accounts.accounts_page', 'accounts.account_detail'] else '' }}">Liquid accounts</a>
-            <a href="{{ url_for('internal_transfers.internal_transfers_page') }}" class="{{ 'active' if ep == 'internal_transfers.internal_transfers_page' else '' }}">Internal transfers</a>
-            <a href="{{ url_for('currencies.currencies_page') }}" class="{{ 'active' if ep == 'currencies.currencies_page' else '' }}">Currency exchange</a>
-            <a href="{{ url_for('sparagnat.sparagnat_page') }}" class="{{ 'active' if ep == 'sparagnat.sparagnat_page' else '' }}">Sparagnat e Fottut</a>
-            <a href="{{ url_for('parent_support.parent_support_page') }}" class="{{ 'active' if ep == 'parent_support.parent_support_page' else '' }}">Parent support</a>
-          </div>
-        </details>
-
-        <details class="nav-group app-nav-group {{ 'is-active' if wealth_open else '' }}" {{ 'open' if wealth_open else '' }}>
-          <summary>Analysis & wealth</summary>
-          <div class="nav-items">
-            <a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if ep == 'analysis.analysis' else '' }}">Analysis</a>
-            <a href="{{ url_for('investments.investments_page') }}" class="{{ 'active' if ep == 'investments.investments_page' else '' }}">Investments</a>
-            <a href="{{ url_for('yearly_summary.yearly_summary_page') }}" class="{{ 'active' if ep == 'yearly_summary.yearly_summary_page' else '' }}">Yearly summary</a>
-            <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if ep == 'forecast.forecast' else '' }}">Forecast</a>
-            <a href="{{ url_for('documents.documents') }}" class="{{ 'active' if ep == 'documents.documents' else '' }}">Documents</a>
-          </div>
-        </details>
+        {% for group in sidebar_navigation %}
+          <details class="nav-group app-nav-group {{ 'is-active' if group.is_active else '' }}" {{ 'open' if group.is_active or group.is_open else '' }}>
+            <summary>{{ t(group.label_key) }}</summary>
+            <div class="nav-items {{ 'nav-items-foldered' if group['items']|selectattr('section_label_key')|list else '' }}">
+              {% set section_state = namespace(current='') %}
+              {% for item in group['items'] %}
+                {% if endpoint_exists(item.endpoint) %}
+                  {% if item.section_label_key and item.section_label_key != section_state.current %}
+                    <span class="nav-subfolder-label">{{ t(item.section_label_key) }}</span>
+                    {% set section_state.current = item.section_label_key %}
+                  {% endif %}
+                  <a href="{{ url_for(item.endpoint) }}" class="{{ 'active' if item.is_active else '' }}">{{ t(item.label_key) }}</a>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </details>
+        {% endfor %}
       </nav>
 
       <div class="app-sidebar-footer">
         {% if endpoint_exists('profile.profile_page') %}
         <a class="profile-footer-link {{ 'active' if profile_open else '' }}" href="{{ url_for('profile.profile_page') }}">
           <span class="profile-footer-icon" aria-hidden="true">⚙</span>
-          <span><strong>Profile</strong><small>Theme, language and avatar</small></span>
+          <span><strong>{{ t("nav.profile") }}</strong><small>{{ t("nav.profile_subtitle") }}</small></span>
         </a>
         {% endif %}
         <a class="net-pill" href="{{ url_for('dashboard.overview') }}">
-          <span>Main net</span>
-          <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
+          <span>{{ t("nav.main_net") }}</span>
+          <strong>{{ topbar_main_bank_net|money_masked }}</strong>
         </a>
         <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
-          <button type="submit" class="logout-action">Logout</button>
+          <button type="submit" class="logout-action">{{ t("nav.logout") }}</button>
         </form>
       </div>
     </aside>
@@ -124,13 +90,13 @@
     <div class="app-workspace">
       <header class="app-topbar">
         <div class="app-topbar-title">
-          <span class="eyebrow">Personal finance</span>
-          <h1>{% block page_title %}Money Manager{% endblock %}</h1>
+          <span class="eyebrow">{{ t("app.personal_finance") }}</span>
+          <h1>{% block page_title %}{{ t("app.name") }}{% endblock %}</h1>
         </div>
         <div class="app-topbar-actions">
           <a class="net-pill topbar-net-pill" href="{{ url_for('dashboard.overview') }}">
-            <span>Main net</span>
-            <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
+            <span>{{ t("nav.main_net") }}</span>
+            <strong>{{ topbar_main_bank_net|money_masked }}</strong>
           </a>
 
           <div class="notification-menu" data-notification-menu>
@@ -138,12 +104,12 @@
               type="button"
               class="notification-trigger {{ 'has-notifications' if topbar_notifications['count'] else '' }} {{ 'has-alerts' if topbar_notifications['has_unread_candidate'] else '' }}"
               data-notification-trigger
-              aria-label="Open reminders and notifications"
+              aria-label="{{ t('notifications.open') }}"
               aria-controls="topbar-notifications-panel"
               aria-expanded="false"
             >
               <span class="notification-trigger-icon" aria-hidden="true">🔔</span>
-              <span class="notification-trigger-text">Alerts</span>
+              <span class="notification-trigger-text">{{ t("notifications.alerts") }}</span>
               <span class="notification-dot" data-notification-dot aria-hidden="true"></span>
               <span class="notification-count" data-notification-count>{{ topbar_notifications['unread_count'] }}</span>
             </button>
@@ -157,12 +123,12 @@
             >
               <header class="notification-panel-head">
                 <div>
-                  <span class="eyebrow">Smart reminders</span>
-                  <strong>Notifications</strong>
+                  <span class="eyebrow">{{ t("notifications.smart_reminders") }}</span>
+                  <strong>{{ t("notifications.title") }}</strong>
                 </div>
                 <div class="notification-panel-actions">
-                  <button type="button" class="notification-small-action" data-notification-mark-read>Mark all read</button>
-                  <button type="button" class="notification-close" data-notification-close aria-label="Close notifications">×</button>
+                  <button type="button" class="notification-small-action" data-notification-mark-read>{{ t("notifications.mark_all_read") }}</button>
+                  <button type="button" class="notification-close" data-notification-close aria-label="{{ t('notifications.close') }}">×</button>
                 </div>
               </header>
 
@@ -195,16 +161,16 @@
                 {% else %}
                   <div class="notification-empty" data-notification-empty>
                     <span aria-hidden="true">✓</span>
-                    <strong>Nothing urgent right now</strong>
-                    <small>Due payments, old debts, old payables and recurring checks will appear here.</small>
+                    <strong>{{ t("notifications.empty_title") }}</strong>
+                    <small>{{ t("notifications.empty_description") }}</small>
                   </div>
                 {% endfor %}
               </div>
 
               <section class="notification-history" data-notification-history hidden>
                 <div class="notification-history-title">
-                  <span>Older notifications</span>
-                  <button type="button" class="notification-small-action" data-notification-clear-history>Clear</button>
+                  <span>{{ t("notifications.older") }}</span>
+                  <button type="button" class="notification-small-action" data-notification-clear-history>{{ t("common.clear") }}</button>
                 </div>
                 <div
                   class="notification-history-list"
@@ -216,12 +182,12 @@
           </div>
 
           <details class="quick-add-menu">
-            <summary class="primary-btn">+ Add</summary>
+            <summary class="primary-btn">{{ t("quick_add.add") }}</summary>
             <div class="quick-add-panel">
-              <a class="quick-add-expense" href="{{ url_for('transactions.add_transaction', type='expense') }}"><span>−</span><b>Expense</b><small>Standard spending row</small></a>
-              <a class="quick-add-income" href="{{ url_for('transactions.add_transaction', type='income') }}"><span>＋</span><b>Income</b><small>Salary, transfers in</small></a>
-              <a class="quick-add-investment" href="{{ url_for('transactions.add_transaction', type='investment') }}"><span>↗</span><b>Investment</b><small>Portfolio movements</small></a>
-              <a class="quick-add-special" href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span><b>Special log</b><small>Debts, payables, projects</small></a>
+              <a class="quick-add-expense" href="{{ url_for('transactions.add_transaction', type='expense') }}"><span>−</span><b>{{ t("quick_add.expense") }}</b><small>{{ t("quick_add.expense_hint") }}</small></a>
+              <a class="quick-add-income" href="{{ url_for('transactions.add_transaction', type='income') }}"><span>＋</span><b>{{ t("quick_add.income") }}</b><small>{{ t("quick_add.income_hint") }}</small></a>
+              <a class="quick-add-investment" href="{{ url_for('transactions.add_transaction', type='investment') }}"><span>↗</span><b>{{ t("quick_add.investment") }}</b><small>{{ t("quick_add.investment_hint") }}</small></a>
+              <a class="quick-add-special" href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span><b>{{ t("quick_add.special") }}</b><small>{{ t("quick_add.special_hint") }}</small></a>
             </div>
           </details>
         </div>
@@ -229,6 +195,12 @@
 
       <main class="app-main">
         <div class="container app-content-stage">
+          {% if privacy_mode %}
+            <div class="privacy-mode-indicator {{ 'is-masking' if mask_sensitive_data else 'is-revealed' }}" role="status">
+              <strong>{{ t("privacy.indicator_on") }}</strong>
+              <span>{{ t("privacy.indicator_masking") if mask_sensitive_data else t("privacy.indicator_revealed") }}</span>
+            </div>
+          {% endif %}
           {% block content %}{% endblock %}
         </div>
       </main>

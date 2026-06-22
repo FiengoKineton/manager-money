@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t("contacts.title") }}{% endblock %}
+
+{% block content %}
+<section class="contacts-hero panel-card">
+  <div>
+    <span class="eyebrow">{{ t("contacts.hero_eyebrow") }}</span>
+    <h2>{{ t("contacts.hero_title") }}</h2>
+    <p>{{ t("contacts.hero_description", file="contacts.json") }}</p>
+  </div>
+  <div class="contacts-hero-metrics">
+    <div><span>{{ t("contacts.active") }}</span><strong>{{ counts.active }}</strong></div>
+    <div><span>{{ t("contacts.people") }}</span><strong>{{ counts.people }}</strong></div>
+    <div><span>{{ t("contacts.companies") }}</span><strong>{{ counts.companies }}</strong></div>
+  </div>
+</section>
+
+{% if status %}
+  <section class="contacts-status contacts-status-{{ status.tone }} panel-card" role="status">
+    {% for key in status.keys %}<p>{{ t(key) }}</p>{% endfor %}
+  </section>
+{% endif %}
+
+<section class="contacts-toolbar panel-card">
+  <form method="get" action="{{ url_for('contacts.contacts_page') }}" class="contacts-search-form">
+    <div>
+      <label for="contact-search">{{ t("contacts.search_label") }}</label>
+      <input id="contact-search" type="search" name="q" value="{{ query }}" placeholder="{{ t('contacts.search_placeholder') }}">
+    </div>
+    <label class="inline-checkbox contacts-archived-toggle">
+      <input type="checkbox" name="archived" value="1" {% if include_archived %}checked{% endif %}>
+      {{ t("contacts.show_archived") }}
+    </label>
+    <div class="contacts-toolbar-actions">
+      <button type="submit" class="secondary-btn">{{ t("common.search") }}</button>
+      {% if query or include_archived %}<a class="secondary-btn" href="{{ url_for('contacts.contacts_page') }}">{{ t("common.clear") }}</a>{% endif %}
+      <a class="primary-btn" href="{{ url_for('contacts.new_contact') }}">{{ t("contacts.add_contact") }}</a>
+    </div>
+  </form>
+  {% if not show_sensitive_data %}
+    <p class="contacts-privacy-note">{{ t("contacts.iban_masked_hint") }}</p>
+  {% endif %}
+</section>
+
+<section class="contacts-directory-grid">
+  {% for contact in contacts %}
+    <article class="contact-card panel-card {{ 'is-archived' if contact.is_archived else '' }}">
+      <div class="contact-card-head">
+        <div class="contact-avatar" aria-hidden="true">{{ '🏢' if contact.type == 'company' else '👤' }}</div>
+        <div>
+          <span class="eyebrow">{{ t('contacts.type_company') if contact.type == 'company' else t('contacts.type_person') }}{% if contact.is_archived %} · {{ t("common.archived") }}{% endif %}</span>
+          <h3>{{ contact.display_name }}</h3>
+          {% if contact.relationship %}<p>{{ contact.relationship }}</p>{% endif %}
+        </div>
+      </div>
+
+      <dl class="contact-mini-details">
+        {% if contact.iban %}
+          <div><dt>{{ t("contacts.iban") }}</dt><dd>{{ contact.iban_list_value }}</dd></div>
+        {% endif %}
+        {% if contact.bank_name %}
+          <div><dt>{{ t("contacts.bank_name") }}</dt><dd>{{ contact.bank_name_display }}</dd></div>
+        {% endif %}
+        {% if contact.email %}
+          <div><dt>{{ t("contacts.email") }}</dt><dd>{{ contact.email }}</dd></div>
+        {% endif %}
+      </dl>
+
+      <div class="contact-card-actions">
+        <a class="secondary-btn" href="{{ url_for('contacts.contact_detail', contact_id=contact.id) }}">{{ t("common.open") }}</a>
+        <a class="secondary-btn" href="{{ url_for('contacts.edit_contact', contact_id=contact.id) }}">{{ t("common.edit") }}</a>
+      </div>
+    </article>
+  {% else %}
+    <article class="contacts-empty panel-card">
+      <span aria-hidden="true">👥</span>
+      <h3>{{ t("contacts.empty_title") }}</h3>
+      <p>{{ t("contacts.empty_description") }}</p>
+      <a class="primary-btn" href="{{ url_for('contacts.new_contact') }}">{{ t("contacts.add_contact") }}</a>
+    </article>
+  {% endfor %}
+</section>
+{% endblock %}

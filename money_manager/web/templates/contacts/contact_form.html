@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t("contacts.edit_contact") if mode == 'edit' else t("contacts.add_contact") }}{% endblock %}
+
+{% block content %}
+<section class="contacts-form-hero panel-card">
+  <div>
+    <span class="eyebrow">{{ t("contacts.form_eyebrow") }}</span>
+    <h2>{{ t("contacts.edit_contact") if mode == 'edit' else t("contacts.add_contact") }}</h2>
+    <p>{{ t("contacts.form_description") }}</p>
+  </div>
+  <a class="secondary-btn" href="{{ url_for('contacts.contact_detail', contact_id=contact.id) if mode == 'edit' else url_for('contacts.contacts_page') }}">{{ t("common.back") }}</a>
+</section>
+
+{% if status %}
+  <section class="contacts-status contacts-status-{{ status.tone }} panel-card" role="status">
+    {% for key in status.keys %}<p>{{ t(key) }}</p>{% endfor %}
+  </section>
+{% endif %}
+
+<section class="contacts-form-card panel-card">
+  <form method="post" action="{{ action_url }}" class="contact-form">
+    <div class="form-field form-field-wide">
+      <label>{{ t("contacts.contact_type") }}</label>
+      <div class="contact-type-toggle" role="group" aria-label="{{ t('contacts.contact_type') }}">
+        <label><input type="radio" name="type" value="person" {% if contact.type != 'company' %}checked{% endif %}> {{ t("contacts.type_person") }}</label>
+        <label><input type="radio" name="type" value="company" {% if contact.type == 'company' %}checked{% endif %}> {{ t("contacts.type_company") }}</label>
+      </div>
+    </div>
+
+    <div>
+      <label for="first_name">{{ t("common.first_name") }}</label>
+      <input id="first_name" type="text" name="first_name" value="{{ contact.first_name }}" autocomplete="given-name">
+    </div>
+    <div>
+      <label for="last_name">{{ t("common.last_name") }}</label>
+      <input id="last_name" type="text" name="last_name" value="{{ contact.last_name }}" autocomplete="family-name">
+    </div>
+    <div>
+      <label for="company_name">{{ t("contacts.company_name") }}</label>
+      <input id="company_name" type="text" name="company_name" value="{{ contact.company_name }}" autocomplete="organization">
+    </div>
+    <div>
+      <label for="display_name">{{ t("contacts.display_name") }}</label>
+      <input id="display_name" type="text" name="display_name" value="{{ contact.display_name if contact.display_name != 'Unnamed contact' else '' }}" placeholder="{{ t('contacts.display_name_placeholder') }}">
+    </div>
+    <div>
+      <label for="relationship">{{ t("contacts.relationship") }}</label>
+      <input id="relationship" type="text" name="relationship" value="{{ contact.relationship }}" placeholder="{{ t('contacts.relationship_placeholder') }}">
+    </div>
+    <div>
+      <label for="email">{{ t("contacts.email") }}</label>
+      <input id="email" type="email" name="email" value="{{ contact.email }}" autocomplete="email">
+    </div>
+    <div>
+      <label for="phone">{{ t("contacts.phone") }}</label>
+      <input id="phone" type="tel" name="phone" value="{{ contact.phone }}" autocomplete="tel">
+    </div>
+
+    <div class="profile-section-title form-field-wide">
+      <span class="eyebrow">{{ t("contacts.bank_section") }}</span>
+      <h3>{{ t("contacts.bank_details") }}</h3>
+    </div>
+
+    <div class="form-field-wide">
+      <label for="iban">{{ t("contacts.iban") }}</label>
+      <input id="iban" type="text" name="iban" value="{{ contact.iban }}" placeholder="{{ t('contacts.iban_placeholder') }}" autocomplete="off">
+      <small>{{ t("contacts.iban_hint") }}</small>
+    </div>
+    <div>
+      <label for="bic_swift">{{ t("contacts.bic_swift") }}</label>
+      <input id="bic_swift" type="text" name="bic_swift" value="{{ contact.bic_swift }}" placeholder="{{ t('common.optional') }}">
+    </div>
+    <div>
+      <label for="bank_name">{{ t("contacts.bank_name") }}</label>
+      <input id="bank_name" type="text" name="bank_name" value="{{ contact.bank_name }}" placeholder="{{ t('common.optional') }}">
+    </div>
+    <div class="form-field-wide">
+      <label for="notes">{{ t("contacts.notes") }}</label>
+      <textarea id="notes" name="notes" rows="4" placeholder="{{ t('contacts.notes_placeholder') }}">{{ contact.notes }}</textarea>
+    </div>
+
+    <div class="form-actions-row form-field-wide">
+      <button type="submit" class="primary-btn">{{ t("contacts.save_contact") }}</button>
+      <a class="secondary-btn" href="{{ url_for('contacts.contact_detail', contact_id=contact.id) if mode == 'edit' else url_for('contacts.contacts_page') }}">{{ t("common.cancel") }}</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

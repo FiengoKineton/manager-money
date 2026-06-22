@@ -5,6 +5,7 @@
   "currency": "EUR",
   "date_format": "dd/mm/yyyy",
   "privacy_mode": false,
-  "show_sensitive_data": true,
-  "updated_at": "2026-06-22T16:11:44+00:00"
+  "show_sensitive_data": false,
+  "onboarding_completed": true,
+  "updated_at": "2026-06-22T22:34:56+00:00"
 }

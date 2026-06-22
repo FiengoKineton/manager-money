@@ -20,7 +20,7 @@ QUICK_LOG_MODES = [
     {
         "key": "internal_transfer",
         "label": "Internal transfer",
-        "description": "Moves money between Main Bank, Pre-paid, Cash Flow, PayPal, EdenRed, or custom liquid accounts.",
+        "description": "Moves money between Main Bank and any configured account.",
         "target": "Internal Transfers + account balances",
         "affects_net": "No income/expense; Main → Pre-paid adds €1 fee",
     },
@@ -290,6 +290,8 @@ def _base_payload(form) -> dict:
         "amount": form.get("amount", "0"),
         "account": form.get("account", ""),
         "description": form.get("description", ""),
+        "account_payment_method": form.get("account_payment_method", ""),
+        "account_insufficient_action": form.get("account_insufficient_action", ""),
     }
 
 

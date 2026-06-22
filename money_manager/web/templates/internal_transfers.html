@@ -7,8 +7,7 @@
     <span class="eyebrow">Account movement</span>
     <h2>Internal Transfers</h2>
     <p>
-      Move money between Main Bank, Cash Flow, Pre-paid, EdenRed, PayPal, or custom liquid accounts
-      without counting it as income or expense.
+      Move money between Main Bank and your configured accounts without counting it as income or expense.
     </p>
   </div>
 </section>
@@ -59,10 +58,10 @@
       <label>To</label>
       <select name="to_account" required>
         {% for account in account_options %}
-          <option value="{{ account.key }}" {% if account.key == 'pre_paid_card' %}selected{% endif %}>{{ account.label }}</option>
+          <option value="{{ account.key }}">{{ account.label }}</option>
         {% endfor %}
       </select>
-      <small class="hint">Main → Pre-paid automatically records a €1.00 fee.</small>
+      <small class="hint">If the target account has a configured top-up fee, it is recorded automatically.</small>
     </div>
 
     <div class="form-field">
@@ -75,7 +74,7 @@
 
     <div class="form-field form-field-wide">
       <label>Description</label>
-      <input type="text" name="description" placeholder="Example: ATM withdrawal, top up prepaid card, moved money to PayPal">
+      <input type="text" name="description" placeholder="Example: ATM withdrawal, top up wallet, moved money to another account">
     </div>
 
     <div class="form-actions form-field-wide">

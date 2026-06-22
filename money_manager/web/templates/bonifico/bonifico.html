@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t("bonifico.title") }}{% endblock %}
+
+{% block content %}
+<section class="panel-card hero-panel contacts-hero bonifico-hero">
+  <div>
+    <span class="eyebrow">{{ t("bonifico.eyebrow") }}</span>
+    <h2>{{ t("bonifico.title") }}</h2>
+    <p>{{ t("bonifico.description") }}</p>
+  </div>
+  <a class="secondary-btn" href="{{ url_for('contacts.contacts_page') }}">{{ t("contacts.manage_contacts") }}</a>
+</section>
+
+<section class="form-alert form-alert-warning bonifico-warning">
+  <strong>{{ t("bonifico.warning_title") }}</strong> {{ t("bonifico.warning") }}
+</section>
+
+{% if status %}
+  <div class="form-alert form-alert-{{ status.tone }}">
+    {% if status.get("keys") %}
+      {% for key in status.get("keys") %}<p>{{ t(key) }}</p>{% endfor %}
+    {% else %}
+      {% for message in status.get("messages", []) %}<p>{{ message }}</p>{% endfor %}
+    {% endif %}
+  </div>
+{% endif %}
+
+<section class="form-section bonifico-form-section">
+  <form method="post" class="transaction-form bonifico-form" data-bonifico-form>
+    <div>
+      <label>{{ t("bonifico.source_account") }}</label>
+      <select name="account" id="bonifico-account-select">
+        {% for account in account_options %}
+          <option
+            value="{{ account.value }}"
+            data-key="{{ account.key }}"
+            data-kind="{{ account.kind }}"
+            data-payment-mode="{{ account.payment_mode or account.payment_logic.mode }}"
+            data-display-label="{{ account.display_label or account.label }}"
+            {% if form_values.account == account.value %}selected{% endif %}
+          >{{ account.label }}</option>
+        {% endfor %}
+      </select>
+      <small class="hint">{{ t("bonifico.source_account_hint") }}</small>
+    </div>
+
+    <div>
+      <label>{{ t("bonifico.date") }}</label>
+      <input type="date" name="date" value="{{ form_values.date or today }}" required>
+    </div>
+
+    <div>
+      <label>{{ t("bonifico.amount") }}</label>
+      <input type="number" min="0.01" step="0.01" name="amount" id="bonifico-amount-input" value="{{ form_values.amount or '' }}" placeholder="100.00" required>
+    </div>
+
+    <div class="form-field-wide bonifico-linked-payment-panel">
+      <label>{{ t("bonifico.target_type") }}</label>
+      <select name="bonifico_target_type" id="bonifico-target-type">
+        <option value="expense" {% if (form_values.bonifico_target_type or 'expense') == 'expense' %}selected{% endif %}>{{ t("bonifico.target_expense") }}</option>
+        <option value="debt" {% if form_values.bonifico_target_type == 'debt' %}selected{% endif %}>{{ t("bonifico.target_debt") }}</option>
+        <option value="payable" {% if form_values.bonifico_target_type == 'payable' %}selected{% endif %}>{{ t("bonifico.target_payable") }}</option>
+      </select>
+      <small class="hint">{{ t("bonifico.target_type_hint") }}</small>
+    </div>
+
+    <div class="form-field-wide bonifico-target-picker" id="bonifico-debt-panel" hidden>
+      <label>{{ t("bonifico.select_debt") }}</label>
+      <select name="debt_id" id="bonifico-debt-select">
+        <option value="">{{ t("bonifico.select_debt_placeholder") }}</option>
+        {% for debt in bonifico_targets.debts %}
+          <option
+            value="{{ debt.id }}"
+            data-amount="{{ debt.remaining_amount_str }}"
+            data-recipient="{{ debt.recipient_name }}"
+            data-contact-id="{{ debt.contact_id }}"
+            data-category="{{ debt.category }}"
+            data-sub-category="{{ debt.sub_category }}"
+            data-description="{{ debt.description }}"
+            data-reference="{{ debt.reference }}"
+            {% if form_values.debt_id == debt.id %}selected{% endif %}
+          >{{ debt.label }}</option>
+        {% endfor %}
+      </select>
+      <small class="hint">{{ t("bonifico.select_debt_hint") }}</small>
+    </div>
+
+    <div class="form-field-wide bonifico-target-picker" id="bonifico-payable-panel" hidden>
+      <label>{{ t("bonifico.select_payable") }}</label>
+      <select name="payable_id" id="bonifico-payable-select">
+        <option value="">{{ t("bonifico.select_payable_placeholder") }}</option>
+        {% for payable in bonifico_targets.payables %}
+          <option
+            value="{{ payable.id }}"
+            data-amount="{{ payable.remaining_amount_str }}"
+            data-recipient="{{ payable.recipient_name }}"
+            data-contact-id="{{ payable.contact_id }}"
+            data-category="{{ payable.category }}"
+            data-sub-category="{{ payable.sub_category }}"
+            data-description="{{ payable.description }}"
+            data-reference="{{ payable.reference }}"
+            {% if form_values.payable_id == payable.id %}selected{% endif %}
+          >{{ payable.label }}</option>
+        {% endfor %}
+      </select>
+      <small class="hint">{{ t("bonifico.select_payable_hint") }}</small>
+    </div>
+
+    <div id="account-payment-panel" class="form-field-wide paypal-payment-panel" hidden>
+      <div class="paypal-panel-grid">
+        <div>
+          <label><span data-balance-account-name>{{ t("accounts.account") }}</span> {{ t("account_payment.method_label") }}</label>
+          <select name="account_payment_method" id="account-payment-method">
+            <option value="balance" {% if (form_values.account_payment_method or form_values.paypal_payment_method or 'balance') == 'balance' %}selected{% endif %}>{{ t("account_payment.method_balance") }}</option>
+            <option value="credit" {% if (form_values.account_payment_method or form_values.paypal_payment_method) == 'credit' %}selected{% endif %}>{{ t("account_payment.method_credit") }}</option>
+            <option value="another_card" {% if (form_values.account_payment_method or form_values.paypal_payment_method) == 'another_card' %}selected{% endif %}>{{ t("account_payment.method_another_card") }}</option>
+          </select>
+          <small class="hint">{{ t("account_payment.current_balance") }} € <span data-selected-account-balance>0.00</span>.</small>
+        </div>
+
+        <div id="account-insufficient-panel">
+          <label>{{ t("account_payment.insufficient_label") }}</label>
+          <select name="account_insufficient_action" id="account-insufficient-action">
+            <option value="stop" {% if (form_values.account_insufficient_action or form_values.paypal_insufficient_action or 'stop') == 'stop' %}selected{% endif %}>{{ t("account_payment.insufficient_stop") }}</option>
+            <option value="use_another_card_for_remaining" {% if (form_values.account_insufficient_action or form_values.paypal_insufficient_action) == 'use_another_card_for_remaining' %}selected{% endif %}>{{ t("account_payment.insufficient_another_card") }}</option>
+            <option value="use_credit_for_remaining" {% if (form_values.account_insufficient_action or form_values.paypal_insufficient_action) == 'use_credit_for_remaining' %}selected{% endif %}>{{ t("account_payment.insufficient_credit") }}</option>
+          </select>
+          <small class="hint">{{ t("account_payment.split_hint") }}</small>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label>{{ t("bonifico.category") }}</label>
+      <select name="category" id="bonifico-category-select" required>
+        {% for c in categories %}
+          <option value="{{ c }}" {% if (form_values.category or default_category) == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>{{ t("bonifico.sub_category") }}</label>
+      <input type="text" name="sub_category" id="bonifico-sub-category-input" value="{{ form_values.sub_category or '' }}">
+    </div>
+
+    <div>
+      <label>{{ t("bonifico.existing_contact") }}</label>
+      <select name="contact_id" id="bonifico-contact-select">
+        <option value="">{{ t("bonifico.no_existing_contact") }}</option>
+        {% for contact in contacts %}
+          <option value="{{ contact.id }}" {% if form_values.contact_id == contact.id %}selected{% endif %}>
+            {{ contact.display_name }}{% if contact.bank_name %} · {{ contact.bank_name }}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+      <small class="hint">{{ t("bonifico.existing_contact_hint") }}</small>
+    </div>
+
+    <div class="form-field-wide bonifico-contact-preview" id="bonifico-contact-preview" hidden>
+      <strong data-contact-name></strong>
+      <p><span>{{ t("contacts.iban") }}:</span> <b data-contact-iban></b></p>
+      <p><span>{{ t("contacts.bic_swift") }}:</span> <b data-contact-bic></b></p>
+      <p><span>{{ t("contacts.bank_name") }}:</span> <b data-contact-bank></b></p>
+      {% if not show_sensitive_data %}
+        <small class="hint">{{ t("bonifico.masked_contact_hint") }}</small>
+      {% endif %}
+    </div>
+
+    <div>
+      <label>{{ t("bonifico.manual_recipient") }}</label>
+      <input type="text" name="manual_contact_name" id="bonifico-manual-name" value="{{ form_values.manual_contact_name or '' }}" placeholder="{{ t('bonifico.manual_recipient_placeholder') }}">
+      <small class="hint">{{ t("bonifico.manual_recipient_hint") }}</small>
+    </div>
+
+    <div>
+      <label>{{ t("contacts.iban") }}</label>
+      <input type="text" name="iban" value="{{ form_values.iban or '' }}" placeholder="{{ t('contacts.iban_placeholder') }}">
+    </div>
+
+    <div>
+      <label>{{ t("contacts.bic_swift") }}</label>
+      <input type="text" name="bic_swift" value="{{ form_values.bic_swift or '' }}" placeholder="BCITITMM">
+    </div>
+
+    <div>
+      <label>{{ t("contacts.bank_name") }}</label>
+      <input type="text" name="bank_name" value="{{ form_values.bank_name or '' }}">
+    </div>
+
+    <div class="form-field-wide">
+      <label class="inline-checkbox">
+        <input type="checkbox" name="save_contact" value="1" {% if form_values.save_contact %}checked{% endif %}>
+        {{ t("bonifico.save_as_contact") }}
+      </label>
+      <small class="hint">{{ t("bonifico.save_as_contact_hint") }}</small>
+    </div>
+
+    <div>
+      <label>{{ t("bonifico.reference") }}</label>
+      <input type="text" name="transfer_reference" id="bonifico-reference-input" value="{{ form_values.transfer_reference or '' }}" placeholder="{{ t('bonifico.reference_placeholder') }}">
+    </div>
+
+    <div class="form-field-wide">
+      <label>{{ t("bonifico.reason") }}</label>
+      <textarea name="description" id="bonifico-description-input" rows="3" placeholder="{{ t('bonifico.reason_placeholder') }}">{{ form_values.description or '' }}</textarea>
+    </div>
+
+    <div class="form-field-wide normal-add-submit-row">
+      <button type="submit">{{ t("bonifico.record") }}</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.moneyManagerBonificoContacts = {{ contacts_json|tojson }};
+  window.moneyManagerBonificoTargets = {{ bonifico_targets|tojson }};
+  window.moneyManagerAccountBalances = {{ account_balances|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/web/bonifico.js') }}?v=bonifico-2"></script>
+{% endblock %}

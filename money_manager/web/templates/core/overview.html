@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block page_title %}Overview{% endblock %}
+{% block page_title %}{{ t("page.overview") }}{% endblock %}
 
 {% block content %}
 <section class="overview-hero">
   <div class="hero-copy">
-    <span class="eyebrow">Financial command center</span>
-    <h2>Overview</h2>
+    <span class="eyebrow">{{ t("overview.command_center") }}</span>
+    <h2>{{ t("overview.title") }}</h2>
     <p>
       One clean place for the main bank balance, separated liquid accounts, pending money,
       debts, saved expenses, cash collected, and parent support.
@@ -19,17 +19,17 @@
   <div class="hero-balance-card">
     <div>
       <span class="metric-label">Main available position</span>
-      <strong>€ {{ '%.2f'|format(cash_position) }}</strong>
+      <strong>{{ cash_position|money_masked }}</strong>
       <small>All account nets + invested capital. Market gain/loss is shown separately.</small>
     </div>
     <div class="balance-subgrid">
       <div>
         <span>Stress position</span>
-        <b>€ {{ '%.2f'|format(stress_position) }}</b>
+        <b>{{ stress_position|money_masked }}</b>
       </div>
       <div>
         <span>Adjusted stress</span>
-        <b>€ {{ '%.2f'|format(adjusted_stress_position) }}</b>
+        <b>{{ adjusted_stress_position|money_masked }}</b>
       </div>
     </div>
   </div>
@@ -40,8 +40,8 @@
     <div>
       <span class="eyebrow">Real tracked money</span>
       <h3>Net balance</h3>
-      <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
-      <p>Income minus expenses and investments for the main route only. Explicit liquid accounts like EdenRed, Cash Flow and Pre-paid card are excluded.</p>
+      <strong>{{ totals.net|money_masked }}</strong>
+      <p>Income minus expenses and investments for the main route only. Explicit separate accounts are excluded unless their policy says they affect the main net.</p>
     </div>
     <a href="{{ url_for('transactions.transactions_page') }}">See main transactions</a>
   </article>
@@ -50,7 +50,7 @@
     <div>
       <span class="eyebrow">Real visible liquidity</span>
       <h3>Visible liquidity</h3>
-      <strong>€ {{ '%.2f'|format(combined_visible_liquidity) }}</strong>
+      <strong>{{ combined_visible_liquidity|money_masked }}</strong>
       <p>Main-bank net + separate liquid accounts. This excludes investment capital and therefore stays closer to real cash/liquid money.</p>
     </div>
     <a href="{{ url_for('accounts.accounts_page') }}">Analyse liquid accounts</a>
@@ -60,27 +60,27 @@
 <section class="secondary-metrics-strip">
   <article class="mini-priority-card tone-aux">
     <span>Separate liquid</span>
-    <strong>€ {{ '%.2f'|format(auxiliary_balance) }}</strong>
-    <small>Cash Flow, Pre-paid card, Other/custom</small>
+    <strong>{{ auxiliary_balance|money_masked }}</strong>
+    <small>Configured separate accounts</small>
   </article>
   <article class="mini-priority-card tone-warning">
     <span>Credit/debt pressure</span>
-    <strong>€ {{ '%.2f'|format(credit_pending_amount + active_debt) }}</strong>
-    <small>Credit/PayPal-credit pending plus active debts</small>
+    <strong>{{ (credit_pending_amount + active_debt)|money_masked }}</strong>
+    <small>Credit/pending payments plus active debts</small>
   </article>
   <article class="mini-priority-card tone-income">
     <span>Income</span>
-    <strong>€ {{ '%.2f'|format(totals.income) }}</strong>
-    <small>This month: € {{ '%.2f'|format(stats_this_month.income) }}</small>
+    <strong>{{ totals.income|money_masked }}</strong>
+    <small>This month: {{ stats_this_month.income|money_masked }}</small>
   </article>
   <article class="mini-priority-card tone-expense">
     <span>Expenses</span>
-    <strong>€ {{ '%.2f'|format(totals.expenses) }}</strong>
-    <small>This month: € {{ '%.2f'|format(stats_this_month.expenses) }}</small>
+    <strong>{{ totals.expenses|money_masked }}</strong>
+    <small>This month: {{ stats_this_month.expenses|money_masked }}</small>
   </article>
   <article class="mini-priority-card tone-investment">
     <span>Investment capital</span>
-    <strong>€ {{ '%.2f'|format(investment_capital) }}</strong>
+    <strong>{{ investment_capital|money_masked }}</strong>
     <small>Deposits/buys minus withdrawals/sells</small>
   </article>
   <article class="mini-priority-card tone-investment">
@@ -95,7 +95,7 @@
   </article>
   <article class="mini-priority-card tone-net">
     <span>Adjusted stress</span>
-    <strong>€ {{ '%.2f'|format(adjusted_stress_position) }}</strong>
+    <strong>{{ adjusted_stress_position|money_masked }}</strong>
     <small>Stress + owed to me + investment P/L</small>
   </article>
 </section>
@@ -120,7 +120,7 @@
         <strong>€ {{ '%.2f'|format(pending_debt_payments) }}</strong>
       </div>
       <div>
-        <span>Credit/PayPal-credit pending</span>
+        <span>Credit/pending payments</span>
         <strong>€ {{ '%.2f'|format(credit_pending_amount) }}</strong>
       </div>
       <div>
@@ -224,7 +224,7 @@
     <div class="comparison-list">
       <div class="comparison-row">
         <span>Current real net</span>
-        <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
+        <strong>{{ totals.net|money_masked }}</strong>
       </div>
       <div class="comparison-row warning">
         <span>Net if you paid saved expenses</span>
@@ -275,7 +275,7 @@
   <div class="panel-header account-panel-header">
     <div>
       <span class="eyebrow">Separate liquid accounts</span>
-      <h3>Cash Flow, Pre-paid card and Other account</h3>
+      <h3>Configured accounts</h3>
       <p>
         These balances are built from the normal transaction CSV files and, for Cash Flow, from
         <strong>sparagnat_fottut.csv</strong> cash-collected entries. Top-ups still reduce the tracked
@@ -332,7 +332,7 @@
       <h3>Monthly movement preview</h3>
       <p>Open each account to see its transactions, monthly in/out plot, net movement and category split.</p>
     </div>
-    <span class="account-total">Total: € {{ '%.2f'|format(auxiliary_balance) }}</span>
+    <span class="account-total">Total: {{ auxiliary_balance|money_masked }}</span>
   </div>
 
   <div class="analysis-preview-grid">

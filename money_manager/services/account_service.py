@@ -5,16 +5,30 @@ from dataclasses import dataclass
 import pandas as pd
 
 from money_manager.config import (
+    CREDIT_CARD_PAYMENT_CATEGORY,
     MAIN_ACCOUNT_KEY,
+    MAIN_NET_AFFECTS,
+    MAIN_NET_CREDIT_PENDING,
+    MAIN_NET_SEPARATE,
+    PAYPAL_ACCOUNT_KEY,
+    PAYPAL_CREDIT_ALIASES,
     account_description_for_key,
     account_label_for_key,
     account_options_for_analysis,
+    account_policy_for_key,
     account_parent_key,
     auxiliary_account_keys,
     category_aliases_by_key,
     normalize_account_key,
     is_main_account_value,
-    save_custom_account,
+)
+from money_manager.services.account_config_service import (
+    add_card_to_account,
+    archive_account,
+    archive_card,
+    create_account_from_form as create_config_account_from_form,
+    restore_account,
+    update_account_from_form,
 )
 
 
@@ -28,12 +42,15 @@ class AccountInference:
     source: str
 
 
+DEFAULT_CREDIT_ACCOUNT_KEY = "credit_card"
+
+
 def enrich_transactions_with_accounts(df: pd.DataFrame) -> pd.DataFrame:
     """Add normalized account columns without changing the original CSV value.
 
     Explicit values in the CSV ``account`` column have priority.  If that field
-    is empty, clear account categories such as ``Pre-paid card`` or ``Cash`` are
-    also routed to the matching liquid account.  This keeps the old CSV workflow
+    is empty, configured category aliases are also routed to the matching
+    account as shadow/category-inferred movements.  This keeps the old CSV workflow
     but fixes cases where top-ups were stored as an expense category rather than
     as an account value.
     """
@@ -42,6 +59,7 @@ def enrich_transactions_with_accounts(df: pd.DataFrame) -> pd.DataFrame:
         "account_key",
         "account_label",
         "is_auxiliary_account",
+        "affects_main_net",
         "account_route_source",
         "account_signed_amount",
     ]:
@@ -66,6 +84,7 @@ def enrich_transactions_with_accounts(df: pd.DataFrame) -> pd.DataFrame:
     df["account_route_source"] = [inference.source for inference in inferences]
     df["account_label"] = df["account_key"].map(account_label_for_key)
     df["is_auxiliary_account"] = df["account_key"].isin(auxiliary_account_keys())
+    df["affects_main_net"] = _affects_main_net_mask(df)
     df["account_signed_amount"] = df.apply(_account_signed_amount, axis=1)
     return df
 
@@ -75,15 +94,13 @@ def main_account_transactions(df: pd.DataFrame) -> pd.DataFrame:
 
     The net balance is intentionally conservative now: it includes only rows
     whose raw CSV ``account`` field is blank or explicitly points to the main
-    route (Main bank account, Credit card, PayPal, or their aliases).
+    route (Main bank account, credit route, or their aliases).
 
-    Rows explicitly assigned to Cash Flow, Pre-paid card, Other account, EdenRed,
-    or any custom liquid account are excluded from the main net and are analysed
-    in the separate liquid-account page. Category hints such as ``Pre-paid card``
-    can still be used to build the auxiliary account balance, but they no longer
-    remove a blank-account row from the main net. This is important for top-ups:
-    money can leave the main bank and also become available in Cash Flow /
-    Pre-paid / etc.
+    Rows explicitly assigned to accounts with ``separate_when_explicit`` are
+    excluded from the main net and analysed in the account page. Blank-account
+    category matches can still build that account balance, but they do not remove
+    the original row from the main net. This is important for top-ups: money can
+    leave the main route and also become available in a separate account.
 
     Rows with missing or invalid dates are ignored for balance calculations. A
     corrupted date such as ``0012-04-14`` should not reduce the current net just
@@ -136,42 +153,52 @@ def _affects_main_net_mask(df: pd.DataFrame) -> pd.Series:
 
     raw_account = df.get("account", pd.Series("", index=df.index)).fillna("").astype(str)
     raw_account_clean = raw_account.map(_clean_text)
-
-    # Blank account is the default main bank route.  Blank-account top-ups to
-    # liquid accounts are intentionally still counted in main net, because money
-    # really left the main bank and became available in Cash Flow / Pre-paid / etc.
-    blank_account = raw_account_clean.eq("")
-
-    explicit_main = raw_account.map(is_main_account_value)
-
+    route_source = df.get("account_route_source", pd.Series("", index=df.index)).fillna("").astype(str)
+    account_key = df.get("account_key", pd.Series(MAIN_ACCOUNT_KEY, index=df.index)).fillna(MAIN_ACCOUNT_KEY).astype(str)
     transaction_type = df.get("type", pd.Series("", index=df.index)).fillna("").astype(str).str.casefold()
-    account_key = df.get("account_key", pd.Series("", index=df.index)).fillna("").astype(str)
 
-    # Historical CSVs sometimes used account="Cash" for purchases that should
-    # still be treated as main-bank spending. Keep that exact legacy shortcut,
-    # but do not use "cash" words from description/sub-category to pull rows
-    # back into the main net. That broke auxiliary cleanup rows such as
-    # account="Cash Flow" + description="Cash cleanup", making main-bank net
-    # go down even though the movement was only a Cash Flow reconciliation.
+    blank_account = raw_account_clean.eq("")
+    explicit_main = raw_account_clean.ne("") & raw_account.map(is_main_account_value)
+    category_shadow = route_source.eq("category_match")
+
+    policies = account_key.map(account_policy_for_key)
+    policy_affects_main = policies.eq(MAIN_NET_AFFECTS)
+    policy_credit_pending = policies.eq(MAIN_NET_CREDIT_PENDING)
+    credit_settlement = policy_credit_pending & _credit_settlement_like_mask(df)
+    credit_pending_charge = policy_credit_pending & ~credit_settlement
+
+    separate_explicit = raw_account_clean.ne("") & account_key.isin(auxiliary_account_keys()) & policies.eq(MAIN_NET_SEPARATE)
+
+    # Very important legacy compatibility: older FiengoKineton CSV rows used
+    # account="Cash" as a payment-method note, not as a real separate-account
+    # route. Keep those rows in the main net while still letting Cash Flow show
+    # them in its account movement list. New forms now store stable account keys,
+    # so a new custom account called Cash is not confused with this legacy value.
     legacy_cash_main = raw_account_clean.eq("cash")
+    separate_explicit = separate_explicit & ~legacy_cash_main
 
-    # Explicit auxiliary accounts must stay outside main net even when their
-    # description/category contains words like cash, cleanup, PayPal, etc.
-    explicit_auxiliary = (
-        account_key.isin(auxiliary_account_keys())
-        & raw_account_clean.ne("")
-        & raw_account_clean.ne("cash")
-    )
-
-    # Reconciliation / cleanup rows are not spending from the main bank. They are
-    # corrections to a separate liquid-account balance. This also protects rows
-    # that were saved with a blank account but clearly say "Account cleanup",
-    # "reconcile", "cash cleanup", etc.
+    # Blank cleanup/reconciliation rows that infer an auxiliary account are balance
+    # corrections for the auxiliary account only, not main-bank expenses.
     auxiliary_cleanup = account_key.isin(auxiliary_account_keys()) & _cleanup_like_mask(df)
 
     investment_main = transaction_type.eq("investment") & ~account_key.isin(auxiliary_account_keys())
 
-    return (blank_account | explicit_main | legacy_cash_main | investment_main) & ~explicit_auxiliary & ~auxiliary_cleanup
+    # Ordinary blank-account category matches keep affecting the main net for
+    # legacy top-up/shadow accounts such as Cash Flow or Pre-paid. Credit-card
+    # category matches are different: a blank-account row with category
+    # "Credit cards" is a real credit-card charge, so it must wait for the
+    # monthly statement instead of reducing main net immediately.
+    affects = (
+        (blank_account & ~credit_pending_charge)
+        | explicit_main
+        | legacy_cash_main
+        | (category_shadow & ~credit_pending_charge)
+        | policy_affects_main
+        | credit_settlement
+        | investment_main
+    )
+    affects = affects & ~separate_explicit & ~auxiliary_cleanup
+    return affects
 
 def auxiliary_account_transactions(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
@@ -209,8 +236,17 @@ def account_movements(
             tx["source_label"] = tx.apply(_source_label_for_transaction, axis=1)
             tx["source_url_kind"] = "transaction"
             tx["source_row_index"] = tx.index
-            tx["direction"] = tx["account_signed_amount"].map(lambda value: "in" if value >= 0 else "out")
+            tx["display_signed_amount"] = tx["account_signed_amount"]
+            paypal_link_mask = tx["account_route_source"].fillna("").eq("paypal_credit_link")
+            if paypal_link_mask.any():
+                tx.loc[paypal_link_mask, "source_label"] = "PayPal via credit card"
+                tx.loc[paypal_link_mask, "display_signed_amount"] = -pd.to_numeric(tx.loc[paypal_link_mask, "amount"], errors="coerce").fillna(0.0).abs()
+            tx["direction"] = tx["display_signed_amount"].map(lambda value: "in" if value >= 0 else "out")
             frames.append(tx)
+
+        linked_paypal = _paypal_credit_linked_paypal_movements(df)
+        if not linked_paypal.empty:
+            frames.append(linked_paypal)
 
     try:
         from money_manager.services.internal_transfer_service import auxiliary_transfer_movements
@@ -257,7 +293,9 @@ def account_balance_rows(df: pd.DataFrame) -> list[dict]:
         sub = movements[movements["account_key"] == key] if not movements.empty else movements
         incoming = _sum_direction(sub, "in")
         outgoing = _sum_direction(sub, "out")
-        balance = float(sub["account_signed_amount"].sum()) if not sub.empty else 0.0
+        initial_balance = _account_initial_balance(option)
+        movement_balance = float(sub["account_signed_amount"].sum()) if not sub.empty else 0.0
+        balance = initial_balance + movement_balance
 
         last_date = ""
         last_movement_label = "No movement yet"
@@ -276,6 +314,26 @@ def account_balance_rows(df: pd.DataFrame) -> list[dict]:
             "parent_key": option_parent,
             "is_other_child": option_parent == "other_account",
             "description": account_description_for_key(key),
+            "initial_balance": initial_balance,
+            "movement_balance": movement_balance,
+            "main_net_policy": option.get("main_net_policy", MAIN_NET_SEPARATE),
+            "is_active": option.get("is_active", True),
+            "is_container": option.get("is_container", False),
+            "cards": option.get("cards", []),
+            "aliases": option.get("aliases", []),
+            "category_aliases": option.get("category_aliases", []),
+            "aliases_text": ", ".join(option.get("aliases", [])),
+            "category_aliases_text": ", ".join(option.get("category_aliases", [])),
+            "type": option.get("type", "wallet"),
+            "currency": option.get("currency", "EUR"),
+            "institution": option.get("institution", ""),
+            "iban": option.get("iban", ""),
+            "display_order": option.get("display_order", 100),
+            "category_match_enabled": option.get("category_match_enabled", True),
+            "category_match_mode": option.get("category_match_mode", "top_up_shadow"),
+            "parent_account_id": option.get("parent_account_id") or option.get("parent_key") or "",
+            "due_day": option.get("due_day", 15),
+            "statement_day": option.get("statement_day", ""),
             "balance": balance,
             "income": incoming,
             "incoming": incoming,
@@ -300,8 +358,11 @@ def account_balance_rows(df: pd.DataFrame) -> list[dict]:
     return rows
 
 
-def auxiliary_total(df: pd.DataFrame) -> float:
-    return float(sum(row["balance"] for row in account_balance_rows(df)))
+def auxiliary_total(df: pd.DataFrame, include_credit_pending: bool = False) -> float:
+    rows = account_balance_rows(df)
+    if not include_credit_pending:
+        rows = [row for row in rows if row.get("main_net_policy") != MAIN_NET_CREDIT_PENDING]
+    return float(sum(row["balance"] for row in rows))
 
 
 def accounts_page_context(df: pd.DataFrame) -> dict:
@@ -395,6 +456,12 @@ def account_detail_context(df: pd.DataFrame, account_key: str) -> dict | None:
         "movements": display,
         "monthly": monthly,
         "top_categories": top_categories,
+        "parent_account_options": [row for row in account_balance_rows(df) if row.get("is_container") and row.get("key") != account_key],
+        "policy_options": [
+            {"value": MAIN_NET_SEPARATE, "label": "Separate when explicit"},
+            {"value": MAIN_NET_AFFECTS, "label": "Affects main net"},
+            {"value": MAIN_NET_CREDIT_PENDING, "label": "Credit / pending"},
+        ],
         "totals": {
             "balance": summary["balance"],
             "incoming": summary["incoming"],
@@ -407,12 +474,27 @@ def account_detail_context(df: pd.DataFrame, account_key: str) -> dict | None:
 
 def create_custom_account_from_form(form) -> dict | None:
     """Persist a new custom liquid account from the accounts page form."""
-    return save_custom_account(
-        label=form.get("label", ""),
-        description=form.get("description", ""),
-        aliases=form.get("aliases", ""),
-        category_aliases=form.get("category_aliases", ""),
-    )
+    return create_config_account_from_form(form)
+
+
+def update_account_settings_from_form(account_key: str, form) -> dict | None:
+    return update_account_from_form(account_key, form)
+
+
+def archive_account_from_form(account_key: str) -> bool:
+    return archive_account(account_key)
+
+
+def restore_account_from_form(account_key: str) -> bool:
+    return restore_account(account_key)
+
+
+def add_card_from_form(account_key: str, form) -> dict | None:
+    return add_card_to_account(account_key, form)
+
+
+def archive_card_from_form(account_key: str, card_id: str) -> bool:
+    return archive_card(account_key, card_id)
 
 
 def reconcile_account_balance(df: pd.DataFrame, account_key: str, target_balance: float, movement_date: str, description: str = "") -> dict | None:
@@ -470,6 +552,11 @@ def _infer_account_from_row(row) -> AccountInference:
     raw_account = row.get("account", "")
     account_text = _clean_text(raw_account)
     if account_text:
+        # Legacy PayPal-credit rows are payments/charges made through the credit-card
+        # route.  They must reduce/settle the Credit Card account, while a linked
+        # copy is still shown on the PayPal page for traceability.
+        if account_text in PAYPAL_CREDIT_ALIASES:
+            return AccountInference(DEFAULT_CREDIT_ACCOUNT_KEY, "paypal_credit_link")
         return AccountInference(normalize_account_key(account_text), "explicit_account")
 
     # If a cleanup/reconciliation row was saved with a blank account, try to
@@ -481,22 +568,15 @@ def _infer_account_from_row(row) -> AccountInference:
         for key, aliases in category_aliases_by_key().items():
             for alias in sorted(aliases, key=len, reverse=True):
                 if alias and alias in combined_text:
-                    return AccountInference(key, "cleanup_account_hint")
+                    return AccountInference(key, "cleanup_hint")
 
-    # Only top-level liquid accounts may be inferred from the category when the
-    # explicit account field is blank. Do not infer child accounts such as Glovo
-    # or EasyPark from sub-category text: ordinary main-bank expenses often use
-    # those words as a sub-category, and routing them to the auxiliary account
-    # changes the main net incorrectly.
     category_value = _clean_text(row.get("category", ""))
     if category_value:
         for key, aliases in category_aliases_by_key().items():
-            if account_parent_key(key):
-                continue
             if category_value in aliases:
-                return AccountInference(key, "category_account_hint")
+                return AccountInference(key, "category_match")
 
-    return AccountInference(MAIN_ACCOUNT_KEY, "main")
+    return AccountInference(MAIN_ACCOUNT_KEY, "main_route")
 
 
 def _account_signed_amount(row) -> float:
@@ -509,11 +589,22 @@ def _account_signed_amount(row) -> float:
     if account_key == MAIN_ACCOUNT_KEY:
         return float(row.get("signed_amount", 0.0) or 0.0)
 
-    # A blank-account expense categorized as Pre-paid card / Cash Flow is usually
+    if account_policy_for_key(account_key) == MAIN_NET_CREDIT_PENDING and transaction_type == "expense":
+        # Credit-card charges increase the outstanding balance (negative from the
+        # account point of view). The later statement payment reduces that
+        # outstanding balance, so it is positive here. Legacy PayPal-credit
+        # payment rows are already the main-bank payment itself, so they are
+        # displayed as linked card usage but do not alter the card outstanding
+        # balance a second time.
+        if route_source == "paypal_credit_link" and _is_credit_settlement_row(row):
+            return 0.0
+        return amount if _is_credit_settlement_row(row) else -amount
+
+    # A blank-account expense categorized as a matching account alias is usually
     # a top-up: money leaves the main bank but becomes available on that liquid
     # account. Cleanup/reconciliation rows are different: they are corrections to
     # the liquid account balance only, so an expense must reduce the liquid account.
-    if transaction_type == "expense" and route_source.endswith("_account_hint") and not _is_cleanup_row(row):
+    if transaction_type == "expense" and route_source == "category_match" and not _is_cleanup_row(row):
         return amount
 
     if transaction_type == "income":
@@ -526,6 +617,38 @@ def _account_signed_amount(row) -> float:
 
 
 
+
+
+def _credit_settlement_like_mask(df: pd.DataFrame) -> pd.Series:
+    if df.empty:
+        return pd.Series(dtype=bool, index=df.index)
+    description = df.get("description", pd.Series("", index=df.index)).fillna("").astype(str).map(_clean_text)
+    sub_category = df.get("sub_category", pd.Series("", index=df.index)).fillna("").astype(str).map(_clean_text)
+    account = df.get("account", pd.Series("", index=df.index)).fillna("").astype(str).map(_clean_text)
+    combined = description + " " + sub_category
+    explicit_statement_payment = (
+        combined.str.contains("statement payment", na=False)
+        | combined.str.contains("credit card payment", na=False)
+        | combined.str.contains("credit statement payment", na=False)
+        | combined.str.contains("settlement", na=False)
+    )
+    legacy_paypal_payment = account.isin(PAYPAL_CREDIT_ALIASES) & combined.str.contains("payment", na=False)
+    return explicit_statement_payment | legacy_paypal_payment
+
+
+def _is_credit_settlement_row(row) -> bool:
+    description = _clean_text(row.get("description", ""))
+    sub_category = _clean_text(row.get("sub_category", ""))
+    account = _clean_text(row.get("account", ""))
+    text = f"{description} {sub_category}"
+    explicit_statement_payment = (
+        "statement payment" in text
+        or "credit card payment" in text
+        or "credit statement payment" in text
+        or "settlement" in text
+    )
+    legacy_paypal_payment = account in PAYPAL_CREDIT_ALIASES and "payment" in text
+    return explicit_statement_payment or legacy_paypal_payment
 
 def _is_cleanup_row(row) -> bool:
     text = _clean_text(" ".join(str(row.get(field, "") or "") for field in ("category", "sub_category", "description")))
@@ -569,11 +692,59 @@ def _looks_like_cleanup_text(text: str) -> bool:
 def _source_label_for_transaction(row) -> str:
     transaction_type = str(row.get("type", "")).strip().title()
     route_source = str(row.get("account_route_source", ""))
-    if transaction_type == "Expense" and route_source.endswith("_account_hint"):
+    if account_policy_for_key(row.get("account_key")) == MAIN_NET_CREDIT_PENDING:
+        if route_source == "paypal_credit_link":
+            return "PayPal via credit card"
+        if _is_credit_settlement_row(row):
+            return "Credit-card statement payment"
+    if transaction_type == "Expense" and route_source == "category_match":
+        if account_policy_for_key(row.get("account_key")) == MAIN_NET_CREDIT_PENDING:
+            return "Credit-card charge"
         return "Transfer in"
     if transaction_type == "Investment":
         return "Investment movement"
+    if route_source == "cleanup_hint":
+        return "Cleanup / reconciliation"
+    if route_source == "explicit_account":
+        return f"{transaction_type} from account" if transaction_type else "Explicit account"
     return transaction_type or "Movement"
+
+
+def _account_initial_balance(account: dict) -> float:
+    try:
+        return float(account.get("initial_balance", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _paypal_credit_linked_paypal_movements(df: pd.DataFrame) -> pd.DataFrame:
+    """Return zero-balance PayPal view rows for legacy PayPal-credit payments.
+
+    A row saved with account=paypal_credit is financially routed through the
+    Credit Card account.  The user still expects to see that movement on PayPal,
+    because PayPal is the merchant/payment channel.  The linked copy is displayed
+    on the PayPal account page but does not change the PayPal wallet balance.
+    """
+    if df.empty or "account" not in df.columns:
+        return _empty_account_movements()
+
+    account_values = df["account"].fillna("").astype(str).map(_clean_text)
+    linked = df[account_values.isin(PAYPAL_CREDIT_ALIASES)].copy()
+    if linked.empty:
+        return _empty_account_movements()
+
+    linked["account_key"] = PAYPAL_ACCOUNT_KEY
+    linked["account_label"] = account_label_for_key(PAYPAL_ACCOUNT_KEY)
+    linked["account_route_source"] = "paypal_credit_linked_view"
+    linked["account_signed_amount"] = 0.0
+    linked["display_signed_amount"] = -pd.to_numeric(linked.get("amount", 0.0), errors="coerce").fillna(0.0).abs()
+    linked["source"] = "linked_transaction"
+    linked["source_label"] = "PayPal via credit card"
+    linked["source_url_kind"] = "transaction"
+    linked["source_row_index"] = linked.index
+    linked["direction"] = "linked"
+    linked["is_auxiliary_account"] = True
+    return linked
 
 
 def _sparagnat_cash_movements() -> pd.DataFrame:
@@ -674,13 +845,17 @@ def _prepare_account_movements_for_display(df: pd.DataFrame) -> list[dict]:
         return []
     display = df.copy()
     display["date_str"] = display["date"].dt.strftime("%Y-%m-%d")
-    display["amount_abs"] = display["account_signed_amount"].abs()
+    if "display_signed_amount" in display.columns:
+        display["display_signed_amount"] = pd.to_numeric(display["display_signed_amount"], errors="coerce").fillna(display["account_signed_amount"])
+    else:
+        display["display_signed_amount"] = display["account_signed_amount"]
+    display["amount_abs"] = display["display_signed_amount"].abs()
     display["amount_str"] = display["amount_abs"].map(lambda value: f"{value:.2f}")
-    display["signed_amount_str"] = display["account_signed_amount"].map(lambda value: f"{value:+.2f}")
+    display["signed_amount_str"] = display["display_signed_amount"].map(lambda value: f"{value:+.2f}")
     display["category"] = display["category"].fillna("")
     display["description"] = display["description"].fillna("")
     display["source_label"] = display["source_label"].fillna("Movement")
-    display["direction"] = display["account_signed_amount"].map(lambda value: "in" if value >= 0 else "out")
+    display["direction"] = display["display_signed_amount"].map(lambda value: "in" if value >= 0 else "out")
     return display.to_dict(orient="records")
 
 
@@ -727,4 +902,5 @@ def _empty_account_movements() -> pd.DataFrame:
         "source_row_index",
         "direction",
         "is_auxiliary_account",
+        "affects_main_net",
     ])

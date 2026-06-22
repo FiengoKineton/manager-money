@@ -229,15 +229,19 @@ def pay_planned_item_from_form(project_id: int, form) -> None:
     if amount <= 0:
         return
 
-    save_result = save_transaction_payload({
-        "type": "expense",
-        "date": form.get("date") or date.today().isoformat(),
-        "category": item.get("category") or _project_category(project_id),
-        "sub_category": item.get("sub_category") or item.get("name", ""),
-        "amount": amount,
-        "account": form.get("account", item.get("account", "")),
-        "description": form.get("description") or f"Project payment: {item.get('name', '')}",
-    })
+    save_result = save_transaction_payload(
+        {
+            "type": "expense",
+            "date": form.get("date") or date.today().isoformat(),
+            "category": item.get("category") or _project_category(project_id),
+            "sub_category": item.get("sub_category") or item.get("name", ""),
+            "amount": amount,
+            "account": form.get("account", item.get("account", "")),
+            "description": form.get("description") or f"Project payment: {item.get('name', '')}",
+        },
+        payment_method=form.get("account_payment_method", ""),
+        insufficient_action=form.get("account_insufficient_action", ""),
+    )
     for tx_id in (save_result.get("transaction_ids", []) if isinstance(save_result, dict) else []):
         append_movement({
             "project_id": project_id,

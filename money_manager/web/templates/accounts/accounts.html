@@ -1,110 +1,131 @@
 {% extends "base.html" %}
-{% block page_title %}Liquid Accounts{% endblock %}
+{% block page_title %}{{ t("accounts.title") }}{% endblock %}
 
 {% block content %}
 <section class="accounts-hero panel-card">
   <div>
-    <span class="eyebrow">Separate liquid accounts</span>
-    <h2>Cash Flow, Pre-paid card and Other/custom accounts</h2>
-    <p>
-      Use these for cash, pre-paid cards, Ticket Restaurant, or any extra liquid balance.
-      They can be matched by the <strong>account</strong> field or by clear category names.
-      They stay out of the main net balance and main category charts.
-    </p>
+    <span class="eyebrow">{{ t("accounts.hero_eyebrow") }}</span>
+    <h2>{{ t("accounts.hero_title") }}</h2>
+    <p>{{ t("accounts.hero_description", file="accounts.json") }}</p>
   </div>
   <div class="accounts-hero-metrics">
-    <div>
-      <span>Total balance</span>
-      <strong>€ {{ '%.2f'|format(totals.balance) }}</strong>
-    </div>
-    <div>
-      <span>Total in</span>
-      <strong>€ {{ '%.2f'|format(totals.incoming) }}</strong>
-    </div>
-    <div>
-      <span>Total out</span>
-      <strong>€ {{ '%.2f'|format(totals.outgoing) }}</strong>
-    </div>
+    <div><span>{{ t("accounts.total_balance") }}</span><strong>{{ totals.balance|money_masked }}</strong></div>
+    <div><span>{{ t("accounts.total_in") }}</span><strong>{{ totals.incoming|money_masked }}</strong></div>
+    <div><span>{{ t("accounts.total_out") }}</span><strong>{{ totals.outgoing|money_masked }}</strong></div>
   </div>
 </section>
 
 <section class="custom-account-panel panel-card">
   <div class="panel-header">
     <div>
-      <span class="eyebrow">Custom account</span>
-      <h3>Add a small account inside Other account</h3>
-      <p>Saved in <strong>your user accounts.json</strong>. These accounts appear under <strong>Other account</strong> but keep their own balances and movement analysis.</p>
+      <span class="eyebrow">{{ t("accounts.add_eyebrow") }}</span>
+      <h3>{{ t("accounts.create_title") }}</h3>
+      <p>{{ t("accounts.create_description") }}</p>
     </div>
   </div>
 
   <form method="post" class="custom-account-form">
-    <input type="hidden" name="action" value="add_custom_account">
+    <input type="hidden" name="action" value="add_account">
     <div>
-      <label>Name</label>
-      <input type="text" name="label" placeholder="Example: Glovo, EasyPark, Satispay" required>
+      <label>{{ t("common.name") }}</label>
+      <input type="text" name="label" placeholder="{{ t('accounts.name_placeholder') }}" required>
     </div>
     <div>
-      <label>Description</label>
-      <input type="text" name="description" placeholder="What this balance represents">
+      <label>{{ t("common.type") }}</label>
+      <select name="type">
+        {% for value in ['wallet', 'cash', 'bank', 'prepaid_card', 'credit_card', 'container'] %}
+          <option value="{{ value }}">{{ t('account.type.' ~ value) }}</option>
+        {% endfor %}
+      </select>
     </div>
     <div>
-      <label>Account aliases</label>
-      <input type="text" name="aliases" placeholder="glovo, easypark, satispay">
-      <small>Matched against the account column.</small>
+      <label>{{ t("accounts.main_net_behavior") }}</label>
+      <select name="main_net_policy">
+        <option value="separate_when_explicit" selected>{{ t("account.policy.separate_when_explicit") }}</option>
+        <option value="affects_main_net">{{ t("account.policy.affects_main_net") }}</option>
+        <option value="credit_pending">{{ t("account.policy.credit_pending") }}</option>
+      </select>
     </div>
     <div>
-      <label>Category aliases</label>
-      <input type="text" name="category_aliases" placeholder="glovo top-up, easypark, parking credit">
-      <small>Optional. Only top-level accounts are inferred from blank-account categories; small Other-account children are used when selected in the Account field.</small>
+      <label>{{ t("accounts.initial_balance") }}</label>
+      <input type="number" step="0.01" name="initial_balance" value="0">
+    </div>
+    <div>
+      <label>{{ t("common.currency") }}</label>
+      <input type="text" name="currency" value="EUR">
+    </div>
+    <div>
+      <label>{{ t("accounts.institution_bank") }}</label>
+      <input type="text" name="institution" placeholder="{{ t('common.optional') }}">
+    </div>
+    <div>
+      <label>{{ t("accounts.iban_info") }}</label>
+      <input type="text" name="iban" placeholder="{{ t('common.optional') }}">
+    </div>
+    <div>
+      <label>{{ t("accounts.aliases") }}</label>
+      <input type="text" name="aliases" placeholder="{{ t('accounts.aliases_placeholder') }}">
+      <small>{{ t("accounts.aliases_hint") }}</small>
+    </div>
+    <div>
+      <label>{{ t("accounts.category_aliases") }}</label>
+      <input type="text" name="category_aliases" placeholder="{{ t('accounts.category_aliases_placeholder') }}">
+      <small>{{ t("accounts.category_aliases_hint") }}</small>
+    </div>
+    <div>
+      <label>{{ t("accounts.parent_container") }}</label>
+      <select name="parent_account_id">
+        <option value="">{{ t("accounts.top_level_account") }}</option>
+        {% for account in accounts %}
+          {% if account.is_container %}<option value="{{ account.key }}">{{ account.label }}</option>{% endif %}
+        {% endfor %}
+      </select>
+    </div>
+    <div data-credit-only>
+      <label>{{ t("accounts.due_day") }}</label>
+      <input type="number" min="1" max="31" name="due_day" value="15">
+      <small>{{ t("accounts.credit_pending_hint") }}</small>
+    </div>
+    <div class="form-field-wide">
+      <label>{{ t("common.description") }}</label>
+      <input type="text" name="description" placeholder="{{ t('accounts.description_placeholder') }}">
+    </div>
+    <div class="form-field-wide">
+      <label class="inline-checkbox"><input type="checkbox" name="category_match_enabled" value="1" checked> {{ t("accounts.enable_category_matching") }}</label>
     </div>
     <div class="form-actions-row form-field-wide">
-      <button type="submit" class="primary-btn">+ Add custom account</button>
+      <button type="submit" class="primary-btn">{{ t("accounts.add_account") }}</button>
     </div>
   </form>
 </section>
 
 <section class="account-directory-grid">
   {% for account in accounts %}
-  <article class="account-directory-card account-{{ account.balance_tone }}">
+  <article class="account-directory-card account-{{ account.balance_tone }} {{ 'is-archived' if not account.is_active else '' }}">
     <div class="account-directory-head">
       <div>
-        <span>{{ account.label }}</span>
-        <h3>€ {{ '%.2f'|format(account.balance) }}</h3>
+        <span>{{ account.label }}{% if not account.is_active %} · {{ t("common.archived") }}{% endif %}</span>
+        <h3>{{ account.balance|money_masked }}</h3>
       </div>
-      <a href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Open</a>
+      <a href="{{ url_for('accounts.account_detail', account_key=account.key) }}">{{ t("common.open") }}</a>
     </div>
     <p>{{ account.description }}</p>
+    <p class="muted"><strong>{{ t("accounts.policy") }}:</strong> {{ t('account.policy.' ~ account.main_net_policy) }}{% if account.initial_balance %} · {{ t("accounts.initial") }}: € {{ '%.2f'|format(account.initial_balance) }}{% endif %}</p>
 
     <div class="account-flow-line">
-      <div>
-        <span>In</span>
-        <strong>€ {{ '%.2f'|format(account.incoming) }}</strong>
-      </div>
-      <div>
-        <span>Out</span>
-        <strong>€ {{ '%.2f'|format(account.outgoing) }}</strong>
-      </div>
-      <div>
-        <span>Movements</span>
-        <strong>{{ account.count }}</strong>
-      </div>
+      <div><span>{{ t("common.in") }}</span><strong>€ {{ '%.2f'|format(account.incoming) }}</strong></div>
+      <div><span>{{ t("common.out") }}</span><strong>€ {{ '%.2f'|format(account.outgoing) }}</strong></div>
+      <div><span>{{ t("accounts.movements") }}</span><strong>{{ account.count }}</strong></div>
     </div>
 
     {% if account.children %}
     <div class="other-account-children">
-      <strong>Inside Other account: {{ account.child_count }} small account{{ '' if account.child_count == 1 else 's' }}</strong>
-      <div class="other-account-total-line">
-        <span>Other bucket only</span>
-        <b>€ {{ '%.2f'|format(account.own_balance) }}</b>
-      </div>
-      <div class="other-account-total-line">
-        <span>Small accounts total</span>
-        <b>€ {{ '%.2f'|format(account.child_balance) }}</b>
-      </div>
+      <strong>{{ t("accounts.container_inside_count", count=account.child_count) }}</strong>
+      <div class="other-account-total-line"><span>{{ t("accounts.container_only") }}</span><b>€ {{ '%.2f'|format(account.own_balance) }}</b></div>
+      <div class="other-account-total-line"><span>{{ t("accounts.children_total") }}</span><b>€ {{ '%.2f'|format(account.child_balance) }}</b></div>
       {% for child in account.children %}
         <a class="other-account-child" href="{{ url_for('accounts.account_detail', account_key=child.key) }}">
-          <span>{{ child.display_label or child.label }}</span>
-          <b>€ {{ '%.2f'|format(child.balance) }}</b>
+          <span>{{ child.display_label or child.label }}</span><b>€ {{ '%.2f'|format(child.balance) }}</b>
         </a>
       {% endfor %}
     </div>
@@ -124,9 +145,42 @@
       {% endfor %}
     </div>
     {% else %}
-      <p class="empty">No movements yet.</p>
+      <p class="empty">{{ t("accounts.no_movements") }}</p>
     {% endif %}
+
+    <form method="post" class="form-actions-row">
+      <input type="hidden" name="account_key" value="{{ account.key }}">
+      {% if account.is_active %}
+        <input type="hidden" name="action" value="archive_account">
+        <button type="submit" class="secondary-btn compact-btn">{{ t("common.archive") }}</button>
+      {% else %}
+        <input type="hidden" name="action" value="restore_account">
+        <button type="submit" class="secondary-btn compact-btn">{{ t("common.restore") }}</button>
+      {% endif %}
+    </form>
   </article>
   {% endfor %}
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("form.custom-account-form").forEach((form) => {
+      const typeSelect = form.querySelector('select[name="type"]');
+      const policySelect = form.querySelector('select[name="main_net_policy"]');
+      const creditFields = form.querySelectorAll("[data-credit-only]");
+      function syncCreditFields() {
+        const isCredit = (typeSelect && typeSelect.value === "credit_card") || (policySelect && policySelect.value === "credit_pending");
+        creditFields.forEach((field) => { field.hidden = !isCredit; });
+        if (typeSelect && typeSelect.value === "credit_card" && policySelect) {
+          policySelect.value = "credit_pending";
+        }
+      }
+      if (typeSelect) typeSelect.addEventListener("change", syncCreditFields);
+      if (policySelect) policySelect.addEventListener("change", syncCreditFields);
+      syncCreditFields();
+    });
+  });
+</script>
 {% endblock %}

@@ -4,171 +4,161 @@
 {% block content %}
 <section class="account-detail-hero panel-card account-{{ account.balance_tone }}">
   <div>
-    <a class="back-link" href="{{ url_for('accounts.accounts_page') }}">← All liquid accounts</a>
-    <span class="eyebrow">Separate liquid account</span>
-    <h2>{{ account.label }}</h2>
+    <a class="back-link" href="{{ url_for('accounts.accounts_page') }}">← {{ t("accounts.all_accounts") }}</a>
+    <span class="eyebrow">{{ t("accounts.configured_account") }}</span>
+    <h2>{{ account.label }}{% if not account.is_active %} · {{ t("common.archived") }}{% endif %}</h2>
     <p>{{ account.description }}</p>
+    <p class="muted">{{ t("accounts.routing_policy") }}: <strong>{{ t('account.policy.' ~ account.main_net_policy) }}</strong> · {{ t("accounts.source_key") }}: <code>{{ account.key }}</code></p>
   </div>
   <div class="account-detail-balance">
-    <span>Current balance</span>
-    <strong>€ {{ '%.2f'|format(totals.balance) }}</strong>
-    <small>{{ totals.movements }} movement{{ '' if totals.movements == 1 else 's' }}</small>
+    <span>{{ t("accounts.current_balance") }}</span>
+    <strong>{{ totals.balance|money_masked }}</strong>
+    <small>{{ t("accounts.movement_count_label", count=totals.movements) }}</small>
   </div>
 </section>
 
 <section class="kpi-grid account-kpi-grid">
-  <article class="kpi-card tone-income">
-    <span>Total in</span>
-    <strong>€ {{ '%.2f'|format(totals.incoming) }}</strong>
-    <small>Top-ups, income and cash collected.</small>
-  </article>
-  <article class="kpi-card tone-expense">
-    <span>Total out</span>
-    <strong>€ {{ '%.2f'|format(totals.outgoing) }}</strong>
-    <small>Expenses or transfers out of this account.</small>
-  </article>
-  <article class="kpi-card tone-net">
-    <span>Net movement</span>
-    <strong>€ {{ '%.2f'|format(totals.net_flow) }}</strong>
-    <small>Total in minus total out.</small>
-  </article>
-  <article class="kpi-card tone-investment">
-    <span>Transactions</span>
-    <strong>{{ totals.movements }}</strong>
-    <small>Rows connected to this account.</small>
-  </article>
-</section>
-
-<section class="cleanup-panel panel-card account-{{ account.balance_tone }}">
-  <div class="panel-header">
-    <div>
-      <span class="eyebrow">Clean up balance</span>
-      <h3>Reconcile {{ account.label }} to the real amount you have</h3>
-      <p>Example: if the app says €1000 but you really have €150 cash left, enter 150. The app will add a balancing expense on this account only.</p>
-    </div>
-  </div>
-
-  <form method="post" class="cleanup-form">
-    <input type="hidden" name="action" value="cleanup">
-    <div>
-      <label>Date</label>
-      <input type="date" name="date" value="{{ today if today is defined else '' }}">
-    </div>
-    <div>
-      <label>Real balance now (€)</label>
-      <input type="number" step="0.01" name="target_balance" placeholder="150.00" required>
-    </div>
-    <div class="form-field-wide">
-      <label>Description</label>
-      <input type="text" name="description" placeholder="Cash cleanup / manual reconciliation">
-    </div>
-    <div class="form-actions-row form-field-wide">
-      <button type="submit" class="secondary-btn">Clean up to this amount</button>
-    </div>
-  </form>
-</section>
-
-<section class="dashboard-grid dashboard-grid-large-left account-analysis-layout">
-  <article class="panel-card">
-    <div class="panel-header">
-      <div>
-        <span class="eyebrow">Monthly plot</span>
-        <h3>Income and expenses per month</h3>
-      </div>
-    </div>
-
-    {% if monthly %}
-      <div class="monthly-flow-chart">
-      {% for row in monthly %}
-        <div class="monthly-flow-row">
-          <span class="month-label">{{ row.month }}</span>
-          <div class="monthly-flow-bars">
-            <div class="bar-line">
-              <small>In</small>
-              <i class="bar-in" style="width: {{ row.in_pct }}%"></i>
-              <b>€ {{ '%.2f'|format(row.incoming) }}</b>
-            </div>
-            <div class="bar-line">
-              <small>Out</small>
-              <i class="bar-out" style="width: {{ row.out_pct }}%"></i>
-              <b>€ {{ '%.2f'|format(row.outgoing) }}</b>
-            </div>
-            <div class="bar-line net-line net-{{ row.net_tone }}">
-              <small>Net</small>
-              <i style="width: {{ row.net_pct }}%"></i>
-              <b>€ {{ '%.2f'|format(row.net) }}</b>
-            </div>
-          </div>
-        </div>
-      {% endfor %}
-      </div>
-    {% else %}
-      <p class="empty">No monthly data yet.</p>
-    {% endif %}
-  </article>
-
-  <article class="panel-card">
-    <div class="panel-header">
-      <div>
-        <span class="eyebrow">Split</span>
-        <h3>Most relevant categories</h3>
-      </div>
-    </div>
-
-    {% if top_categories %}
-      <div class="category-bars">
-      {% for row in top_categories %}
-        <div class="category-bar-row">
-          <div>
-            <span>{{ row.category }}</span>
-            <strong>€ {{ '%.2f'|format(row.total) }}</strong>
-          </div>
-          <div class="category-bar"><span style="width: {{ row.pct }}%"></span></div>
-        </div>
-      {% endfor %}
-      </div>
-    {% else %}
-      <p class="empty">No categories yet.</p>
-    {% endif %}
-  </article>
+  <article class="kpi-card tone-income"><span>{{ t("accounts.total_in") }}</span><strong>{{ totals.incoming|money_masked }}</strong><small>{{ t("accounts.total_in_hint") }}</small></article>
+  <article class="kpi-card tone-expense"><span>{{ t("accounts.total_out") }}</span><strong>{{ totals.outgoing|money_masked }}</strong><small>{{ t("accounts.total_out_hint") }}</small></article>
+  <article class="kpi-card tone-net"><span>{{ t("accounts.initial_balance") }}</span><strong>{{ account.initial_balance|money_masked }}</strong><small>{{ t("accounts.initial_balance_hint") }}</small></article>
+  <article class="kpi-card tone-investment"><span>{{ t("accounts.transactions") }}</span><strong>{{ totals.movements }}</strong><small>{{ t("accounts.transactions_hint") }}</small></article>
 </section>
 
 <section class="panel-card">
   <div class="panel-header">
     <div>
-      <span class="eyebrow">Account transactions</span>
-      <h3>Movements connected to {{ account.label }}</h3>
+      <span class="eyebrow">{{ t("accounts.settings_eyebrow") }}</span>
+      <h3>{{ t("accounts.routing_details") }}</h3>
+      <p>{{ t("accounts.routing_details_hint") }}</p>
     </div>
   </div>
+  <form method="post" class="custom-account-form">
+    <input type="hidden" name="action" value="update_account">
+    <input type="hidden" name="_category_match_checkbox_present" value="1">
+    <div><label>{{ t("common.name") }}</label><input type="text" name="label" value="{{ account.display_label or account.label }}" required></div>
+    <div>
+      <label>{{ t("common.type") }}</label>
+      <select name="type">
+        {% for value in ['wallet', 'cash', 'bank', 'prepaid_card', 'credit_card', 'container'] %}
+          <option value="{{ value }}" {% if account.type == value %}selected{% endif %}>{{ t('account.type.' ~ value) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>{{ t("accounts.main_net_behavior") }}</label>
+      <select name="main_net_policy">
+        {% for policy in policy_options %}
+          <option value="{{ policy.value }}" {% if account.main_net_policy == policy.value %}selected{% endif %}>{{ t('account.policy.' ~ policy.value) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div><label>{{ t("accounts.initial_balance") }}</label><input type="number" step="0.01" name="initial_balance" value="{{ '%.2f'|format(account.initial_balance) }}"></div>
+    <div><label>{{ t("common.currency") }}</label><input type="text" name="currency" value="{{ account.currency }}"></div>
+    <div><label>{{ t("accounts.institution_bank") }}</label><input type="text" name="institution" value="{{ account.institution }}"></div>
+    <div><label>{{ t("accounts.iban_info") }}</label><input type="text" name="iban" value="{{ account.iban }}"></div>
+    <div><label>{{ t("accounts.display_order") }}</label><input type="number" name="display_order" value="{{ account.display_order }}"></div>
+    <div>
+      <label>{{ t("accounts.parent_container") }}</label>
+      <select name="parent_account_id">
+        <option value="">{{ t("accounts.top_level_account") }}</option>
+        {% for parent in parent_account_options %}
+          <option value="{{ parent.key }}" {% if account.parent_account_id == parent.key or account.parent_key == parent.key %}selected{% endif %}>{{ parent.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div data-credit-only><label>{{ t("accounts.due_day") }}</label><input type="number" min="1" max="31" name="due_day" value="{{ account.due_day or 15 }}"><small>{{ t("accounts.credit_pending_hint") }}</small></div>
+    <div data-credit-only><label>{{ t("accounts.statement_day") }}</label><input type="number" min="1" max="31" name="statement_day" value="{{ account.statement_day or '' }}"></div>
+    <div class="form-field-wide"><label>{{ t("common.description") }}</label><input type="text" name="description" value="{{ account.description }}"></div>
+    <div class="form-field-wide"><label>{{ t("accounts.account_aliases") }}</label><input type="text" name="aliases" value="{{ account.aliases_text }}"></div>
+    <div class="form-field-wide"><label>{{ t("accounts.category_aliases") }}</label><input type="text" name="category_aliases" value="{{ account.category_aliases_text }}"></div>
+    <div class="form-field-wide"><label class="inline-checkbox"><input type="checkbox" name="category_match_enabled" value="1" {% if account.category_match_enabled %}checked{% endif %}> {{ t("accounts.enable_category_matching") }}</label></div>
+    <div class="form-actions-row form-field-wide"><button type="submit" class="primary-btn">{{ t("accounts.save_account_settings") }}</button></div>
+  </form>
+  <form method="post" class="form-actions-row">
+    {% if account.is_active %}
+      <input type="hidden" name="action" value="archive_account"><button type="submit" class="secondary-btn">{{ t("accounts.archive_account") }}</button>
+    {% else %}
+      <input type="hidden" name="action" value="restore_account"><button type="submit" class="secondary-btn">{{ t("accounts.restore_account") }}</button>
+    {% endif %}
+  </form>
+</section>
 
-  {% if movements %}
-  <div class="account-transaction-list">
-    {% for tx in movements %}
-    <article class="account-transaction-row movement-{{ tx.direction }}">
-      <div class="movement-date">
-        <small>Date</small>
-        <span>{{ tx.date_str }}</span>
-      </div>
-      <div class="movement-main">
-        <span class="movement-source">{{ tx.source_label }}</span>
-        <strong>{{ tx.category }}</strong>
-        {% if tx.description %}<p>{{ tx.description }}</p>{% endif %}
-      </div>
-      <div class="movement-amount">
-        <strong>{{ tx.signed_amount_str }}</strong>
-        {% if tx.source_url_kind == 'transaction' %}
-          <a href="{{ url_for('transactions.transaction_detail', row_index=tx.source_row_index) }}" class="icon-link-btn icon-link-edit" title="Edit transaction" aria-label="Edit transaction">✎</a>
-        {% elif tx.source_url_kind == 'internal_transfer' %}
-          <a href="{{ url_for('internal_transfers.internal_transfers_page') }}" class="secondary-btn compact-btn">Open transfer</a>
-        {% elif tx.source_url_kind == 'sparagnat' %}
-          <a href="{{ url_for('sparagnat.sparagnat_page') }}" class="secondary-btn compact-btn">Open tracker</a>
-        {% endif %}
-      </div>
-    </article>
-    {% endfor %}
-  </div>
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">{{ t("accounts.cards") }}</span><h3>{{ t("accounts.connected_cards") }}</h3><p>{{ t("accounts.cards_hint") }}</p></div></div>
+  <form method="post" class="custom-account-form">
+    <input type="hidden" name="action" value="add_card">
+    <div><label>{{ t("accounts.card_label") }}</label><input type="text" name="card_label" placeholder="{{ t('accounts.card_placeholder') }}"></div>
+    <div><label>{{ t("common.type") }}</label><select name="card_type"><option value="debit">{{ t("account.type.debit") }}</option><option value="credit">{{ t("account.type.credit") }}</option></select></div>
+    <div><label>{{ t("accounts.network") }}</label><input type="text" name="network" placeholder="{{ t('accounts.network_placeholder') }}"></div>
+    <div><label>{{ t("accounts.last4") }}</label><input type="text" name="last4" maxlength="4"></div>
+    <div class="form-actions-row form-field-wide"><button type="submit" class="secondary-btn">{{ t("accounts.add_card") }}</button></div>
+  </form>
+  {% if account.cards %}
+    <div class="account-transaction-list">
+      {% for card in account.cards %}
+        <article class="account-transaction-row">
+          <div class="movement-main"><span class="movement-source">{{ t('accounts.card_type', type=t('account.type.' ~ card.card_type)) }}</span><strong>{{ card.label }}</strong><p>{{ card.network }} {{ card.last4 }}</p></div>
+          <div class="movement-amount">
+            {% if card.is_active %}
+              <form method="post"><input type="hidden" name="action" value="archive_card"><input type="hidden" name="card_id" value="{{ card.id }}"><button class="secondary-btn compact-btn" type="submit">{{ t("common.archive") }}</button></form>
+            {% else %}
+              <span>{{ t("common.archived") }}</span>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
   {% else %}
-    <p class="empty">No movements yet.</p>
+    <p class="empty">{{ t("accounts.no_cards") }}</p>
   {% endif %}
 </section>
+
+<section class="cleanup-panel panel-card account-{{ account.balance_tone }}">
+  <div class="panel-header"><div><span class="eyebrow">{{ t("accounts.clean_balance") }}</span><h3>{{ t("accounts.reconcile_title", account=account.label) }}</h3><p>{{ t("accounts.reconcile_hint") }}</p></div></div>
+  <form method="post" class="cleanup-form">
+    <input type="hidden" name="action" value="cleanup">
+    <div><label>{{ t("common.date") }}</label><input type="date" name="date" value="{{ today if today is defined else '' }}"></div>
+    <div><label>{{ t("accounts.real_balance_now") }}</label><input type="number" step="0.01" name="target_balance" placeholder="150.00" required></div>
+    <div class="form-field-wide"><label>{{ t("common.description") }}</label><input type="text" name="description" placeholder="{{ t('accounts.manual_reconciliation') }}"></div>
+    <div class="form-actions-row form-field-wide"><button type="submit" class="secondary-btn">{{ t("accounts.cleanup_button") }}</button></div>
+  </form>
+</section>
+
+<section class="dashboard-grid dashboard-grid-large-left account-analysis-layout">
+  <article class="panel-card">
+    <div class="panel-header"><div><span class="eyebrow">{{ t("accounts.monthly_plot") }}</span><h3>{{ t("accounts.income_expenses_month") }}</h3></div></div>
+    {% if monthly %}<div class="monthly-flow-chart">{% for row in monthly %}<div class="monthly-flow-row"><span class="month-label">{{ row.month }}</span><div class="monthly-flow-bars"><div class="bar-line"><small>{{ t("common.in") }}</small><i class="bar-in" style="width: {{ row.in_pct }}%"></i><b>€ {{ '%.2f'|format(row.incoming) }}</b></div><div class="bar-line"><small>{{ t("common.out") }}</small><i class="bar-out" style="width: {{ row.out_pct }}%"></i><b>€ {{ '%.2f'|format(row.outgoing) }}</b></div><div class="bar-line net-line net-{{ row.net_tone }}"><small>{{ t("common.net") }}</small><i style="width: {{ row.net_pct }}%"></i><b>€ {{ '%.2f'|format(row.net) }}</b></div></div></div>{% endfor %}</div>{% else %}<p class="empty">{{ t("accounts.no_monthly_data") }}</p>{% endif %}
+  </article>
+  <article class="panel-card">
+    <div class="panel-header"><div><span class="eyebrow">{{ t("accounts.split") }}</span><h3>{{ t("accounts.relevant_categories") }}</h3></div></div>
+    {% if top_categories %}<div class="category-bars">{% for row in top_categories %}<div class="category-bar-row"><div><span>{{ row.category }}</span><strong>€ {{ '%.2f'|format(row.total) }}</strong></div><div class="category-bar"><span style="width: {{ row.pct }}%"></span></div></div>{% endfor %}</div>{% else %}<p class="empty">{{ t("accounts.no_categories") }}</p>{% endif %}
+  </article>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">{{ t("accounts.account_transactions") }}</span><h3>{{ t("accounts.movements_connected", account=account.label) }}</h3></div></div>
+  {% if movements %}<div class="account-transaction-list">{% for tx in movements %}<article class="account-transaction-row movement-{{ tx.direction }}"><div class="movement-date"><small>{{ t("common.date") }}</small><span>{{ tx.date_str }}</span></div><div class="movement-main"><span class="movement-source">{{ tx.source_label }}</span><strong>{{ tx.category }}</strong>{% if tx.description %}<p>{{ tx.description }}</p>{% endif %}</div><div class="movement-amount"><strong>{{ tx.signed_amount_str }}</strong>{% if tx.source_url_kind == 'transaction' %}<a href="{{ url_for('transactions.transaction_detail', row_index=tx.source_row_index) }}" class="icon-link-btn icon-link-edit" title="{{ t('common.edit') }}" aria-label="{{ t('common.edit') }}">✎</a>{% elif tx.source_url_kind == 'internal_transfer' %}<a href="{{ url_for('internal_transfers.internal_transfers_page') }}" class="secondary-btn compact-btn">{{ t("accounts.open_transfer") }}</a>{% elif tx.source_url_kind == 'sparagnat' %}<a href="{{ url_for('sparagnat.sparagnat_page') }}" class="secondary-btn compact-btn">{{ t("accounts.open_tracker") }}</a>{% endif %}</div></article>{% endfor %}</div>{% else %}<p class="empty">{{ t("accounts.no_movements") }}</p>{% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("form.custom-account-form").forEach((form) => {
+      const typeSelect = form.querySelector('select[name="type"]');
+      const policySelect = form.querySelector('select[name="main_net_policy"]');
+      const creditFields = form.querySelectorAll("[data-credit-only]");
+      function syncCreditFields() {
+        const isCredit = (typeSelect && typeSelect.value === "credit_card") || (policySelect && policySelect.value === "credit_pending");
+        creditFields.forEach((field) => { field.hidden = !isCredit; });
+        if (typeSelect && typeSelect.value === "credit_card" && policySelect) {
+          policySelect.value = "credit_pending";
+        }
+      }
+      if (typeSelect) typeSelect.addEventListener("change", syncCreditFields);
+      if (policySelect) policySelect.addEventListener("change", syncCreditFields);
+      syncCreditFields();
+    });
+  });
+</script>
 {% endblock %}

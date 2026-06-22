@@ -1,6 +1,76 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "updated_at": "",
   "accounts": [
+    {
+      "id": "main_bank",
+      "key": "main_bank",
+      "name": "Main bank account",
+      "label": "Main bank account",
+      "type": "main",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": 0.0,
+      "description": "Default route for ordinary transactions that affect the tracked main net balance.",
+      "aliases": [
+        "main",
+        "main bank",
+        "main bank account",
+        "bank",
+        "bank account",
+        "auto",
+        "card",
+        "credit",
+        "credit card",
+        "debit card",
+        "main_bank"
+      ],
+      "category_aliases": [
+        "main",
+        "main bank",
+        "main bank account",
+        "bank",
+        "bank account",
+        "auto",
+        "card",
+        "credit",
+        "credit card",
+        "debit card",
+        "main_bank"
+      ],
+      "category_match_enabled": false,
+      "category_match_mode": "top_up_shadow",
+      "main_net_policy": "affects_main_net",
+      "parent_account_id": null,
+      "parent_key": "",
+      "is_container": false,
+      "is_default": true,
+      "is_custom": false,
+      "is_active": true,
+      "display_order": 0,
+      "due_day": null,
+      "statement_day": null,
+      "payment_logic": {
+        "schema_version": 1,
+        "mode": "main_net",
+        "default_method": "main_net",
+        "allowed_methods": [
+          "main_net"
+        ],
+        "default_insufficient_action": "stop",
+        "insufficient_actions": [],
+        "show_method_selector": false,
+        "can_pay_from": true,
+        "affects_main_net_now": true,
+        "creates_pending": false
+      },
+      "cards": [],
+      "metadata": {},
+      "archived_at": "",
+      "created_at": "",
+      "updated_at": ""
+    },
     {
       "id": "cash_flow",
       "key": "cash_flow",
@@ -10,13 +80,14 @@
       "currency": "EUR",
       "institution": "",
       "iban": "",
-      "initial_balance": "",
+      "initial_balance": 0.0,
       "description": "Physical cash you still have available.",
       "aliases": [
         "cash",
         "cash flow",
         "contanti",
-        "physical cash"
+        "physical cash",
+        "cash_flow"
       ],
       "category_aliases": [
         "cash",
@@ -24,11 +95,45 @@
         "contanti",
         "physical cash"
       ],
-      "is_default": true,
-      "is_custom": false,
+      "category_match_enabled": true,
+      "category_match_mode": "top_up_shadow",
+      "main_net_policy": "separate_when_explicit",
+      "parent_account_id": null,
+      "parent_key": "",
+      "is_container": false,
+      "is_default": false,
+      "is_custom": true,
       "is_active": true,
       "display_order": 10,
-      "parent_key": "other_account"
+      "due_day": null,
+      "statement_day": null,
+      "payment_logic": {
+        "schema_version": 1,
+        "mode": "tracked_balance",
+        "default_method": "balance",
+        "allowed_methods": [
+          "balance",
+          "credit",
+          "another_card"
+        ],
+        "default_insufficient_action": "stop",
+        "insufficient_actions": [
+          "stop",
+          "use_another_card_for_remaining",
+          "use_credit_for_remaining"
+        ],
+        "show_method_selector": true,
+        "can_pay_from": true,
+        "affects_main_net_now": false,
+        "creates_pending": false
+      },
+      "cards": [],
+      "metadata": {
+        "legacy_explicit_cash_affects_main": true
+      },
+      "archived_at": "",
+      "created_at": "",
+      "updated_at": ""
     },
     {
       "id": "pre_paid_card",
@@ -39,7 +144,7 @@
       "currency": "EUR",
       "institution": "",
       "iban": "",
-      "initial_balance": "",
+      "initial_balance": 0.0,
       "description": "Money available on a pre-paid card.",
       "aliases": [
         "pre-paid card",
@@ -48,7 +153,8 @@
         "pre-paid",
         "prepaid",
         "postepay",
-        "carta prepagata"
+        "carta prepagata",
+        "pre_paid_card"
       ],
       "category_aliases": [
         "pre-paid card",
@@ -59,11 +165,48 @@
         "postepay",
         "carta prepagata"
       ],
-      "is_default": true,
-      "is_custom": false,
+      "category_match_enabled": true,
+      "category_match_mode": "top_up_shadow",
+      "main_net_policy": "separate_when_explicit",
+      "parent_account_id": null,
+      "parent_key": "",
+      "is_container": false,
+      "is_default": false,
+      "is_custom": true,
       "is_active": true,
       "display_order": 20,
-      "parent_key": "other_account"
+      "due_day": null,
+      "statement_day": null,
+      "payment_logic": {
+        "schema_version": 1,
+        "mode": "tracked_balance",
+        "default_method": "balance",
+        "allowed_methods": [
+          "balance",
+          "credit",
+          "another_card"
+        ],
+        "default_insufficient_action": "stop",
+        "insufficient_actions": [
+          "stop",
+          "use_another_card_for_remaining",
+          "use_credit_for_remaining"
+        ],
+        "show_method_selector": true,
+        "can_pay_from": true,
+        "affects_main_net_now": false,
+        "creates_pending": false
+      },
+      "cards": [],
+      "metadata": {
+        "migrated_from_code_default": true,
+        "topup_fee_amount": 1.0,
+        "topup_fee_category": "Bank fees",
+        "topup_fee_sub_category": "Pre-paid card top-up fee"
+      },
+      "archived_at": "",
+      "created_at": "",
+      "updated_at": ""
     },
     {
       "id": "edenred",
@@ -74,7 +217,7 @@
       "currency": "EUR",
       "institution": "",
       "iban": "",
-      "initial_balance": "",
+      "initial_balance": 0.0,
       "description": "Meal-voucher / EdenRed balance tracked as a separate liquid account.",
       "aliases": [
         "edenred",
@@ -88,106 +231,45 @@
         "edenred card",
         "eden red card"
       ],
-      "is_default": true,
-      "is_custom": false,
+      "category_match_enabled": true,
+      "category_match_mode": "top_up_shadow",
+      "main_net_policy": "separate_when_explicit",
+      "parent_account_id": null,
+      "parent_key": "",
+      "is_container": false,
+      "is_default": false,
+      "is_custom": true,
       "is_active": true,
       "display_order": 30,
-      "parent_key": "other_account"
-    },
-    {
-      "id": "other_account",
-      "key": "other_account",
-      "name": "Other account",
-      "label": "Other account",
-      "type": "other",
-      "currency": "EUR",
-      "institution": "",
-      "iban": "",
-      "initial_balance": "",
-      "description": "Parent bucket for smaller external credit/balance accounts such as Glovo or EasyPark.",
-      "aliases": [
-        "other account",
-        "other card",
-        "ticketrestaurant",
-        "ticket restaurant",
-        "ticket restaurants",
-        "ticket",
-        "buoni pasto",
-        "meal vouchers",
-        "meal voucher"
-      ],
-      "category_aliases": [
-        "other account",
-        "other card",
-        "ticketrestaurant",
-        "ticket restaurant",
-        "ticket restaurants",
-        "ticket",
-        "buoni pasto",
-        "meal vouchers",
-        "meal voucher"
-      ],
-      "is_default": true,
-      "is_custom": false,
-      "is_active": true,
-      "display_order": 40,
-      "parent_key": "other_account"
-    },
-    {
-      "id": "glovo",
-      "key": "glovo",
-      "name": "Glovo",
-      "label": "Glovo",
-      "type": "wallet",
-      "currency": "EUR",
-      "institution": "",
-      "iban": "",
-      "initial_balance": "",
-      "description": "Small balance/credit account collected inside Other account.",
-      "aliases": [
-        "glovo",
-        "glovo balance",
-        "glovo credit"
-      ],
-      "category_aliases": [
-        "glovo",
-        "glovo balance",
-        "glovo credit"
-      ],
-      "is_default": true,
-      "is_custom": false,
-      "is_active": true,
-      "display_order": 50,
-      "parent_key": "other_account"
-    },
-    {
-      "id": "easypark",
-      "key": "easypark",
-      "name": "EasyPark",
-      "label": "EasyPark",
-      "type": "wallet",
-      "currency": "EUR",
-      "institution": "",
-      "iban": "",
-      "initial_balance": "",
-      "description": "Small parking balance/credit account collected inside Other account.",
-      "aliases": [
-        "easypark",
-        "easy park",
-        "easypark balance",
-        "parking credit"
-      ],
-      "category_aliases": [
-        "easypark",
-        "easy park",
-        "easypark balance",
-        "parking credit"
-      ],
-      "is_default": true,
-      "is_custom": false,
-      "is_active": true,
-      "display_order": 60,
-      "parent_key": "other_account"
+      "due_day": null,
+      "statement_day": null,
+      "payment_logic": {
+        "schema_version": 1,
+        "mode": "tracked_balance",
+        "default_method": "balance",
+        "allowed_methods": [
+          "balance",
+          "credit",
+          "another_card"
+        ],
+        "default_insufficient_action": "stop",
+        "insufficient_actions": [
+          "stop",
+          "use_another_card_for_remaining",
+          "use_credit_for_remaining"
+        ],
+        "show_method_selector": true,
+        "can_pay_from": true,
+        "affects_main_net_now": false,
+        "creates_pending": false
+      },
+      "cards": [],
+      "metadata": {
+        "migrated_from_code_default": true
+      },
+      "archived_at": "",
+      "created_at": "",
+      "updated_at": ""
     },
     {
       "id": "paypal",
@@ -198,8 +280,8 @@
       "currency": "EUR",
       "institution": "",
       "iban": "",
-      "initial_balance": "",
-      "description": "PayPal wallet balance tracked as its own liquid account.",
+      "initial_balance": 0.0,
+      "description": "PayPal wallet/account. Its routing behavior is configured here, not hard-coded.",
       "aliases": [
         "paypal",
         "pay pal",
@@ -216,11 +298,239 @@
         "paypal wallet",
         "pay pal wallet"
       ],
+      "category_match_enabled": true,
+      "category_match_mode": "top_up_shadow",
+      "main_net_policy": "separate_when_explicit",
+      "parent_account_id": null,
+      "parent_key": "",
+      "is_container": false,
+      "is_default": false,
+      "is_custom": true,
+      "is_active": true,
+      "display_order": 40,
+      "due_day": null,
+      "statement_day": null,
+      "payment_logic": {
+        "schema_version": 1,
+        "mode": "tracked_balance",
+        "default_method": "balance",
+        "allowed_methods": [
+          "balance",
+          "credit",
+          "another_card"
+        ],
+        "default_insufficient_action": "stop",
+        "insufficient_actions": [
+          "stop",
+          "use_another_card_for_remaining",
+          "use_credit_for_remaining"
+        ],
+        "show_method_selector": true,
+        "can_pay_from": true,
+        "affects_main_net_now": false,
+        "creates_pending": false
+      },
+      "cards": [],
+      "metadata": {
+        "migrated_from_code_default": true
+      },
+      "archived_at": "",
+      "created_at": "",
+      "updated_at": ""
+    },
+    {
+      "id": "other_account",
+      "key": "other_account",
+      "name": "Other Accounts",
+      "label": "Other Accounts",
+      "type": "container",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": 0.0,
+      "description": "Parent bucket for smaller external credit/balance accounts such as Glovo or EasyPark.",
+      "aliases": [
+        "other account",
+        "other accounts",
+        "other card",
+        "ticketrestaurant",
+        "ticket restaurant",
+        "ticket restaurants",
+        "ticket",
+        "buoni pasto",
+        "meal vouchers",
+        "meal voucher",
+        "other_account"
+      ],
+      "category_aliases": [
+        "other account",
+        "other accounts",
+        "other card",
+        "ticketrestaurant",
+        "ticket restaurant",
+        "ticket restaurants",
+        "ticket",
+        "buoni pasto",
+        "meal vouchers",
+        "meal voucher"
+      ],
+      "category_match_enabled": true,
+      "category_match_mode": "top_up_shadow",
+      "main_net_policy": "separate_when_explicit",
+      "parent_account_id": null,
+      "parent_key": "",
+      "is_container": true,
       "is_default": true,
       "is_custom": false,
       "is_active": true,
+      "display_order": 50,
+      "due_day": null,
+      "statement_day": null,
+      "payment_logic": {
+        "schema_version": 1,
+        "mode": "container",
+        "default_method": "balance",
+        "allowed_methods": [
+          "balance"
+        ],
+        "default_insufficient_action": "stop",
+        "insufficient_actions": [
+          "stop"
+        ],
+        "show_method_selector": false,
+        "can_pay_from": false,
+        "affects_main_net_now": false,
+        "creates_pending": false
+      },
+      "cards": [],
+      "metadata": {},
+      "archived_at": "",
+      "created_at": "",
+      "updated_at": ""
+    },
+    {
+      "id": "glovo",
+      "key": "glovo",
+      "name": "Glovo",
+      "label": "Glovo",
+      "type": "wallet",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": 0.0,
+      "description": "Small balance/credit account collected inside Other Accounts.",
+      "aliases": [
+        "glovo",
+        "glovo balance",
+        "glovo credit"
+      ],
+      "category_aliases": [
+        "glovo",
+        "glovo balance",
+        "glovo credit"
+      ],
+      "category_match_enabled": true,
+      "category_match_mode": "top_up_shadow",
+      "main_net_policy": "separate_when_explicit",
+      "parent_account_id": "other_account",
+      "parent_key": "other_account",
+      "is_container": false,
+      "is_default": false,
+      "is_custom": true,
+      "is_active": true,
+      "display_order": 60,
+      "due_day": null,
+      "statement_day": null,
+      "payment_logic": {
+        "schema_version": 1,
+        "mode": "tracked_balance",
+        "default_method": "balance",
+        "allowed_methods": [
+          "balance",
+          "credit",
+          "another_card"
+        ],
+        "default_insufficient_action": "stop",
+        "insufficient_actions": [
+          "stop",
+          "use_another_card_for_remaining",
+          "use_credit_for_remaining"
+        ],
+        "show_method_selector": true,
+        "can_pay_from": true,
+        "affects_main_net_now": false,
+        "creates_pending": false
+      },
+      "cards": [],
+      "metadata": {
+        "migrated_from_code_default": true
+      },
+      "archived_at": "",
+      "created_at": "",
+      "updated_at": ""
+    },
+    {
+      "id": "easypark",
+      "key": "easypark",
+      "name": "EasyPark",
+      "label": "EasyPark",
+      "type": "wallet",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": 0.0,
+      "description": "Small parking balance/credit account collected inside Other Accounts.",
+      "aliases": [
+        "easypark",
+        "easy park",
+        "easypark balance",
+        "parking credit"
+      ],
+      "category_aliases": [
+        "easypark",
+        "easy park",
+        "easypark balance",
+        "parking credit"
+      ],
+      "category_match_enabled": true,
+      "category_match_mode": "top_up_shadow",
+      "main_net_policy": "separate_when_explicit",
+      "parent_account_id": "other_account",
+      "parent_key": "other_account",
+      "is_container": false,
+      "is_default": false,
+      "is_custom": true,
+      "is_active": true,
       "display_order": 70,
-      "parent_key": "other_account"
+      "due_day": null,
+      "statement_day": null,
+      "payment_logic": {
+        "schema_version": 1,
+        "mode": "tracked_balance",
+        "default_method": "balance",
+        "allowed_methods": [
+          "balance",
+          "credit",
+          "another_card"
+        ],
+        "default_insufficient_action": "stop",
+        "insufficient_actions": [
+          "stop",
+          "use_another_card_for_remaining",
+          "use_credit_for_remaining"
+        ],
+        "show_method_selector": true,
+        "can_pay_from": true,
+        "affects_main_net_now": false,
+        "creates_pending": false
+      },
+      "cards": [],
+      "metadata": {
+        "migrated_from_code_default": true
+      },
+      "archived_at": "",
+      "created_at": "",
+      "updated_at": ""
     },
     {
       "id": "lost",
@@ -231,19 +541,111 @@
       "currency": "EUR",
       "institution": "",
       "iban": "",
-      "initial_balance": "",
-      "description": "lost track of money movements",
+      "initial_balance": 0.0,
+      "description": "Lost track of money movements.",
       "aliases": [
         "lost"
       ],
       "category_aliases": [
         "lost"
       ],
+      "category_match_enabled": false,
+      "category_match_mode": "top_up_shadow",
+      "main_net_policy": "separate_when_explicit",
+      "parent_account_id": null,
+      "parent_key": "",
+      "is_container": false,
       "is_default": false,
       "is_custom": true,
       "is_active": true,
-      "display_order": 100,
-      "parent_key": "other_account"
+      "display_order": 80,
+      "due_day": null,
+      "statement_day": null,
+      "payment_logic": {
+        "schema_version": 1,
+        "mode": "tracked_balance",
+        "default_method": "balance",
+        "allowed_methods": [
+          "balance",
+          "credit",
+          "another_card"
+        ],
+        "default_insufficient_action": "stop",
+        "insufficient_actions": [
+          "stop",
+          "use_another_card_for_remaining",
+          "use_credit_for_remaining"
+        ],
+        "show_method_selector": true,
+        "can_pay_from": true,
+        "affects_main_net_now": false,
+        "creates_pending": false
+      },
+      "cards": [],
+      "metadata": {},
+      "archived_at": "",
+      "created_at": "",
+      "updated_at": ""
+    },
+    {
+      "id": "credit_card",
+      "key": "credit_card",
+      "name": "Credit Card",
+      "label": "Credit Card",
+      "type": "credit_card",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": 0.0,
+      "description": "Default credit-card route. Purchases in the Credit cards category are grouped into one monthly pending statement.",
+      "aliases": [
+        "credit",
+        "credit card",
+        "credit cards",
+        "card credit",
+        "carta credito",
+        "carta di credito",
+        "credit_card"
+      ],
+      "category_aliases": [
+        "credit",
+        "credit card",
+        "credit cards",
+        "card credit",
+        "carta credito",
+        "carta di credito"
+      ],
+      "category_match_enabled": true,
+      "category_match_mode": "credit_pending",
+      "main_net_policy": "credit_pending",
+      "parent_account_id": null,
+      "parent_key": "",
+      "is_container": false,
+      "is_default": true,
+      "is_custom": false,
+      "is_active": true,
+      "display_order": 90,
+      "due_day": 15,
+      "statement_day": null,
+      "payment_logic": {
+        "schema_version": 1,
+        "mode": "credit_statement",
+        "default_method": "credit",
+        "allowed_methods": [
+          "credit"
+        ],
+        "default_insufficient_action": "stop",
+        "insufficient_actions": [],
+        "show_method_selector": false,
+        "can_pay_from": true,
+        "affects_main_net_now": false,
+        "creates_pending": true
+      },
+      "cards": [],
+      "metadata": {},
+      "archived_at": "",
+      "created_at": "",
+      "updated_at": ""
     }
   ]
 }

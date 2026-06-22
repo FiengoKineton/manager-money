@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Any, Mapping
 
 from money_manager.config import DEBT_PAYMENT_CATEGORY
 from money_manager.repositories.debts import (
@@ -88,6 +89,8 @@ def pay_debt_from_form(form) -> None:
         payment_date=form.get("date", date.today().isoformat()),
         account=form.get("account", ""),
         description=form.get("description", ""),
+        payment_method=form.get("account_payment_method", ""),
+        insufficient_action=form.get("account_insufficient_action", ""),
     )
 
 def pay_creditor_debts_from_form(form) -> None:
@@ -115,6 +118,8 @@ def pay_creditor_debts_from_form(form) -> None:
             payment_date=payment_date,
             account=account or debt.get("account", ""),
             description=description or f"Full debt payoff to {creditor}: {debt.get('name', '')}",
+            payment_method=form.get("account_payment_method", ""),
+            insufficient_action=form.get("account_insufficient_action", ""),
         )
 
 
@@ -217,16 +222,27 @@ def pay_rule_now_from_form(form) -> None:
     update_debt_rule(rule_id, updates)
 
 
-def register_debt_payment(debt_id, amount: float, payment_date: str, account: str = "", description: str = "") -> None:
+def register_debt_payment(
+    debt_id,
+    amount: float,
+    payment_date: str,
+    account: str = "",
+    description: str = "",
+    payment_method: str | None = None,
+    insufficient_action: str | None = None,
+    extra_tx_fields: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     debt = debt_by_id(debt_id)
     if not debt:
-        return
+        return {"ok": False, "error": "Debt was not found."}
 
-    amount = min(_amount(amount), _amount(debt.get("remaining_amount")))
+    requested_amount = _amount(amount)
+    remaining_before = _amount(debt.get("remaining_amount"))
+    amount = min(requested_amount, remaining_before)
     if amount <= 0:
-        return
+        return {"ok": False, "error": "Debt payment amount must be greater than zero."}
 
-    save_transaction_payload({
+    tx_payload = {
         "type": "expense",
         "date": payment_date or date.today().isoformat(),
         "category": DEBT_PAYMENT_CATEGORY,
@@ -234,9 +250,19 @@ def register_debt_payment(debt_id, amount: float, payment_date: str, account: st
         "amount": amount,
         "account": account or debt.get("account", ""),
         "description": description or f"Debt payment to {debt.get('creditor', '')}: {debt.get('name', '')}",
-    })
+    }
+    if extra_tx_fields:
+        tx_payload.update(dict(extra_tx_fields))
 
-    remaining = max(0.0, _amount(debt.get("remaining_amount")) - amount)
+    save_result = save_transaction_payload(
+        tx_payload,
+        payment_method=payment_method,
+        insufficient_action=insufficient_action,
+    )
+    if isinstance(save_result, dict) and not save_result.get("ok", True):
+        return save_result
+
+    remaining = max(0.0, remaining_before - amount)
     updates = {"remaining_amount": remaining}
     if remaining <= 0.005:
         updates["status"] = "paid"
@@ -246,6 +272,10 @@ def register_debt_payment(debt_id, amount: float, payment_date: str, account: st
     if remaining <= 0.005:
         _deactivate_rules_for_debt(debt_id)
         delete_pending_for_source("debt", debt_id, only_pending=True)
+
+    result = dict(save_result or {"ok": True})
+    result.update({"ok": True, "paid_amount": amount, "remaining_amount": remaining, "debt_id": debt_id})
+    return result
 
 
 def generate_debt_payments(today: date | None = None) -> int:

@@ -61,7 +61,7 @@ def _build_overview_context_uncached() -> dict:
     # - net balance remains the conservative main-bank net.
     # - all_accounts_net adds every tracked liquid account balance.
     # - main_available_position then adds invested capital, but not market P/L.
-    # - stress position removes pending credit/PayPal outflow and active debts.
+    # - stress position removes pending credit/pending outflow and active debts.
     # - adjusted stress adds recoverable receivables and unrealised investment P/L.
     all_accounts_net = totals["net"] + auxiliary_balance
     investment_capital = investment_context["net_invested"]
@@ -116,7 +116,9 @@ def _build_overview_context_uncached() -> dict:
 
 
 def _credit_pending_total(rows: list[dict]) -> float:
-    """Open credit-card/PayPal-credit expenses still expected to leave the main route."""
+    """Open credit-account/credit-route expenses still expected to leave main."""
+    from money_manager.services.pending_service import CREDIT_STATEMENT_SOURCE, _credit_pending_key
+
     total = 0.0
     for row in rows:
         if str(row.get("status", "pending")).lower() != "pending":
@@ -124,7 +126,9 @@ def _credit_pending_total(rows: list[dict]) -> float:
         if str(row.get("type", "expense")).lower() == "income":
             continue
         account_value = str(row.get("account", "")).strip().casefold()
-        if account_value not in CREDIT_ACCOUNT_KEYWORDS:
+        is_credit_statement = row.get("source") == CREDIT_STATEMENT_SOURCE
+        is_credit_route = bool(_credit_pending_key(account_value) or _credit_pending_key(row.get("account_key", "")))
+        if not (is_credit_statement or is_credit_route or account_value in CREDIT_ACCOUNT_KEYWORDS):
             continue
         try:
             total += float(row.get("amount", 0.0) or 0.0)
@@ -150,7 +154,7 @@ def _liquidity_snapshot(cash_position: float, visible_liquidity: float, credit_p
         {
             "label": "Committed credit/debt",
             "value": credit_pending + active_debt,
-            "caption": "Credit/PayPal-credit pending plus active debts",
+            "caption": "Credit/pending payments plus active debts",
             "tone": "warning",
         },
         {
@@ -221,7 +225,7 @@ def _health_cards(totals: dict, pending_amount: float, active_debt: float, paren
             "label": "Credit pressure",
             "value": f"€{pending_amount:.2f}",
             "tone": "warning",
-            "text": "This credit-card/PayPal-credit amount is already expected to leave your balance.",
+            "text": "This credit/pending amount is already expected to leave your balance.",
         })
 
     if income > 0 and expenses / income > 0.80:

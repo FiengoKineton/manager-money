@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block page_title %}{{ contact.display_name }}{% endblock %}
+
+{% block content %}
+<section class="contact-detail-hero panel-card {{ 'is-archived' if contact.is_archived else '' }}">
+  <div class="contact-detail-title">
+    <div class="contact-avatar contact-avatar-large" aria-hidden="true">
+      {{ '🏢' if contact.type == 'company' else '👤' }}
+    </div>
+    <div>
+      <span class="eyebrow">
+        {{ t('contacts.type_company') if contact.type == 'company' else t('contacts.type_person') }}
+        {% if contact.is_archived %} · {{ t("common.archived") }}{% endif %}
+      </span>
+      <h2>{{ contact.display_name }}</h2>
+      {% if contact.relationship %}<p>{{ contact.relationship }}</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="contact-detail-actions">
+    <a class="secondary-btn" href="{{ url_for('contacts.contacts_page') }}">{{ t("common.back") }}</a>
+    <a class="primary-btn" href="{{ url_for('contacts.edit_contact', contact_id=contact.id) }}">{{ t("contacts.edit_contact") }}</a>
+
+    {% if contact.is_archived %}
+      <form method="post" action="{{ url_for('contacts.restore_contact_route', contact_id=contact.id) }}">
+        <button type="submit" class="secondary-btn">{{ t("contacts.restore_contact") }}</button>
+      </form>
+    {% else %}
+      <form method="post" action="{{ url_for('contacts.archive_contact_route', contact_id=contact.id) }}">
+        <button type="submit" class="secondary-btn danger-lite">{{ t("contacts.archive_contact") }}</button>
+      </form>
+    {% endif %}
+  </div>
+</section>
+
+{% if status %}
+  <section class="contacts-status contacts-status-{{ status.tone }} panel-card" role="status">
+    {% if status.saved_key %}
+      <p>{{ t(status.saved_key) }}</p>
+    {% endif %}
+
+    {% for key in status.get('keys', []) %}
+      <p>{{ t(key) }}</p>
+    {% endfor %}
+  </section>
+{% endif %}
+
+<section class="contact-detail-grid">
+  <article class="panel-card contact-info-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">{{ t("contacts.identity") }}</span>
+        <h3>{{ t("contacts.contact_details") }}</h3>
+      </div>
+    </div>
+
+    <dl class="contact-detail-list">
+      {% if contact.first_name %}
+        <div><dt>{{ t("common.first_name") }}</dt><dd>{{ contact.first_name }}</dd></div>
+      {% endif %}
+
+      {% if contact.last_name %}
+        <div><dt>{{ t("common.last_name") }}</dt><dd>{{ contact.last_name }}</dd></div>
+      {% endif %}
+
+      {% if contact.company_name %}
+        <div><dt>{{ t("contacts.company_name") }}</dt><dd>{{ contact.company_name }}</dd></div>
+      {% endif %}
+
+      {% if contact.relationship %}
+        <div><dt>{{ t("contacts.relationship") }}</dt><dd>{{ contact.relationship }}</dd></div>
+      {% endif %}
+
+      {% if contact.email %}
+        <div><dt>{{ t("contacts.email") }}</dt><dd>{{ contact.email }}</dd></div>
+      {% endif %}
+
+      {% if contact.phone %}
+        <div><dt>{{ t("contacts.phone") }}</dt><dd>{{ contact.phone }}</dd></div>
+      {% endif %}
+
+      {% if not contact.first_name and not contact.last_name and not contact.company_name and not contact.relationship and not contact.email and not contact.phone %}
+        <div><dt>{{ t("common.status") }}</dt><dd>{{ t("contacts.no_identity_details") }}</dd></div>
+      {% endif %}
+    </dl>
+  </article>
+
+  <article class="panel-card contact-info-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">{{ t("contacts.bank_section") }}</span>
+        <h3>{{ t("contacts.bank_details") }}</h3>
+      </div>
+    </div>
+
+    {% if contact.has_bank_details %}
+      <dl class="contact-detail-list">
+        {% if contact.iban %}
+          <div><dt>{{ t("contacts.iban") }}</dt><dd>{{ contact.iban_list_value }}</dd></div>
+        {% endif %}
+
+        {% if contact.bic_swift %}
+          <div><dt>{{ t("contacts.bic_swift") }}</dt><dd>{{ contact.bic_swift_display }}</dd></div>
+        {% endif %}
+
+        {% if contact.bank_name %}
+          <div><dt>{{ t("contacts.bank_name") }}</dt><dd>{{ contact.bank_name_display }}</dd></div>
+        {% endif %}
+      </dl>
+
+      {% if not show_sensitive_data and contact.iban %}
+        <p class="contacts-privacy-note">{{ t("contacts.iban_masked_hint") }}</p>
+      {% endif %}
+    {% else %}
+      <p class="muted">{{ t("contacts.no_bank_details") }}</p>
+    {% endif %}
+  </article>
+
+  <article class="panel-card contact-info-card contact-notes-card">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">{{ t("contacts.notes") }}</span>
+        <h3>{{ t("contacts.private_notes") }}</h3>
+      </div>
+    </div>
+
+    {% if contact.notes %}
+      <p class="contact-notes-text">{{ contact.notes }}</p>
+    {% else %}
+      <p class="muted">{{ t("contacts.no_notes") }}</p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}

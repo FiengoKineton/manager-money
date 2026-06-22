@@ -1,9 +1,9 @@
-id,date,category,sub_category,amount,original_amount,original_currency,exchange_rate_to_eur,exchange_correction_to_eur,exchange_effective_rate_to_eur,account,description,created_at
-1,2025-12-02,Deposit,,2000.0,,,,,,Fondi Comuni,,2025-12-02T17:49:19
-2,2026-01-08,Deposit,,150.0,,,,,,,Investments,
-3,2026-01-27,Deposit,,1000.0,,,,,,Liquidita,,2026-01-27T10:22:16
-4,2026-02-09,Deposit,,150.0,,,,,,,,2026-02-09T13:24:33
-5,2026-03-09,Deposit,,150.0,,,,,,,,2026-03-10T13:54:41
-6,2026-04-14,Deposit,,150.0,,,,,,,,2026-04-14T18:48:41
-8,2026-05-08,Deposit,,150.0,,,,,,auto,Deposit,2026-05-08T12:53:06
-9,2026-06-08,Deposit,,150.0,,,,,,auto,Deposit,2026-06-08T08:43:06
+id,date,category,sub_category,amount,original_amount,original_currency,exchange_rate_to_eur,exchange_correction_to_eur,exchange_effective_rate_to_eur,account,account_key_snapshot,account_name_snapshot,account_due_day_snapshot,payment_method,contact_id,contact_name,iban_snapshot,bic_swift_snapshot,bank_name_snapshot,transfer_reference,transfer_status,description,created_at
+1,2025-12-02,Deposit,,2000.0,,,,,,Fondi Comuni,,,,,,,,,,,,,2025-12-02T17:49:19
+2,2026-01-08,Deposit,,150.0,,,,,,,,,,,,,,,,,,Investments,
+3,2026-01-27,Deposit,,1000.0,,,,,,Liquidita,,,,,,,,,,,,,2026-01-27T10:22:16
+4,2026-02-09,Deposit,,150.0,,,,,,,,,,,,,,,,,,,2026-02-09T13:24:33
+5,2026-03-09,Deposit,,150.0,,,,,,,,,,,,,,,,,,,2026-03-10T13:54:41
+6,2026-04-14,Deposit,,150.0,,,,,,,,,,,,,,,,,,,2026-04-14T18:48:41
+8,2026-05-08,Deposit,,150.0,,,,,,auto,,,,,,,,,,,,Deposit,2026-05-08T12:53:06
+9,2026-06-08,Deposit,,150.0,,,,,,auto,,,,,,,,,,,,Deposit,2026-06-08T08:43:06

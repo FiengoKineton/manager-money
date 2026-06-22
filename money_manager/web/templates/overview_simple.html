@@ -41,12 +41,12 @@
   <article class="mini-priority-card tone-aux">
     <span>Separate liquid</span>
     <strong>€ {{ '%.2f'|format(auxiliary_balance) }}</strong>
-    <small>Cash Flow, EdenRed, Pre-paid, Other/custom.</small>
+    <small>Configured separate accounts.</small>
   </article>
   <article class="mini-priority-card tone-warning">
     <span>Credit pending</span>
     <strong>€ {{ '%.2f'|format(credit_pending_amount) }}</strong>
-    <small>Credit card / PayPal-credit still to settle.</small>
+    <small>Credit/pending payments still to settle.</small>
   </article>
   <article class="mini-priority-card tone-expense">
     <span>Active debts</span>
@@ -84,7 +84,7 @@
   <a href="{{ url_for('accounts.accounts_page') }}" class="quick-link-card">
     <span>Accounts</span>
     <strong>Separate liquid accounts</strong>
-    <small>Cash Flow, EdenRed, cards and other custom accounts.</small>
+    <small>Configured accounts, cards and custom accounts.</small>
   </a>
   <a href="{{ url_for('investments.investments_page') }}" class="quick-link-card">
     <span>Investments</span>
