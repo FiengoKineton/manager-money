@@ -9,3 +9,4 @@ id,type,date_due,amount,category,account,description,status,source,source_id
 10,income,2026-06-10,200.0,Kineton,EdenRed,Ticket Restaurants,executed,,
 12,expense,2026-06-15,200.0,Housing,paypal_credit,month 1 [PayPal checkout scheduled through PayPal credit/card route.],executed,,
 13,expense,2026-07-15,200.0,Housing,paypal_credit,Parking Spot,pending,recurring,8
+14,expense,2026-06-22,39.33,Housing,,Polizza Casa e Famiglia,executed,recurring,5
