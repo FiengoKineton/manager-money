@@ -4,8 +4,8 @@
     document.documentElement.style.setProperty("--page-bg-image", `url('${backgroundUrl}')`);
   }
 
-  const mobileCardsMedia = window.matchMedia("(max-width: 900px)");
-  const desktopDetailMedia = window.matchMedia("(min-width: 1001px)");
+  const mobileCardsMedia = window.matchMedia("(width < 0px)");
+  const desktopDetailMedia = window.matchMedia("(min-width: 0px)");
   const isMobileCardsViewport = () => mobileCardsMedia.matches;
   const isDesktopDetailViewport = () => desktopDetailMedia.matches;
   const interactiveSelector = "a, button, input, select, textarea, label, form, summary, details, [role='button'], .mobile-row-toggle";
@@ -94,8 +94,8 @@
 
   function wireMobileNavGroups() {
     const groups = Array.from(document.querySelectorAll(".app-nav-group, .nav-group"));
-    const media = window.matchMedia("(max-width: 1000px)");
-    const isMobile = () => media.matches;
+    const media = window.matchMedia("(width < 0px)");
+    const isMobile = () => false;
 
     function syncInitialStateForViewport() {
       groups.forEach((group) => {
@@ -648,7 +648,6 @@
 
       if (!headers.length) return;
 
-      table.classList.add("mobile-card-table");
       table.classList.add("desktop-detail-table");
 
       headers.forEach((header, index) => {
@@ -678,7 +677,6 @@
             cell.classList.add("desktop-pill-cell");
           }
         });
-        ensureMobileSummaryRow(table, row, headers);
         if (!row.classList.contains("desktop-detail-row") && hasMeaningfulRowDetails(row, headers)) {
           row.classList.add("desktop-detail-row");
           row.setAttribute("tabindex", "0");
@@ -947,11 +945,9 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    wireMobileNavGroups();
     enhanceResponsiveTables();
     wireClickableRows();
     wireDesktopDetailRows();
-    enhanceCompactFormCards();
     wireQuickSpecialLog();
 
     document.querySelectorAll('[data-action="select-all-filters"]').forEach((button) => {
@@ -971,10 +967,10 @@
 })();
 
 /* --------------------------------------------------------------------------
-   Mobile Special Log helper
+   Narrow-window special log helper (phone-only behavior disabled)
 -------------------------------------------------------------------------- */
 (function () {
-  const mobileSpecialMedia = window.matchMedia("(max-width: 760px)");
+  const mobileSpecialMedia = window.matchMedia("(width < 0px)");
 
   function enhanceMobileSpecialLog() {
     document.querySelectorAll("[data-quick-special-form]").forEach((form) => {

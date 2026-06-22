@@ -1,7 +1,7 @@
-"""Small disk cache for expensive money-manager calculations.
+"""Small per-user disk cache for expensive money-manager calculations.
 
-The app remains CSV/JSON-first.  This service only stores derived results in
-``data/cache`` and reuses them when the underlying data-file fingerprint is still
+The app remains CSV/JSON-first.  Derived records are stored in each user's
+``cache`` folder and reused only while that user's input-file fingerprint is
 current.  If a cache read/write fails, callers transparently fall back to the
 original calculation.
 """
@@ -19,15 +19,15 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
 
-from money_manager.config.paths import CACHE_DIR
+from money_manager.config.user_paths import get_current_user_id, user_cache_dir, using_user
 
 CACHE_FORMAT_VERSION = 1
 WARMUP_DEBOUNCE_SECONDS = 0.8
 
 _LOCK = threading.RLock()
-_BACKGROUND_TIMER: threading.Timer | None = None
-_BACKGROUND_RUNNING = False
-_STARTUP_WARMED = False
+_BACKGROUND_TIMERS: dict[str, threading.Timer] = {}
+_BACKGROUND_RUNNING: set[str] = set()
+_STARTUP_WARMED: set[str] = set()
 
 
 def cached_calculation(
@@ -37,11 +37,6 @@ def cached_calculation(
     extra_fingerprint: dict[str, Any] | None = None,
     allow_stale_on_error: bool = False,
 ) -> Any:
-    """Return a cached calculation when all tracked input files are unchanged.
-
-    ``builder`` is still the source of truth.  It is called whenever the cache is
-    missing, stale, unreadable, or incompatible with the current cache format.
-    """
     fingerprint = data_fingerprint(extra=extra_fingerprint)
     cached = _read_cache_record(key)
 
@@ -60,7 +55,6 @@ def cached_calculation(
 
 
 def data_fingerprint(*, extra: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Fingerprint every source file that can affect cached calculations."""
     files: dict[str, dict[str, Any]] = {}
     for path in _cache_input_files():
         try:
@@ -75,58 +69,65 @@ def data_fingerprint(*, extra: dict[str, Any] | None = None) -> dict[str, Any]:
 
     return {
         "format": CACHE_FORMAT_VERSION,
+        "user_id": get_current_user_id(),
         "files": files,
         "extra": extra or {},
     }
 
 
 def notify_data_changed() -> None:
-    """Schedule a best-effort background cache refresh after a data write."""
-    schedule_cache_refresh()
+    user_id = get_current_user_id()
+    if user_id:
+        schedule_cache_refresh(user_id=user_id)
 
 
-def schedule_cache_refresh(delay: float = WARMUP_DEBOUNCE_SECONDS) -> None:
-    """Debounce background warmups so several writes trigger one refresh."""
-    global _BACKGROUND_TIMER
+def schedule_cache_refresh(delay: float = WARMUP_DEBOUNCE_SECONDS, *, user_id: str | None = None) -> None:
+    user_id = user_id or get_current_user_id()
+    if not user_id:
+        return
 
     def _run() -> None:
-        warm_default_calculations()
+        with using_user(user_id):
+            warm_default_calculations(user_id=user_id)
 
     with _LOCK:
-        if _BACKGROUND_TIMER is not None:
+        old_timer = _BACKGROUND_TIMERS.get(user_id)
+        if old_timer is not None:
             try:
-                _BACKGROUND_TIMER.cancel()
+                old_timer.cancel()
             except Exception:
                 pass
-        _BACKGROUND_TIMER = threading.Timer(delay, _run)
-        _BACKGROUND_TIMER.daemon = True
-        _BACKGROUND_TIMER.start()
+        timer = threading.Timer(delay, _run)
+        timer.daemon = True
+        _BACKGROUND_TIMERS[user_id] = timer
+        timer.start()
 
 
 def warm_app_cache_async() -> None:
-    """Start one best-effort cache warmup thread after Flask creates the app."""
-    global _STARTUP_WARMED
+    user_id = get_current_user_id()
+    if not user_id:
+        return
     with _LOCK:
-        if _STARTUP_WARMED:
+        if user_id in _STARTUP_WARMED:
             return
-        _STARTUP_WARMED = True
+        _STARTUP_WARMED.add(user_id)
 
-    thread = threading.Thread(target=warm_default_calculations, name="money-manager-cache-warmup", daemon=True)
+    def _run() -> None:
+        with using_user(user_id):
+            warm_default_calculations(user_id=user_id)
+
+    thread = threading.Thread(target=_run, name=f"money-manager-cache-warmup-{user_id}", daemon=True)
     thread.start()
 
 
-def warm_default_calculations() -> None:
-    """Precompute the pages/metrics listed in the path registry.
-
-    Any single warmup failure is ignored so the app never fails to start because
-    of the cache layer.  The next normal page call will still calculate directly
-    if its cache is stale.
-    """
-    global _BACKGROUND_RUNNING
+def warm_default_calculations(*, user_id: str | None = None) -> None:
+    user_id = user_id or get_current_user_id()
+    if not user_id:
+        return
     with _LOCK:
-        if _BACKGROUND_RUNNING:
+        if user_id in _BACKGROUND_RUNNING:
             return
-        _BACKGROUND_RUNNING = True
+        _BACKGROUND_RUNNING.add(user_id)
 
     try:
         for key, import_path in _calculation_entrypoints().items():
@@ -138,29 +139,27 @@ def warm_default_calculations() -> None:
         _write_manifest()
     finally:
         with _LOCK:
-            _BACKGROUND_RUNNING = False
+            _BACKGROUND_RUNNING.discard(user_id)
 
 
 def cache_status() -> dict[str, Any]:
-    """Return lightweight status data for debugging."""
-    CACHE_DIR.mkdir(exist_ok=True, parents=True)
+    cache_dir = _cache_dir()
+    cache_dir.mkdir(exist_ok=True, parents=True)
     records = []
-    for path in sorted(CACHE_DIR.glob("*.pkl")):
+    for path in sorted(cache_dir.glob("*.pkl")):
         try:
             stat = path.stat()
             records.append({"file": path.name, "size": stat.st_size, "mtime": stat.st_mtime})
         except OSError:
             continue
     return {
-        "dir": str(CACHE_DIR),
+        "dir": str(cache_dir),
         "records": records,
         "fingerprint": data_fingerprint(),
     }
 
 
 def _call_warmup_function(key: str, func: Callable[..., Any]) -> None:
-    # These functions have optional flags and/or cached wrappers.  Calling them
-    # with their default arguments preserves the existing runtime behaviour.
     if key == "investment.overview_snapshot":
         func(refresh=False)
     elif key == "investment.habit_snapshot":
@@ -193,9 +192,13 @@ def _import_from_string(import_path: str) -> Callable[..., Any]:
     return getattr(module, attr_name)
 
 
+def _cache_dir() -> Path:
+    return Path(user_cache_dir())
+
+
 def _cache_path(key: str) -> Path:
     safe = "".join(ch if ch.isalnum() or ch in {"-", "_", "."} else "_" for ch in key)
-    return CACHE_DIR / f"{safe}.pkl"
+    return _cache_dir() / f"{safe}.pkl"
 
 
 def _read_cache_record(key: str) -> dict[str, Any] | None:
@@ -214,7 +217,8 @@ def _read_cache_record(key: str) -> dict[str, Any] | None:
 
 def _write_cache_record(key: str, value: Any, fingerprint: dict[str, Any]) -> None:
     try:
-        CACHE_DIR.mkdir(exist_ok=True, parents=True)
+        cache_dir = _cache_dir()
+        cache_dir.mkdir(exist_ok=True, parents=True)
         record = {
             "format": CACHE_FORMAT_VERSION,
             "key": key,
@@ -223,7 +227,7 @@ def _write_cache_record(key: str, value: Any, fingerprint: dict[str, Any]) -> No
             "value": value,
         }
         target = _cache_path(key)
-        with NamedTemporaryFile("wb", delete=False, dir=str(CACHE_DIR), prefix=f".{target.stem}.", suffix=".tmp") as tmp:
+        with NamedTemporaryFile("wb", delete=False, dir=str(cache_dir), prefix=f".{target.stem}.", suffix=".tmp") as tmp:
             pickle.dump(record, tmp, protocol=pickle.HIGHEST_PROTOCOL)
             temp_name = tmp.name
         Path(temp_name).replace(target)
@@ -234,16 +238,18 @@ def _write_cache_record(key: str, value: Any, fingerprint: dict[str, Any]) -> No
 
 def _write_manifest() -> None:
     try:
-        CACHE_DIR.mkdir(exist_ok=True, parents=True)
+        cache_dir = _cache_dir()
+        cache_dir.mkdir(exist_ok=True, parents=True)
         payload = {
             "format": CACHE_FORMAT_VERSION,
             "updated_at": time.time(),
-            "cache_dir": str(CACHE_DIR),
+            "user_id": get_current_user_id(),
+            "cache_dir": str(cache_dir),
             "input_files": [str(path) for path in _cache_input_files()],
             "calculation_entrypoints": _calculation_entrypoints(),
         }
-        target = CACHE_DIR / "manifest.json"
-        with NamedTemporaryFile("w", delete=False, dir=str(CACHE_DIR), prefix=".manifest.", suffix=".tmp", encoding="utf-8") as tmp:
+        target = cache_dir / "manifest.json"
+        with NamedTemporaryFile("w", delete=False, dir=str(cache_dir), prefix=".manifest.", suffix=".tmp", encoding="utf-8") as tmp:
             json.dump(payload, tmp, indent=2)
             temp_name = tmp.name
         Path(temp_name).replace(target)

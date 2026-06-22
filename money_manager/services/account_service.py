@@ -18,7 +18,7 @@ from money_manager.config import (
 )
 
 
-# Category/account aliases are loaded dynamically from the built-in accounts and data/accounts.json.
+# Category/account aliases are loaded dynamically from the built-in accounts and the current user accounts.json.
 
 
 

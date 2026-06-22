@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, abort, render_template, request, send_file
 
 from money_manager.config import TRANSACTION_TYPES, default_date_range
 from money_manager.repositories.pending import load_pending
@@ -13,6 +13,21 @@ from money_manager.utils.stats import summary_totals
 from money_manager.web.transaction_filter_state import resolve_transaction_filter_state
 
 bp = Blueprint("dashboard", __name__)
+
+
+@bp.route("/user-plots/<path:filename>")
+def user_plot(filename):
+    from money_manager.config.user_paths import user_plot_path
+
+    try:
+        path = user_plot_path(filename)
+    except ValueError:
+        abort(404)
+    if not path.exists() or not path.is_file():
+        abort(404)
+    if path.suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp", ".svg"}:
+        abort(404)
+    return send_file(path, conditional=True, max_age=300)
 
 
 def _refresh_automatic_items() -> None:

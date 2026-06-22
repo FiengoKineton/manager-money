@@ -1,10 +1,4 @@
-"""Human-readable registry of the app's important runtime files and calculation entry points.
-
-This file is intentionally descriptive.  The normal app logic still lives in the
-repositories and services; this registry gives future changes one clear place to
-see which files feed the expensive calculations and which functions are worth
-warming/caching.
-"""
+"""Human-readable registry of runtime user data files and calculation entry points."""
 
 from __future__ import annotations
 
@@ -12,7 +6,6 @@ from pathlib import Path
 
 from money_manager.config.paths import (
     CURRENCIES_JSON,
-    DATA_DIR,
     DEBTS_CSV,
     DEBT_RULES_CSV,
     EXPENSE_PROJECTS_CSV,
@@ -30,9 +23,9 @@ from money_manager.config.paths import (
     SPARAGNAT_CSV,
     TRANSACTION_FILES,
 )
+from money_manager.config.user_paths import user_data_path
 
-# JSON files that are declared in other config modules to avoid circular imports.
-CUSTOM_ACCOUNTS_JSON = DATA_DIR / "accounts.json"
+CUSTOM_ACCOUNTS_JSON = user_data_path("accounts.json")
 
 DATA_FILE_REGISTRY: dict[str, Path] = {
     "accounts": CUSTOM_ACCOUNTS_JSON,
@@ -57,13 +50,8 @@ DATA_FILE_REGISTRY: dict[str, Path] = {
     "investment_market_cache": INVESTMENT_MARKET_CACHE_JSON,
 }
 
-# Files that affect precomputed app calculations.  The cache service fingerprints
-# exactly these paths before it reuses a cached result.
 CACHE_INPUT_FILES: tuple[Path, ...] = tuple(DATA_FILE_REGISTRY.values())
 
-# Entry points that are expensive enough to be warmed when the app starts or soon
-# after CSV/JSON data changes.  Values are import strings on purpose: this file
-# stays lightweight and does not import services while Flask is starting.
 CALCULATION_ENTRYPOINTS: dict[str, str] = {
     "transactions.load_all": "money_manager.services.transaction_service.load_transactions",
     "overview.context": "money_manager.services.overview_service.build_overview_context",
@@ -76,9 +64,6 @@ CALCULATION_ENTRYPOINTS: dict[str, str] = {
     "investment.habit_snapshot": "money_manager.services.investment_service.investment_habit_snapshot",
 }
 
-# Useful write entry points.  These are the places that usually make cached
-# calculations stale.  Low-level CSV writes notify the cache service automatically,
-# so this list is mainly documentation for future debugging/refactoring.
 WRITE_ENTRYPOINTS: dict[str, str] = {
     "transactions.append": "money_manager.repositories.transactions.append_transaction",
     "transactions.update": "money_manager.repositories.transactions.update_transaction",
@@ -95,18 +80,17 @@ WRITE_ENTRYPOINTS: dict[str, str] = {
 
 
 def describe_runtime_paths() -> list[dict[str, str]]:
-    """Return path metadata for optional debugging/admin screens."""
     rows: list[dict[str, str]] = []
     for key, path in DATA_FILE_REGISTRY.items():
-        rows.append({
-            "key": key,
-            "path": str(path),
-            "exists": "yes" if path.exists() else "no",
-        })
+        try:
+            exists = "yes" if path.exists() else "no"
+            resolved = str(path)
+        except Exception:
+            exists = "no-active-user"
+            resolved = repr(path)
+        rows.append({"key": key, "path": resolved, "exists": exists})
     return rows
 
 
-# Feature-level architecture registry.  Imported lazily by tools/admin pages, not
-# by the normal calculation flow.
 FEATURE_REGISTRY = "money_manager.config.feature_registry.FEATURES"
 FEATURE_GROUP_REGISTRY = "money_manager.config.feature_registry.FEATURE_GROUPS"

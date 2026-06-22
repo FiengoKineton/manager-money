@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Register | Money Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: #e5e7eb; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.18), transparent 28rem), radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.18), transparent 26rem), linear-gradient(135deg, #020617, #111827); }
+    .auth-card { width: min(92vw, 500px); padding: 28px; border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 24px; background: rgba(15, 23, 42, 0.9); box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45); }
+    h1 { margin: 0 0 8px; font-size: 1.8rem; }
+    p { margin: 0 0 22px; color: #94a3b8; }
+    .name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    label { display: block; margin: 14px 0 8px; font-weight: 700; }
+    input { width: 100%; box-sizing: border-box; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(148, 163, 184, 0.35); background: #020617; color: #f8fafc; font-size: 1rem; }
+    button { width: 100%; margin-top: 18px; padding: 14px 18px; border: 0; border-radius: 14px; background: #2563eb; color: white; font-weight: 800; font-size: 1rem; cursor: pointer; }
+    .secondary-link { display: block; margin-top: 16px; color: #bfdbfe; text-align: center; text-decoration: none; font-weight: 700; }
+    .error { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(239, 68, 68, 0.14); color: #fecaca; }
+    .note { margin: 0 0 16px; padding: 12px 14px; border-radius: 12px; background: rgba(37, 99, 235, 0.14); color: #bfdbfe; }
+    @media (max-width: 560px) { .name-grid { grid-template-columns: 1fr; gap: 0; } }
+  </style>
+</head>
+<body>
+  <form class="auth-card" method="post">
+    <h1>{{ 'Create first user' if first_user else 'Create user' }}</h1>
+    <p>Each user gets a private folder under <strong>data/users/</strong>.</p>
+    {% if first_user %}
+      <div class="note">Your existing flat files will be copied into this first user's folder. The old files are kept untouched.</div>
+    {% endif %}
+
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" autocomplete="username" autofocus required>
+
+    <div class="name-grid">
+      <div>
+        <label for="first_name">First name</label>
+        <input id="first_name" name="first_name" type="text" autocomplete="given-name">
+      </div>
+      <div>
+        <label for="last_name">Last name</label>
+        <input id="last_name" name="last_name" type="text" autocomplete="family-name">
+      </div>
+    </div>
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="new-password" required>
+
+    <label for="confirm_password">Confirm password</label>
+    <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required>
+
+    <button type="submit">Create and log in</button>
+    {% if not first_user %}
+      <a class="secondary-link" href="{{ url_for('auth.login') }}">Back to login</a>
+    {% endif %}
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+  </form>
+</body>
+</html>

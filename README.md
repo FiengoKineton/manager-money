@@ -37,7 +37,7 @@ static/
   js/                     split JavaScript modules
   plots/                  generated charts
 
-data/                     CSV database files
+data/                     System files plus per-user CSV/JSON folders
 documents/                local document folders
 ```
 
@@ -95,8 +95,8 @@ This avoids one huge `style.css`. A small `static/style.css` remains only for ba
 
 ## Notes
 
-- The data remains stored in CSV files under `data/`.
-- Generated plots are stored in `static/plots/`.
+- The data remains stored in CSV/JSON files under `data/users/{user_id}/`.
+- Generated plots are stored per-user and served through protected routes.
 - Local documents go inside `documents/Cedolini/` or `documents/Tasse - Detrazioni Fiscali/`.
 - The app uses an application factory (`create_app`) so it is easier to test and deploy later.
 
@@ -109,7 +109,7 @@ Use this page for money movements that should not change the official transactio
 - **saved_expense**: an expense you would have paid, but someone else paid for you;
 - **cash_collected**: physical cash you received/collected over time.
 
-Data is stored in `data/sparagnat_fottut.csv`. The page compares official net balance with a hypothetical balance: `current net - saved expenses`.
+Data is stored in the current user sparagnat CSV. The page compares official net balance with a hypothetical balance: `current net - saved expenses`.
 
 Code ownership:
 
@@ -124,9 +124,9 @@ Use this page to track active debts, register full or partial payments, and crea
 
 Data is stored in:
 
-- `data/debts.csv`;
-- `data/debt_rules.csv`;
-- generated pending instalments continue to use `data/pending.csv` with `source=debt`.
+- the current user debts CSV;
+- the current user debt rules CSV;
+- generated pending instalments continue to use the current user pending CSV with `source=debt`.
 
 Code ownership:
 
@@ -194,7 +194,7 @@ Use it to track money or support your parents give you without mixing it into of
 Data is stored in:
 
 ```text
-data/parent_support.csv
+current user parent_support.csv
 ```
 
 Code ownership:
@@ -223,9 +223,9 @@ DEFAULT_PARENT_SUPPORT_CATEGORY
 The app still uses the three main operation files as the source of truth:
 
 ```text
-data/expenses.csv
-data/incomes.csv
-data/investments.csv
+current user expenses.csv
+current user incomes.csv
+current user investments.csv
 ```
 
 The `account` column and clear category aliases route movements into separated liquid-account analysis. A movement can affect both ledgers when that is what happened in real life: for example, an expense categorized as `Pre-paid card` reduces the tracked main net and also increases the Pre-paid card balance. This prevents visible liquidity from being overstated.
@@ -292,7 +292,7 @@ This version keeps the same CSV-first logic from v3, but improves the UI and the
   - Other account = generic external liquid account, including Ticket Restaurant aliases;
   - Credit card = creates a pending credit-card payment that later impacts the main account.
 - Separate liquid accounts are matched either by the `account` column or, if that is blank, by clear category/sub-category aliases such as `Pre-paid card`, `Cash`, or `Ticket Restaurant`.
-- Custom liquid accounts can be added from `/accounts`. They are saved in `data/accounts.json` and immediately become available in selectors and analysis pages.
+- Custom liquid accounts can be added from `/accounts`. They are saved in `the current user accounts.json` and immediately become available in selectors and analysis pages.
 - Each liquid account detail page has a **Clean up balance** form. Example: if Cash Flow shows €1000 but you actually have €150, enter 150 and the app creates an account-only expense of €850 tagged as `Account cleanup`. It does not affect the tracked main net, dashboard totals, Sparagnat current net, or main category charts.
 - `sparagnat_fottut.csv` cash-collected entries continue to increase the Cash Flow account.
 
@@ -315,3 +315,155 @@ The Overview totals are also filtered to the configured default date range, matc
 - Pending payment rows now have a compact delete icon on the right-side action rail.
 - Recurring rules now use compact icon actions: green save/update at the top of the rail and red delete at the bottom.
 - Delete actions ask for confirmation before removing the row from the pending or recurring CSV.
+
+## Desktop / local launcher
+
+This repo can now be started in two ways: directly from a terminal or through the Windows launcher.
+
+### Run from terminal
+
+From the repo root:
+
+```bash
+python -m pip install -r requirements.txt
+python run_money_manager.py
+```
+
+The app starts on:
+
+```text
+http://127.0.0.1:5000
+```
+
+`run_money_manager.py` resolves the repo path from its own file location, so it can also be called from another directory:
+
+```bash
+python C:\path\to\manager-money\run_money_manager.py
+```
+
+By default it opens the browser automatically. To start the server without opening the browser:
+
+```bash
+python run_money_manager.py --no-browser
+```
+
+When using this direct terminal mode, stop the app with `Ctrl+C` in the terminal.
+
+### Run with the Windows launcher
+
+Double-click:
+
+```text
+launcher.bat
+```
+
+The launcher will:
+
+- find the project folder;
+- check that Python is available;
+- create `.venv` inside the repo if it is missing;
+- install `requirements.txt` inside `.venv` only when needed;
+- store install status in `.launcher_state.json`;
+- start the app with the `.venv` Python;
+- open Money Manager at `http://127.0.0.1:5000`;
+- open the terminal minimized so it does not cover the desktop.
+
+The launcher opens Money Manager in a dedicated Edge/Chrome app-style window when Edge or Chrome is available. Closing that browser app window stops the local server automatically, so it does not remain open in the terminal.
+
+No global Python packages are installed.
+
+### Moving or renaming `launcher.bat`
+
+You may rename `launcher.bat`, copy it to the Desktop, or move it to another folder. The batch file is only a portable bootstrap: it searches for the real Money Manager project folder and then runs `launcher.py` from that folder.
+
+Search order:
+
+1. the `MONEY_MANAGER_PROJECT_DIR` environment variable, if set;
+2. the user-level launcher config in AppData;
+3. an old `.money_manager_project_path.txt` next to the batch file, only for automatic migration;
+4. the batch file folder;
+5. the current terminal folder;
+6. parent folders.
+
+If the project folder is still not found, the batch file asks for the folder path once and stores it in:
+
+```text
+%LOCALAPPDATA%\MoneyManagerLauncher\config.json
+```
+
+That means copying `launcher.bat` to the Desktop no longer creates a visible `.txt` helper file on the Desktop. If an older launcher already created `.money_manager_project_path.txt`, the new launcher will migrate it into AppData and remove the old text file when the cached path is valid.
+
+Do not rename or remove `launcher.py` inside the repo; copied `.bat` files still use that file to start the real launcher.
+
+### Foreground/debug launcher mode
+
+If you want to see the launcher logs in the current terminal instead of opening a minimized window, run:
+
+```bat
+launcher.bat --foreground
+```
+
+You can also run the launcher directly:
+
+```bash
+python launcher.py
+```
+
+To force the normal default browser instead of the dedicated app window:
+
+```bash
+python launcher.py --default-browser
+```
+
+In default-browser mode the server cannot reliably detect when only the browser tab/window is closed, so stop it with `Ctrl+C`.
+
+### Where the virtual environment is created
+
+The virtual environment is created here:
+
+```text
+.venv/
+```
+
+The browser app profile used by the launcher is created here:
+
+```text
+.launcher_browser_profile/
+```
+
+Both folders are local to the repo and ignored by git/ZIP packaging.
+
+### Reset the local environment
+
+Close the launcher/server window, then delete:
+
+```text
+.venv/
+.launcher_state.json
+.launcher_browser_profile/
+```
+
+To reset the remembered project path for a copied or moved `launcher.bat`, delete:
+
+```text
+%LOCALAPPDATA%\MoneyManagerLauncher\config.json
+```
+
+After that, run `launcher.bat` again. It will recreate the environment, reinstall the requirements if needed, and ask for the project folder again only if it cannot find it automatically.
+
+### Build a launcher executable later
+
+The repo includes `build_launcher_exe.py` as optional PyInstaller support. It does not include a generated `.exe`.
+
+To build it later from the repo root:
+
+```bash
+python -m pip install pyinstaller
+python build_launcher_exe.py
+```
+
+The executable will be generated under `dist/`. If the executable is moved outside the project folder, `launcher.py` is designed to ask once for the Money Manager project folder and store that path in the same AppData config used by the batch launcher:
+
+```text
+%LOCALAPPDATA%\MoneyManagerLauncher\config.json
+```

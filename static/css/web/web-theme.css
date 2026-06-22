@@ -1,18 +1,16 @@
-/* Desktop/web-only polish. Keep this conservative so the PC version stays familiar. */
-@media (min-width: 1121px) {
-  html.web-shell-active body {
-    --desktop-shell-note: "web-layer";
-  }
+/* Desktop/local web polish applied at every viewport size. */
+html.web-shell-active body {
+  --desktop-shell-note: "single-desktop-layer";
+}
 
-  html.web-shell-active .app-topbar {
-    transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-  }
+html.web-shell-active .app-topbar {
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
 
-  html.web-shell-active .app-sidebar,
-  html.web-shell-active .app-topbar,
-  html.web-shell-active .panel-card,
-  html.web-shell-active .card,
-  html.web-shell-active .form-section {
-    will-change: auto;
-  }
+html.web-shell-active .app-sidebar,
+html.web-shell-active .app-topbar,
+html.web-shell-active .panel-card,
+html.web-shell-active .card,
+html.web-shell-active .form-section {
+  will-change: auto;
 }

@@ -1,3 +1,2 @@
-/* Compatibility loader. The actual design split lives in css/web/ and css/phone/. */
-@import url("web/web.css") screen and (min-width: 1121px) and (hover: hover) and (pointer: fine);
-@import url("phone/phone.css") screen and (max-width: 1120px), (hover: none) and (pointer: coarse);
+/* Compatibility loader. The app now uses one desktop/local web UI at every window size. */
+@import url("web/web.css");

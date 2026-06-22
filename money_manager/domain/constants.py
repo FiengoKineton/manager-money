@@ -194,7 +194,7 @@ EXPENSE_PROJECT_PLANNED_ITEM_FIELDS = [
     "due_date",
     "description",
     "status",
-    # Optional foreign key to data/payables.csv. When present, the row is only
+    # Optional foreign key to the current user payables CSV. When present, the row is only
     # a project forecast link: Payables remains the source of truth.
     "payable_id",
     "created_at",

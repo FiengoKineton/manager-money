@@ -448,50 +448,21 @@ html[data-theme="night"] .notification-history {
   background: rgba(15, 23, 42, 0.24);
 }
 
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
-  .notification-menu {
-    position: static;
-  }
-
-  .notification-trigger {
-    min-width: 42px;
-    width: 42px;
-    min-height: 42px;
-    padding: 0;
-    border-radius: 16px;
-    background:
-      radial-gradient(circle at 20% 0%, rgba(247, 37, 133, 0.30), transparent 70%),
-      linear-gradient(135deg, rgba(124, 58, 237, 0.82), rgba(0, 212, 255, 0.72));
-    color: #fff;
-    box-shadow: 0 16px 34px rgba(124, 58, 237, 0.24);
-  }
-
-  .notification-trigger-text,
-  .notification-count {
-    display: none !important;
-  }
+@media (max-width: 1120px) {
+  .notification-menu { position: static; }
 
   .notification-panel {
     position: fixed;
-    top: calc(max(0.62rem, env(safe-area-inset-top, 0px)) + 4.15rem);
-    right: max(0.72rem, env(safe-area-inset-right, 0px));
-    left: max(0.72rem, env(safe-area-inset-left, 0px));
-    width: auto;
-    max-height: min(66svh, 590px);
-    border-radius: 28px;
+    top: 4.25rem;
+    right: 0.85rem;
+    left: auto;
+    width: min(420px, calc(100vw - 1.7rem));
+    max-height: min(72vh, 590px);
     transform-origin: top right;
   }
 
   .notification-current-list {
-    max-height: calc(min(66svh, 590px) - 86px);
-  }
-
-  .notification-card-main {
-    padding: 0.9rem;
-  }
-
-  .notification-card-detail {
-    padding-left: 0.92rem;
+    max-height: calc(min(72vh, 590px) - 86px);
   }
 
   .notification-card-copy strong,
@@ -499,6 +470,7 @@ html[data-theme="night"] .notification-history {
     white-space: normal;
   }
 }
+
 
 @keyframes notificationPulse {
   0%, 100% {

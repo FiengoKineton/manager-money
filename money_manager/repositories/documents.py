@@ -2,9 +2,10 @@ from pathlib import Path
 
 from money_manager.config import (
     ALLOWED_DOCUMENT_EXTENSIONS,
-    DOCUMENTS_DIR,
     DOCUMENT_FOLDERS,
 )
+from money_manager.config.user_paths import user_documents_dir
+from money_manager.security.protection_manager import safe_join
 
 
 def is_allowed_folder(folder: str) -> bool:
@@ -20,7 +21,13 @@ def folder_path(folder: str) -> Path:
     if not is_allowed_folder(folder):
         raise ValueError(f"Invalid document folder: {folder}")
 
-    return DOCUMENTS_DIR / folder
+    return safe_join(user_documents_dir(), folder)
+
+
+def document_path(folder: str, filename: str) -> Path:
+    if not is_allowed_document(filename):
+        raise ValueError(f"Invalid document file: {filename}")
+    return safe_join(folder_path(folder), filename)
 
 
 def list_files(folder: str) -> list[str]:

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "types": [
+    {
+      "id": "cedolini",
+      "name": "Cedolini",
+      "description": "Payslips and salary documents",
+      "is_default": true,
+      "is_active": true,
+      "display_order": 10
+    },
+    {
+      "id": "detrazioni_fiscali",
+      "name": "Detrazioni Fiscali",
+      "description": "Tax deduction documents",
+      "is_default": true,
+      "is_active": true,
+      "display_order": 20
+    }
+  ]
+}

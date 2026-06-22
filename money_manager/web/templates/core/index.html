@@ -179,15 +179,15 @@
 {% else %}
 <section class="dashboard-charts dashboard-charts-home dashboard-charts-redesigned">
   <div class="chart-card chart-full">
-    <img class="static-chart-img" src="{{ url_for('static', filename='plots/monthly_summary.png') }}" alt="Monthly summary">
+    <img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='monthly_summary.png') }}" alt="Monthly summary">
   </div>
 
   <div class="chart-card">
-    <img class="static-chart-img" src="{{ url_for('static', filename='plots/expenses_by_category.png') }}" alt="Expenses by category">
+    <img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='expenses_by_category.png') }}" alt="Expenses by category">
   </div>
 
   <div class="chart-card">
-    <img class="static-chart-img" src="{{ url_for('static', filename='plots/cumulative_balance.png') }}" alt="Cumulative balance">
+    <img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='cumulative_balance.png') }}" alt="Cumulative balance">
   </div>
 </section>
 {% endif %}

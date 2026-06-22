@@ -1,11 +1,11 @@
 """Account configuration and runtime-custom liquid accounts.
 
-The app still keeps expenses.csv, incomes.csv and investments.csv as the main
+The app keeps each user's expenses.csv, incomes.csv and investments.csv as the main
 source of truth. The ``account`` column is a routing tag:
 - blank / Main bank / credit-card settlement rows affect the main account;
 - PayPal is a separate liquid account unless the explicit PayPal-credit route is used;
 - liquid account rows are analysed separately; top-ups can still affect the tracked main net;
-- custom liquid accounts are stored in ``data/accounts.json``.
+- custom liquid accounts are stored in the current user's ``accounts.json``.
 """
 
 from __future__ import annotations
@@ -15,9 +15,9 @@ import re
 from pathlib import Path
 from typing import Iterable
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = PROJECT_ROOT / "data"
-CUSTOM_ACCOUNTS_JSON = DATA_DIR / "accounts.json"
+from money_manager.config.user_paths import get_user_data_dir, user_data_path
+
+CUSTOM_ACCOUNTS_JSON = user_data_path("accounts.json")
 
 MAIN_ACCOUNT_KEY = "main_bank"
 MAIN_ACCOUNT_LABEL = "Main bank account"
@@ -239,10 +239,14 @@ def _normalise_account_record(raw: dict) -> dict | None:
 
 
 def load_custom_accounts() -> list[dict]:
-    if not CUSTOM_ACCOUNTS_JSON.exists():
+    try:
+        path = Path(CUSTOM_ACCOUNTS_JSON)
+    except RuntimeError:
+        return []
+    if not path.exists():
         return []
     try:
-        payload = json.loads(CUSTOM_ACCOUNTS_JSON.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return []
 
@@ -265,7 +269,7 @@ def load_custom_accounts() -> list[dict]:
 
 
 def save_custom_account(label: str, description: str = "", aliases: str = "", category_aliases: str = "") -> dict | None:
-    """Create or update a custom auxiliary account in data/accounts.json."""
+    """Create or update a custom auxiliary account in the current user's accounts.json."""
     record = _normalise_account_record({
         "label": label,
         "description": description or "Small balance account inside Other account.",
@@ -277,11 +281,12 @@ def save_custom_account(label: str, description: str = "", aliases: str = "", ca
     if record is None:
         return None
 
-    DATA_DIR.mkdir(exist_ok=True, parents=True)
+    path = Path(CUSTOM_ACCOUNTS_JSON)
+    path.parent.mkdir(exist_ok=True, parents=True)
     accounts = load_custom_accounts()
     accounts = [account for account in accounts if account["key"] != record["key"]]
     accounts.append(record)
-    CUSTOM_ACCOUNTS_JSON.write_text(
+    path.write_text(
         json.dumps({"accounts": accounts}, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )

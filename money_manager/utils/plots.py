@@ -4,7 +4,15 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from pathlib import Path
+
 from money_manager.config import PLOTS_DIR
+
+
+def _plot_path(filename: str) -> Path:
+    path = Path(PLOTS_DIR) / filename
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def _empty_figure(path, message: str, figsize=(6, 3)) -> None:
@@ -17,7 +25,7 @@ def _empty_figure(path, message: str, figsize=(6, 3)) -> None:
 
 
 def plot_monthly_summary(df_monthly: pd.DataFrame, filename: str = "monthly_summary.png"):
-    path = PLOTS_DIR / filename
+    path = _plot_path(filename)
     if df_monthly.empty:
         _empty_figure(path, "No data")
         return
@@ -46,7 +54,7 @@ def plot_monthly_summary(df_monthly: pd.DataFrame, filename: str = "monthly_summ
 
 
 def plot_expenses_by_category(df_cat: pd.DataFrame, filename: str = "expenses_by_category.png"):
-    path = PLOTS_DIR / filename
+    path = _plot_path(filename)
     fig, ax = plt.subplots(figsize=(6, 4))
 
     if df_cat.empty:
@@ -68,7 +76,7 @@ def plot_expenses_by_category(df_cat: pd.DataFrame, filename: str = "expenses_by
 
 
 def plot_cumulative_balance(df_cum: pd.DataFrame, filename: str = "cumulative_balance.png"):
-    path = PLOTS_DIR / filename
+    path = _plot_path(filename)
     fig, ax = plt.subplots(figsize=(7, 3))
 
     if df_cum.empty:
@@ -99,7 +107,7 @@ def plot_weekday_spending(df_wd: pd.DataFrame):
     ax.set_title("Expenses by weekday")
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
-    fig.savefig(PLOTS_DIR / "weekday_spending.png", dpi=120)
+    fig.savefig(_plot_path("weekday_spending.png"), dpi=120)
     plt.close(fig)
 
 
@@ -119,5 +127,5 @@ def plot_rolling_net_flow(df_roll: pd.DataFrame):
     ax.set_title("Net cash flow")
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
-    fig.savefig(PLOTS_DIR / "rolling_net_flow.png", dpi=120)
+    fig.savefig(_plot_path("rolling_net_flow.png"), dpi=120)
     plt.close(fig)

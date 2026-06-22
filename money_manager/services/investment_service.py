@@ -68,7 +68,7 @@ def refresh_market_data(force: bool = True) -> dict:
     """Fetch configured market symbols from Yahoo Finance chart JSON.
 
     The app never crashes if the network is unavailable. It keeps the last good
-    response in data/investment_market_cache.json and falls back to that cache.
+    response in the current user investment_market_cache.json and falls back to that cache.
     """
     assets = [a for a in load_investment_assets() if _is_active(a)]
     cache = _read_cache()

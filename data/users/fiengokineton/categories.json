@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "expense": {
+    "custom": [],
+    "hidden": [],
+    "default": "Other"
+  },
+  "income": {
+    "custom": [],
+    "hidden": [],
+    "default": "Other"
+  },
+  "investment": {
+    "custom": [],
+    "hidden": [],
+    "default": "Other"
+  }
+}

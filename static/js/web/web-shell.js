@@ -1,14 +1,11 @@
-/* Web shell switch. Desktop keeps the existing professional UI. */
+/* Single desktop/local shell. No phone/web runtime switching. */
 (function () {
-  const webMedia = window.matchMedia("(min-width: 1121px) and (hover: hover) and (pointer: fine)");
-
   function syncWebShell() {
-    const enabled = webMedia.matches;
-    document.documentElement.classList.toggle("web-shell-active", enabled);
-    if (document.body) document.body.classList.toggle("web-shell-active", enabled);
+    document.documentElement.classList.add("web-shell-active");
+    if (document.body) document.body.classList.add("web-shell-active");
   }
 
   document.addEventListener("DOMContentLoaded", syncWebShell);
   window.addEventListener("pageshow", syncWebShell);
-  if (webMedia.addEventListener) webMedia.addEventListener("change", syncWebShell);
+  syncWebShell();
 })();

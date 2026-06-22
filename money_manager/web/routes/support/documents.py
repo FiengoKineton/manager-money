@@ -6,28 +6,34 @@ from pathlib import Path
 
 from flask import Blueprint, Response, abort, jsonify, make_response, render_template, send_file, send_from_directory, url_for
 
-from money_manager.config import ALLOWED_DOCUMENT_EXTENSIONS, DOCUMENTS_DIR
+from money_manager.config import ALLOWED_DOCUMENT_EXTENSIONS
+from money_manager.config.user_paths import user_documents_dir
 from money_manager.repositories.documents import (
+    document_path,
+    folder_path,
     is_allowed_document,
     is_allowed_folder,
     list_files,
 )
+from money_manager.security.protection_manager import safe_join
 
 bp = Blueprint("documents", __name__)
 
 
 @bp.route("/documents-background/<path:filename>")
 def documents_background(filename):
-    # Do not expose arbitrary files from the documents directory.
     if not is_allowed_document(filename):
         abort(404)
-
-    return send_from_directory(DOCUMENTS_DIR, filename)
+    documents_dir = Path(user_documents_dir())
+    safe_path = safe_join(documents_dir, filename)
+    if not safe_path.exists() or not safe_path.is_file():
+        abort(404)
+    return send_from_directory(documents_dir, safe_path.relative_to(documents_dir))
 
 
 @bp.route("/profile-photo")
 def profile_photo():
-    photo = DOCUMENTS_DIR / "selfie.jpg"
+    photo = safe_join(user_documents_dir(), "selfie.jpg")
     if not photo.exists() or not photo.is_file():
         abort(404)
     return send_file(photo, mimetype="image/jpeg", conditional=True, max_age=3600)
@@ -53,17 +59,9 @@ def api_files(folder):
 
 @bp.route("/document/<folder>/<path:filename>")
 def serve_document(folder, filename):
-    if not is_allowed_folder(folder):
-        return "Invalid folder", 400
-
-    if not is_allowed_document(filename):
-        abort(404)
-
     path = _safe_document_path(folder, filename)
     mimetype = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
     response = make_response(send_file(path, mimetype=mimetype, as_attachment=False, download_name=path.name, conditional=True))
-    # Force browser/app viewers to render supported documents inline instead of
-    # treating PDFs as attachments/downloads.
     response.headers["Content-Disposition"] = f'inline; filename="{path.name}"'
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response
@@ -71,12 +69,6 @@ def serve_document(folder, filename):
 
 @bp.route("/document-preview/<folder>/<path:filename>")
 def preview_document(folder, filename):
-    if not is_allowed_folder(folder):
-        return "Invalid folder", 400
-
-    if not is_allowed_document(filename):
-        abort(404)
-
     path = _safe_document_path(folder, filename)
     suffix = path.suffix.lower()
     raw_url = url_for("documents.serve_document", folder=folder, filename=filename)
@@ -128,9 +120,16 @@ def preview_document(folder, filename):
 
 
 def _safe_document_path(folder: str, filename: str) -> Path:
-    base = (DOCUMENTS_DIR / folder).resolve()
-    path = (base / filename).resolve()
-    if base not in path.parents and path != base:
+    if not is_allowed_folder(folder):
+        abort(404)
+    if not is_allowed_document(filename):
+        abort(404)
+    try:
+        path = document_path(folder, filename)
+        base = folder_path(folder).resolve()
+    except ValueError:
+        abort(404)
+    if base not in path.resolve().parents and path.resolve() != base:
         abort(404)
     if not path.exists() or not path.is_file():
         abort(404)

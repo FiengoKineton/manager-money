@@ -1,22 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ selected_language or 'en' }}" data-theme="{{ selected_theme if selected_theme in ['day', 'night'] else 'day' }}">
 <head>
   <meta charset="utf-8">
   <title>Money Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% set ep = request.endpoint or '' %}
+  {% set server_theme = selected_theme if selected_theme in ['day', 'night'] else 'day' %}
   <script>
     (function () {
+      var serverTheme = {{ server_theme|tojson }};
+      document.documentElement.dataset.theme = serverTheme === "night" ? "night" : "day";
       try {
-        var savedTheme = window.localStorage.getItem("moneyManagerColorMode") || "day";
-        document.documentElement.dataset.theme = savedTheme === "night" ? "night" : "day";
+        window.localStorage.setItem("moneyManagerColorMode", document.documentElement.dataset.theme);
       } catch (error) {
-        document.documentElement.dataset.theme = "day";
+        // The persisted profile preference remains the source of truth.
       }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=web-phone-split-3" media="screen and (min-width: 1121px) and (hover: hover) and (pointer: fine)">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=phone-fun-v2" media="screen and (max-width: 1120px), (hover: none) and (pointer: coarse)">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=single-desktop-responsive-profile-1">
   {% set plotly_endpoints = [
     'dashboard.index',
     'analysis.analysis',
@@ -34,17 +35,22 @@
   {% set planning_open = ep in ['pending.pending_page', 'pending.recurring_page', 'debts.debts_page', 'payables.payables_page', 'expense_projects.expense_projects_page', 'expense_projects.expense_project_detail', 'receivables.receivables_page'] %}
   {% set accounts_open = ep in ['accounts.accounts_page', 'accounts.account_detail', 'currencies.currencies_page', 'internal_transfers.internal_transfers_page', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
   {% set wealth_open = ep in ['investments.investments_page', 'analysis.analysis', 'yearly_summary.yearly_summary_page', 'forecast.forecast', 'documents.documents'] %}
+  {% set profile_open = ep.startswith('profile.') %}
 
   <div class="app-layout">
     <aside class="app-sidebar" aria-label="Main navigation">
-      <a class="app-brand" href="{{ url_for('dashboard.overview') }}">
+      <a class="app-brand {{ 'is-active' if profile_open else '' }}" href="{{ url_for('profile.profile_page') if endpoint_exists('profile.profile_page') else url_for('dashboard.overview') }}">
         <span class="app-brand-avatar">
-          <img class="brand-avatar" src="{{ url_for('documents.profile_photo') }}" alt="Profile photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
-          <span class="brand-mark brand-mark-fallback">GM</span>
+          {% if current_user_profile.profile_image and endpoint_exists('profile.avatar') %}
+            <img class="brand-avatar" src="{{ url_for('profile.avatar') }}?v={{ current_user_profile.updated_at|urlencode }}" alt="{{ user_display_name }} profile image" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+            <span class="brand-mark brand-mark-fallback">{{ user_initials }}</span>
+          {% else %}
+            <span class="brand-mark">{{ user_initials }}</span>
+          {% endif %}
         </span>
         <span>
-          <strong>Giuseppe</strong>
-          <small>Money Manager</small>
+          <strong>{{ user_display_name if is_authenticated else "Money Manager" }}</strong>
+          <small>{{ current_user.username if current_user else "Local app" }}</small>
         </span>
       </a>
 
@@ -99,6 +105,12 @@
       </nav>
 
       <div class="app-sidebar-footer">
+        {% if endpoint_exists('profile.profile_page') %}
+        <a class="profile-footer-link {{ 'active' if profile_open else '' }}" href="{{ url_for('profile.profile_page') }}">
+          <span class="profile-footer-icon" aria-hidden="true">⚙</span>
+          <span><strong>Profile</strong><small>Theme, language and avatar</small></span>
+        </a>
+        {% endif %}
         <a class="net-pill" href="{{ url_for('dashboard.overview') }}">
           <span>Main net</span>
           <strong>€ {{ '%.2f'|format(topbar_main_bank_net) }}</strong>
@@ -212,9 +224,6 @@
               <a class="quick-add-special" href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span><b>Special log</b><small>Debts, payables, projects</small></a>
             </div>
           </details>
-          <button type="button" class="theme-toggle-btn" data-theme-toggle aria-label="Switch to night mode" title="Switch day/night mode">
-            <span class="theme-toggle-orb" aria-hidden="true"></span>
-          </button>
         </div>
       </header>
 
@@ -226,147 +235,9 @@
     </div>
   </div>
 
-  <nav class="mobile-bottom-nav mobile-tabbar" aria-label="Mobile navigation">
-    <a href="{{ url_for('dashboard.overview') }}" class="mobile-tab {{ 'active' if home_open and ep != 'transactions.add_transaction' else '' }}">
-      <span aria-hidden="true">⌂</span>
-      <b>Home</b>
-    </a>
-    <a href="{{ url_for('transactions.transactions_page') }}" class="mobile-tab {{ 'active' if ep in ['transactions.transactions_page', 'transactions.transaction_detail'] else '' }}">
-      <span aria-hidden="true">≡</span>
-      <b>Logs</b>
-    </a>
-    <button type="button" class="mobile-tab mobile-tab-add {{ 'active' if ep == 'transactions.add_transaction' else '' }}" data-mobile-open-sheet="add" aria-controls="mobile-add-sheet" aria-expanded="false">
-      <span aria-hidden="true">＋</span>
-      <b>Add</b>
-    </button>
-    <button type="button" class="mobile-tab {{ 'active' if planning_open else '' }}" data-mobile-open-sheet="plan" aria-controls="mobile-plan-sheet" aria-expanded="false">
-      <span aria-hidden="true">◷</span>
-      <b>Plan</b>
-    </button>
-    <button type="button" class="mobile-tab {{ 'active' if accounts_open or wealth_open else '' }}" data-mobile-open-sheet="more" aria-controls="mobile-more-sheet" aria-expanded="false">
-      <span aria-hidden="true">▦</span>
-      <b>More</b>
-    </button>
-  </nav>
-
-  <section id="mobile-add-sheet" class="mobile-sheet mobile-add-menu" data-mobile-sheet="add" hidden aria-hidden="true">
-    <button type="button" class="mobile-sheet-backdrop" data-mobile-close-sheets aria-label="Close add menu"></button>
-    <div class="mobile-sheet-panel mobile-add-panel" role="dialog" aria-modal="true" aria-label="Add money log">
-      <div class="mobile-sheet-head">
-        <div>
-          <span class="mobile-page-kicker">Fast action</span>
-          <strong>Add a log</strong>
-        </div>
-        <small>Big buttons, no off-screen desktop dropdown.</small>
-      </div>
-      <div class="mobile-action-grid mobile-add-grid">
-        <a class="quick-add-expense mobile-action-card" href="{{ url_for('transactions.add_transaction', type='expense') }}"><span>−</span><b>Expense</b><small>Money out</small></a>
-        <a class="quick-add-income mobile-action-card" href="{{ url_for('transactions.add_transaction', type='income') }}"><span>＋</span><b>Income</b><small>Money in</small></a>
-        <a class="quick-add-investment mobile-action-card" href="{{ url_for('transactions.add_transaction', type='investment') }}"><span>↗</span><b>Investment</b><small>Portfolio move</small></a>
-        <a class="quick-add-special mobile-action-card" href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span><b>Special log</b><small>Debt, project, transfer</small></a>
-      </div>
-    </div>
-  </section>
-
-  <section id="mobile-plan-sheet" class="mobile-sheet mobile-plan-menu" data-mobile-sheet="plan" hidden aria-hidden="true">
-    <button type="button" class="mobile-sheet-backdrop" data-mobile-close-sheets aria-label="Close planning menu"></button>
-    <div class="mobile-sheet-panel mobile-page-panel" role="dialog" aria-modal="true" aria-label="Planning pages">
-      <div class="mobile-sheet-head mobile-page-panel-head">
-        <div>
-          <span class="mobile-page-kicker">Money missions</span>
-          <strong>Plan and control</strong>
-        </div>
-        <small>Payments, debts, projects and money to collect.</small>
-      </div>
-      <section class="mobile-page-section">
-        <h3>Scheduled money</h3>
-        <div class="mobile-page-grid">
-          <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}"><span>◷</span><b>Pending payments</b><small>Not executed yet</small></a>
-          <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}"><span>↻</span><b>Recurring rules</b><small>Automatic schedule</small></a>
-        </div>
-      </section>
-      <section class="mobile-page-section">
-        <h3>Obligations</h3>
-        <div class="mobile-page-grid">
-          <a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if ep == 'payables.payables_page' else '' }}"><span>⇣</span><b>Payables</b><small>Credits to be paid</small></a>
-          <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}"><span>−</span><b>Debts I owe</b><small>Debt tracking</small></a>
-          <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}"><span>＋</span><b>Money owed to me</b><small>Collectable money</small></a>
-          <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if ep in ['expense_projects.expense_projects_page', 'expense_projects.expense_project_detail'] else '' }}"><span>◇</span><b>Expense projects</b><small>Big planned costs</small></a>
-        </div>
-      </section>
-      <section class="mobile-page-section">
-        <h3>Forecast</h3>
-        <div class="mobile-page-grid mobile-page-grid-single">
-          <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if ep == 'forecast.forecast' else '' }}"><span>⌁</span><b>Forecast</b><small>Future pressure</small></a>
-        </div>
-      </section>
-    </div>
-  </section>
-
-  <section id="mobile-more-sheet" class="mobile-sheet mobile-page-menu" data-mobile-sheet="more" hidden aria-hidden="true">
-    <button type="button" class="mobile-sheet-backdrop" data-mobile-close-sheets aria-label="Close page menu"></button>
-    <div class="mobile-sheet-panel mobile-page-panel" role="dialog" aria-modal="true" aria-label="All mobile pages">
-      <div class="mobile-sheet-head mobile-page-panel-head">
-        <div>
-          <span class="mobile-page-kicker">Phone map</span>
-          <strong>Everything from PC</strong>
-        </div>
-        <small>Every desktop section is reachable here.</small>
-      </div>
-
-      <section class="mobile-page-section">
-        <h3>Overview</h3>
-        <div class="mobile-page-grid">
-          <a href="{{ url_for('dashboard.overview') }}" class="{{ 'active' if ep == 'dashboard.overview' else '' }}"><span>⌂</span><b>Quick overview</b><small>Decision view</small></a>
-          <a href="{{ url_for('dashboard.overview_detailed') }}" class="{{ 'active' if ep == 'dashboard.overview_detailed' else '' }}"><span>◫</span><b>Detailed overview</b><small>Full money snapshot</small></a>
-          <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if ep == 'dashboard.index' else '' }}"><span>▤</span><b>Dashboard</b><small>Charts and filters</small></a>
-          <a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if ep in ['transactions.transactions_page', 'transactions.transaction_detail'] else '' }}"><span>≡</span><b>Transactions</b><small>Main log</small></a>
-          <a href="{{ url_for('net_explanation.net_explanation') }}" class="{{ 'active' if ep == 'net_explanation.net_explanation' else '' }}"><span>?</span><b>Why this net?</b><small>Counted rows</small></a>
-        </div>
-      </section>
-
-      <section class="mobile-page-section">
-        <h3>Planning</h3>
-        <div class="mobile-page-grid">
-          <a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if ep == 'pending.pending_page' else '' }}"><span>◷</span><b>Pending payments</b><small>Not executed yet</small></a>
-          <a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if ep == 'pending.recurring_page' else '' }}"><span>↻</span><b>Recurring rules</b><small>Automatic schedule</small></a>
-          <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if ep in ['expense_projects.expense_projects_page', 'expense_projects.expense_project_detail'] else '' }}"><span>◇</span><b>Expense projects</b><small>Big planned costs</small></a>
-          <a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if ep == 'payables.payables_page' else '' }}"><span>⇣</span><b>Payables</b><small>Credits to be paid</small></a>
-          <a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if ep == 'debts.debts_page' else '' }}"><span>−</span><b>Debts I owe</b><small>Debt tracking</small></a>
-          <a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if ep == 'receivables.receivables_page' else '' }}"><span>＋</span><b>Money owed to me</b><small>Collectable money</small></a>
-        </div>
-      </section>
-
-      <section class="mobile-page-section">
-        <h3>Accounts</h3>
-        <div class="mobile-page-grid">
-          <a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if ep in ['accounts.accounts_page', 'accounts.account_detail'] else '' }}"><span>▣</span><b>Liquid accounts</b><small>Cash and cards</small></a>
-          <a href="{{ url_for('internal_transfers.internal_transfers_page') }}" class="{{ 'active' if ep == 'internal_transfers.internal_transfers_page' else '' }}"><span>⇄</span><b>Internal transfers</b><small>Move money</small></a>
-          <a href="{{ url_for('currencies.currencies_page') }}" class="{{ 'active' if ep == 'currencies.currencies_page' else '' }}"><span>€</span><b>Currency exchange</b><small>Rates and FX</small></a>
-          <a href="{{ url_for('sparagnat.sparagnat_page') }}" class="{{ 'active' if ep == 'sparagnat.sparagnat_page' else '' }}"><span>♢</span><b>Sparagnat e Fottut</b><small>Saved/covered costs</small></a>
-          <a href="{{ url_for('parent_support.parent_support_page') }}" class="{{ 'active' if ep == 'parent_support.parent_support_page' else '' }}"><span>♡</span><b>Parent support</b><small>Support log</small></a>
-        </div>
-      </section>
-
-      <section class="mobile-page-section">
-        <h3>Analysis & wealth</h3>
-        <div class="mobile-page-grid">
-          <a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if ep == 'analysis.analysis' else '' }}"><span>◌</span><b>Analysis</b><small>Patterns</small></a>
-          <a href="{{ url_for('investments.investments_page') }}" class="{{ 'active' if ep == 'investments.investments_page' else '' }}"><span>↗</span><b>Investments</b><small>Portfolio</small></a>
-          <a href="{{ url_for('yearly_summary.yearly_summary_page') }}" class="{{ 'active' if ep == 'yearly_summary.yearly_summary_page' else '' }}"><span>◴</span><b>Yearly summary</b><small>Closed years</small></a>
-          <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if ep == 'forecast.forecast' else '' }}"><span>⌁</span><b>Forecast</b><small>Future pressure</small></a>
-          <a href="{{ url_for('documents.documents') }}" class="{{ 'active' if ep == 'documents.documents' else '' }}"><span>▧</span><b>Documents</b><small>Files</small></a>
-        </div>
-      </section>
-    </div>
-  </section>
-
-  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=web-phone-split-1"></script>
+  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=single-desktop-responsive-1"></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
-  <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=web-phone-split-1"></script>
-  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=phone-perf-1"></script>
-  <script src="{{ url_for('static', filename='js/phone/phone-transactions.js') }}?v=web-phone-split-1"></script>
-  <script src="{{ url_for('static', filename='js/phone/phone-add-flow.js') }}?v=web-phone-split-1"></script>
+  <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=single-desktop-responsive-1"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

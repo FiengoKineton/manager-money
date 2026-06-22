@@ -19,4 +19,10 @@ build/
 _OLD/**
 .archive/
 .archive/**
+.launcher_state.json
+.money_manager_launcher_config.json
+*.spec
 
+.launcher_browser_profile/
+
+.money_manager_project_path.txt

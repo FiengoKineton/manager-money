@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "accounts": [
+    {
+      "id": "cash_flow",
+      "key": "cash_flow",
+      "name": "Cash Flow",
+      "label": "Cash Flow",
+      "type": "cash",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": "",
+      "description": "Physical cash you still have available.",
+      "aliases": [
+        "cash",
+        "cash flow",
+        "contanti",
+        "physical cash"
+      ],
+      "category_aliases": [
+        "cash",
+        "cash flow",
+        "contanti",
+        "physical cash"
+      ],
+      "is_default": true,
+      "is_custom": false,
+      "is_active": true,
+      "display_order": 10,
+      "parent_key": "other_account"
+    },
+    {
+      "id": "pre_paid_card",
+      "key": "pre_paid_card",
+      "name": "Pre-paid card",
+      "label": "Pre-paid card",
+      "type": "prepaid_card",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": "",
+      "description": "Money available on a pre-paid card.",
+      "aliases": [
+        "pre-paid card",
+        "prepaid card",
+        "pre paid card",
+        "pre-paid",
+        "prepaid",
+        "postepay",
+        "carta prepagata"
+      ],
+      "category_aliases": [
+        "pre-paid card",
+        "prepaid card",
+        "pre paid card",
+        "pre-paid",
+        "prepaid",
+        "postepay",
+        "carta prepagata"
+      ],
+      "is_default": true,
+      "is_custom": false,
+      "is_active": true,
+      "display_order": 20,
+      "parent_key": "other_account"
+    },
+    {
+      "id": "edenred",
+      "key": "edenred",
+      "name": "EdenRed",
+      "label": "EdenRed",
+      "type": "meal_voucher",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": "",
+      "description": "Meal-voucher / EdenRed balance tracked as a separate liquid account.",
+      "aliases": [
+        "edenred",
+        "eden red",
+        "edenred card",
+        "eden red card"
+      ],
+      "category_aliases": [
+        "edenred",
+        "eden red",
+        "edenred card",
+        "eden red card"
+      ],
+      "is_default": true,
+      "is_custom": false,
+      "is_active": true,
+      "display_order": 30,
+      "parent_key": "other_account"
+    },
+    {
+      "id": "other_account",
+      "key": "other_account",
+      "name": "Other account",
+      "label": "Other account",
+      "type": "other",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": "",
+      "description": "Parent bucket for smaller external credit/balance accounts such as Glovo or EasyPark.",
+      "aliases": [
+        "other account",
+        "other card",
+        "ticketrestaurant",
+        "ticket restaurant",
+        "ticket restaurants",
+        "ticket",
+        "buoni pasto",
+        "meal vouchers",
+        "meal voucher"
+      ],
+      "category_aliases": [
+        "other account",
+        "other card",
+        "ticketrestaurant",
+        "ticket restaurant",
+        "ticket restaurants",
+        "ticket",
+        "buoni pasto",
+        "meal vouchers",
+        "meal voucher"
+      ],
+      "is_default": true,
+      "is_custom": false,
+      "is_active": true,
+      "display_order": 40,
+      "parent_key": "other_account"
+    },
+    {
+      "id": "glovo",
+      "key": "glovo",
+      "name": "Glovo",
+      "label": "Glovo",
+      "type": "wallet",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": "",
+      "description": "Small balance/credit account collected inside Other account.",
+      "aliases": [
+        "glovo",
+        "glovo balance",
+        "glovo credit"
+      ],
+      "category_aliases": [
+        "glovo",
+        "glovo balance",
+        "glovo credit"
+      ],
+      "is_default": true,
+      "is_custom": false,
+      "is_active": true,
+      "display_order": 50,
+      "parent_key": "other_account"
+    },
+    {
+      "id": "easypark",
+      "key": "easypark",
+      "name": "EasyPark",
+      "label": "EasyPark",
+      "type": "wallet",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": "",
+      "description": "Small parking balance/credit account collected inside Other account.",
+      "aliases": [
+        "easypark",
+        "easy park",
+        "easypark balance",
+        "parking credit"
+      ],
+      "category_aliases": [
+        "easypark",
+        "easy park",
+        "easypark balance",
+        "parking credit"
+      ],
+      "is_default": true,
+      "is_custom": false,
+      "is_active": true,
+      "display_order": 60,
+      "parent_key": "other_account"
+    },
+    {
+      "id": "paypal",
+      "key": "paypal",
+      "name": "PayPal",
+      "label": "PayPal",
+      "type": "wallet",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": "",
+      "description": "PayPal wallet balance tracked as its own liquid account.",
+      "aliases": [
+        "paypal",
+        "pay pal",
+        "paypal balance",
+        "pay pal balance",
+        "paypal wallet",
+        "pay pal wallet"
+      ],
+      "category_aliases": [
+        "paypal",
+        "pay pal",
+        "paypal balance",
+        "pay pal balance",
+        "paypal wallet",
+        "pay pal wallet"
+      ],
+      "is_default": true,
+      "is_custom": false,
+      "is_active": true,
+      "display_order": 70,
+      "parent_key": "other_account"
+    },
+    {
+      "id": "lost",
+      "key": "lost",
+      "name": "Lost",
+      "label": "Lost",
+      "type": "wallet",
+      "currency": "EUR",
+      "institution": "",
+      "iban": "",
+      "initial_balance": "",
+      "description": "lost track of money movements",
+      "aliases": [
+        "lost"
+      ],
+      "category_aliases": [
+        "lost"
+      ],
+      "is_default": false,
+      "is_custom": true,
+      "is_active": true,
+      "display_order": 100,
+      "parent_key": "other_account"
+    }
+  ]
+}

@@ -1,9 +1,12 @@
-/* Final responsive layer: explicit phone/tablet behavior only. */
+/* Final responsive layer for the single desktop/local web UI.
+   This file only adapts density and grids; it does not switch to a phone app. */
 
-/* Mobile-only form summaries are injected by JS for phone cards. Keep them out of
-   the desktop layout so they never appear as default grey browser buttons. */
-.mobile-form-summary {
-  display: none;
+.mobile-form-summary,
+.mobile-row-summary,
+.mobile-bottom-nav,
+.mobile-sheet,
+.mobile-add-menu {
+  display: none !important;
 }
 
 @media (max-width: 1180px) {
@@ -44,56 +47,6 @@
   .mini-metrics { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 760px) {
-  .mobile-compact-form-card:not(.mobile-form-expanded) > :not(.mobile-form-summary):not(input[type="hidden"]) {
-    display: none !important;
-  }
-
-  .mobile-form-summary {
-    width: 100%;
-    min-height: 82px;
-    border: 0;
-    background: #fff;
-    padding: 0.8rem;
-    border-radius: 16px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-areas:
-      "main amount chevron"
-      "meta amount chevron"
-      "chips chips chips";
-    align-items: center;
-    gap: 0.25rem 0.65rem;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .mobile-form-summary-main { grid-area: main; min-width: 0; }
-  .mobile-form-summary .mobile-summary-meta { grid-area: meta; }
-  .mobile-form-summary .mobile-summary-amount { grid-area: amount; }
-  .mobile-form-summary .mobile-form-chevron { grid-area: chevron; }
-  .mobile-form-summary-chips {
-    grid-area: chips;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-    margin-top: 0.3rem;
-  }
-  .mobile-form-chip {
-    display: inline-flex;
-    border-radius: 999px;
-    padding: 0.18rem 0.45rem;
-    background: var(--surface-muted);
-    color: var(--muted);
-    font-size: 0.7rem;
-    font-weight: 800;
-  }
-  .mobile-compact-form-card.mobile-form-expanded > .mobile-form-summary {
-    border-bottom: 1px solid var(--line);
-    border-radius: 16px 16px 0 0;
-  }
-}
-
 @media (max-width: 560px) {
   .page-heading h2 { font-size: 1.45rem; }
   .summary-card p,
@@ -102,6 +55,4 @@
   .mini-priority-card strong,
   .prism-metric-tile strong,
   .priority-card strong { font-size: 1.35rem; }
-  .mobile-bottom-nav { left: 0.45rem; right: 0.45rem; bottom: 0.45rem; }
-  .mobile-bottom-nav a { font-size: 0.64rem; min-height: 45px; }
 }

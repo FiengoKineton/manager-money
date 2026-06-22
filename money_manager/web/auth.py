@@ -1,53 +1,113 @@
 from __future__ import annotations
 
-import hmac
-import os
+from functools import wraps
 
-from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
+from flask import Blueprint, redirect, render_template, request, session, url_for
+
+from money_manager.users.user_manager import (
+    authenticate_user,
+    create_user,
+    ensure_user_data_folder,
+    get_user_by_id,
+    has_any_user,
+)
 
 bp = Blueprint("auth", __name__)
 
-
-def _configured_password() -> str:
-    return current_app.config.get("MONEY_MANAGER_PASSWORD", "") or os.environ.get("MONEY_MANAGER_PASSWORD", "")
+PUBLIC_ENDPOINTS = {"auth.login", "auth.register", "static"}
 
 
-def _is_logged_in() -> bool:
-    return session.get("money_manager_logged_in") is True
+def is_authenticated() -> bool:
+    user_id = session.get("user_id")
+    if not user_id:
+        return False
+    return get_user_by_id(str(user_id)) is not None
+
+
+def current_user() -> dict | None:
+    user_id = session.get("user_id")
+    return get_user_by_id(str(user_id)) if user_id else None
+
+
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not is_authenticated():
+            next_url = request.full_path if request.query_string else request.path
+            return redirect(url_for("auth.login", next=next_url))
+        return view(*args, **kwargs)
+
+    return wrapped
 
 
 @bp.before_app_request
 def require_login():
-    if request.endpoint in {"auth.login"}:
+    endpoint = request.endpoint or ""
+    if endpoint in PUBLIC_ENDPOINTS or endpoint.startswith("static"):
         return None
 
-    if _is_logged_in():
+    if not has_any_user():
+        return redirect(url_for("auth.register", next=request.path))
+
+    if is_authenticated():
+        ensure_user_data_folder(str(session.get("user_id")), create_files=True)
         return None
 
     next_url = request.full_path if request.query_string else request.path
     return redirect(url_for("auth.login", next=next_url))
 
 
+@bp.route("/register", methods=["GET", "POST"])
+def register():
+    if is_authenticated():
+        return redirect(request.args.get("next") or url_for("dashboard.overview"))
+
+    error = None
+    first_user = not has_any_user()
+
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+        first_name = request.form.get("first_name", "")
+        last_name = request.form.get("last_name", "")
+
+        if not username.strip():
+            error = "Username is required."
+        elif not password:
+            error = "Password is required."
+        elif password != confirm_password:
+            error = "The two passwords do not match."
+        else:
+            try:
+                user = create_user(username, password, first_name=first_name, last_name=last_name)
+            except ValueError as exc:
+                error = str(exc)
+            else:
+                _login_user(user)
+                return redirect(request.args.get("next") or url_for("dashboard.overview"))
+
+    return render_template("auth/register.html", error=error, first_user=first_user)
+
+
 @bp.route("/login", methods=["GET", "POST"])
 def login():
-    if _is_logged_in():
+    if not has_any_user():
+        return redirect(url_for("auth.register", next=request.args.get("next") or url_for("dashboard.overview")))
+
+    if is_authenticated():
         return redirect(request.args.get("next") or url_for("dashboard.overview"))
 
     error = None
 
     if request.method == "POST":
+        username = request.form.get("username", "")
         password = request.form.get("password", "")
-        expected = _configured_password()
-
-        if not expected:
-            error = "App password is not configured. Set MONEY_MANAGER_PASSWORD before starting the app."
-        elif hmac.compare_digest(password, expected):
-            session.clear()
-            session.permanent = True
-            session["money_manager_logged_in"] = True
+        user = authenticate_user(username, password)
+        if user:
+            _login_user(user)
             return redirect(request.args.get("next") or url_for("dashboard.overview"))
-        else:
-            error = "Wrong password."
+        error = "Wrong username or password."
 
     return render_template("auth/login.html", error=error)
 
@@ -56,3 +116,11 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for("auth.login"))
+
+
+def _login_user(user: dict) -> None:
+    session.clear()
+    session.permanent = True
+    session["user_id"] = str(user.get("id"))
+    session["username"] = str(user.get("username"))
+    session["display_name"] = str(user.get("display_name") or user.get("username"))

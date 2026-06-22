@@ -5,90 +5,31 @@
   <title>Login | Money Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    :root {
-      color-scheme: dark;
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0f172a;
-      color: #e5e7eb;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at top left, rgba(59, 130, 246, 0.22), transparent 28rem),
-        linear-gradient(135deg, #020617, #111827);
-    }
-
-    .login-card {
-      width: min(92vw, 420px);
-      padding: 28px;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      border-radius: 24px;
-      background: rgba(15, 23, 42, 0.88);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
-    }
-
-    h1 {
-      margin: 0 0 8px;
-      font-size: 1.8rem;
-    }
-
-    p {
-      margin: 0 0 24px;
-      color: #94a3b8;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 700;
-    }
-
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 14px 16px;
-      border-radius: 14px;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      background: #020617;
-      color: #f8fafc;
-      font-size: 1rem;
-    }
-
-    button {
-      width: 100%;
-      margin-top: 18px;
-      padding: 14px 18px;
-      border: 0;
-      border-radius: 14px;
-      background: #2563eb;
-      color: white;
-      font-weight: 800;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-
-    .error {
-      margin-top: 14px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: rgba(239, 68, 68, 0.14);
-      color: #fecaca;
-    }
+    :root { color-scheme: dark; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: #e5e7eb; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.22), transparent 28rem), linear-gradient(135deg, #020617, #111827); }
+    .auth-card { width: min(92vw, 440px); padding: 28px; border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 24px; background: rgba(15, 23, 42, 0.88); box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45); }
+    h1 { margin: 0 0 8px; font-size: 1.8rem; }
+    p { margin: 0 0 24px; color: #94a3b8; }
+    label { display: block; margin: 14px 0 8px; font-weight: 700; }
+    input { width: 100%; box-sizing: border-box; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(148, 163, 184, 0.35); background: #020617; color: #f8fafc; font-size: 1rem; }
+    button, .link-button { display: inline-flex; justify-content: center; align-items: center; width: 100%; box-sizing: border-box; margin-top: 18px; padding: 14px 18px; border: 0; border-radius: 14px; background: #2563eb; color: white; font-weight: 800; font-size: 1rem; cursor: pointer; text-decoration: none; }
+    .secondary-link { display: block; margin-top: 16px; color: #bfdbfe; text-align: center; text-decoration: none; font-weight: 700; }
+    .error { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(239, 68, 68, 0.14); color: #fecaca; }
   </style>
 </head>
 <body>
-  <form class="login-card" method="post">
+  <form class="auth-card" method="post">
     <h1>Money Manager</h1>
-    <p>Enter the password to open the app.</p>
+    <p>Log in to open your personal money data.</p>
+
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" autocomplete="username" autofocus required>
 
     <label for="password">Password</label>
-    <input id="password" name="password" type="password" autocomplete="current-password" autofocus required>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
 
-    <button type="submit">Unlock</button>
+    <button type="submit">Log in</button>
+    <a class="secondary-link" href="{{ url_for('auth.register') }}">Create another user</a>
 
     {% if error %}
       <div class="error">{{ error }}</div>

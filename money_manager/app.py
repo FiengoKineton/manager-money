@@ -14,23 +14,6 @@ def create_app() -> Flask:
 
     ensure_runtime_directories()
 
-    # Best-effort refresh so the Investments and Currency pages have current
-    # web data after each app start. If the network is unavailable, cached/local
-    # data is used later and the app still starts normally.
-    try:
-        from money_manager.services.investment_service import refresh_market_data
-
-        refresh_market_data(force=True)
-    except Exception:
-        pass
-
-    try:
-        from money_manager.services.currency_service import refresh_currency_rates
-
-        refresh_currency_rates(force=True)
-    except Exception:
-        pass
-
     app = Flask(
         __name__,
         template_folder=str(package_dir / "web" / "templates"),
@@ -40,7 +23,6 @@ def create_app() -> Flask:
 
     app.config.update(
         SECRET_KEY=os.environ.get("MONEY_MANAGER_SECRET_KEY", "dev-local-change-me"),
-        MONEY_MANAGER_PASSWORD=os.environ.get("MONEY_MANAGER_PASSWORD", "6730"),
         PERMANENT_SESSION_LIFETIME=timedelta(days=30),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
@@ -48,12 +30,5 @@ def create_app() -> Flask:
 
     register_context_processors(app)
     register_routes(app)
-
-    try:
-        from money_manager.services.cache_service import warm_app_cache_async
-
-        warm_app_cache_async()
-    except Exception:
-        pass
 
     return app
