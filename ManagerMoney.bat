@@ -19,16 +19,17 @@ if not defined PROJECT_DIR call :ask_project_dir
 if not defined PROJECT_DIR exit /b 1
 
 set "LAUNCHER_PY=%PROJECT_DIR%\launcher.py"
+set "DATA_HOME=%PROJECT_DIR%\MoneyManagerData"
 
 if /I "%~1"=="--foreground" goto run_foreground
 if /I "%~1"=="--debug" goto run_foreground
 
-start "Money Manager Launcher" /D "%PROJECT_DIR%" /min %PY_CMD% "%LAUNCHER_PY%" --project-dir "%PROJECT_DIR%" %*
+start "Money Manager Launcher" /D "%PROJECT_DIR%" /min %PY_CMD% "%LAUNCHER_PY%" --project-dir "%PROJECT_DIR%" --data-home "%DATA_HOME%" %*
 exit /b 0
 
 :run_foreground
 pushd "%PROJECT_DIR%" >nul 2>nul
-%PY_CMD% "%LAUNCHER_PY%" --project-dir "%PROJECT_DIR%" %*
+%PY_CMD% "%LAUNCHER_PY%" --project-dir "%PROJECT_DIR%" --data-home "%DATA_HOME%" %*
 set "RUN_EXIT=%errorlevel%"
 popd >nul 2>nul
 exit /b %RUN_EXIT%
@@ -64,16 +65,30 @@ if defined MONEY_MANAGER_PROJECT_DIR (
     if defined PROJECT_DIR exit /b 0
 )
 
-rem 2. User-level config in AppData. This avoids creating visible helper files
-rem next to copied Desktop launchers.
+rem 2. Prefer the folder where this .bat is located.
+rem This makes repo-local launchers always launch their own repo.
+call :try_project_dir "%BATCH_DIR%."
+if defined PROJECT_DIR exit /b 0
+
+rem 3. User launched it from a terminal already inside the repo.
+call :try_project_dir "%CD%"
+if defined PROJECT_DIR exit /b 0
+
+rem 4. Search upward from the .bat folder and from the current folder.
+call :search_up_from "%BATCH_DIR%."
+if defined PROJECT_DIR exit /b 0
+call :search_up_from "%CD%"
+if defined PROJECT_DIR exit /b 0
+
+rem 5. User-level config in AppData.
+rem This is only used when the .bat is copied outside the repo, for example Desktop.
 call :load_config_project_dir
 if defined CONFIG_PROJECT_DIR (
     call :try_project_dir "%CONFIG_PROJECT_DIR%"
     if defined PROJECT_DIR exit /b 0
 )
 
-rem 3. Migrate the old Desktop/local text cache if it exists. A valid old cache
-rem is moved into AppData and then removed from next to the .bat.
+rem 6. Migrate the old Desktop/local text cache if it exists.
 if exist "%OLD_PATH_CACHE%" (
     set /p OLD_CACHED_PROJECT_DIR=<"%OLD_PATH_CACHE%"
     call :try_project_dir "%OLD_CACHED_PROJECT_DIR%"
@@ -83,18 +98,6 @@ if exist "%OLD_PATH_CACHE%" (
     )
 )
 
-rem 4. Normal case: .bat is inside the repo.
-call :try_project_dir "%BATCH_DIR%."
-if defined PROJECT_DIR exit /b 0
-
-rem 5. User launched it from a terminal already inside the repo.
-call :try_project_dir "%CD%"
-if defined PROJECT_DIR exit /b 0
-
-rem 6. Search upward from the .bat folder and from the current folder.
-call :search_up_from "%BATCH_DIR%."
-if defined PROJECT_DIR exit /b 0
-call :search_up_from "%CD%"
 exit /b 0
 
 :load_config_project_dir
@@ -103,7 +106,7 @@ for /f "usebackq delims=" %%I in (`%PY_CMD% -c "import json, os, pathlib; base=o
 exit /b 0
 
 :save_project_dir
-%PY_CMD% -c "import json, os, pathlib, sys; base=os.environ.get('LOCALAPPDATA') or os.environ.get('APPDATA') or str(pathlib.Path.home()); p=pathlib.Path(base) / 'MoneyManagerLauncher' / 'config.json'; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(json.dumps({'project_dir': sys.argv[1]}, indent=2), encoding='utf-8')" "%~f1" >nul 2>nul
+%PY_CMD% -c "import json, os, pathlib, sys; base=os.environ.get('LOCALAPPDATA') or os.environ.get('APPDATA') or str(pathlib.Path.home()); p=pathlib.Path(base) / 'MoneyManagerLauncher' / 'config.json'; p.parent.mkdir(parents=True, exist_ok=True); data=json.loads(p.read_text(encoding='utf-8')) if p.exists() else {}; data['project_dir']=sys.argv[1]; p.write_text(json.dumps(data, indent=2), encoding='utf-8')" "%~f1" >nul 2>nul
 exit /b 0
 
 :try_project_dir

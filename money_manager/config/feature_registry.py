@@ -63,7 +63,7 @@ FEATURES: dict[str, FeatureSpec] = {
         repository_modules=("money_manager.repositories.transactions", "money_manager.repositories.pending"),
         templates=("overview_simple.html", "overview.html"),
         data_keys=("expenses", "incomes", "investments", "pending", "internal_transfers"),
-        notes="Uses existing overview_service formulas. Main bank net remains the source of truth.",
+        notes="Uses existing overview_service formulas. Scoped/global net remains the source of truth.",
     ),
     "dashboard": FeatureSpec(
         key="dashboard",
@@ -180,7 +180,7 @@ FEATURES: dict[str, FeatureSpec] = {
     "accounts": FeatureSpec(
         key="accounts",
         group="accounts",
-        label="Liquid Accounts",
+        label="Conti Correnti",
         route_module="money_manager.web.routes.accounts",
         blueprint="accounts",
         service_modules=("money_manager.services.account_service",),

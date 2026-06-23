@@ -18,7 +18,7 @@ bp = Blueprint("backup", __name__, url_prefix="/backup")
 @bp.get("/export")
 @login_required
 def export_backup():
-    path = export_current_user_backup()
+    path = export_current_user_backup(mode="encrypted")
     return send_file(
         path,
         mimetype="application/zip",
@@ -49,3 +49,19 @@ def import_backup():
 
     restored = int(result.get("restored_files") or 0)
     return redirect(url_for("profile.profile_page", saved="backup_imported", restored=restored) + "#backup")
+
+
+@bp.post("/export/plain")
+@login_required
+def export_plain_backup():
+    # Backward-compatible route: plain permanent backup is no longer produced.
+    # Use the timed decrypted export flow instead.
+    password = request.form.get("password", "")
+    try:
+        from flask import session
+        from money_manager.security.decrypted_export_service import create_decrypted_export
+
+        create_decrypted_export(str(session.get("user_id") or ""), password)
+    except Exception:
+        return redirect(url_for("security.security_page", error="plain_export_failed"))
+    return redirect(url_for("security.export_decrypted_page", saved="export_ready"))

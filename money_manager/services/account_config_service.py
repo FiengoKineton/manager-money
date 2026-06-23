@@ -27,6 +27,50 @@ DEFAULT_CREDIT_ALIASES = [
     "carta di credito",
 ]
 
+ACCOUNT_KINDS = {
+    "current_account",
+    "cash",
+    "prepaid_balance",
+    "wallet_balance",
+    "dependent_wallet",
+    "meal_voucher",
+    "investment_cash",
+    "credit_card_liability",
+    "external_account",
+    "container",
+    "other",
+}
+
+LIQUIDITY_ROLLUP_POLICIES = {"own_only", "roll_up_to_parent", "standalone"}
+
+_TYPE_TO_KIND = {
+    "main": "current_account",
+    "bank": "current_account",
+    "current": "current_account",
+    "current_account": "current_account",
+    "cash": "cash",
+    "prepaid": "prepaid_balance",
+    "pre_paid": "prepaid_balance",
+    "prepaid_card": "prepaid_balance",
+    "pre_paid_card": "prepaid_balance",
+    "prepaid_balance": "prepaid_balance",
+    "wallet": "wallet_balance",
+    "wallet_balance": "wallet_balance",
+    "dependent_wallet": "dependent_wallet",
+    "meal_voucher": "meal_voucher",
+    "edenred": "meal_voucher",
+    "investment": "investment_cash",
+    "investment_cash": "investment_cash",
+    "credit": "credit_card_liability",
+    "credit_card": "credit_card_liability",
+    "credit card": "credit_card_liability",
+    "credit_card_liability": "credit_card_liability",
+    "external": "external_account",
+    "external_account": "external_account",
+    "container": "container",
+    "other": "other",
+}
+
 _RESERVED_FORM_KEYS = {"", "auto", "main", "bank", "credit", "card", "credit_card"}
 
 
@@ -151,7 +195,7 @@ def normalize_accounts_config(config: Mapping[str, Any] | list[Mapping[str, Any]
     accounts.sort(key=lambda item: (int(item.get("display_order", 1000) if item.get("display_order", None) not in (None, "") else 1000), item.get("label", "")))
 
     payload = {
-        "schema_version": 2,
+        "schema_version": 3,
         "accounts": accounts,
         "updated_at": clean_label(incoming.get("updated_at", "")),
     }
@@ -167,37 +211,19 @@ def normalize_account_record(raw: Mapping[str, Any], *, index: int = 0) -> dict[
     if not key:
         return None
 
-    # Preserve old records where name existed but label did not.
     if not label:
         label = key.replace("_", " ").title()
 
-    # Stable field aliases.
     account_id = slugify(raw.get("id") or key)
     if account_id in _RESERVED_FORM_KEYS:
         account_id = key
 
-    is_container = bool(raw.get("is_container", False)) or key in {OTHER_ACCOUNTS_KEY, "other_accounts", "small_accounts"}
+    is_container_raw = bool(raw.get("is_container", False)) or key in {OTHER_ACCOUNTS_KEY, "other_accounts", "small_accounts"}
     parent = clean_text(raw.get("parent_account_id") or raw.get("parent_key") or raw.get("parent"))
-    if not parent or parent == key or is_container:
+    if not parent or parent == key or is_container_raw:
         parent = ""
     if parent == "other_accounts":
         parent = OTHER_ACCOUNTS_KEY
-
-    aliases = split_aliases(raw.get("aliases"))
-    category_aliases = split_aliases(raw.get("category_aliases") or raw.get("categories"))
-    for value in (key, label):
-        alias = clean_text(value)
-        if alias and alias not in aliases:
-            aliases.append(alias)
-    if not category_aliases:
-        category_aliases = [alias for alias in aliases]
-
-    if key == DEFAULT_CREDIT_ACCOUNT_KEY:
-        for alias in DEFAULT_CREDIT_ALIASES:
-            if alias not in aliases:
-                aliases.append(alias)
-            if alias not in category_aliases:
-                category_aliases.append(alias)
 
     main_net_policy = clean_text(raw.get("main_net_policy") or "") or MAIN_NET_SEPARATE
     if key == MAIN_ACCOUNT_KEY:
@@ -205,72 +231,178 @@ def normalize_account_record(raw: Mapping[str, Any], *, index: int = 0) -> dict[
     if main_net_policy not in {MAIN_NET_SEPARATE, MAIN_NET_AFFECTS, MAIN_NET_CREDIT_PENDING}:
         main_net_policy = MAIN_NET_SEPARATE
 
-    account_type = clean_text(raw.get("type") or raw.get("account_type") or "wallet") or "wallet"
-    if key == DEFAULT_CREDIT_ACCOUNT_KEY:
-        account_type = "credit_card"
+    raw_type = clean_text(raw.get("type") or raw.get("account_type") or "")
+    account_kind = _infer_account_kind(raw, key=key, raw_type=raw_type, main_net_policy=main_net_policy, parent=parent, is_container=is_container_raw)
+    is_credit = account_kind == "credit_card_liability" or main_net_policy == MAIN_NET_CREDIT_PENDING
+    if is_credit:
         main_net_policy = MAIN_NET_CREDIT_PENDING
-    if account_type == "credit card":
-        account_type = "credit_card"
-    if main_net_policy == MAIN_NET_CREDIT_PENDING:
-        account_type = "credit_card"
-    if account_type == "credit_card" and main_net_policy == MAIN_NET_SEPARATE:
-        # A credit-card account should use credit/pending routing unless the
-        # user explicitly chooses a main-net wallet policy later.
-        main_net_policy = MAIN_NET_CREDIT_PENDING
+    if account_kind == "current_account" or key == MAIN_ACCOUNT_KEY:
+        main_net_policy = MAIN_NET_AFFECTS
+    is_container = account_kind == "container" or is_container_raw
+
+    liquidity_rollup_policy = clean_text(raw.get("liquidity_rollup_policy") or "")
+    if liquidity_rollup_policy not in LIQUIDITY_ROLLUP_POLICIES:
+        if account_kind == "current_account" or key == MAIN_ACCOUNT_KEY:
+            liquidity_rollup_policy = "own_only"
+        elif parent:
+            liquidity_rollup_policy = "roll_up_to_parent"
+        elif key in {"cash_flow", "cashflow", "cash"} or account_kind in {"cash", "investment_cash"}:
+            liquidity_rollup_policy = "standalone"
+        elif bool(raw.get("is_financial_center")):
+            liquidity_rollup_policy = "standalone"
+        else:
+            liquidity_rollup_policy = "own_only"
+
+    explicit_financial_center = "is_financial_center" in raw or clean_text(raw.get("liquidity_rollup_policy") or "") == "standalone"
+    is_current_account = bool(raw.get("is_current_account", account_kind == "current_account" or key == MAIN_ACCOUNT_KEY))
+    is_dependent_account = bool(raw.get("is_dependent_account", account_kind == "dependent_wallet" or bool(parent)))
+
+    if account_kind == "current_account" or key == MAIN_ACCOUNT_KEY:
+        is_current_account = True
+        is_dependent_account = False
+        liquidity_rollup_policy = "own_only"
+        is_financial_center = True
+    elif is_credit or is_container:
+        is_financial_center = False
+    elif liquidity_rollup_policy == "standalone" or key in {"cash_flow", "cashflow", "cash"} or (account_kind in {"cash", "investment_cash"} and not parent) or (explicit_financial_center and bool(raw.get("is_financial_center"))):
+        is_financial_center = True
+        if liquidity_rollup_policy == "standalone" or not parent:
+            is_dependent_account = False
+    elif is_dependent_account:
+        is_financial_center = False
+    else:
+        is_financial_center = False
 
     due_day = _parse_optional_day(raw.get("due_day"))
     statement_day = _parse_optional_day(raw.get("statement_day"))
-    if account_type == "credit_card" or main_net_policy == MAIN_NET_CREDIT_PENDING:
+    if is_credit:
         due_day = due_day or 15
     else:
         due_day = None
         statement_day = None
 
-    cards = normalize_cards(raw.get("cards"))
+    aliases = split_aliases(raw.get("aliases"))
+    category_aliases = split_aliases(raw.get("category_aliases") or raw.get("categories"))
+    for value in (key, label, account_id):
+        alias = clean_text(value)
+        if alias and alias not in aliases:
+            aliases.append(alias)
+    if not category_aliases:
+        category_aliases = [alias for alias in aliases]
+
+    if key == DEFAULT_CREDIT_ACCOUNT_KEY or is_credit:
+        for alias in DEFAULT_CREDIT_ALIASES:
+            if alias not in aliases:
+                aliases.append(alias)
+            if alias not in category_aliases:
+                category_aliases.append(alias)
+
+    legacy = deepcopy(raw.get("legacy") if isinstance(raw.get("legacy"), dict) else {})
+    legacy.setdefault("compatibility_fields", ["key", "type", "main_net_policy", "category_aliases", "payment_logic", "due_day", "statement_day", "cards"])
+    if raw_type and raw_type != account_kind:
+        legacy.setdefault("previous_type", raw_type)
+    if raw.get("payment_logic"):
+        legacy.setdefault("payment_logic_source", "accounts_schema_v2")
+
+    is_active = bool(raw.get("is_active", True))
+    is_closed = bool(raw.get("is_closed", False))
+    archived_at = clean_label(raw.get("archived_at") or "")
+    closed_at = clean_label(raw.get("closed_at") or "")
+    if archived_at and "is_active" not in raw:
+        is_active = False
+    if closed_at:
+        is_closed = True
 
     record: dict[str, Any] = {
         "id": account_id,
         "key": key,
         "name": label,
         "label": label,
-        "type": account_type,
+        "account_kind": account_kind,
+        "account_level": 1 if (account_kind == "current_account" or key == MAIN_ACCOUNT_KEY) else 2 if (key in {"cash_flow", "cashflow", "cash"} or (account_kind in {"cash", "investment_cash"} and not parent)) else 3 if (is_dependent_account or parent) else 0,
+        # Kept for compatibility, but normalized to the professional account kind.
+        "type": account_kind,
         "currency": clean_label(raw.get("currency") or "EUR") or "EUR",
-        "institution": clean_label(raw.get("institution") or raw.get("bank") or ""),
+        "institution": clean_label(raw.get("institution") or raw.get("bank") or raw.get("bank_name") or ""),
         "iban": clean_label(raw.get("iban") or ""),
+        "bic_swift": clean_label(raw.get("bic_swift") or raw.get("bic") or raw.get("swift") or ""),
         "initial_balance": parse_money(raw.get("initial_balance", 0.0)),
         "description": clean_label(raw.get("description") or ""),
-        "aliases": aliases,
-        "category_aliases": category_aliases,
-        "category_match_enabled": True if key == DEFAULT_CREDIT_ACCOUNT_KEY else bool(raw.get("category_match_enabled", True)),
-        "category_match_mode": clean_text(raw.get("category_match_mode") or CATEGORY_MATCH_TOP_UP_SHADOW) or CATEGORY_MATCH_TOP_UP_SHADOW,
-        "main_net_policy": main_net_policy,
-        "parent_account_id": parent or None,
+        "is_financial_center": bool(is_financial_center),
+        "is_current_account": bool(is_current_account),
+        "is_dependent_account": bool(is_dependent_account),
+        "parent_account_id": parent,
         "parent_key": parent,
+        "liquidity_rollup_policy": liquidity_rollup_policy,
+        "is_liability": bool(raw.get("is_liability", account_kind == "credit_card_liability")),
         "is_container": is_container,
         "is_default": bool(raw.get("is_default", False)),
         "is_custom": bool(raw.get("is_custom", not raw.get("is_default", False))),
-        "is_active": bool(raw.get("is_active", True)),
+        "is_active": is_active,
+        "is_closed": is_closed,
+        "closed_at": closed_at,
+        "replacement_account_id": clean_text(raw.get("replacement_account_id") or ""),
         "display_order": int(parse_money(raw.get("display_order", (index + 1) * 10), (index + 1) * 10)),
-        "due_day": due_day,
-        "statement_day": statement_day,
+        "aliases": aliases,
+        "category_aliases": category_aliases,
+        "category_match_enabled": True if is_credit else bool(raw.get("category_match_enabled", True)),
+        "category_match_mode": clean_text(raw.get("category_match_mode") or (MAIN_NET_CREDIT_PENDING if is_credit else CATEGORY_MATCH_TOP_UP_SHADOW)) or CATEGORY_MATCH_TOP_UP_SHADOW,
+        "main_net_policy": main_net_policy,
+        "metadata": deepcopy(raw.get("metadata") if isinstance(raw.get("metadata"), dict) else {}),
+        "legacy": legacy,
+        "created_at": clean_label(raw.get("created_at") or ""),
+        "updated_at": clean_label(raw.get("updated_at") or ""),
+        "archived_at": archived_at,
+        # Legacy compatibility fields retained until the ledger prompts replace them.
         "payment_logic": _normalize_payment_logic(raw.get("payment_logic"), {
             "key": key,
-            "type": account_type,
+            "type": account_kind,
+            "account_kind": account_kind,
             "main_net_policy": main_net_policy,
             "is_container": is_container,
         }),
-        "cards": cards,
-        "metadata": deepcopy(raw.get("metadata") if isinstance(raw.get("metadata"), dict) else {}),
-        "archived_at": clean_label(raw.get("archived_at") or ""),
-        "created_at": clean_label(raw.get("created_at") or ""),
-        "updated_at": clean_label(raw.get("updated_at") or ""),
+        "due_day": due_day,
+        "statement_day": statement_day,
+        "cards": normalize_cards(raw.get("cards")),
     }
-    # Preserve unknown fields for forward/backward compatibility.
     for raw_key, raw_value in raw.items():
         if raw_key not in record:
             record[raw_key] = deepcopy(raw_value)
     return record
 
+
+def _infer_account_kind(
+    raw: Mapping[str, Any],
+    *,
+    key: str,
+    raw_type: str,
+    main_net_policy: str,
+    parent: str,
+    is_container: bool,
+) -> str:
+    if key == MAIN_ACCOUNT_KEY:
+        return "current_account"
+    if key == DEFAULT_CREDIT_ACCOUNT_KEY or main_net_policy == MAIN_NET_CREDIT_PENDING:
+        return "credit_card_liability"
+    explicit = clean_text(raw.get("account_kind") or "")
+    if explicit in ACCOUNT_KINDS:
+        return explicit
+    if is_container or key in {OTHER_ACCOUNTS_KEY, "other_accounts", "small_accounts"}:
+        return "container"
+    if key == "cash_flow":
+        return "cash"
+    if key == "pre_paid_card":
+        return "prepaid_balance"
+    if key == "edenred":
+        return "meal_voucher"
+    if key == "paypal":
+        return "dependent_wallet" if parent else "wallet_balance"
+    mapped = _TYPE_TO_KIND.get(raw_type)
+    if mapped:
+        return "dependent_wallet" if mapped == "wallet_balance" and parent else mapped
+    if parent:
+        return "dependent_wallet"
+    return "other"
 
 def normalize_cards(value: Any) -> list[dict[str, Any]]:
     if not isinstance(value, list):
@@ -318,9 +450,10 @@ def _parse_optional_day(value: Any) -> int | None:
 def _default_payment_logic_for_normalized_account(account: Mapping[str, Any]) -> dict[str, Any]:
     policy = clean_text(account.get("main_net_policy") or MAIN_NET_SEPARATE)
     account_type = clean_text(account.get("type") or "wallet")
-    is_container = bool(account.get("is_container"))
+    account_kind = clean_text(account.get("account_kind") or account_type)
+    is_container = bool(account.get("is_container")) or account_kind == "container"
 
-    if policy == MAIN_NET_AFFECTS or account_type == "main":
+    if policy == MAIN_NET_AFFECTS or account_type == "main" or account_kind == "current_account":
         return {
             "schema_version": 1,
             "mode": "main_net",
@@ -334,7 +467,7 @@ def _default_payment_logic_for_normalized_account(account: Mapping[str, Any]) ->
             "creates_pending": False,
         }
 
-    if policy == MAIN_NET_CREDIT_PENDING or account_type == "credit_card":
+    if policy == MAIN_NET_CREDIT_PENDING or account_type == "credit_card" or account_kind == "credit_card_liability":
         return {
             "schema_version": 1,
             "mode": "credit_statement",
@@ -426,7 +559,7 @@ def all_accounts(user_id: str | None = None, *, include_archived: bool = True, i
     for account in accounts:
         if not include_main and account.get("key") == MAIN_ACCOUNT_KEY:
             continue
-        if not include_archived and not account.get("is_active", True):
+        if not include_archived and (not account.get("is_active", True) or account.get("is_archived") or account.get("is_closed")):
             continue
         result.append(account)
     return result
@@ -533,9 +666,9 @@ def account_display_options(user_id: str | None = None, *, include_archived: boo
             display = f"{parent_label} / {label}"
         option = deepcopy(account)
         policy = str(account.get("main_net_policy") or MAIN_NET_SEPARATE)
-        if policy == MAIN_NET_CREDIT_PENDING or account.get("type") == "credit_card":
+        if policy == MAIN_NET_CREDIT_PENDING or account.get("type") == "credit_card" or account.get("account_kind") == "credit_card_liability":
             kind = "credit"
-        elif account.get("is_container"):
+        elif account.get("is_container") or account.get("account_kind") == "container":
             kind = "container"
         else:
             kind = "auxiliary"
@@ -568,19 +701,21 @@ def create_account_from_form(form: Mapping[str, Any], user_id: str | None = None
     parent = clean_text(form.get("parent_account_id") or form.get("parent_key") or "")
     if parent in {"none", "top", "top_level"}:
         parent = ""
-    form_type = clean_text(form.get("type") or "wallet") or "wallet"
+    form_type = clean_text(form.get("type") or form.get("account_kind") or "wallet_balance") or "wallet_balance"
     form_policy = clean_text(form.get("main_net_policy") or "") or MAIN_NET_SEPARATE
-    if form_type == "credit_card":
+    if form_type in {"credit_card", "credit_card_liability"}:
         form_policy = MAIN_NET_CREDIT_PENDING
     record = normalize_account_record({
         "id": key,
         "key": key,
         "label": label,
         "name": label,
-        "type": form_type,
+        "account_kind": _TYPE_TO_KIND.get(form_type, form_type if form_type in ACCOUNT_KINDS else "other"),
+        "type": _TYPE_TO_KIND.get(form_type, form_type if form_type in ACCOUNT_KINDS else "other"),
         "currency": form.get("currency") or "EUR",
         "institution": form.get("institution") or "",
         "iban": form.get("iban") or "",
+        "bic_swift": form.get("bic_swift") or "",
         "initial_balance": form.get("initial_balance") or 0,
         "description": form.get("description") or "",
         "aliases": split_aliases(form.get("aliases")) or [label],
@@ -613,11 +748,11 @@ def update_account_from_form(account_key: str, form: Mapping[str, Any], user_id:
     for index, account in enumerate(config["accounts"]):
         if account.get("key") != key:
             continue
-        requested_type = clean_text(form.get("type") or account.get("type") or "wallet") or "wallet"
+        requested_type = clean_text(form.get("type") or form.get("account_kind") or account.get("account_kind") or account.get("type") or "wallet_balance") or "wallet_balance"
         if key == MAIN_ACCOUNT_KEY:
             # Main route can be labelled/annotated, but not made separate or archived.
             forced_policy = MAIN_NET_AFFECTS
-        elif requested_type == "credit_card":
+        elif requested_type in {"credit_card", "credit_card_liability"}:
             forced_policy = MAIN_NET_CREDIT_PENDING
         else:
             forced_policy = form.get("main_net_policy") or account.get("main_net_policy") or MAIN_NET_SEPARATE
@@ -625,7 +760,11 @@ def update_account_from_form(account_key: str, form: Mapping[str, Any], user_id:
         if parent in {"none", "top", "top_level", key} or account.get("is_container"):
             parent = ""
         updated = dict(account)
-        for field in ["label", "name", "type", "currency", "institution", "iban", "description", "category_match_mode"]:
+        if "type" in form or "account_kind" in form:
+            mapped_kind = _TYPE_TO_KIND.get(requested_type, requested_type if requested_type in ACCOUNT_KINDS else account.get("account_kind", "other"))
+            updated["account_kind"] = mapped_kind
+            updated["type"] = mapped_kind
+        for field in ["label", "name", "currency", "institution", "iban", "bic_swift", "description", "category_match_mode"]:
             if field in form:
                 updated[field] = clean_label(form.get(field))
         if "label" in form and form.get("label"):
@@ -669,6 +808,7 @@ def archive_account(account_key: str, user_id: str | None = None, active: bool =
         if account.get("key") == key:
             account["is_active"] = active
             account["archived_at"] = "" if active else utc_now()
+            account["is_closed"] = False if active else bool(account.get("is_closed", False))
             account["updated_at"] = utc_now()
             changed = True
             break
@@ -732,3 +872,29 @@ def _notify_cache_changed() -> None:
         notify_data_changed()
     except Exception:
         pass
+
+
+def set_default_account(account_key: str, user_id: str | None = None) -> bool:
+    """Mark one current account as the user's default current account.
+
+    This only updates accounts.json flags. profile.json is updated by callers that
+    own profile defaults. Non-current/container/liability accounts are rejected.
+    """
+    config = load_accounts_config(user_id=user_id)
+    key = normalize_account_key(account_key, user_id=user_id)
+    matched = False
+    for account in config.get("accounts", []):
+        account_key_value = str(account.get("key") or account.get("id") or "")
+        is_current = bool(account.get("is_current_account")) or str(account.get("account_kind") or account.get("type") or "") == "current_account"
+        if account_key_value == key:
+            if not is_current or account.get("is_container") or account.get("is_closed") or not account.get("is_active", True):
+                return False
+            matched = True
+            account["is_default"] = True
+            account["updated_at"] = utc_now()
+        elif is_current:
+            account["is_default"] = False
+    if matched:
+        save_accounts_config(config, user_id=user_id)
+        _notify_cache_changed()
+    return matched

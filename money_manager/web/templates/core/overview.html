@@ -4,23 +4,32 @@
 {% block content %}
 <section class="overview-hero">
   <div class="hero-copy">
-    <span class="eyebrow">{{ t("overview.command_center") }}</span>
-    <h2>{{ t("overview.title") }}</h2>
+    <span class="eyebrow">{{ 'Selected Conto' if scope_is_account else t("overview.command_center") }}</span>
+    <h2>{% if scope_is_account %}{{ scope_label|text_masked }} detailed overview{% else %}{{ t("overview.title") }}{% endif %}</h2>
     <p>
-      One clean place for the main bank balance, separated liquid accounts, pending money,
-      debts, saved expenses, cash collected, and parent support.
+      {% if scope_is_account %}
+        Detailed view locked to this Conto. The net and recent rows below are scoped to the selected account, not All Conti.
+      {% else %}
+        One clean place for global balance, financial centers, pending money,
+        debts, saved expenses, cash collected, and parent support.
+      {% endif %}
     </p>
     <div class="hero-actions">
-      <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Add expense</a>
-      <a class="secondary-btn" href="{{ url_for('dashboard.index') }}">Open detailed dashboard</a>
+      {% if scope_is_account %}
+        <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense', account_id=selected_account_id) }}">Add expense here</a>
+        <a class="secondary-btn" href="{{ url_for('dashboard.index', account_id=selected_account_id) }}">Open account dashboard</a>
+      {% else %}
+        <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Add expense</a>
+        <a class="secondary-btn" href="{{ url_for('dashboard.index') }}">Open detailed dashboard</a>
+      {% endif %}
     </div>
   </div>
 
   <div class="hero-balance-card">
     <div>
-      <span class="metric-label">Main available position</span>
+      <span class="metric-label">{{ 'Net balance of this Conto' if scope_is_account else 'All Conti available position' }}</span>
       <strong>{{ cash_position|money_masked }}</strong>
-      <small>All account nets + invested capital. Market gain/loss is shown separately.</small>
+      <small>{% if scope_is_account %}Selected account only.{% else %}All Conti net + invested capital. Market gain/loss is shown separately.{% endif %}</small>
     </div>
     <div class="balance-subgrid">
       <div>
@@ -39,21 +48,21 @@
   <article class="priority-card priority-main">
     <div>
       <span class="eyebrow">Real tracked money</span>
-      <h3>Net balance</h3>
+      <h3>{{ 'Account net balance' if scope_is_account else 'Net balance' }}</h3>
       <strong>{{ totals.net|money_masked }}</strong>
-      <p>Income minus expenses and investments for the main route only. Explicit separate accounts are excluded unless their policy says they affect the main net.</p>
+      <p>{% if scope_is_account %}Income, expenses and movements matched to this Conto only.{% else %}Income minus expenses and investments for the selected/global scope. Explicit separate accounts are included only when their routing policy says they belong there.{% endif %}</p>
     </div>
-    <a href="{{ url_for('transactions.transactions_page') }}">See main transactions</a>
+    <a href="{{ url_for('transactions.transactions_page', account_id=selected_account_id) if scope_is_account else url_for('transactions.transactions_page') }}">See transactions</a>
   </article>
 
   <article class="priority-card priority-visible">
     <div>
       <span class="eyebrow">Real visible liquidity</span>
-      <h3>Visible liquidity</h3>
+      <h3>{{ 'This Conto liquidity' if scope_is_account else 'Visible liquidity' }}</h3>
       <strong>{{ combined_visible_liquidity|money_masked }}</strong>
-      <p>Main-bank net + separate liquid accounts. This excludes investment capital and therefore stays closer to real cash/liquid money.</p>
+      <p>{% if scope_is_account %}Same scoped account net; dependent/wallet routes are matched separately without showing the All Conti total here.{% else %}All Conti net without dependent-wallet double counting. This excludes investment capital and stays closer to liquid money.{% endif %}</p>
     </div>
-    <a href="{{ url_for('accounts.accounts_page') }}">Analyse liquid accounts</a>
+    <a href="{{ url_for('accounts.account_detail', account_key=selected_account_id) if scope_is_account else url_for('accounts.accounts_page') }}">{{ 'Open Conto' if scope_is_account else 'Analyse Conti' }}</a>
   </article>
 </section>
 
@@ -271,6 +280,7 @@
   </article>
 </section>
 
+{% if not scope_is_account %}
 <section class="account-overview-card panel-card liquid-accounts-section">
   <div class="panel-header account-panel-header">
     <div>
@@ -287,38 +297,38 @@
 
   <div class="account-card-grid refined-account-grid liquid-card-grid">
     {% for account in auxiliary_accounts %}
-      <article class="account-mini-card liquid-account-card account-{{ account.balance_tone }}">
+      <article class="account-mini-card liquid-account-card account-{{ account.get('balance_tone', 'positive') }}">
         <div class="account-mini-head">
           <div>
-            <span>{{ account.label }}</span>
-            <small>{{ account.last_movement_label }}</small>
+            <span>{{ account.get('label', account.get('key', 'Account')) }}</span>
+            <small>{{ account.get('last_movement_label', '') }}</small>
           </div>
-          <strong>€ {{ '%.2f'|format(account.balance) }}</strong>
+          <strong>€ {{ '%.2f'|format(account.get('balance', account.get('net_balance', 0))) }}</strong>
         </div>
 
-        <p>{{ account.description }}</p>
+        <p>{{ account.get('description', '') }}</p>
 
         <div class="account-flow-line">
           <div>
             <span>In</span>
-            <strong>€ {{ '%.2f'|format(account.incoming) }}</strong>
+            <strong>€ {{ '%.2f'|format(account.get('incoming', 0)) }}</strong>
           </div>
           <div>
             <span>Out</span>
-            <strong>€ {{ '%.2f'|format(account.outgoing) }}</strong>
+            <strong>€ {{ '%.2f'|format(account.get('outgoing', 0)) }}</strong>
           </div>
           <div>
             <span>Moves</span>
-            <strong>{{ account.count }}</strong>
+            <strong>{{ account.get('count', 0) }}</strong>
           </div>
         </div>
 
         <div class="account-share-bar" aria-hidden="true">
-          <span style="width: {{ account.share_pct }}%"></span>
+          <span style="width: {{ account.get('share_pct', 0) }}%"></span>
         </div>
 
         <div class="account-card-actions">
-          <a href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Analyse {{ account.label }}</a>
+          <a href="{{ url_for('accounts.account_detail', account_key=account.get('key', account.get('account_id', ''))) }}">Analyse {{ account.get('label', account.get('key', 'Account')) }}</a>
         </div>
       </article>
     {% endfor %}
@@ -340,20 +350,20 @@
       <article class="analysis-preview-card">
         <div class="analysis-preview-head">
           <div>
-            <span>{{ account.label }}</span>
-            <strong>€ {{ '%.2f'|format(account.balance) }}</strong>
+            <span>{{ account.get('label', account.get('key', 'Account')) }}</span>
+            <strong>€ {{ '%.2f'|format(account.get('balance', account.get('net_balance', 0))) }}</strong>
           </div>
-          <a href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Details</a>
+          <a href="{{ url_for('accounts.account_detail', account_key=account.get('key', account.get('account_id', ''))) }}">Details</a>
         </div>
 
-        {% if account.monthly_preview %}
+        {% if account.get('monthly_preview', []) %}
           <div class="mini-month-chart">
-          {% for month in account.monthly_preview %}
+          {% for month in account.get('monthly_preview', []) %}
             <div class="mini-month-row">
               <span>{{ month.month }}</span>
               <div>
-                <i class="mini-in" style="width: {{ (month.incoming / (account.incoming if account.incoming else 1) * 100) if account.incoming else 0 }}%"></i>
-                <i class="mini-out" style="width: {{ (month.outgoing / (account.outgoing if account.outgoing else 1) * 100) if account.outgoing else 0 }}%"></i>
+                <i class="mini-in" style="width: {{ (month.incoming / (account.get('incoming', 0) if account.get('incoming', 0) else 1) * 100) if account.get('incoming', 0) else 0 }}%"></i>
+                <i class="mini-out" style="width: {{ (month.outgoing / (account.get('outgoing', 0) if account.get('outgoing', 0) else 1) * 100) if account.get('outgoing', 0) else 0 }}%"></i>
               </div>
               <b>€ {{ '%.2f'|format(month.net) }}</b>
             </div>
@@ -366,4 +376,5 @@
     {% endfor %}
   </div>
 </section>
+{% endif %}
 {% endblock %}

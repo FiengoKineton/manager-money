@@ -128,6 +128,23 @@
         <label>Currency</label>
         <input type="text" name="currency" value="EUR">
       </div>
+      <div class="form-field">
+        <label>Default funding account</label>
+        <select name="funding_account_id">
+          {% for account in payment_form.account_options %}
+            <option value="{{ account.id }}">{{ account.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Default payment/transfer method</label>
+        <select name="payment_method_id">
+          <option value="">Choose when logging movement</option>
+          {% for method in payment_form.payment_method_options %}
+            <option value="{{ method.id }}">{{ method.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
       <button type="submit" class="primary-btn">Add symbol</button>
     </form>
 
@@ -140,6 +157,18 @@
           <input type="text" name="label" value="{{ asset.label }}" aria-label="Label">
           <input type="number" step="0.01" name="allocation_pct" value="{{ asset.allocation_pct }}" aria-label="Allocation percentage">
           <input type="text" name="currency" value="{{ asset.currency }}" aria-label="Currency">
+          <select name="funding_account_id" aria-label="Default funding account">
+            <option value="">No default account</option>
+            {% for account in payment_form.account_options %}
+              <option value="{{ account.id }}" {% if account.id == asset.funding_account_id %}selected{% endif %}>{{ account.label }}</option>
+            {% endfor %}
+          </select>
+          <select name="payment_method_id" aria-label="Default payment method">
+            <option value="">No default method</option>
+            {% for method in payment_form.payment_method_options %}
+              <option value="{{ method.id }}" {% if method.id == asset.payment_method_id %}selected{% endif %}>{{ method.label }}</option>
+            {% endfor %}
+          </select>
           <label class="checkbox-inline">
             <input type="checkbox" name="active" value="1" {% if asset.active|string in ['1', 'true', 'True', 'yes'] %}checked{% endif %}>
             Active

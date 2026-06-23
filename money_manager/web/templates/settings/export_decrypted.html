@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block page_title %}Temporary decrypted export{% endblock %}
+
+{% block content %}
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Password-confirmed export</span>
+      <h2>Export decrypted data temporarily</h2>
+      <p>This creates a decrypted ZIP in a dedicated temporary app folder. The active app data remains encrypted.</p>
+    </div>
+    <a class="secondary-btn" href="{{ url_for('security.security_page') }}">Back to Security</a>
+  </div>
+  {% if saved %}<p class="success-message">{{ saved }}</p>{% endif %}
+  {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+  <div class="notice-card warning-card">
+    <strong>Important</strong>
+    <p>The link expires after {{ ttl_minutes }} minutes. The app deletes its temporary decrypted folder and ZIP after expiration or cancellation. It cannot delete a copy already downloaded to your PC.</p>
+  </div>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">Create export</span><h2>Confirm password</h2></div></div>
+  <form method="post" action="{{ url_for('security.export_decrypted_start') }}" class="profile-form">
+    <label>Password</label>
+    <input type="password" name="password" required autocomplete="current-password">
+    <div class="form-actions"><button class="primary-btn" type="submit">Create temporary decrypted ZIP</button></div>
+  </form>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">Active exports</span><h2>Download links</h2></div></div>
+  {% if exports %}
+    <div class="table-responsive">
+      <table>
+        <thead><tr><th>Created</th><th>Expires</th><th>Files</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for export in exports %}
+          <tr>
+            <td>{{ export.created_at }}</td>
+            <td>{{ export.expires_at }}</td>
+            <td>{{ export.file_count }}</td>
+            <td>{{ export.status }}</td>
+            <td class="form-actions-row">
+              <a class="primary-btn compact-btn" href="{{ url_for('security.export_decrypted_download', export_id=export.export_id) }}">Download</a>
+              <form method="post" action="{{ url_for('security.export_decrypted_cancel', export_id=export.export_id) }}"><button class="secondary-btn compact-btn" type="submit">Cancel/delete</button></form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No active decrypted exports.</p>
+  {% endif %}
+</section>
+{% endblock %}

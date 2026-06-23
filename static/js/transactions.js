@@ -44,6 +44,77 @@
     };
   }
 
+
+  function paymentFormState() {
+    return window.moneyManagerPaymentForm || {};
+  }
+
+  function currentPaymentMethodOptions(accountId) {
+    const state = paymentFormState();
+    const byAccount = state.payment_methods_by_account || {};
+    return byAccount[accountId] || state.payment_method_options || [];
+  }
+
+  function methodOptionLabel(method) {
+    let label = method.label || method.name || method.id || "Payment method";
+    if (method.disabled_reason) label += ` — ${method.disabled_reason}`;
+    return label;
+  }
+
+  function updatePaymentMethodOptions() {
+    const select = document.getElementById("payment-method-select");
+    if (!select) return;
+
+    const state = paymentFormState();
+    const txType = state.transaction_type || (document.querySelector(".transaction-form")?.dataset.transactionType) || "expense";
+    const account = selectedAccountMeta();
+    const previous = select.value || state.selected_payment_method_id || "";
+    const methods = currentPaymentMethodOptions(account.key);
+
+    select.innerHTML = "";
+    if (txType === "income") {
+      const optional = document.createElement("option");
+      optional.value = "";
+      optional.textContent = "Optional for income";
+      select.appendChild(optional);
+    }
+
+    methods.forEach((method) => {
+      const option = document.createElement("option");
+      option.value = method.id || "";
+      option.textContent = methodOptionLabel(method);
+      option.dataset.description = method.description || "";
+      option.dataset.methodType = method.method_type || "";
+      option.dataset.settlementMode = method.settlement_mode || "";
+      option.dataset.linkedAccountId = method.linked_account_id || "";
+      option.dataset.fundingAccountId = method.funding_account_id || "";
+      option.dataset.settlementAccountId = method.settlement_account_id || "";
+      option.dataset.liabilityAccountId = method.liability_account_id || "";
+      if (method.disabled_reason) option.disabled = true;
+      select.appendChild(option);
+    });
+
+    const hasPrevious = Array.from(select.options).some((option) => option.value === previous && !option.disabled);
+    if (hasPrevious) {
+      select.value = previous;
+    } else {
+      const firstEnabled = Array.from(select.options).find((option) => !option.disabled && option.value);
+      if (firstEnabled) select.value = firstEnabled.value;
+    }
+
+    const hint = document.getElementById("payment-method-explanation");
+    if (hint) {
+      const selected = select.options[select.selectedIndex];
+      if (!methods.length && txType !== "income") {
+        hint.textContent = "No compatible card/payment method exists for this account yet. Open the Conto and add a card.";
+      } else {
+        hint.textContent = (selected && selected.dataset.description) || "Select a payment method to preview its route.";
+      }
+    }
+
+    updateFuturePreview();
+  }
+
   function updateTotal() {
     const currency = selectedCurrency();
     const eurTotal = currentEurTotal();
@@ -177,7 +248,18 @@
     if (currencySelect) currencySelect.addEventListener("change", updateTotal);
 
     const accountSelect = document.getElementById("account-select");
-    if (accountSelect) accountSelect.addEventListener("change", togglePayPalPanel);
+    if (accountSelect) accountSelect.addEventListener("change", () => {
+      updatePaymentMethodOptions();
+      togglePayPalPanel();
+    });
+
+    const mainPaymentMethodSelect = document.getElementById("payment-method-select");
+    if (mainPaymentMethodSelect) mainPaymentMethodSelect.addEventListener("change", () => {
+      const hint = document.getElementById("payment-method-explanation");
+      const selected = mainPaymentMethodSelect.options[mainPaymentMethodSelect.selectedIndex];
+      if (hint) hint.textContent = (selected && selected.dataset.description) || "Select a payment method to preview its route.";
+      updateFuturePreview();
+    });
 
     const methodSelect = document.getElementById("account-payment-method") || document.getElementById("paypal-payment-method");
     if (methodSelect) methodSelect.addEventListener("change", togglePayPalPanel);
@@ -185,6 +267,7 @@
     const insufficientSelect = document.getElementById("account-insufficient-action") || document.getElementById("paypal-insufficient-action");
     if (insufficientSelect) insufficientSelect.addEventListener("change", updateFuturePreview);
 
+    updatePaymentMethodOptions();
     updateTotal();
     togglePayPalPanel();
   });

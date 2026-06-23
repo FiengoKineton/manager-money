@@ -47,9 +47,10 @@ def default_payment_logic_for_account(account: Mapping[str, Any] | None) -> dict
     account = dict(account or {})
     policy = clean_text(account.get("main_net_policy") or MAIN_NET_SEPARATE)
     account_type = clean_text(account.get("type") or "wallet")
-    is_container = bool(account.get("is_container"))
+    account_kind = clean_text(account.get("account_kind") or account_type)
+    is_container = bool(account.get("is_container")) or account_kind == "container"
 
-    if policy == MAIN_NET_AFFECTS or account_type == "main":
+    if policy == MAIN_NET_AFFECTS or account_type == "main" or account_kind == "current_account":
         return {
             "schema_version": 1,
             "mode": PAYMENT_MODE_MAIN_NET,
@@ -63,7 +64,7 @@ def default_payment_logic_for_account(account: Mapping[str, Any] | None) -> dict
             "creates_pending": False,
         }
 
-    if policy == MAIN_NET_CREDIT_PENDING or account_type == "credit_card":
+    if policy == MAIN_NET_CREDIT_PENDING or account_type == "credit_card" or account_kind == "credit_card_liability":
         return {
             "schema_version": 1,
             "mode": PAYMENT_MODE_CREDIT_STATEMENT,
@@ -150,7 +151,7 @@ def account_payment_logic_for_key(account_key: str | None, user_id: str | None =
         # is main_bank. Otherwise use a safe tracked-balance default; callers that
         # validate account IDs should reject unknown accounts before saving.
         if key == "main_bank":
-            return default_payment_logic_for_account({"key": "main_bank", "type": "main", "main_net_policy": MAIN_NET_AFFECTS})
+            return default_payment_logic_for_account({"key": "main_bank", "type": "current_account", "account_kind": "current_account", "main_net_policy": MAIN_NET_AFFECTS})
         return default_payment_logic_for_account({"key": key, "main_net_policy": MAIN_NET_SEPARATE})
     return normalize_payment_logic(account.get("payment_logic"), account)
 

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t("cache.title") }}{% endblock %}
+
+{% block content %}
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">{{ t("cache.performance") }}</span>
+      <h2>{{ t("cache.title") }}</h2>
+      <p>{{ t("cache.description") }}</p>
+    </div>
+    <a class="secondary-btn" href="{{ url_for('profile.profile_page') }}">{{ t("common.back") }}</a>
+  </div>
+  <div class="kpi-grid account-kpi-grid">
+    <article class="kpi-card tone-net"><span>{{ t("cache.cache_size") }}</span><strong>{{ cache.size_label }}</strong><small>{{ cache.location }}</small></article>
+    <article class="kpi-card tone-income"><span>{{ t("cache.cache_entries") }}</span><strong>{{ cache.entry_count }}</strong><small>{{ cache.file_count }} files</small></article>
+    <article class="kpi-card tone-expense"><span>{{ t("cache.cache_hit_rate") }}</span><strong>{{ cache.stats.hit_rate_label }}</strong><small>{{ cache.stats.hits }} / {{ cache.stats.misses }}</small></article>
+    <article class="kpi-card tone-investment"><span>{{ t("cache.sensitive_cache_encrypted") }}</span><strong>{{ t('common.yes') if cache.sensitive_cache_encrypted else t('common.no') }}</strong><small>{{ cache.encrypted_sensitive_count }} encrypted · {{ cache.plaintext_sensitive_count }} plaintext</small></article>
+  </div>
+</section>
+
+{% if error %}<section class="panel-card"><div class="alert-card alert-error">{{ error }}</div></section>{% endif %}
+{% if action_result %}
+<section class="panel-card"><div class="alert-card alert-success">
+  {% if action_result.message == 'cache_cleared' %}{{ t("cache.cache_cleared") }}{% elif action_result.message == 'cache_rebuilt' %}{{ t("cache.cache_rebuilt") }}{% else %}{{ t("common.ok") }}{% endif %}
+  {% if action_result.removed is defined %} · {{ action_result.removed }}{% endif %}
+</div></section>
+{% endif %}
+
+<section class="panel-card">
+  <div class="panel-header">
+    <div><span class="eyebrow">{{ t("cache.precompute") }}</span><h3>{{ t("cache.actions") }}</h3><p>{{ t("cache.actions_hint") }}</p></div>
+    <div class="button-row">
+      <form method="post" action="{{ url_for('settings_cache.rebuild_cache_route') }}"><button class="primary-btn" type="submit">{{ t("cache.rebuild_cache") }}</button></form>
+      <form method="post" action="{{ url_for('settings_cache.cleanup_stale_route') }}"><button class="secondary-btn" type="submit">{{ t("cache.recalculate") }}</button></form>
+      <form method="post" action="{{ url_for('settings_cache.clear_cache_route') }}" onsubmit="return confirm({{ t('cache.clear_confirm')|tojson }})"><button class="secondary-btn" type="submit">{{ t("cache.clear_cache") }}</button></form>
+    </div>
+  </div>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">{{ t("cache.diagnostics") }}</span><h3>{{ t("cache.stats") }}</h3></div></div>
+  <div class="table-responsive">
+    <table>
+      <tbody>
+        <tr><th>{{ t("cache.last_rebuild") }}</th><td>{{ cache.stats.last_rebuild_at or "—" }}</td></tr>
+        <tr><th>{{ t("cache.stale_cache") }}</th><td>{{ cache.stale_count }}</td></tr>
+        <tr><th>Hits</th><td>{{ cache.stats.hits }}</td></tr>
+        <tr><th>Misses</th><td>{{ cache.stats.misses }}</td></tr>
+        <tr><th>Recomputes</th><td>{{ cache.stats.recomputes }}</td></tr>
+        <tr><th>Invalidations</th><td>{{ cache.stats.invalidations }}</td></tr>
+        <tr><th>Errors</th><td>{{ cache.stats.errors }}{% if cache.stats.last_error %} — {{ cache.stats.last_error }}{% endif %}</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">{{ t("cache.cache_entries") }}</span><h3>{{ t("cache.entries") }}</h3></div></div>
+  <div class="table-responsive">
+    <table>
+      <thead><tr><th>{{ t("common.name") }}</th><th>Version</th><th>Status</th><th>{{ t("cache.cache_size") }}</th><th>Tags</th><th>{{ t("cache.sensitive_cache_encrypted") }}</th></tr></thead>
+      <tbody>
+        {% for entry in cache.entries[:80] %}
+        <tr>
+          <td>{{ entry.name }}</td>
+          <td>{{ entry.version }}</td>
+          <td>{{ entry.status }}</td>
+          <td>{{ entry.size_bytes }}</td>
+          <td>{{ entry.tags|join(', ') }}</td>
+          <td>{% if entry.sensitive %}{{ t('common.yes') if entry.encrypted else t('common.no') }}{% else %}—{% endif %}</td>
+        </tr>
+        {% else %}<tr><td colspan="6" class="empty">{{ t("cache.no_entries") }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

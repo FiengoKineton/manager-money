@@ -1,56 +1,27 @@
-"""Human-readable registry of runtime user data files and calculation entry points."""
+"""Compatibility wrapper around the central storage data registry."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from money_manager.config.paths import (
-    CURRENCIES_JSON,
-    DEBTS_CSV,
-    DEBT_RULES_CSV,
-    EXPENSE_PROJECTS_CSV,
-    EXPENSE_PROJECT_MOVEMENTS_CSV,
-    EXPENSE_PROJECT_PLANNED_ITEMS_CSV,
-    INTERNAL_TRANSFERS_CSV,
-    INVESTMENT_ASSETS_CSV,
-    INVESTMENT_MARKET_CACHE_JSON,
-    PARENT_SUPPORT_CSV,
-    PARENT_SUPPORT_RULES_CSV,
-    PAYABLES_CSV,
-    PENDING_CSV,
-    RECEIVABLES_CSV,
-    RECURRING_CSV,
-    SPARAGNAT_CSV,
-    TRANSACTION_FILES,
-)
-from money_manager.config.user_paths import user_data_path
+from money_manager.config.user_paths import get_current_user_id, user_data_path
+from money_manager.storage.data_file_service import data_registry_diagnostics
+from money_manager.storage.data_registry import all_definitions
 
-CUSTOM_ACCOUNTS_JSON = user_data_path("accounts.json")
+
+def _runtime_user_path(relative_path: str):
+    return user_data_path(relative_path)
+
 
 DATA_FILE_REGISTRY: dict[str, Path] = {
-    "accounts": CUSTOM_ACCOUNTS_JSON,
-    "currencies": CURRENCIES_JSON,
-    "expenses": TRANSACTION_FILES["expense"],
-    "incomes": TRANSACTION_FILES["income"],
-    "investments": TRANSACTION_FILES["investment"],
-    "pending": PENDING_CSV,
-    "internal_transfers": INTERNAL_TRANSFERS_CSV,
-    "recurring_rules": RECURRING_CSV,
-    "sparagnat": SPARAGNAT_CSV,
-    "parent_support": PARENT_SUPPORT_CSV,
-    "parent_support_rules": PARENT_SUPPORT_RULES_CSV,
-    "debts": DEBTS_CSV,
-    "debt_rules": DEBT_RULES_CSV,
-    "receivables": RECEIVABLES_CSV,
-    "payables": PAYABLES_CSV,
-    "expense_projects": EXPENSE_PROJECTS_CSV,
-    "expense_project_movements": EXPENSE_PROJECT_MOVEMENTS_CSV,
-    "expense_project_planned_items": EXPENSE_PROJECT_PLANNED_ITEMS_CSV,
-    "investment_assets": INVESTMENT_ASSETS_CSV,
-    "investment_market_cache": INVESTMENT_MARKET_CACHE_JSON,
+    definition.name: _runtime_user_path(definition.relative_path)
+    for definition in all_definitions("user")
+    if definition.file_type in {"json", "csv"} and definition.relative_path
 }
 
-CACHE_INPUT_FILES: tuple[Path, ...] = tuple(DATA_FILE_REGISTRY.values())
+CACHE_INPUT_FILES: tuple[Path, ...] = tuple(
+    path for name, path in DATA_FILE_REGISTRY.items() if "cache" not in name
+)
 
 CALCULATION_ENTRYPOINTS: dict[str, str] = {
     "transactions.load_all": "money_manager.services.transaction_service.load_transactions",
@@ -80,15 +51,19 @@ WRITE_ENTRYPOINTS: dict[str, str] = {
 
 
 def describe_runtime_paths() -> list[dict[str, str]]:
+    user_id = get_current_user_id()
     rows: list[dict[str, str]] = []
-    for key, path in DATA_FILE_REGISTRY.items():
-        try:
-            exists = "yes" if path.exists() else "no"
-            resolved = str(path)
-        except Exception:
-            exists = "no-active-user"
-            resolved = repr(path)
-        rows.append({"key": key, "path": resolved, "exists": exists})
+    for item in data_registry_diagnostics(user_id=user_id):
+        rows.append({
+            "key": item["name"],
+            "path": item["expected_path"],
+            "exists": "yes" if item["exists"] else "no",
+            "scope": item["scope"],
+            "file_type": item["file_type"],
+            "backup_policy": item["backup_policy"],
+            "encryption_policy": item["future_encryption_policy"],
+            "sensitive_level": item["sensitive_level"],
+        })
     return rows
 
 

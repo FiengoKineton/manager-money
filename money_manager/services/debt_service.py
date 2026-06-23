@@ -15,19 +15,29 @@ from money_manager.repositories.debts import (
 )
 from money_manager.repositories.pending import append_pending, delete_pending_for_source, delete_pending_for_source_description, load_pending
 from money_manager.repositories.recurring import add_months, first_due_date, normalize_amount, parse_date, parse_frequency_months
-from money_manager.repositories.transactions import append_transaction
+from money_manager.services.payment_form_service import (
+    account_options_for_payment_forms,
+    payment_form_context,
+    snapshot_account,
+    snapshot_payment_method,
+)
 from money_manager.services.transaction_service import save_transaction_payload
 
 
 def add_debt_from_form(form) -> None:
     amount = _amount(form.get("original_amount"))
+    account_id = form.get("account_id") or form.get("account", "")
+    payment_method_id = form.get("preferred_payment_method_id") or form.get("payment_method_id") or form.get("account_payment_method", "")
     append_debt({
         "name": form.get("name", ""),
         "creditor": form.get("creditor", ""),
         "original_amount": amount,
         "remaining_amount": _amount(form.get("remaining_amount", amount)) or amount,
         "category": DEBT_PAYMENT_CATEGORY,
-        "account": form.get("account", ""),
+        "account": form.get("account", "") or account_id,
+        **snapshot_account(account_id),
+        "preferred_payment_method_id": snapshot_payment_method(payment_method_id)["payment_method_id"],
+        "preferred_payment_method_name_snapshot": snapshot_payment_method(payment_method_id)["payment_method_name_snapshot"],
         "start_date": form.get("start_date", date.today().isoformat()),
         "due_date": form.get("due_date", ""),
         "description": form.get("description", ""),
@@ -53,12 +63,17 @@ def update_debt_from_form(form) -> None:
     if remaining <= 0.005:
         status = "paid"
 
+    account_id = form.get("account_id") or form.get("account", "")
+    payment_method_id = form.get("preferred_payment_method_id") or form.get("payment_method_id") or form.get("account_payment_method", "")
     updates = {
         "name": form.get("name", ""),
         "creditor": form.get("creditor", ""),
         "original_amount": _amount(form.get("original_amount")),
         "remaining_amount": remaining,
-        "account": form.get("account", ""),
+        "account": form.get("account", "") or account_id,
+        **snapshot_account(account_id),
+        "preferred_payment_method_id": snapshot_payment_method(payment_method_id)["payment_method_id"],
+        "preferred_payment_method_name_snapshot": snapshot_payment_method(payment_method_id)["payment_method_name_snapshot"],
         "start_date": form.get("start_date", ""),
         "due_date": form.get("due_date", ""),
         "description": form.get("description", ""),
@@ -87,7 +102,9 @@ def pay_debt_from_form(form) -> None:
         debt_id=debt_id,
         amount=amount,
         payment_date=form.get("date", date.today().isoformat()),
-        account=form.get("account", ""),
+        account=form.get("account_id") or form.get("account", ""),
+        account_id=form.get("account_id") or form.get("account", ""),
+        payment_method_id=form.get("payment_method_id") or form.get("preferred_payment_method_id", ""),
         description=form.get("description", ""),
         payment_method=form.get("account_payment_method", ""),
         insufficient_action=form.get("account_insufficient_action", ""),
@@ -99,7 +116,8 @@ def pay_creditor_debts_from_form(form) -> None:
         return
 
     payment_date = form.get("date", date.today().isoformat())
-    account = form.get("account", "")
+    account = form.get("account_id") or form.get("account", "")
+    payment_method_id = form.get("payment_method_id") or form.get("preferred_payment_method_id", "")
     description = form.get("description", "")
 
     active_debts = [
@@ -116,7 +134,9 @@ def pay_creditor_debts_from_form(form) -> None:
             debt_id=debt.get("id"),
             amount=remaining,
             payment_date=payment_date,
-            account=account or debt.get("account", ""),
+            account=account or debt.get("account_id") or debt.get("account", ""),
+            account_id=account or debt.get("account_id") or debt.get("account", ""),
+            payment_method_id=payment_method_id or debt.get("preferred_payment_method_id", ""),
             description=description or f"Full debt payoff to {creditor}: {debt.get('name', '')}",
             payment_method=form.get("account_payment_method", ""),
             insufficient_action=form.get("account_insufficient_action", ""),
@@ -231,6 +251,8 @@ def register_debt_payment(
     payment_method: str | None = None,
     insufficient_action: str | None = None,
     extra_tx_fields: Mapping[str, Any] | None = None,
+    account_id: str | None = None,
+    payment_method_id: str | None = None,
 ) -> dict[str, Any]:
     debt = debt_by_id(debt_id)
     if not debt:
@@ -242,13 +264,17 @@ def register_debt_payment(
     if amount <= 0:
         return {"ok": False, "error": "Debt payment amount must be greater than zero."}
 
+    effective_account_id = account_id or debt.get("account_id") or account or debt.get("account", "")
+    effective_payment_method_id = payment_method_id or debt.get("preferred_payment_method_id", "")
     tx_payload = {
         "type": "expense",
         "date": payment_date or date.today().isoformat(),
         "category": DEBT_PAYMENT_CATEGORY,
         "sub_category": debt.get("name", ""),
         "amount": amount,
-        "account": account or debt.get("account", ""),
+        "account": account or debt.get("account", "") or effective_account_id,
+        "account_id": effective_account_id,
+        "payment_method_id": effective_payment_method_id,
         "description": description or f"Debt payment to {debt.get('creditor', '')}: {debt.get('name', '')}",
     }
     if extra_tx_fields:
@@ -256,6 +282,8 @@ def register_debt_payment(
 
     save_result = save_transaction_payload(
         tx_payload,
+        account_id=tx_payload.get("account_id"),
+        payment_method_id=tx_payload.get("payment_method_id"),
         payment_method=payment_method,
         insufficient_action=insufficient_action,
     )
@@ -263,7 +291,7 @@ def register_debt_payment(
         return save_result
 
     remaining = max(0.0, remaining_before - amount)
-    updates = {"remaining_amount": remaining}
+    updates = {"remaining_amount": remaining, **snapshot_account(effective_account_id), "preferred_payment_method_id": effective_payment_method_id, "preferred_payment_method_name_snapshot": snapshot_payment_method(effective_payment_method_id)["payment_method_name_snapshot"]}
     if remaining <= 0.005:
         updates["status"] = "paid"
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
@@ -319,7 +347,9 @@ def generate_debt_payments(today: date | None = None) -> int:
                 "type": "expense",
                 "amount": remaining_budget,
                 "category": DEBT_PAYMENT_CATEGORY,
-                "account": "auto",
+                "account": debt.get("account", "auto"),
+                "account_id": debt.get("account_id", ""),
+                "payment_method_id": debt.get("preferred_payment_method_id", ""),
                 "description": _pending_description(row),
                 "source": "debt",
                 "source_id": row.get("debt_id", ""),
@@ -347,7 +377,9 @@ def generate_debt_payments(today: date | None = None) -> int:
                 "type": "expense",
                 "amount": amount,
                 "category": DEBT_PAYMENT_CATEGORY,
-                "account": "auto",
+                "account": debt.get("account", "auto"),
+                "account_id": debt.get("account_id", ""),
+                "payment_method_id": debt.get("preferred_payment_method_id", ""),
                 "description": _pending_description(row),
                 "source": "debt",
                 "source_id": row.get("debt_id", ""),
@@ -370,7 +402,9 @@ def register_pending_debt_payment(tx: dict) -> None:
         debt_id=debt_id,
         amount=normalize_amount(tx.get("amount", 0)),
         payment_date=tx.get("date_due", date.today().isoformat()),
-        account=tx.get("account", "auto"),
+        account=tx.get("account_id") or tx.get("account", "auto"),
+        account_id=tx.get("account_id") or tx.get("account", ""),
+        payment_method_id=tx.get("payment_method_id", ""),
         description=tx.get("description", ""),
     )
 
@@ -440,6 +474,8 @@ def page_context() -> dict:
         "pending_debt_payments": sum(_amount(row.get("amount")) for row in pending),
     }
 
+    form_ctx = payment_form_context("expense")
+
     return {
         "debts": debts,
         "active_debts": active_debts,
@@ -449,6 +485,8 @@ def page_context() -> dict:
         "totals": totals,
         "today": date.today().isoformat(),
         "creditor_summaries": creditor_summaries,
+        "account_options": account_options_for_payment_forms(include_credit=True),
+        **form_ctx,
     }
 
 

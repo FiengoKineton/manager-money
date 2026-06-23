@@ -18,6 +18,7 @@ from money_manager.config import (
 )
 
 from money_manager.repositories.pending import append_pending, delete_pending_for_source, load_pending
+from money_manager.services.payment_form_service import snapshot_account, snapshot_payment_method
 from money_manager.repositories.recurring import (
     add_months,
     append_recurring,
@@ -32,6 +33,21 @@ from money_manager.repositories.recurring import (
     update_recurring,
     write_recurring,
 )
+
+
+def _payment_fields_from_form(form) -> dict:
+    tx_type = str(form.get("type", "expense") or "expense").lower()
+    account_id = form.get("account_id") or form.get("account", "")
+    payment_method_id = form.get("payment_method_id", "")
+    if tx_type == "income":
+        payment_method_id = ""
+    return {
+        "account": form.get("account", "") or account_id or "auto",
+        **snapshot_account(account_id),
+        "payment_method_id": snapshot_payment_method(payment_method_id)["payment_method_id"],
+        "payment_method_name_snapshot": snapshot_payment_method(payment_method_id)["payment_method_name_snapshot"],
+        "payment_resolution_template_json": "",
+    }
 
 
 def prepare_recurring_sections(rows: list[dict]) -> dict:
@@ -69,7 +85,7 @@ def append_rule_from_form(form) -> None:
         "frequency": int(form.get("frequency", 1)),
         "day_of_month": int(form.get("day_of_month", 1)),
         "category": form.get("category", ""),
-        "account": form.get("account", "auto"),
+        **_payment_fields_from_form(form),
         "start_date": form.get("start_date", ""),
         "end_date": end_date,
         "max_occurrences": max_occurrences,
@@ -100,7 +116,7 @@ def update_rule_from_form(form) -> None:
         "frequency": int(form.get("frequency", 1)),
         "day_of_month": int(form.get("day_of_month", 1)),
         "category": form.get("category", ""),
-        "account": form.get("account", "auto"),
+        **_payment_fields_from_form(form),
         "start_date": form.get("start_date", ""),
         "end_date": end_date,
         "max_occurrences": max_occurrences,
@@ -282,6 +298,9 @@ def generate_recurring(today: date | None = None) -> int:
                     "amount": normalize_amount(row.get("amount", 0)),
                     "category": row.get("category", ""),
                     "account": _pending_account_for_rule(row),
+                    "account_id": row.get("account_id", ""),
+                    "payment_method_id": row.get("payment_method_id", ""),
+                    "payment_resolution_template_json": row.get("payment_resolution_template_json", ""),
                     "description": row.get("name", ""),
                     "source": "recurring",
                     "source_id": row.get("id", ""),
@@ -343,6 +362,8 @@ def recurring_forecast_for_period(window_start: date, window_end: date, today: d
                 "type": tx_type,
                 "category": row.get("category", ""),
                 "account": account,
+                "account_id": row.get("account_id", ""),
+                "payment_method_id": row.get("payment_method_id", ""),
                 "account_label": account_label_for_value(account),
                 "is_auxiliary_account": is_auxiliary_account(account),
                 "amount_value": amount,
@@ -591,3 +612,21 @@ def _history_rows_for_rule(row: dict) -> list[dict]:
             seen_ids.add(tx_id)
 
     return rows
+
+# --- Scoped recurring compatibility wrappers (Prompt 15B) ---
+def recurring_rows_for_scope(rows: list[dict], scope, user_id: str | None = None) -> list[dict]:
+    from money_manager.services.account_scope_service import recurring_rows_for_scope as _scoped_rows
+
+    return _scoped_rows(rows, scope, user_id=user_id)
+
+
+def recurring_monthly_total_for_scope(scope, user_id: str | None = None) -> float:
+    from money_manager.services.account_scope_service import recurring_monthly_total_for_scope as _scoped_total
+
+    return float(_scoped_total(scope, user_id=user_id))
+
+
+def recurring_context_for_scope(scope, user_id: str | None = None) -> dict:
+    from money_manager.services.account_scope_service import recurring_context_for_scope as _scoped_context
+
+    return _scoped_context(scope, user_id=user_id)

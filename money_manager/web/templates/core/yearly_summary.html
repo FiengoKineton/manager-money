@@ -21,7 +21,7 @@
   </div>
 
   <div class="yearly-hero-balance">
-    <span>Opening main net</span>
+    <span>Opening global net</span>
     <strong>€ {{ '%.2f'|format(initial_conditions.main_net) }}</strong>
     <small>{{ period.label }}</small>
     <small>Closing: € {{ '%.2f'|format(initial_conditions.closing_net) }}</small>
@@ -47,12 +47,12 @@
   <article class="analysis-kpi tone-investment">
     <span>Invested</span>
     <strong>€ {{ '%.2f'|format(totals.investments) }}</strong>
-    <small>Investment outflow counted in main net.</small>
+    <small>Investment outflow counted in global net.</small>
   </article>
   <article class="analysis-kpi {{ 'tone-good' if totals.net_change >= 0 else 'tone-danger' }}">
     <span>Year net change</span>
     <strong>€ {{ '%.2f'|format(totals.net_change) }}</strong>
-    <small>Closing minus opening main net.</small>
+    <small>Closing minus opening global net.</small>
   </article>
   <article class="analysis-kpi tone-profit {{ 'positive' if totals.savings_rate >= 0 else 'negative' }}">
     <span>Savings rate</span>
@@ -76,13 +76,13 @@
     <div class="panel-header compact-panel-header">
       <div>
         <span class="eyebrow">Initial conditions</span>
-        <h2>Main net carried into {{ selected_year }}</h2>
+        <h2>Global net carried into {{ selected_year }}</h2>
       </div>
     </div>
     <dl class="yearly-definition-grid">
-      <div><dt>Opening main net</dt><dd>€ {{ '%.2f'|format(initial_conditions.main_net) }}</dd></div>
+      <div><dt>Opening global net</dt><dd>€ {{ '%.2f'|format(initial_conditions.main_net) }}</dd></div>
       <div><dt>Year movement</dt><dd>€ {{ '%.2f'|format(totals.net_change) }}</dd></div>
-      <div><dt>Closing main net</dt><dd>€ {{ '%.2f'|format(initial_conditions.closing_net) }}</dd></div>
+      <div><dt>Closing global net</dt><dd>€ {{ '%.2f'|format(initial_conditions.closing_net) }}</dd></div>
       <div><dt>Period shown</dt><dd>{{ period.label }}</dd></div>
     </dl>
   </article>

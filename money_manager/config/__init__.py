@@ -44,6 +44,8 @@ from money_manager.config.finance import (
 )
 from money_manager.config.paths import (
     ALLOWED_DOCUMENT_EXTENSIONS,
+    BACKUPS_DIR,
+    DATA_HOME,
     DATA_DIR,
     DEBTS_CSV,
     DEBT_RULES_CSV,
@@ -64,6 +66,11 @@ from money_manager.config.paths import (
     INVESTMENT_ASSETS_CSV,
     INVESTMENT_MARKET_CACHE_JSON,
     INTERNAL_TRANSFERS_CSV,
+    GLOBAL_CACHE_DIR,
+    UPDATE_INBOX_DIR,
+    UPDATES_DIR,
+    CREDIT_SETTLEMENTS_CSV,
+    ACCOUNT_EVENTS_JSON,
     CURRENCIES_JSON,
     CACHE_DIR,
     TRANSACTION_FILES,

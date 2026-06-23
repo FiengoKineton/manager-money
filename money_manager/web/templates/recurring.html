@@ -62,13 +62,24 @@
     </div>
 
     <div class="form-field">
-      <label>Account</label>
-      <select name="account">
+      <label>Account / Conto</label>
+      <select name="account_id">
         {% for account in account_options %}
-          <option value="{{ account.value }}">{{ account.label }}</option>
+          <option value="{{ account.id or account.value }}">{{ account.label }}</option>
         {% endfor %}
       </select>
-      <small>Blank = main bank. Separate accounts stay separate unless their policy says otherwise. Credit accounts become pending main-account payments.</small>
+      <input type="hidden" name="account" value="">
+      <small>Income uses Account / Conto. Expense and investment rules should also choose a payment method below.</small>
+    </div>
+
+    <div class="form-field">
+      <label>Payment Method / Metodo di pagamento</label>
+      <select name="payment_method_id">
+        <option value="">Default for selected account</option>
+        {% for method in payment_method_options %}
+          <option value="{{ method.id }}">{{ method.label }}</option>
+        {% endfor %}
+      </select>
     </div>
 
     <div class="form-field">
@@ -215,14 +226,23 @@
         </div>
 
         <div>
-          <label>Account</label>
-          <select name="account">
+          <label>Account / Conto</label>
+          <select name="account_id">
             {% for account in account_options %}
-              {% set account_value = account.value %}
+              {% set account_value = account.id or account.value %}
               <option value="{{ account_value }}"
-                {% if (r.account == account.label) or (r.account == account.key) or (r.account == account.value) or (not r.account and account.key == 'main_bank') or (r.account == 'auto' and account.key == 'main_bank') %}selected{% endif %}>
+                {% if (r.account_id == account_value) or (r.account == account.label) or (r.account == account_value) or (not r.account and account_value == 'main_bank') or (r.account == 'auto' and account_value == 'main_bank') %}selected{% endif %}>
                 {{ account.label }}
               </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Payment Method / Metodo di pagamento</label>
+          <select name="payment_method_id">
+            <option value="">Default for selected account</option>
+            {% for method in payment_method_options %}
+              <option value="{{ method.id }}" {% if method.id == r.payment_method_id %}selected{% endif %}>{{ method.label }}</option>
             {% endfor %}
           </select>
         </div>

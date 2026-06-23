@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t("integrity.title") }}{% endblock %}
+
+{% block content %}
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">{{ t("integrity.eyebrow") }}</span>
+      <h2>{{ t("integrity.title") }}</h2>
+      <p>{{ t("integrity.description") }}</p>
+    </div>
+    <a class="secondary-btn" href="{{ url_for('profile.profile_page') }}">{{ t("common.back") }}</a>
+  </div>
+  <div class="kpi-grid account-kpi-grid">
+    <article class="kpi-card tone-net"><span>{{ t("integrity.status") }}</span><strong>{{ t("common.ok") if report.ok else t("integrity.needs_attention") }}</strong><small>{{ t("integrity.status_hint") }}</small></article>
+    <article class="kpi-card tone-expense"><span>{{ t("integrity.errors") }}</span><strong>{{ report.errors|length }}</strong><small>{{ t("integrity.errors_hint") }}</small></article>
+    <article class="kpi-card tone-income"><span>{{ t("integrity.warnings") }}</span><strong>{{ report.warnings|length }}</strong><small>{{ t("integrity.warnings_hint") }}</small></article>
+    <article class="kpi-card tone-investment"><span>{{ t("integrity.ledger_rows") }}</span><strong>{{ report.counts.ledger_rows }}</strong><small>{{ t("integrity.ledger_consistency") }}</small></article>
+  </div>
+</section>
+
+{% if repair_result %}
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">{{ t("integrity.safe_repair") }}</span><h3>{{ t("integrity.repair_result") }}</h3></div></div>
+  {% if repair_result.ok %}
+    {% if repair_result.changes %}<ul>{% for item in repair_result.changes %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="empty">{{ t("integrity.no_repair_needed") }}</p>{% endif %}
+  {% else %}
+    <div class="alert-card alert-error">{{ repair_result.error }}</div>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="dashboard-grid dashboard-grid-large-left">
+  <article class="panel-card">
+    <div class="panel-header"><div><span class="eyebrow">{{ t("integrity.full_report") }}</span><h3>{{ t("integrity.errors") }}</h3></div></div>
+    {% if report.errors %}<ul>{% for item in report.errors %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="empty">{{ t("integrity.no_errors") }}</p>{% endif %}
+  </article>
+  <article class="panel-card">
+    <div class="panel-header"><div><span class="eyebrow">{{ t("integrity.full_report") }}</span><h3>{{ t("integrity.warnings") }}</h3></div></div>
+    {% if report.warnings %}<ul>{% for item in report.warnings %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="empty">{{ t("integrity.no_warnings") }}</p>{% endif %}
+  </article>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">{{ t("integrity.rebuild_ledger_preview") }}</span>
+      <h3>{{ t("integrity.ledger_preview_title") }}</h3>
+      <p>{{ t("integrity.ledger_preview_hint") }}</p>
+    </div>
+    <form method="post" action="{{ url_for('integrity.rebuild_ledger_preview_route') }}"><button class="secondary-btn" type="submit">{{ t("integrity.rebuild_ledger_preview") }}</button></form>
+  </div>
+  <div class="summary account-kpi-grid">
+    <div class="summary-card neutral"><h3>{{ t("integrity.transaction_rows") }}</h3><p>{{ preview.transaction_rows }}</p></div>
+    <div class="summary-card neutral"><h3>{{ t("integrity.transactions_with_ledger") }}</h3><p>{{ preview.transactions_with_ledger }}</p></div>
+    <div class="summary-card pending"><h3>{{ t("integrity.transactions_missing_ledger") }}</h3><p>{{ preview.transactions_missing_ledger }}</p></div>
+    <div class="summary-card pending"><h3>{{ t("integrity.transactions_without_uid") }}</h3><p>{{ preview.transactions_without_uid }}</p></div>
+  </div>
+  <p class="muted">{{ preview.message }}</p>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">{{ t("integrity.safe_repair") }}</span><h3>{{ t("integrity.safe_repair_title") }}</h3><p>{{ t("integrity.safe_repair_hint") }}</p></div></div>
+  <form method="post" action="{{ url_for('integrity.repair_safe_route') }}" class="custom-account-form" onsubmit="return confirm({{ t('integrity.safe_repair_confirm')|tojson }})">
+    <div class="form-field-wide"><label class="inline-checkbox"><input type="checkbox" name="confirm" value="1" required> {{ t("integrity.confirm_safe_repair") }}</label></div>
+    <div class="form-actions-row form-field-wide"><button type="submit" class="secondary-btn">{{ t("integrity.safe_repair") }}</button></div>
+  </form>
+</section>
+
+{% if report.info %}
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">{{ t("common.info") }}</span><h3>{{ t("integrity.info") }}</h3></div></div>
+  <ul>{% for item in report.info %}<li>{{ item }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

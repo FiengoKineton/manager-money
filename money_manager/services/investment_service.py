@@ -7,6 +7,8 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 import pandas as pd
+
+from money_manager.security.secure_storage import read_json_secure, write_json_secure
 import plotly.graph_objects as go
 
 from money_manager.config import INVESTMENT_MARKET_CACHE_JSON
@@ -17,6 +19,7 @@ from money_manager.repositories.investments import (
     update_investment_asset,
 )
 from money_manager.repositories.transactions import load_by_type
+from money_manager.services.payment_form_service import payment_form_context, snapshot_account, snapshot_payment_method
 
 PLOT_CONFIG = {"displaylogo": False, "responsive": True, "modeBarButtonsToRemove": ["lasso2d", "select2d"]}
 MARKET_LOOKBACK = "2y"
@@ -32,11 +35,17 @@ DIVIDEND_CATEGORIES = {"dividend", "dividends"}
 
 
 def add_asset_from_form(form) -> None:
+    funding_account_id = form.get("funding_account_id") or form.get("account_id", "")
+    payment_method_id = form.get("payment_method_id", "")
     append_investment_asset({
         "symbol": form.get("symbol", ""),
         "label": form.get("label", ""),
         "allocation_pct": form.get("allocation_pct", 100),
         "currency": form.get("currency", "EUR"),
+        "funding_account_id": snapshot_account(funding_account_id)["account_id"],
+        "funding_account_name_snapshot": snapshot_account(funding_account_id)["account_name_snapshot"],
+        "payment_method_id": snapshot_payment_method(payment_method_id)["payment_method_id"],
+        "payment_method_name_snapshot": snapshot_payment_method(payment_method_id)["payment_method_name_snapshot"],
         "active": "1" if form.get("active", "1") else "0",
     })
     refresh_market_data(force=True)
@@ -54,11 +63,17 @@ def update_asset_from_form(form) -> None:
         asset_id = int(form.get("id"))
     except (TypeError, ValueError):
         return
+    funding_account_id = form.get("funding_account_id") or form.get("account_id", "")
+    payment_method_id = form.get("payment_method_id", "")
     update_investment_asset(asset_id, {
         "symbol": form.get("symbol", ""),
         "label": form.get("label", ""),
         "allocation_pct": form.get("allocation_pct", 0),
         "currency": form.get("currency", "EUR"),
+        "funding_account_id": snapshot_account(funding_account_id)["account_id"],
+        "funding_account_name_snapshot": snapshot_account(funding_account_id)["account_name_snapshot"],
+        "payment_method_id": snapshot_payment_method(payment_method_id)["payment_method_id"],
+        "payment_method_name_snapshot": snapshot_payment_method(payment_method_id)["payment_method_name_snapshot"],
         "active": "1" if form.get("active") else "0",
     })
     refresh_market_data(force=True)
@@ -132,6 +147,7 @@ def page_context() -> dict:
         "charts": charts,
         "flow_rows": flow_rows,
         "transactions": _transactions_for_display(tx),
+        **payment_form_context("investment"),
     }
 
 
@@ -734,11 +750,11 @@ def _read_cache() -> dict:
     if not path.exists():
         return {"symbols": {}}
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = read_json_secure(path, None)
         if isinstance(payload, dict):
             payload.setdefault("symbols", {})
             return payload
-    except (OSError, json.JSONDecodeError):
+    except Exception:
         pass
     return {"symbols": {}}
 
@@ -746,7 +762,7 @@ def _read_cache() -> dict:
 def _write_cache(cache: dict) -> None:
     path = Path(INVESTMENT_MARKET_CACHE_JSON)
     path.parent.mkdir(exist_ok=True, parents=True)
-    path.write_text(json.dumps(cache, indent=2), encoding="utf-8")
+    write_json_secure(path, cache)
     try:
         from money_manager.services.cache_service import notify_data_changed
 

@@ -7,7 +7,7 @@ from typing import Any, Iterable, Mapping
 
 from money_manager.config.user_defaults import USER_CONFIG_DEFAULTS, default_for
 from money_manager.config.user_paths import user_data_path
-from money_manager.security.protection_manager import read_json, write_json_atomic
+from money_manager.security.secure_storage import read_json_secure, write_json_secure
 
 CONFIG_FILENAMES = frozenset(USER_CONFIG_DEFAULTS.keys())
 
@@ -51,12 +51,12 @@ def load_user_config(filename: str, user_id: str | None = None, *, repair: bool 
         path = config_path(filename, user_id=user_id)
     except RuntimeError:
         return default
-    raw = read_json(path, None)
+    raw = read_json_secure(path, None, user_id=user_id)
     merged = deep_merge_defaults(default, raw)
     if not isinstance(merged, dict):
         merged = default
     if repair and (raw != merged or not path.exists()):
-        write_json_atomic(path, merged)
+        write_json_secure(path, merged, user_id=user_id)
     return merged
 
 
@@ -65,7 +65,7 @@ def save_user_config(filename: str, payload: Mapping[str, Any], user_id: str | N
     merged = deep_merge_defaults(default, dict(payload or {}))
     if not isinstance(merged, dict):
         merged = default
-    write_json_atomic(config_path(filename, user_id=user_id), merged)
+    write_json_secure(config_path(filename, user_id=user_id), merged, user_id=user_id)
     return merged
 
 

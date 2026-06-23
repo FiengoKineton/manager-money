@@ -11,7 +11,7 @@ from money_manager.repositories.payables import load_payables
 from money_manager.repositories.pending import load_pending
 from money_manager.repositories.receivables import load_receivables
 from money_manager.repositories.recurring import load_recurring
-from money_manager.services.account_service import main_account_transactions
+from money_manager.services.account_scope_service import transactions_for_scope
 from money_manager.services.investment_service import investment_habit_snapshot
 from money_manager.services.forecast_service import estimate_cashflow_habits
 from money_manager.utils.filters import filter_by_amount_range, filter_by_categories, filter_by_date, filter_by_query, filter_by_types
@@ -171,14 +171,15 @@ def _opening_balance_before(df: pd.DataFrame, start: str | None) -> float:
     return float(pd.to_numeric(dated["signed_amount"], errors="coerce").fillna(0.0).sum())
 
 
-def build_analysis_metrics(df: pd.DataFrame, period_key: str = "ytd") -> dict:
+def build_analysis_metrics(df: pd.DataFrame, period_key: str = "ytd", scope: str = "global") -> dict:
     """Build a decision-oriented professional analysis cockpit.
 
     The selected period controls the charts and behavioural analysis. The full
     history is still used for the real net balance and opening balance, so the
     page does not confuse a selected date window with your actual money position.
     """
-    main_df_all = main_account_transactions(df)
+    selected_scope = scope or "global"
+    main_df_all = transactions_for_scope(df, selected_scope)
     period = _resolve_analysis_period(main_df_all, period_key)
     main_df_display = filter_by_date(main_df_all, period["start"], period["end"])
     previous_df = _previous_period_frame(main_df_all, period)
@@ -208,8 +209,11 @@ def build_analysis_metrics(df: pd.DataFrame, period_key: str = "ytd") -> dict:
     habits_month = monthly_summary(main_df_all)
     habits = _spending_habits(main_df_all, habits_month, df_cat, df_wd)
     investment = investment_habit_snapshot(refresh=False)
-    recurring_pressure = _recurring_pressure_snapshot()
-    liabilities = _liability_snapshot()
+    recurring_pressure = _recurring_pressure_snapshot(selected_scope)
+    liabilities = _liability_snapshot(selected_scope)
+    from money_manager.services.account_scope_service import all_financial_center_summaries, scope_balance_summary
+    scope_summary = scope_balance_summary(selected_scope)
+    financial_center_breakdown = all_financial_center_summaries() if selected_scope == "global" else []
     income_sources = _income_sources(main_df_display)
     category_rows = _category_rows(df_cat, previous_df)
     cashflow_statement = _cashflow_statement(period_totals)
@@ -255,8 +259,11 @@ def build_analysis_metrics(df: pd.DataFrame, period_key: str = "ytd") -> dict:
         "cashflow_statement": cashflow_statement,
         "insight_cards": insight_cards,
         "action_items": action_items,
+        "scope_summary": scope_summary,
+        "financial_center_breakdown": financial_center_breakdown,
         "weekday_data": df_wd.to_dict(orient="records"),
         "top_expenses": top_expenses.to_dict(orient="records"),
+        "selected_scope": selected_scope,
         "charts": {
             "cashflow_waterfall": chart_cashflow_waterfall(cashflow_statement),
             "monthly_summary": chart_monthly_summary(df_month),
@@ -272,13 +279,14 @@ def build_analysis_metrics(df: pd.DataFrame, period_key: str = "ytd") -> dict:
     }
 
 
-def build_analysis_metrics_cached() -> dict:
-    from money_manager.services.cache_service import cached_calculation
+def build_analysis_metrics_cached(period_key: str = "ytd", scope: str = "global") -> dict:
+    from money_manager.services.calculation_service import cached_context
     from money_manager.services.transaction_service import load_transactions
 
-    return cached_calculation(
-        "analysis.metrics",
-        lambda: build_analysis_metrics(load_transactions()),
+    return cached_context(
+        "analysis_metrics",
+        lambda: build_analysis_metrics(load_transactions(), period_key=period_key, scope=scope),
+        params={"period": period_key, "scope": str(scope or "global")},
     )
 
 
@@ -520,14 +528,19 @@ def _category_rows(df_cat: pd.DataFrame, previous_df: pd.DataFrame) -> list[dict
     return rows
 
 
-def _recurring_pressure_snapshot() -> dict:
+def _recurring_pressure_snapshot(scope: str = "global") -> dict:
     today = date.today()
     rows = []
     monthly_expense = 0.0
     monthly_income = 0.0
     monthly_investment = 0.0
     active_count = 0
-    for row in load_recurring():
+    try:
+        from money_manager.services.account_scope_service import recurring_for_scope
+        source_rows = recurring_for_scope(scope)
+    except Exception:
+        source_rows = load_recurring()
+    for row in source_rows:
         if not _recurring_is_active(row, today):
             continue
         amount = _safe_amount(row.get("amount"))
@@ -572,14 +585,26 @@ def _recurring_is_active(row: dict, today: date) -> bool:
     return True
 
 
-def _liability_snapshot() -> dict:
+def _liability_snapshot(scope: str = "global") -> dict:
     today = date.today()
     due_limit = today + timedelta(days=30)
 
-    debts = [_normalize_money_row(row, label_key="creditor") for row in load_debts()]
-    payables = [_normalize_money_row(row, label_key="payee") for row in load_payables()]
-    receivables = [_normalize_money_row(row, label_key="debtor") for row in load_receivables()]
-    pending = [_normalize_pending_row(row) for row in load_pending()]
+    try:
+        from money_manager.services.account_scope_service import debts_for_scope, payables_for_scope, pending_for_scope, receivables_for_scope
+        debt_rows = debts_for_scope(scope)
+        payable_rows = payables_for_scope(scope)
+        receivable_rows = receivables_for_scope(scope)
+        pending_rows = pending_for_scope(scope)
+    except Exception:
+        debt_rows = load_debts()
+        payable_rows = load_payables()
+        receivable_rows = load_receivables()
+        pending_rows = load_pending()
+
+    debts = [_normalize_money_row(row, label_key="creditor") for row in debt_rows]
+    payables = [_normalize_money_row(row, label_key="payee") for row in payable_rows]
+    receivables = [_normalize_money_row(row, label_key="debtor") for row in receivable_rows]
+    pending = [_normalize_pending_row(row) for row in pending_rows]
 
     active_debts = [row for row in debts if row["active"]]
     active_payables = [row for row in payables if row["active"]]

@@ -27,6 +27,10 @@ def append_entry(entry: dict) -> None:
         "category": entry.get("category", ""),
         "amount": entry.get("amount", 0.0),
         "payment_method": entry.get("payment_method", ""),
+        "account_id": entry.get("account_id", ""),
+        "account_name_snapshot": entry.get("account_name_snapshot", ""),
+        "payment_method_id": entry.get("payment_method_id", ""),
+        "payment_method_name_snapshot": entry.get("payment_method_name_snapshot", ""),
         "description": entry.get("description", ""),
         "created_at": datetime.now().isoformat(timespec="seconds"),
     }
@@ -38,7 +42,7 @@ def update_entry(entry_id: int, updates: dict) -> None:
     for row in rows:
         if str(row.get("id", "")) != str(entry_id):
             continue
-        for key in ["date", "kind", "parent", "category", "amount", "payment_method", "description"]:
+        for key in ["date", "kind", "parent", "category", "amount", "payment_method", "account_id", "account_name_snapshot", "payment_method_id", "payment_method_name_snapshot", "description"]:
             if key in updates:
                 row[key] = updates[key]
         break
@@ -67,6 +71,10 @@ def append_rule(rule: dict) -> None:
         "start_date": rule.get("start_date", ""),
         "end_date": rule.get("end_date", ""),
         "payment_method": rule.get("payment_method", ""),
+        "account_id": rule.get("account_id", ""),
+        "account_name_snapshot": rule.get("account_name_snapshot", ""),
+        "payment_method_id": rule.get("payment_method_id", ""),
+        "payment_method_name_snapshot": rule.get("payment_method_name_snapshot", ""),
         "description": rule.get("description", ""),
         "active": rule.get("active", "yes"),
         "created_at": datetime.now().isoformat(timespec="seconds"),
@@ -89,6 +97,10 @@ def update_rule(rule_id: int, updates: dict) -> None:
             "start_date",
             "end_date",
             "payment_method",
+            "account_id",
+            "account_name_snapshot",
+            "payment_method_id",
+            "payment_method_name_snapshot",
             "description",
             "active",
         ]:

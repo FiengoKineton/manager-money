@@ -25,6 +25,11 @@ def append_recurring(rule: dict) -> None:
         "day_of_month": str(rule.get("day_of_month", 1)),
         "category": rule.get("category", ""),
         "account": rule.get("account", "auto"),
+        "account_id": rule.get("account_id", ""),
+        "account_name_snapshot": rule.get("account_name_snapshot", ""),
+        "payment_method_id": rule.get("payment_method_id", ""),
+        "payment_method_name_snapshot": rule.get("payment_method_name_snapshot", ""),
+        "payment_resolution_template_json": rule.get("payment_resolution_template_json", ""),
         "start_date": (parse_date(rule.get("start_date")) or date.today()).isoformat(),
         "end_date": _clean_date_field(rule.get("end_date", "")),
         "max_occurrences": _clean_max_occurrences(rule.get("max_occurrences", "")),
@@ -54,6 +59,9 @@ def update_recurring(rule_id, updates: dict) -> None:
         row["day_of_month"] = str(updates.get("day_of_month", row.get("day_of_month", 1)))
         row["category"] = updates.get("category", row.get("category", ""))
         row["account"] = updates.get("account", row.get("account", "auto"))
+        for key in ["account_id", "account_name_snapshot", "payment_method_id", "payment_method_name_snapshot", "payment_resolution_template_json"]:
+            if key in updates:
+                row[key] = updates.get(key, "")
         row["start_date"] = updates.get("start_date") or row.get("start_date") or date.today().isoformat()
         row["end_date"] = _clean_date_field(updates.get("end_date", row.get("end_date", "")))
         row["max_occurrences"] = _clean_max_occurrences(

@@ -28,20 +28,36 @@
 <section class="form-section bonifico-form-section">
   <form method="post" class="transaction-form bonifico-form" data-bonifico-form>
     <div>
-      <label>{{ t("bonifico.source_account") }}</label>
-      <select name="account" id="bonifico-account-select">
+      <label>Account / Conto</label>
+      <select name="account_id" id="bonifico-account-select" required>
         {% for account in account_options %}
           <option
-            value="{{ account.value }}"
-            data-key="{{ account.key }}"
-            data-kind="{{ account.kind }}"
-            data-payment-mode="{{ account.payment_mode or account.payment_logic.mode }}"
-            data-display-label="{{ account.display_label or account.label }}"
-            {% if form_values.account == account.value %}selected{% endif %}
-          >{{ account.label }}</option>
+            value="{{ account.id }}"
+            data-key="{{ account.id }}"
+            data-kind="{{ account.account_kind }}"
+            data-payment-mode="main_net"
+            data-display-label="{{ account.label }}"
+            {% if (form_values.account_id or form_values.account) == account.id %}selected{% endif %}
+            {% if account.disabled_reason %}disabled{% endif %}
+          >{{ account.label }}{% if account.disabled_reason %} — {{ account.disabled_reason }}{% endif %}</option>
         {% endfor %}
       </select>
-      <small class="hint">{{ t("bonifico.source_account_hint") }}</small>
+      <input type="hidden" name="account" value="{{ form_values.account or '' }}">
+      <small class="hint">Source current account for this Money Manager bank-transfer record.</small>
+    </div>
+
+    <div>
+      <label>Payment Method / Metodo di pagamento</label>
+      <select name="payment_method_id" required>
+        {% for method in payment_method_options %}
+          <option
+            value="{{ method.id }}"
+            {% if form_values.payment_method_id == method.id %}selected{% endif %}
+            {% if method.disabled_reason %}disabled{% endif %}
+          >{{ method.label }}{% if method.disabled_reason %} — {{ method.disabled_reason }}{% endif %}</option>
+        {% endfor %}
+      </select>
+      <small class="hint">Bonifico uses a bank-transfer payment method linked to the selected account. It records a transaction only; it does not execute a real bank transfer.</small>
     </div>
 
     <div>
@@ -104,30 +120,6 @@
         {% endfor %}
       </select>
       <small class="hint">{{ t("bonifico.select_payable_hint") }}</small>
-    </div>
-
-    <div id="account-payment-panel" class="form-field-wide paypal-payment-panel" hidden>
-      <div class="paypal-panel-grid">
-        <div>
-          <label><span data-balance-account-name>{{ t("accounts.account") }}</span> {{ t("account_payment.method_label") }}</label>
-          <select name="account_payment_method" id="account-payment-method">
-            <option value="balance" {% if (form_values.account_payment_method or form_values.paypal_payment_method or 'balance') == 'balance' %}selected{% endif %}>{{ t("account_payment.method_balance") }}</option>
-            <option value="credit" {% if (form_values.account_payment_method or form_values.paypal_payment_method) == 'credit' %}selected{% endif %}>{{ t("account_payment.method_credit") }}</option>
-            <option value="another_card" {% if (form_values.account_payment_method or form_values.paypal_payment_method) == 'another_card' %}selected{% endif %}>{{ t("account_payment.method_another_card") }}</option>
-          </select>
-          <small class="hint">{{ t("account_payment.current_balance") }} € <span data-selected-account-balance>0.00</span>.</small>
-        </div>
-
-        <div id="account-insufficient-panel">
-          <label>{{ t("account_payment.insufficient_label") }}</label>
-          <select name="account_insufficient_action" id="account-insufficient-action">
-            <option value="stop" {% if (form_values.account_insufficient_action or form_values.paypal_insufficient_action or 'stop') == 'stop' %}selected{% endif %}>{{ t("account_payment.insufficient_stop") }}</option>
-            <option value="use_another_card_for_remaining" {% if (form_values.account_insufficient_action or form_values.paypal_insufficient_action) == 'use_another_card_for_remaining' %}selected{% endif %}>{{ t("account_payment.insufficient_another_card") }}</option>
-            <option value="use_credit_for_remaining" {% if (form_values.account_insufficient_action or form_values.paypal_insufficient_action) == 'use_credit_for_remaining' %}selected{% endif %}>{{ t("account_payment.insufficient_credit") }}</option>
-          </select>
-          <small class="hint">{{ t("account_payment.split_hint") }}</small>
-        </div>
-      </div>
     </div>
 
     <div>

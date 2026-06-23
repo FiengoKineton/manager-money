@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import csv
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from money_manager.security.secure_storage import read_csv_secure
 from money_manager.config.paths import (
     DEBTS_CSV,
     PAYABLES_CSV,
@@ -18,8 +18,7 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
     try:
         if not path.exists():
             return []
-        with path.open("r", encoding="utf-8", newline="") as file:
-            return [dict(row) for row in csv.DictReader(file)]
+        return read_csv_secure(path, [])
     except Exception:
         return []
 

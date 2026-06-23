@@ -13,6 +13,12 @@ def create_app() -> Flask:
     project_root = package_dir.parent
 
     ensure_runtime_directories()
+    try:
+        from money_manager.security.decrypted_export_service import cleanup_expired_decrypted_exports
+
+        cleanup_expired_decrypted_exports()
+    except Exception:
+        pass
 
     app = Flask(
         __name__,
@@ -30,5 +36,25 @@ def create_app() -> Flask:
 
     register_context_processors(app)
     register_routes(app)
+
+    from money_manager.cache.request_cache import clear_request_cache, init_request_cache
+
+    @app.before_request
+    def _money_manager_init_request_cache():
+        init_request_cache()
+
+    @app.teardown_request
+    def _money_manager_clear_request_cache(error=None):
+        clear_request_cache(error)
+
+    @app.after_request
+    def _money_manager_cleanup_exports(response):
+        try:
+            from money_manager.security.decrypted_export_service import cleanup_expired_decrypted_exports
+
+            cleanup_expired_decrypted_exports()
+        except Exception:
+            pass
+        return response
 
     return app

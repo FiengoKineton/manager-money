@@ -76,12 +76,27 @@
     });
   }
 
+  function closeExpandedCharts() {
+    document.querySelectorAll(".chart-card.chart-expanded").forEach((card) => {
+      card.classList.remove("chart-expanded");
+      const btn = card.querySelector(".expand-chart-btn");
+      if (btn) btn.innerText = "Expand";
+    });
+    document.body.classList.remove("chart-expanded-open");
+  }
+
   window.toggleChartSize = function toggleChartSize(button) {
     const card = button.closest(".chart-card");
     if (!card) return;
 
-    card.classList.toggle("chart-expanded");
-    button.innerText = card.classList.contains("chart-expanded") ? "Close" : "Expand";
+    const shouldExpand = !card.classList.contains("chart-expanded");
+    closeExpandedCharts();
+
+    if (shouldExpand) {
+      card.classList.add("chart-expanded");
+      document.body.classList.add("chart-expanded-open");
+      button.innerText = "Close";
+    }
 
     setTimeout(() => {
       card.querySelectorAll(".js-plotly-plot").forEach((plot) => {
@@ -92,59 +107,48 @@
     }, 100);
   };
 
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeExpandedCharts();
+  });
+
+
+  function chartExpansionBackdropClose17E(event) {
+    const expanded = document.querySelector(".chart-card.chart-expanded");
+    if (!expanded) return;
+    if (event.target.closest(".chart-card.chart-expanded")) return;
+    closeExpandedCharts();
+  }
+
+  document.addEventListener("click", chartExpansionBackdropClose17E, true);
+  window.addEventListener("resize", () => {
+    document.querySelectorAll(".chart-card.chart-expanded .js-plotly-plot").forEach((plot) => {
+      if (window.Plotly) window.Plotly.Plots.resize(plot);
+    });
+  }, { passive: true });
+
   function wireMobileNavGroups() {
     const groups = Array.from(document.querySelectorAll(".app-nav-group, .nav-group"));
-    const media = window.matchMedia("(width < 0px)");
-    const isMobile = () => false;
-
-    function syncInitialStateForViewport() {
-      groups.forEach((group) => {
-        if (isMobile()) {
-          group.removeAttribute("open");
-        } else if (group.querySelector(".nav-items a.active")) {
-          group.setAttribute("open", "");
-        }
-      });
-    }
 
     groups.forEach((group) => {
       const summary = group.querySelector("summary");
       if (!summary) return;
 
       summary.addEventListener("click", () => {
-        if (!isMobile()) return;
-
         window.setTimeout(() => {
-          groups.forEach((other) => {
-            if (other !== group) {
-              other.removeAttribute("open");
-            }
-          });
+          if (group.open) {
+            groups.forEach((other) => {
+              if (other !== group) other.removeAttribute("open");
+            });
+          }
         }, 0);
       });
 
       group.querySelectorAll(".nav-items a").forEach((link) => {
         link.addEventListener("click", () => {
-          if (isMobile()) {
-            group.removeAttribute("open");
-          }
+          groups.forEach((other) => other.removeAttribute("open"));
         });
       });
     });
-
-    document.addEventListener("click", (event) => {
-      if (!isMobile()) return;
-      if (event.target.closest(".nav-group")) return;
-
-      groups.forEach((group) => {
-        group.removeAttribute("open");
-      });
-    });
-
-    syncInitialStateForViewport();
-    if (media.addEventListener) {
-      media.addEventListener("change", syncInitialStateForViewport);
-    }
   }
 
   function normalizeLabel(label) {
@@ -949,6 +953,7 @@
     wireClickableRows();
     wireDesktopDetailRows();
     wireQuickSpecialLog();
+    wireMobileNavGroups();
 
     document.querySelectorAll('[data-action="select-all-filters"]').forEach((button) => {
       button.addEventListener("click", selectAllFilters);

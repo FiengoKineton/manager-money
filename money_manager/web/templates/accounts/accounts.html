@@ -1,186 +1,139 @@
 {% extends "base.html" %}
-{% block page_title %}{{ t("accounts.title") }}{% endblock %}
+{% block page_title %}All Conti{% endblock %}
 
 {% block content %}
-<section class="accounts-hero panel-card">
-  <div>
-    <span class="eyebrow">{{ t("accounts.hero_eyebrow") }}</span>
-    <h2>{{ t("accounts.hero_title") }}</h2>
-    <p>{{ t("accounts.hero_description", file="accounts.json") }}</p>
+<section class="all-conti-board panel-card">
+  <div class="all-conti-board-main">
+    <span class="eyebrow">All Conti</span>
+    <h2>{{ global_summary.net_balance|money_masked }}</h2>
+    <p>One clean view of your independent banks, standalone CashFlow, and dependent wallets without double-counting card routes.</p>
+    <div class="all-conti-board-actions">
+      <a class="primary-btn compact-btn" href="#add-account-panel">Add account</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('dashboard.index') }}">Global dashboard</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page') }}">All transactions</a>
+    </div>
   </div>
-  <div class="accounts-hero-metrics">
-    <div><span>{{ t("accounts.total_balance") }}</span><strong>{{ totals.balance|money_masked }}</strong></div>
-    <div><span>{{ t("accounts.total_in") }}</span><strong>{{ totals.incoming|money_masked }}</strong></div>
-    <div><span>{{ t("accounts.total_out") }}</span><strong>{{ totals.outgoing|money_masked }}</strong></div>
+  <div class="all-conti-board-stats">
+    <article><span>Level 1 banks</span><strong>{{ totals.current_accounts_count }}</strong></article>
+    <article><span>CashFlow</span><strong>{{ totals.cashflow_count }}</strong></article>
+    <article><span>Wallets</span><strong>{{ totals.dependent_accounts_count }}</strong></article>
+    <article><span>Cards</span><strong>{{ totals.payment_methods_count }}</strong></article>
+    <article><span>Pending</span><strong>{{ global_summary.pending_total|money_masked }}</strong></article>
+    <article><span>Projected</span><strong>{{ global_summary.projected_net|money_masked }}</strong></article>
   </div>
 </section>
 
-<section class="custom-account-panel panel-card">
-  <div class="panel-header">
-    <div>
-      <span class="eyebrow">{{ t("accounts.add_eyebrow") }}</span>
-      <h3>{{ t("accounts.create_title") }}</h3>
-      <p>{{ t("accounts.create_description") }}</p>
-    </div>
-  </div>
-
-  <form method="post" class="custom-account-form">
-    <input type="hidden" name="action" value="add_account">
-    <div>
-      <label>{{ t("common.name") }}</label>
-      <input type="text" name="label" placeholder="{{ t('accounts.name_placeholder') }}" required>
-    </div>
-    <div>
-      <label>{{ t("common.type") }}</label>
-      <select name="type">
-        {% for value in ['wallet', 'cash', 'bank', 'prepaid_card', 'credit_card', 'container'] %}
-          <option value="{{ value }}">{{ t('account.type.' ~ value) }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label>{{ t("accounts.main_net_behavior") }}</label>
-      <select name="main_net_policy">
-        <option value="separate_when_explicit" selected>{{ t("account.policy.separate_when_explicit") }}</option>
-        <option value="affects_main_net">{{ t("account.policy.affects_main_net") }}</option>
-        <option value="credit_pending">{{ t("account.policy.credit_pending") }}</option>
-      </select>
-    </div>
-    <div>
-      <label>{{ t("accounts.initial_balance") }}</label>
-      <input type="number" step="0.01" name="initial_balance" value="0">
-    </div>
-    <div>
-      <label>{{ t("common.currency") }}</label>
-      <input type="text" name="currency" value="EUR">
-    </div>
-    <div>
-      <label>{{ t("accounts.institution_bank") }}</label>
-      <input type="text" name="institution" placeholder="{{ t('common.optional') }}">
-    </div>
-    <div>
-      <label>{{ t("accounts.iban_info") }}</label>
-      <input type="text" name="iban" placeholder="{{ t('common.optional') }}">
-    </div>
-    <div>
-      <label>{{ t("accounts.aliases") }}</label>
-      <input type="text" name="aliases" placeholder="{{ t('accounts.aliases_placeholder') }}">
-      <small>{{ t("accounts.aliases_hint") }}</small>
-    </div>
-    <div>
-      <label>{{ t("accounts.category_aliases") }}</label>
-      <input type="text" name="category_aliases" placeholder="{{ t('accounts.category_aliases_placeholder') }}">
-      <small>{{ t("accounts.category_aliases_hint") }}</small>
-    </div>
-    <div>
-      <label>{{ t("accounts.parent_container") }}</label>
-      <select name="parent_account_id">
-        <option value="">{{ t("accounts.top_level_account") }}</option>
-        {% for account in accounts %}
-          {% if account.is_container %}<option value="{{ account.key }}">{{ account.label }}</option>{% endif %}
-        {% endfor %}
-      </select>
-    </div>
-    <div data-credit-only>
-      <label>{{ t("accounts.due_day") }}</label>
-      <input type="number" min="1" max="31" name="due_day" value="15">
-      <small>{{ t("accounts.credit_pending_hint") }}</small>
-    </div>
-    <div class="form-field-wide">
-      <label>{{ t("common.description") }}</label>
-      <input type="text" name="description" placeholder="{{ t('accounts.description_placeholder') }}">
-    </div>
-    <div class="form-field-wide">
-      <label class="inline-checkbox"><input type="checkbox" name="category_match_enabled" value="1" checked> {{ t("accounts.enable_category_matching") }}</label>
-    </div>
-    <div class="form-actions-row form-field-wide">
-      <button type="submit" class="primary-btn">{{ t("accounts.add_account") }}</button>
-    </div>
+<section class="panel-card all-conti-command-strip">
+  <form method="get" action="{{ url_for('search.search_page') }}" class="accounts-search-inline compact-search-inline">
+    <input type="search" name="q" value="{{ request.args.get('q', '') }}" placeholder="Search Conti, cards, transactions...">
+    <button class="secondary-btn compact-btn" type="submit">Search</button>
   </form>
 </section>
 
-<section class="account-directory-grid">
-  {% for account in accounts %}
-  <article class="account-directory-card account-{{ account.balance_tone }} {{ 'is-archived' if not account.is_active else '' }}">
-    <div class="account-directory-head">
-      <div>
-        <span>{{ account.label }}{% if not account.is_active %} · {{ t("common.archived") }}{% endif %}</span>
-        <h3>{{ account.balance|money_masked }}</h3>
-      </div>
-      <a href="{{ url_for('accounts.account_detail', account_key=account.key) }}">{{ t("common.open") }}</a>
+<section class="panel-card accounts-focus-list-card all-conti-clean-list">
+  <div class="panel-header compact-panel-header">
+    <div>
+      <span class="eyebrow">Level 1</span>
+      <h3>Independent bank accounts</h3>
+      <p>Open a Conto to lock Overview, Dashboard and Transactions to that account.</p>
     </div>
-    <p>{{ account.description }}</p>
-    <p class="muted"><strong>{{ t("accounts.policy") }}:</strong> {{ t('account.policy.' ~ account.main_net_policy) }}{% if account.initial_balance %} · {{ t("accounts.initial") }}: € {{ '%.2f'|format(account.initial_balance) }}{% endif %}</p>
-
-    <div class="account-flow-line">
-      <div><span>{{ t("common.in") }}</span><strong>€ {{ '%.2f'|format(account.incoming) }}</strong></div>
-      <div><span>{{ t("common.out") }}</span><strong>€ {{ '%.2f'|format(account.outgoing) }}</strong></div>
-      <div><span>{{ t("accounts.movements") }}</span><strong>{{ account.count }}</strong></div>
-    </div>
-
-    {% if account.children %}
-    <div class="other-account-children">
-      <strong>{{ t("accounts.container_inside_count", count=account.child_count) }}</strong>
-      <div class="other-account-total-line"><span>{{ t("accounts.container_only") }}</span><b>€ {{ '%.2f'|format(account.own_balance) }}</b></div>
-      <div class="other-account-total-line"><span>{{ t("accounts.children_total") }}</span><b>€ {{ '%.2f'|format(account.child_balance) }}</b></div>
-      {% for child in account.children %}
-        <a class="other-account-child" href="{{ url_for('accounts.account_detail', account_key=child.key) }}">
-          <span>{{ child.display_label or child.label }}</span><b>€ {{ '%.2f'|format(child.balance) }}</b>
-        </a>
+  </div>
+  {% if current_accounts_overview %}
+    <div class="all-conti-account-list modern-account-list">
+      {% for account in current_accounts_overview %}
+        <article class="all-conti-account-row modern-account-row account-{{ account.balance_tone }}">
+          <div class="all-conti-account-main">
+            <span>{{ account.account_level_label }}{% if account.is_default %} · Default{% endif %}</span>
+            <h3>{{ account.label|text_masked }}</h3>
+            {% if account.institution %}<p>{{ account.institution|text_masked }}</p>{% endif %}
+          </div>
+          <div class="all-conti-account-number"><span>Net</span><strong>{{ account.net_balance|money_masked }}</strong></div>
+          <div class="all-conti-account-mini"><span>Pending</span><strong>{{ account.pending_total|money_masked }}</strong></div>
+          <div class="all-conti-account-mini"><span>Projected</span><strong>{{ account.projected_net|money_masked }}</strong></div>
+          <div class="all-conti-account-mini"><span>Cards</span><strong>{{ account.cards_count }}</strong></div>
+          <div class="all-conti-account-mini"><span>Wallets</span><strong>{{ account.dependent_accounts_count }}</strong></div>
+          <a class="primary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Open Conto</a>
+        </article>
       {% endfor %}
     </div>
-    {% endif %}
-
-    {% if account.monthly_preview %}
-    <div class="mini-month-chart spacious-mini-chart">
-      {% for month in account.monthly_preview %}
-      <div class="mini-month-row">
-        <span>{{ month.month }}</span>
-        <div>
-          <i class="mini-in" style="width: {{ (month.incoming / (account.incoming if account.incoming else 1) * 100) if account.incoming else 0 }}%"></i>
-          <i class="mini-out" style="width: {{ (month.outgoing / (account.outgoing if account.outgoing else 1) * 100) if account.outgoing else 0 }}%"></i>
-        </div>
-        <b>€ {{ '%.2f'|format(month.net) }}</b>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-      <p class="empty">{{ t("accounts.no_movements") }}</p>
-    {% endif %}
-
-    <form method="post" class="form-actions-row">
-      <input type="hidden" name="account_key" value="{{ account.key }}">
-      {% if account.is_active %}
-        <input type="hidden" name="action" value="archive_account">
-        <button type="submit" class="secondary-btn compact-btn">{{ t("common.archive") }}</button>
-      {% else %}
-        <input type="hidden" name="action" value="restore_account">
-        <button type="submit" class="secondary-btn compact-btn">{{ t("common.restore") }}</button>
-      {% endif %}
-    </form>
-  </article>
-  {% endfor %}
+  {% else %}
+    <p class="empty">No independent bank accounts configured yet. Add your first Conto below.</p>
+  {% endif %}
 </section>
-{% endblock %}
 
-{% block scripts %}
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll("form.custom-account-form").forEach((form) => {
-      const typeSelect = form.querySelector('select[name="type"]');
-      const policySelect = form.querySelector('select[name="main_net_policy"]');
-      const creditFields = form.querySelectorAll("[data-credit-only]");
-      function syncCreditFields() {
-        const isCredit = (typeSelect && typeSelect.value === "credit_card") || (policySelect && policySelect.value === "credit_pending");
-        creditFields.forEach((field) => { field.hidden = !isCredit; });
-        if (typeSelect && typeSelect.value === "credit_card" && policySelect) {
-          policySelect.value = "credit_pending";
-        }
-      }
-      if (typeSelect) typeSelect.addEventListener("change", syncCreditFields);
-      if (policySelect) policySelect.addEventListener("change", syncCreditFields);
-      syncCreditFields();
-    });
-  });
-</script>
+{% if cashflow_overview %}
+<section class="panel-card accounts-focus-list-card all-conti-clean-list">
+  <div class="panel-header compact-panel-header"><div><span class="eyebrow">Level 2</span><h3>CashFlow / standalone cash</h3></div></div>
+  <div class="all-conti-account-list compact modern-account-list">
+    {% for account in cashflow_overview %}
+      <article class="all-conti-account-row modern-account-row account-{{ account.balance_tone }}">
+        <div class="all-conti-account-main"><span>{{ account.account_level_label }}</span><h3>{{ account.label|text_masked }}</h3></div>
+        <div class="all-conti-account-number"><span>Net</span><strong>{{ account.net_balance|money_masked }}</strong></div>
+        <div class="all-conti-account-mini"><span>Projected</span><strong>{{ account.projected_net|money_masked }}</strong></div>
+        <a class="primary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Open</a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if dependent_accounts_overview %}
+<section class="panel-card accounts-focus-list-card all-conti-clean-list">
+  <div class="panel-header compact-panel-header"><div><span class="eyebrow">Level 3</span><h3>Dependent wallets</h3><p>PayPal, Glovo, EasyPark and similar accounts live under a parent Conto. Payments through a linked card remain visible on both sides.</p></div></div>
+  <div class="dependent-wallet-list modern-wallet-list">
+    {% for child in dependent_accounts_overview %}
+      <a href="{{ url_for('accounts.account_detail', account_key=child.key) }}">
+        <span><b>{{ child.label|text_masked }}</b><small>Parent: {{ child.parent_label|text_masked }}</small></span>
+        <strong>{{ child.net_balance|money_masked }}</strong>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section id="add-account-panel" class="custom-account-panel panel-card">
+  <details>
+    <summary><strong>Add / configure account</strong> <span class="muted">Create a level 1 bank, level 2 CashFlow, or level 3 dependent wallet.</span></summary>
+    <form method="post" class="custom-account-form spaced-form">
+      <input type="hidden" name="action" value="add_account">
+      <div><label>Name</label><input type="text" name="label" placeholder="Bank1, Revolut, CashFlow, PayPal" required></div>
+      <div><label>Type</label><select name="type">
+        <option value="current_account">Level 1 — Independent bank/current account</option>
+        <option value="cash">Level 2 — CashFlow / standalone cash</option>
+        <option value="dependent_wallet">Level 3 — Dependent wallet/account</option>
+        <option value="wallet_balance">Wallet balance</option>
+        <option value="prepaid_balance">Prepaid balance</option>
+        <option value="meal_voucher">Meal voucher</option>
+        <option value="container">Technical container</option>
+        <option value="other">Other</option>
+      </select></div>
+      <div><label>Parent account</label><select name="parent_account_id"><option value="">Top-level / independent</option>{% for account in parent_account_options %}<option value="{{ account.value or account.key }}">{{ account.label }}</option>{% endfor %}</select><small class="muted">Use a parent only for level 3 wallets such as PayPal or Glovo.</small></div>
+      <div><label>Initial balance</label><input type="number" step="0.01" name="initial_balance" value="0"></div>
+      <div><label>Currency</label><input type="text" name="currency" value="EUR"></div>
+      <div><label>Bank / institution</label><input type="text" name="institution"></div>
+      <div><label>IBAN</label><input type="text" name="iban"></div>
+      <div><label>BIC/SWIFT</label><input type="text" name="bic_swift"></div>
+      <div><label>Aliases</label><input type="text" name="aliases" placeholder="comma separated"></div>
+      <div class="form-field-wide"><label>Description</label><input type="text" name="description"></div>
+      <div class="form-actions-row form-field-wide"><button class="primary-btn" type="submit">Add account</button></div>
+    </form>
+  </details>
+</section>
+
+{% if archived_accounts or technical_accounts %}
+<section class="panel-card advanced-accounts-card">
+  <details>
+    <summary><strong>Advanced / archived accounts</strong> <span class="muted">Technical buckets are hidden from the normal All Conti overview.</span></summary>
+    <div class="account-directory-grid compact-technical-grid">
+      {% for account in technical_accounts + archived_accounts %}
+        <article class="account-directory-card {{ 'is-archived' if account.is_archived or account.is_closed else '' }}">
+          <div class="account-directory-head"><div><span>{{ account.account_kind|replace('_', ' ')|title }}</span><h3>{{ account.label|text_masked }}</h3></div><a href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Open</a></div>
+          <p>{{ account.description }}</p>
+          <strong>{{ account.net_balance|money_masked }}</strong>
+        </article>
+      {% endfor %}
+    </div>
+  </details>
+</section>
+{% endif %}
 {% endblock %}

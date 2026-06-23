@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t("security.unlock_vault") }}{% endblock %}
+
+{% block content %}
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">{{ t("security.encryption") }}</span>
+      <h2>{{ t("security.unlock_vault") }}</h2>
+      <p>{{ t("security.unlock_description") }}</p>
+    </div>
+  </div>
+  {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+  <form method="post" class="profile-form">
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <label>{{ t("profile.password") if t("profile.password") != "profile.password" else "Password" }}</label>
+    <input type="password" name="password" required autofocus>
+    <div class="form-actions">
+      <button class="primary-btn" type="submit">{{ t("security.unlock_vault") }}</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

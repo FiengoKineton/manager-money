@@ -1,4 +1,8 @@
-from datetime import date, timedelta
+from __future__ import annotations
+
+import json
+from datetime import date, datetime, timedelta
+from typing import Any, Mapping
 
 import pandas as pd
 
@@ -19,7 +23,6 @@ from money_manager.config import (
     MAIN_ACCOUNT_KEY,
     MAIN_NET_AFFECTS,
     MAIN_NET_CREDIT_PENDING,
-    MAIN_NET_SEPARATE,
     PAYPAL_ACCOUNT_KEY,
     account_due_day_for_key,
     PAYPAL_CREDIT_ACCOUNT_VALUE,
@@ -29,15 +32,26 @@ from money_manager.config import (
     auxiliary_account_keys,
     normalize_account_key,
 )
-from money_manager.domain.transaction import TransactionInput
+from money_manager.domain.transaction import TransactionInput, make_transaction_uid
 from money_manager.services.currency_service import append_conversion_note, convert_amount_to_eur
 from money_manager.repositories.pending import append_pending
 from money_manager.repositories.transactions import (
     append_transaction,
     delete_transaction,
     load_all,
+    transaction_has_payment_snapshots,
+    transaction_is_legacy_payment,
+    transaction_row_to_payment_context,
     update_transaction,
 )
+from money_manager.services.account_ledger_service import (
+    append_adjustment_rows_for_transaction,
+    append_ledger_movements,
+    ledger_rows_for_transaction,
+    rows_from_payment_resolution,
+    void_ledger_for_transaction,
+)
+from money_manager.services.payment_routing_service import resolve_payment, resolution_json_dumps
 
 # Backwards-compatible names used by templates/forms.
 PAYPAL_METHOD_BALANCE = BALANCE_METHOD_BALANCE
@@ -46,6 +60,9 @@ PAYPAL_METHOD_ANOTHER_CARD = BALANCE_METHOD_ANOTHER_CARD
 PAYPAL_INSUFFICIENT_STOP = BALANCE_INSUFFICIENT_STOP
 PAYPAL_INSUFFICIENT_ANOTHER_CARD = BALANCE_INSUFFICIENT_ANOTHER_CARD
 PAYPAL_INSUFFICIENT_CREDIT = BALANCE_INSUFFICIENT_CREDIT
+
+PAYMENT_AFFECTING_FIELDS = {"date", "amount", "account", "account_id", "payment_method", "payment_method_id"}
+SETTLED_LEDGER_STATUSES = {"settled", "executed", "reconciled"}
 
 
 def next_credit_due(payment_date=None, due_day: int = CREDIT_CARD_DUE_DAY) -> date:
@@ -60,19 +77,26 @@ def next_credit_due(payment_date=None, due_day: int = CREDIT_CARD_DUE_DAY) -> da
 def save_new_transaction(tx_input: TransactionInput) -> dict:
     """Save a new transaction and return a small UI-friendly result.
 
-    Every configured balance account shares the same logic:
-    - balance method spends from that tracked auxiliary balance;
-    - credit method creates a pending credit/pending row;
-    - another_card method records a main-bank/card outflow;
-    - when the auxiliary balance is too small, the remaining amount can be sent
-      either to main bank/card or to pending credit.
+    Prompt 11D adds an opt-in ledger route. Forms that submit stable
+    ``payment_method_id`` or ``account_id`` use the ledger-backed path. Old v10
+    forms still use the existing pending/balance router until Prompt 11F migrates
+    all forms.
     """
     tx = _transaction_payload_in_eur(tx_input)
+    if tx_input.account_id:
+        tx["account_id"] = tx_input.account_id
+    if tx_input.payment_method_id:
+        tx["payment_method_id"] = tx_input.payment_method_id
+    if tx_input.payment_channel_method_id:
+        tx["payment_channel_method_id"] = tx_input.payment_channel_method_id
+
     return save_transaction_payload(
         tx,
         payment_method=tx_input.account_payment_method or tx_input.paypal_payment_method,
         insufficient_action=tx_input.account_insufficient_action or tx_input.paypal_insufficient_action,
         due_date=_due_date_from_input(tx_input),
+        account_id=tx_input.account_id,
+        payment_method_id=tx_input.payment_method_id,
     )
 
 
@@ -81,14 +105,30 @@ def save_transaction_payload(
     payment_method: str | None = None,
     insufficient_action: str | None = None,
     due_date: date | None = None,
+    account_id: str | None = None,
+    payment_method_id: str | None = None,
 ) -> dict:
-    """Save an already-normalized transaction dict using the shared account router.
+    """Save an already-normalized transaction dict.
 
-    This is intentionally reusable by debts, payables, projects, receivables and
-    any future form that records an expense. It avoids the old bug where only the
-    normal Add Transaction page understood balance/credit split payments.
+    Stable Prompt 11D ids use the professional ledger route. Legacy callers that
+    do not pass stable ids continue through the v10 router so old forms and
+    external modules remain compatible.
     """
     tx = dict(tx)
+    explicit_account_id = _first_nonblank(account_id, tx.get("account_id"))
+    explicit_payment_method_id = _first_nonblank(payment_method_id, tx.get("payment_method_id"))
+    if explicit_account_id:
+        tx["account_id"] = explicit_account_id
+    if explicit_payment_method_id:
+        tx["payment_method_id"] = explicit_payment_method_id
+
+    if explicit_payment_method_id or explicit_account_id:
+        routed = _save_transaction_with_ledger_payload(tx)
+        # Explicit payment-method selections should fail visibly if routing is
+        # invalid. For account-only hints, fall back to v10 if routing is unsafe.
+        if routed.get("ok") or explicit_payment_method_id:
+            return routed
+
     account_raw = str(tx.get("account", "") or "").strip()
     account_key = normalize_account_key(account_raw)
     tx_type = str(tx.get("type", "") or "").casefold()
@@ -121,6 +161,51 @@ def save_transaction_payload(
 
     tx_id = append_transaction(tx)
     return {"ok": True, "message": "Transaction saved.", "transaction_ids": [tx_id], "pending_ids": []}
+
+
+def _save_transaction_with_ledger_payload(tx: Mapping[str, Any]) -> dict:
+    tx = dict(tx)
+    tx_type = str(tx.get("type") or "").casefold()
+    account_hint = _account_hint_for_resolution(tx)
+    method_id = _first_nonblank(tx.get("payment_method_id"), tx.get("payment_channel_method_id"))
+    amount = _to_float(tx.get("amount"))
+    resolution = resolve_payment(
+        tx_type,
+        amount,
+        tx.get("date") or date.today().isoformat(),
+        account_id=account_hint or None,
+        payment_method_id=method_id or None,
+        category=tx.get("category"),
+        sub_category=tx.get("sub_category"),
+        description=str(tx.get("description") or ""),
+        existing_row=tx,
+    )
+    if not resolution.ok:
+        return {"ok": False, "error": "; ".join(resolution.errors) or "Payment route could not be resolved.", "warnings": resolution.warnings}
+
+    tx.update(_transaction_metadata_from_resolution(tx, resolution))
+    tx_id = append_transaction(tx)
+    uid = make_transaction_uid(tx_type, tx_id)
+    ledger_rows = rows_from_payment_resolution(
+        resolution,
+        transaction_uid=uid,
+        transaction_type=tx_type,
+        transaction_id=str(tx_id),
+        source_kind="transaction_save",
+        source_id=str(tx_id),
+    )
+    ledger_ids = append_ledger_movements(ledger_rows) if ledger_rows else []
+    if ledger_rows:
+        update_transaction(tx_id, tx_type, {"transaction_uid": uid, "ledger_group_id": resolution.ledger_group_id, "ledger_status": "posted"})
+    return {
+        "ok": True,
+        "message": resolution.display_explanation or "Transaction saved with payment route.",
+        "transaction_ids": [tx_id],
+        "pending_ids": [],
+        "ledger_ids": ledger_ids,
+        "ledger_group_id": resolution.ledger_group_id,
+        "warnings": resolution.warnings,
+    }
 
 
 def account_balance(account_key: str) -> float:
@@ -216,12 +301,7 @@ def _save_balance_account_expense(tx: dict, account_key: str, method: str, insuf
 
 
 def _save_credit_account_charge(tx: dict, account_key: str) -> dict:
-    """Log a credit-card purchase now and aggregate settlement separately.
-
-    The purchase row is visible on the real purchase date and in the credit
-    account detail page, but it does not affect the main net. The Pending page
-    later creates one statement row per closed calendar month/account.
-    """
+    """Log a credit-card purchase now and aggregate settlement separately."""
     from money_manager.services.pending_service import sync_credit_account_statements
 
     account_label = account_label_for_key(account_key)
@@ -290,7 +370,7 @@ def _due_date_from_input(tx_input: TransactionInput) -> date:
         payment_date = date.fromisoformat(tx_input.date)
     except (TypeError, ValueError):
         payment_date = date.today()
-    account_key = normalize_account_key(tx_input.account)
+    account_key = normalize_account_key(tx_input.account_id or tx_input.account)
     due_day = account_due_day_for_key(account_key, CREDIT_CARD_DUE_DAY) if account_policy_for_key(account_key) == MAIN_NET_CREDIT_PENDING else CREDIT_CARD_DUE_DAY
     return next_credit_due(payment_date, due_day=due_day)
 
@@ -341,6 +421,8 @@ def prepare_transactions_for_display(df: pd.DataFrame) -> pd.DataFrame:
 
     for column in [
         "payment_method",
+        "payment_method_id",
+        "ledger_status",
         "contact_id",
         "contact_name",
         "iban_snapshot",
@@ -370,60 +452,96 @@ def transaction_detail_context(row_index: int) -> tuple[dict, list[str]]:
     except KeyError as exc:
         raise LookupError(f"Transaction {row_index} not found") from exc
 
-    date_str = row["date"].strftime("%Y-%m-%d") if hasattr(row["date"], "strftime") else str(row.get("date", ""))
-
-    def clean(value):
-        return "" if str(value) == "nan" else value
+    raw = _plain_row(row)
+    tx_type = str(raw.get("type", ""))
+    csv_id = str(raw.get("id", ""))
+    uid = raw.get("transaction_uid") or make_transaction_uid(tx_type, csv_id)
+    ledger_rows = ledger_rows_for_transaction(uid, include_void=True) if uid else []
+    route_explanation = _route_explanation_from_row(raw, ledger_rows)
+    active_ledger_rows = [ledger for ledger in ledger_rows if not _truthy(ledger.get("is_void")) and str(ledger.get("status") or "") != "voided"]
 
     tx = {
         "id": int(row_index),
-        "csv_id": int(row["id"]),
-        "type": row["type"],
-        "date": date_str,
-        "category": clean(row.get("category", "")),
-        "sub_category": clean(row.get("sub_category", "")),
-        "amount": f"{row['amount']:.2f}",
-        "original_amount": clean(row.get("original_amount", "")),
-        "original_currency": clean(row.get("original_currency", "")),
-        "exchange_rate_to_eur": clean(row.get("exchange_rate_to_eur", "")),
-        "exchange_correction_to_eur": clean(row.get("exchange_correction_to_eur", "")),
-        "exchange_effective_rate_to_eur": clean(row.get("exchange_effective_rate_to_eur", "")),
-        "account": clean(row.get("account", "")),
-        "account_key": clean(row.get("account_key", normalize_account_key(row.get("account", "")))),
-        "account_label": clean(row.get("account_label", "")),
-        "payment_method": clean(row.get("payment_method", "")),
-        "contact_id": clean(row.get("contact_id", "")),
-        "contact_name": clean(row.get("contact_name", "")),
-        "iban_snapshot": clean(row.get("iban_snapshot", "")),
-        "bic_swift_snapshot": clean(row.get("bic_swift_snapshot", "")),
-        "bank_name_snapshot": clean(row.get("bank_name_snapshot", "")),
-        "transfer_reference": clean(row.get("transfer_reference", "")),
-        "transfer_status": clean(row.get("transfer_status", "")),
-        "description": clean(row.get("description", "")),
+        "csv_id": int(float(csv_id)) if str(csv_id).replace('.', '', 1).isdigit() else csv_id,
+        "transaction_uid": uid,
+        "type": tx_type,
+        "date": _date_str(raw.get("date")),
+        "category": _clean_display(raw.get("category", "")),
+        "sub_category": _clean_display(raw.get("sub_category", "")),
+        "amount": f"{_to_float(raw.get('amount')):.2f}",
+        "original_amount": _clean_display(raw.get("original_amount", "")),
+        "original_currency": _clean_display(raw.get("original_currency", "")),
+        "exchange_rate_to_eur": _clean_display(raw.get("exchange_rate_to_eur", "")),
+        "exchange_correction_to_eur": _clean_display(raw.get("exchange_correction_to_eur", "")),
+        "exchange_effective_rate_to_eur": _clean_display(raw.get("exchange_effective_rate_to_eur", "")),
+        "account": _clean_display(raw.get("account", "")),
+        "account_id": _clean_display(raw.get("account_id", "")),
+        "account_key": _clean_display(raw.get("account_key", normalize_account_key(raw.get("account", "")))),
+        "account_label": _clean_display(raw.get("account_label", "")),
+        "account_name_snapshot": _clean_display(raw.get("account_name_snapshot", "")),
+        "payment_method": _clean_display(raw.get("payment_method", "")),
+        "payment_method_id": _clean_display(raw.get("payment_method_id", "")),
+        "payment_method_name_snapshot": _clean_display(raw.get("payment_method_name_snapshot", "")),
+        "payment_channel_method_id_snapshot": _clean_display(raw.get("payment_channel_method_id_snapshot", "")),
+        "payment_channel_name_snapshot": _clean_display(raw.get("payment_channel_name_snapshot", "")),
+        "funding_account_id_snapshot": _clean_display(raw.get("funding_account_id_snapshot", "")),
+        "funding_account_name_snapshot": _clean_display(raw.get("funding_account_name_snapshot", "")),
+        "settlement_account_id_snapshot": _clean_display(raw.get("settlement_account_id_snapshot", "")),
+        "settlement_account_name_snapshot": _clean_display(raw.get("settlement_account_name_snapshot", "")),
+        "liability_account_id_snapshot": _clean_display(raw.get("liability_account_id_snapshot", "")),
+        "liability_account_name_snapshot": _clean_display(raw.get("liability_account_name_snapshot", "")),
+        "settlement_mode_snapshot": _clean_display(raw.get("settlement_mode_snapshot", "")),
+        "payment_due_date_snapshot": _clean_display(raw.get("payment_due_date_snapshot", "")),
+        "payment_due_day_snapshot": _clean_display(raw.get("payment_due_day_snapshot", "")),
+        "payment_statement_period_snapshot": _clean_display(raw.get("payment_statement_period_snapshot", "")),
+        "payment_resolution_json": _clean_display(raw.get("payment_resolution_json", "")),
+        "ledger_group_id": _clean_display(raw.get("ledger_group_id", "")),
+        "ledger_status": _clean_display(raw.get("ledger_status", "")) or ("posted" if active_ledger_rows else "legacy/no ledger"),
+        "ledger_rows": ledger_rows,
+        "active_ledger_count": len(active_ledger_rows),
+        "payment_routing_explanation": route_explanation,
+        "is_legacy_payment": transaction_is_legacy_payment(raw),
+        "contact_id": _clean_display(raw.get("contact_id", "")),
+        "contact_name": _clean_display(raw.get("contact_name", "")),
+        "iban_snapshot": _clean_display(raw.get("iban_snapshot", "")),
+        "bic_swift_snapshot": _clean_display(raw.get("bic_swift_snapshot", "")),
+        "bank_name_snapshot": _clean_display(raw.get("bank_name_snapshot", "")),
+        "transfer_reference": _clean_display(raw.get("transfer_reference", "")),
+        "transfer_status": _clean_display(raw.get("transfer_status", "")),
+        "description": _clean_display(raw.get("description", "")),
         "delay_date_default": (date.today() + timedelta(days=1)).isoformat(),
     }
 
     return tx, categories_for(tx["type"])
 
 
-def delay_existing_transaction(row_index: int, new_date: str) -> None:
+def delay_existing_transaction(row_index: int, new_date: str) -> dict:
     if not new_date:
-        return
+        return {"ok": False, "error": "Missing delay date."}
 
     df = load_all()
     row = df.loc[row_index]
+    raw = _plain_row(row)
+    form = {
+        "type": raw.get("type", "expense"),
+        "date": new_date,
+        "category": raw.get("category", ""),
+        "sub_category": raw.get("sub_category", ""),
+        "amount": raw.get("amount", "0"),
+        "account": raw.get("account", ""),
+        "account_id": raw.get("account_id", ""),
+        "payment_method_id": raw.get("payment_method_id", ""),
+        "description": raw.get("description", ""),
+        "force_payment_rebuild": "1" if transaction_has_payment_snapshots(raw) else "",
+    }
+    return update_existing_transaction(row_index, form)
 
-    update_transaction(
-        int(row["id"]),
-        row["type"],
-        {"date": new_date},
-    )
 
-
-def update_existing_transaction(row_index: int, form) -> None:
+def update_existing_transaction(row_index: int, form) -> dict:
     df = load_all()
     row = df.loc[row_index]
-    tx_input = TransactionInput.from_form({**form, "type": row["type"]})
+    original = _plain_row(row)
+    tx_input = TransactionInput.from_form({**form, "type": original.get("type", "")})
 
     data = {
         "date": tx_input.date,
@@ -434,7 +552,7 @@ def update_existing_transaction(row_index: int, form) -> None:
         "description": tx_input.description,
     }
 
-    # The transaction detail screen edits the already-saved EUR value.  The add
+    # The transaction detail screen edits the already-saved EUR value. The add
     # screen has the currency selector and passes currency explicitly, so only
     # re-run conversion when that field is present.
     if "currency" in form:
@@ -449,10 +567,292 @@ def update_existing_transaction(row_index: int, form) -> None:
             "exchange_effective_rate_to_eur": converted.get("exchange_effective_rate_to_eur", ""),
         })
 
-    update_transaction(int(row["id"]), row["type"], data)
+    original_uid = original.get("transaction_uid") or make_transaction_uid(original.get("type", ""), original.get("id", ""))
+    existing_ledger_rows = ledger_rows_for_transaction(original_uid, include_void=False) if original_uid else []
+    has_new_payment_context = transaction_has_payment_snapshots(original) or bool(existing_ledger_rows) or bool(tx_input.payment_method_id or tx_input.account_id)
+    data["transaction_uid"] = original_uid
+
+    if not has_new_payment_context:
+        update_transaction(original.get("id", ""), original.get("type", ""), data)
+        return {"ok": True, "message": "Legacy transaction updated."}
+
+    route_data = dict(original)
+    route_data.update(data)
+    if tx_input.payment_method_id:
+        route_data["payment_method_id"] = tx_input.payment_method_id
+    else:
+        route_data["payment_method_id"] = original.get("payment_method_id", "")
+    route_data["account_id"] = _effective_account_id_for_edit(original, route_data, tx_input)
+
+    payment_changed = tx_input.force_payment_rebuild or _payment_affecting_changed(original, route_data)
+    if not payment_changed:
+        update_transaction(original.get("id", ""), original.get("type", ""), data)
+        return {"ok": True, "message": "Transaction metadata updated; ledger route unchanged."}
+
+    settled_credit = _looks_like_settled_credit(original, existing_ledger_rows)
+    if settled_credit and not tx_input.confirm_settled_edit:
+        return {
+            "ok": False,
+            "requires_confirmation": True,
+            "error": "This looks like a settled/due credit transaction. Confirm the settled edit to create adjustment ledger rows instead of silently rewriting history.",
+        }
+
+    resolution = resolve_payment(
+        str(original.get("type") or "").casefold(),
+        _to_float(route_data.get("amount")),
+        route_data.get("date") or date.today().isoformat(),
+        account_id=_account_hint_for_resolution(route_data) or None,
+        payment_method_id=route_data.get("payment_method_id") or None,
+        category=route_data.get("category"),
+        sub_category=route_data.get("sub_category"),
+        description=str(route_data.get("description") or ""),
+        existing_row=route_data,
+    )
+    if not resolution.ok:
+        return {"ok": False, "error": "; ".join(resolution.errors) or "Payment route could not be rebuilt.", "warnings": resolution.warnings}
+
+    reason = f"Payment route rebuilt for {original_uid}."
+    if settled_credit:
+        ledger_report = append_adjustment_rows_for_transaction(original_uid, reason=reason)
+    else:
+        ledger_report = void_ledger_for_transaction(original_uid, reason=reason)
+
+    new_ledger_rows = rows_from_payment_resolution(
+        resolution,
+        transaction_uid=original_uid,
+        transaction_type=str(original.get("type") or "").casefold(),
+        transaction_id=str(original.get("id") or ""),
+        source_kind="transaction_edit",
+        source_id=str(original.get("id") or ""),
+    )
+    ledger_ids = append_ledger_movements(new_ledger_rows) if new_ledger_rows else []
+    data.update(_transaction_metadata_from_resolution(route_data, resolution))
+    data["transaction_uid"] = original_uid
+    data["ledger_group_id"] = resolution.ledger_group_id
+    data["ledger_status"] = "adjusted_rebuilt" if settled_credit else "rebuilt"
+    data["description"] = _with_audit_note(str(data.get("description") or ""), reason)
+    update_transaction(original.get("id", ""), original.get("type", ""), data)
+    return {"ok": True, "message": "Payment route rebuilt.", "ledger_report": ledger_report, "ledger_ids": ledger_ids, "warnings": resolution.warnings}
 
 
-def delete_existing_transaction(row_index: int) -> None:
+def delete_existing_transaction(row_index: int, confirm_settled_edit: bool = False) -> dict:
     df = load_all()
     row = df.loc[row_index]
-    delete_transaction(int(row["id"]), row["type"])
+    original = _plain_row(row)
+    uid = original.get("transaction_uid") or make_transaction_uid(original.get("type", ""), original.get("id", ""))
+    existing_ledger_rows = ledger_rows_for_transaction(uid, include_void=False) if uid else []
+    has_ledger_context = transaction_has_payment_snapshots(original) or bool(existing_ledger_rows)
+
+    if has_ledger_context:
+        settled_credit = _looks_like_settled_credit(original, existing_ledger_rows)
+        if settled_credit and not confirm_settled_edit:
+            return {
+                "ok": False,
+                "requires_confirmation": True,
+                "error": "This looks like a settled/due credit transaction. Confirm deletion to create adjustment ledger rows before removing the CSV row.",
+            }
+        reason = f"Transaction {uid} deleted."
+        if settled_credit:
+            append_adjustment_rows_for_transaction(uid, reason=reason)
+        else:
+            void_ledger_for_transaction(uid, reason=reason)
+
+    deleted = delete_transaction(original.get("id", ""), original.get("type", ""))
+    return {"ok": bool(deleted), "message": "Transaction deleted." if deleted else "Transaction not found."}
+
+
+def _transaction_metadata_from_resolution(tx: Mapping[str, Any], resolution) -> dict[str, Any]:
+    wrapper_id = ""
+    wrapper_name = ""
+    try:
+        created = dict(resolution.created_from_resolution or {})
+        wrapper_id = str(created.get("wrapper_payment_method_id") or "")
+        wrapper_name = str(created.get("wrapper_payment_method_name_snapshot") or "")
+    except Exception:
+        pass
+
+    account_id = resolution.account_id or resolution.liability_account_id or resolution.funding_account_id or tx.get("account_id", "")
+    account_name = resolution.account_name_snapshot or _account_label(account_id)
+    funding_id = resolution.funding_account_id or ""
+    settlement_id = resolution.settlement_account_id or ""
+    liability_id = resolution.liability_account_id or ""
+    method_id = resolution.payment_method_id or tx.get("payment_method_id", "")
+    method_name = resolution.payment_method_name_snapshot or method_id
+    channel_id = wrapper_id or tx.get("payment_channel_method_id") or method_id
+    channel_name = wrapper_name or method_name
+
+    legacy_account = str(tx.get("account") or "")
+    if not legacy_account and account_id and account_id != MAIN_ACCOUNT_KEY:
+        legacy_account = account_id
+
+    return {
+        "account": legacy_account,
+        "account_id": account_id,
+        "account_key_snapshot": account_id,
+        "account_name_snapshot": account_name,
+        "account_due_day_snapshot": str(resolution.due_day_snapshot or ""),
+        "payment_method": method_name or str(tx.get("payment_method") or ""),
+        "payment_method_id": method_id,
+        "payment_method_name_snapshot": method_name,
+        "payment_channel_method_id_snapshot": channel_id,
+        "payment_channel_name_snapshot": channel_name,
+        "funding_account_id_snapshot": funding_id,
+        "funding_account_name_snapshot": _account_label(funding_id),
+        "settlement_account_id_snapshot": settlement_id,
+        "settlement_account_name_snapshot": _account_label(settlement_id),
+        "liability_account_id_snapshot": liability_id,
+        "liability_account_name_snapshot": _account_label(liability_id),
+        "settlement_mode_snapshot": resolution.settlement_mode,
+        "payment_due_date_snapshot": resolution.due_date,
+        "payment_due_day_snapshot": str(resolution.due_day_snapshot or ""),
+        "payment_statement_period_snapshot": resolution.statement_period,
+        "payment_resolution_json": resolution_json_dumps(resolution),
+        "ledger_group_id": resolution.ledger_group_id,
+        "ledger_status": "posted" if resolution.movements else "resolved_no_movement",
+    }
+
+
+def _account_hint_for_resolution(tx: Mapping[str, Any]) -> str:
+    return _first_nonblank(tx.get("account_id"), tx.get("account_key_snapshot"), tx.get("account"))
+
+
+def _effective_account_id_for_edit(original: Mapping[str, Any], route_data: Mapping[str, Any], tx_input: TransactionInput) -> str:
+    old_account = str(original.get("account") or "")
+    new_account = str(route_data.get("account") or "")
+    if new_account != old_account:
+        return normalize_account_key(new_account) if new_account else MAIN_ACCOUNT_KEY
+    return _first_nonblank(tx_input.account_id, original.get("account_id"), original.get("account_key_snapshot"), normalize_account_key(new_account))
+
+
+def _payment_affecting_changed(original: Mapping[str, Any], route_data: Mapping[str, Any]) -> bool:
+    old_context = transaction_row_to_payment_context(original)
+    new_context = transaction_row_to_payment_context(route_data)
+    for field in PAYMENT_AFFECTING_FIELDS:
+        old_value = old_context.get(field, original.get(field, ""))
+        new_value = new_context.get(field, route_data.get(field, ""))
+        if field == "amount":
+            if round(_to_float(old_value), 2) != round(_to_float(new_value), 2):
+                return True
+        else:
+            if _normalize_compare(old_value) != _normalize_compare(new_value):
+                return True
+    return False
+
+
+def _looks_like_settled_credit(row: Mapping[str, Any], ledger_rows: list[dict[str, Any]]) -> bool:
+    due = _parse_date(row.get("payment_due_date_snapshot"))
+    if due and due <= date.today():
+        return True
+    settlement_mode = str(row.get("settlement_mode_snapshot") or "").casefold()
+    has_due_snapshot = bool(str(row.get("payment_due_date_snapshot") or "").strip())
+    if settlement_mode == "delayed" and has_due_snapshot and due is None:
+        return True
+    for ledger in ledger_rows:
+        status = str(ledger.get("status") or "").casefold()
+        movement = str(ledger.get("movement_kind") or "").casefold()
+        direction = str(ledger.get("direction") or "").casefold()
+        if status in SETTLED_LEDGER_STATUSES:
+            return True
+        if "settlement" in movement or direction == "liability_decrease":
+            return True
+    return False
+
+
+def _route_explanation_from_row(row: Mapping[str, Any], ledger_rows: list[dict[str, Any]]) -> str:
+    text = str(row.get("payment_resolution_json") or "").strip()
+    for candidate in [text, *[str(item.get("created_from_resolution_json") or "") for item in ledger_rows]]:
+        if not candidate:
+            continue
+        try:
+            payload = json.loads(candidate)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        explanation = str(payload.get("display_explanation") or "").strip()
+        if explanation:
+            return explanation
+    return ""
+
+
+def _plain_row(row) -> dict[str, Any]:
+    if hasattr(row, "to_dict"):
+        raw = row.to_dict()
+    else:
+        raw = dict(row)
+    cleaned: dict[str, Any] = {}
+    for key, value in raw.items():
+        if isinstance(value, pd.Timestamp):
+            cleaned[key] = value.strftime("%Y-%m-%d") if not pd.isna(value) else ""
+        elif pd.isna(value) if not isinstance(value, (list, dict, tuple, set)) else False:
+            cleaned[key] = ""
+        else:
+            cleaned[key] = value
+    return cleaned
+
+
+def _date_str(value: Any) -> str:
+    if hasattr(value, "strftime"):
+        return value.strftime("%Y-%m-%d")
+    text = str(value or "")
+    return text[:10] if len(text) >= 10 else text
+
+
+def _clean_display(value: Any) -> str:
+    text = str(value or "")
+    return "" if text.casefold() in {"nan", "nat", "none", "null"} else text
+
+
+def _with_audit_note(description: str, note: str) -> str:
+    marker = f"[{note}]"
+    if marker in description:
+        return description
+    return f"{description} {marker}".strip() if description else marker
+
+
+def _account_label(account_id: Any) -> str:
+    text = str(account_id or "").strip()
+    if not text:
+        return ""
+    try:
+        return account_label_for_key(text)
+    except Exception:
+        return text
+
+
+def _parse_date(value: Any) -> date | None:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text).date()
+    except ValueError:
+        try:
+            return date.fromisoformat(text[:10])
+        except ValueError:
+            return None
+
+
+def _first_nonblank(*values: Any) -> str:
+    for value in values:
+        text = str(value or "").strip()
+        if text and text.casefold() not in {"nan", "nat", "none", "null"}:
+            return text
+    return ""
+
+
+def _normalize_compare(value: Any) -> str:
+    return " ".join(str(value or "").strip().casefold().split())
+
+
+def _truthy(value: Any) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _to_float(value: Any) -> float:
+    try:
+        return float(str(value or "0").replace(",", "."))
+    except (TypeError, ValueError):
+        return 0.0

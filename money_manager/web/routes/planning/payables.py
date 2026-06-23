@@ -1,6 +1,5 @@
 from flask import Blueprint, redirect, render_template, request, url_for
 
-from money_manager.services.account_service import auxiliary_total, main_account_transactions
 from money_manager.services.payable_service import (
     add_payable_from_form,
     delete_payable_from_form,
@@ -8,8 +7,7 @@ from money_manager.services.payable_service import (
     pay_payable_from_form,
     update_payable_from_form,
 )
-from money_manager.services.transaction_service import load_transactions
-from money_manager.utils.stats import summary_totals
+from money_manager.web.context import resolve_request_scope, scope_template_context
 
 bp = Blueprint("payables", __name__, url_prefix="/payables")
 
@@ -26,9 +24,10 @@ def payables_page():
             delete_payable_from_form(request.form)
         elif action == "update_payable":
             update_payable_from_form(request.form)
-        return redirect(url_for("payables.payables_page"))
+        account_id = request.args.get("account_id", "")
+        return redirect(url_for("payables.payables_page", account_id=account_id) if account_id else url_for("payables.payables_page"))
 
-    transactions = load_transactions()
-    totals = summary_totals(main_account_transactions(transactions))
-    visible_liquidity = totals["net"] + auxiliary_total(transactions)
-    return render_template("planning/payables.html", **page_context(totals["net"], visible_liquidity))
+    selected_scope = resolve_request_scope(request)
+    context = page_context(scope=selected_scope)
+    context.update(scope_template_context(selected_scope))
+    return render_template("planning/payables.html", **context)

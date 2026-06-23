@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import mimetypes
+from io import BytesIO
 from pathlib import Path
 
 from flask import Blueprint, abort, redirect, render_template, request, send_file, url_for
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
-from money_manager.config import account_options_for_forms
-from money_manager.config.user_paths import get_user_data_dir
+from money_manager.services.account_config_service import all_accounts, set_default_account
+from money_manager.services.payment_form_service import current_account_options, payment_method_options_for_forms
+from money_manager.services.payment_method_service import set_default_payment_method
+from money_manager.config.user_paths import get_current_user_id, get_user_data_dir
+from money_manager.security.secure_storage import read_binary_secure, write_binary_secure
 from money_manager.services.currency_service import currency_options_for_forms
 from money_manager.services.i18n_service import available_language_codes
 from money_manager.services.navigation_service import (
@@ -40,10 +44,9 @@ PROFILE_FIELDS = {
     "last_name",
     "display_name",
     "birth_year",
-    "bank_name",
-    "iban",
-    "bic_swift",
-    "default_main_account",
+    "profile_notes",
+    "default_current_account_id",
+    "default_payment_method_id",
 }
 PREFERENCE_FIELDS_FROM_PROFILE = {"currency", "date_format"}
 PREFERENCE_FIELDS = {"theme", "language", "privacy_mode", "show_sensitive_data"}
@@ -62,7 +65,13 @@ THEME_OPTIONS = [
 def profile_page():
     if request.method == "POST":
         profile_updates = {field: request.form.get(field, "") for field in PROFILE_FIELDS}
-        update_profile(profile_updates)
+        updated_profile = update_profile(profile_updates)
+        default_account_id = str(updated_profile.get("default_current_account_id") or "")
+        default_method_id = str(updated_profile.get("default_payment_method_id") or "")
+        if default_account_id:
+            set_default_account(default_account_id)
+        if default_method_id:
+            set_default_payment_method(default_method_id)
 
         preference_updates = {
             field: request.form.get(field, "")
@@ -199,7 +208,7 @@ def avatar():
         abort(404)
 
     mimetype = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
-    return send_file(path, mimetype=mimetype, conditional=True, max_age=3600)
+    return send_file(BytesIO(read_binary_secure(path)), mimetype=mimetype, download_name=path.name, conditional=False, max_age=3600)
 
 
 def _render_profile_page():
@@ -218,7 +227,9 @@ def _render_profile_page():
         initials=initials,
         user=user,
         status=status,
-        account_options=account_options_for_forms(include_credit=False),
+        account_options=current_account_options(),
+        payment_method_options=payment_method_options_for_forms(include_archived=False),
+        account_summary=_profile_account_summary(preferences),
         currency_options=currency_options_for_forms(),
         date_format_options=DATE_FORMAT_OPTIONS,
         theme_options=THEME_OPTIONS,
@@ -226,6 +237,37 @@ def _render_profile_page():
         navigation_groups=get_effective_navigation(include_hidden=True),
     )
 
+
+
+def _profile_account_summary(preferences: dict) -> list[dict]:
+    from money_manager.utils.privacy import mask_iban, should_mask_sensitive
+
+    mask_sensitive = should_mask_sensitive(preferences)
+    try:
+        methods = payment_method_options_for_forms(include_archived=True)
+    except Exception:
+        methods = []
+    method_counts: dict[str, int] = {}
+    for method in methods:
+        for field in ("linked_account_id", "funding_account_id", "settlement_account_id", "liability_account_id"):
+            value = str(method.get(field) or "")
+            if value:
+                method_counts[value] = method_counts.get(value, 0) + 1
+    rows: list[dict] = []
+    for account in all_accounts(include_archived=True, include_main=True):
+        if account.get("is_container"):
+            continue
+        account_id = str(account.get("key") or account.get("id") or "")
+        rows.append({
+            "id": account_id,
+            "label": str(account.get("label") or account.get("name") or account_id),
+            "institution": str(account.get("institution") or ""),
+            "iban_masked": mask_iban(str(account.get("iban") or "")),
+            "methods_count": method_counts.get(account_id, 0),
+            "is_archived": bool(not account.get("is_active", True) or account.get("is_closed")),
+            "balance_display": "••••" if mask_sensitive else "",
+        })
+    return rows[:12]
 
 
 def _profile_navigation_url(*, saved: str) -> str:
@@ -251,15 +293,24 @@ def _save_avatar(file: FileStorage) -> None:
     if not _is_path_inside(destination, _avatar_dir()):
         raise ValueError("avatar_type")
 
+    raw = file.read()
+    if not raw:
+        raise ValueError("avatar_empty")
+    if len(raw) > MAX_AVATAR_BYTES:
+        raise ValueError("avatar_too_large")
+
     _remove_avatar_files(except_filename=stable_name)
-    file.save(destination)
+    write_binary_secure(
+        destination,
+        raw,
+        user_id=get_current_user_id(),
+        original_filename=original_name,
+        content_type=file.mimetype or mimetypes.guess_type(stable_name)[0] or "application/octet-stream",
+    )
 
     if not destination.exists() or destination.stat().st_size <= 0:
         destination.unlink(missing_ok=True)
         raise ValueError("avatar_empty")
-    if destination.stat().st_size > MAX_AVATAR_BYTES:
-        destination.unlink(missing_ok=True)
-        raise ValueError("avatar_too_large")
 
     profile = load_profile()
     profile["profile_image"] = stable_name

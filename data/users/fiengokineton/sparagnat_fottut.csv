@@ -1,5 +1,0 @@
-id,date,kind,person,category,amount,original_amount,original_currency,exchange_rate_to_eur,exchange_correction_to_eur,exchange_effective_rate_to_eur,account,account_key_snapshot,account_name_snapshot,account_due_day_snapshot,payment_method,contact_id,contact_name,iban_snapshot,bic_swift_snapshot,bank_name_snapshot,transfer_reference,transfer_status,description,created_at
-1,2026-05-30,cash_collected,Dad,cash,50.0,,,,,,cash,,,,,,,,,,,,,2026-06-08T09:50:59
-2,2026-06-06,saved_expense,Dad,Shopping,120.0,,,,,,card,,,,,,,,,,,,Claudia bathing suits,2026-06-08T09:51:37
-3,2026-06-06,saved_expense,Dad,Shopping,100.0,,,,,,card,,,,,,,,,,,,bathing suit,2026-06-08T09:52:11
-4,2026-06-10,saved_expense,Dad,Clothing,900.0,,,,,,,,,,,,,,,,,,,2026-06-11T15:20:46

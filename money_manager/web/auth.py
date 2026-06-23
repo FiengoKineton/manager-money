@@ -4,6 +4,9 @@ from functools import wraps
 
 from flask import Blueprint, redirect, render_template, request, session, url_for
 
+from money_manager.security.key_manager import is_encryption_enabled
+from money_manager.security.session_vault import is_unlocked, lock_vault, unlock_user
+from money_manager.cache.precompute_service import warm_cache_on_login
 from money_manager.users.user_manager import (
     authenticate_user,
     create_user,
@@ -15,7 +18,8 @@ from money_manager.users.user_manager import (
 bp = Blueprint("auth", __name__)
 
 PUBLIC_ENDPOINTS = {"auth.login", "auth.register", "static"}
-ONBOARDING_ALLOWED_ENDPOINTS = {"onboarding.onboarding_page", "onboarding.reset_onboarding", "auth.logout"}
+UNLOCK_ALLOWED_ENDPOINTS = {"security.unlock", "security.lock", "auth.logout", "static"}
+ONBOARDING_ALLOWED_ENDPOINTS = {"onboarding.onboarding_page", "onboarding.reset_onboarding", "auth.logout", "security.unlock", "security.lock"}
 
 
 def is_authenticated() -> bool:
@@ -51,10 +55,31 @@ def require_login():
         return redirect(url_for("auth.register", next=request.path))
 
     if is_authenticated():
-        ensure_user_data_folder(str(session.get("user_id")), create_files=True)
+        user_id = str(session.get("user_id") or "")
+
+        encryption_enabled = is_encryption_enabled(user_id)
+        vault_locked = encryption_enabled and not is_unlocked(user_id)
+        unlock_allowed = endpoint in UNLOCK_ALLOWED_ENDPOINTS or endpoint.startswith("static")
+
+        # Important:
+        # The unlock/logout/lock pages must be reachable while the vault is locked.
+        # Do NOT create/repair encrypted user files here because that requires the DEK.
+        if vault_locked:
+            if unlock_allowed:
+                ensure_user_data_folder(user_id, create_files=False)
+                return None
+
+            next_url = request.full_path if request.query_string else request.path
+            return redirect(url_for("security.unlock", next=next_url))
+
+        # Vault is unlocked, or encryption is disabled.
+        # Now it is safe to create/repair encrypted user files.
+        ensure_user_data_folder(user_id, create_files=True)
+
         if _should_redirect_to_onboarding(endpoint):
             next_url = request.full_path if request.query_string else request.path
             return redirect(url_for("onboarding.onboarding_page", next=next_url))
+
         return None
 
     next_url = request.full_path if request.query_string else request.path
@@ -75,7 +100,7 @@ def _should_redirect_to_onboarding(endpoint: str) -> bool:
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     if is_authenticated():
-        return redirect(request.args.get("next") or url_for("dashboard.overview"))
+        return redirect(request.args.get("next") or url_for("accounts.accounts_page"))
 
     error = None
     first_user = not has_any_user()
@@ -99,8 +124,8 @@ def register():
             except ValueError as exc:
                 error = str(exc)
             else:
-                _login_user(user)
-                return redirect(request.args.get("next") or url_for("dashboard.overview"))
+                _login_user(user, password=password)
+                return redirect(request.args.get("next") or url_for("accounts.accounts_page"))
 
     return render_template("auth/register.html", error=error, first_user=first_user)
 
@@ -108,10 +133,10 @@ def register():
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if not has_any_user():
-        return redirect(url_for("auth.register", next=request.args.get("next") or url_for("dashboard.overview")))
+        return redirect(url_for("auth.register", next=request.args.get("next") or url_for("accounts.accounts_page")))
 
     if is_authenticated():
-        return redirect(request.args.get("next") or url_for("dashboard.overview"))
+        return redirect(request.args.get("next") or url_for("accounts.accounts_page"))
 
     error = None
 
@@ -120,22 +145,43 @@ def login():
         password = request.form.get("password", "")
         user = authenticate_user(username, password)
         if user:
-            _login_user(user)
-            return redirect(request.args.get("next") or url_for("dashboard.overview"))
-        error = "Wrong username or password."
+            try:
+                _login_user(user, password=password)
+            except Exception:
+                error = "Password verified, but the encrypted vault could not be unlocked."
+            else:
+                return redirect(request.args.get("next") or url_for("accounts.accounts_page"))
+        elif error is None:
+            error = "Wrong username or password."
 
     return render_template("auth/login.html", error=error)
 
 
 @bp.post("/logout")
 def logout():
+    lock_vault()
     session.clear()
     return redirect(url_for("auth.login"))
 
 
-def _login_user(user: dict) -> None:
+def _login_user(user: dict, *, password: str | None = None) -> None:
     session.clear()
     session.permanent = True
-    session["user_id"] = str(user.get("id"))
+    user_id = str(user.get("id"))
+    session["user_id"] = user_id
     session["username"] = str(user.get("username"))
     session["display_name"] = str(user.get("display_name") or user.get("username"))
+
+    # Old installs may have users created before encryption became mandatory.
+    # When the password is available, upgrade the active user folder immediately
+    # so subsequent add/edit/delete requests keep writing encrypted files.
+    if password:
+        if not is_encryption_enabled(user_id):
+            from money_manager.security.encryption_migration_service import migrate_user_to_encrypted_storage
+
+            migrate_user_to_encrypted_storage(user_id, password)
+        unlock_user(user_id, password)
+    try:
+        warm_cache_on_login(user_id)
+    except Exception:
+        pass

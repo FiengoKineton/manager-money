@@ -1,83 +1,71 @@
-import csv
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Iterable
 
+from money_manager.cache import request_cache
+from money_manager.config.user_paths import get_current_user_id
+from money_manager.cache.source_fingerprint_service import fingerprint_for_path
 
-def _notify_cache_changed() -> None:
+from money_manager.security.secure_storage import (
+    append_csv_row_secure,
+    ensure_csv_secure,
+    read_csv_secure,
+    write_csv_secure,
+)
+
+
+def _notify_cache_changed(path: Path | None = None) -> None:
     try:
-        from money_manager.services.cache_service import notify_data_changed
+        from money_manager.services.cache_service import notify_path_changed, notify_data_changed
 
-        notify_data_changed()
+        if path is not None:
+            notify_path_changed(str(path))
+        else:
+            notify_data_changed()
     except Exception:
         pass
 
 
 def ensure_csv(path: Path, fieldnames: list[str]) -> None:
-    """Create or migrate a CSV file so it has the requested headers.
-
-    Existing rows are preserved when new columns are added.  The requested
-    fieldnames are kept first and in the correct order so later appends do not
-    accidentally write values under the wrong columns after a schema migration.
-    Any unknown extra columns are kept after the requested schema.
-    """
-    path.parent.mkdir(exist_ok=True, parents=True)
-
-    if not path.exists() or path.stat().st_size == 0:
-        with path.open("w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-        return
-
-    with path.open(newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        existing_headers = reader.fieldnames or []
-        rows = list(reader)
-
-    desired_headers = [*fieldnames, *[header for header in existing_headers if header not in fieldnames]]
-    if existing_headers == desired_headers:
-        return
-
-    with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=desired_headers)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({field: row.get(field, "") for field in desired_headers})
+    """Create or migrate a CSV file while respecting encryption-at-rest."""
+    ensure_csv_secure(path, fieldnames)
 
 
 def _current_headers(path: Path, fallback: list[str]) -> list[str]:
-    try:
-        with path.open(newline="", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            headers = next(reader, [])
-            return headers or fallback
-    except OSError:
+    rows = read_csv_secure(path, fallback)
+    if not rows:
+        # ensure_csv_secure already created the file with fallback headers.
         return fallback
+    headers = list(rows[0].keys())
+    return headers or fallback
 
 
 def read_rows(path: Path, fieldnames: list[str]) -> list[dict]:
-    ensure_csv(path, fieldnames)
-    with path.open(newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
+    try:
+        fp = fingerprint_for_path(path, user_id=get_current_user_id())
+        key = f"csv_rows:{get_current_user_id() or ''}:{path}:{fp.get('mtime_ns')}:{fp.get('size')}:{fp.get('sha256')}"
+        sentinel = object()
+        cached = request_cache.get(key, sentinel)
+        if cached is not sentinel:
+            return [dict(row) for row in cached]
+        rows = read_csv_secure(path, fieldnames)
+        request_cache.set(key, [dict(row) for row in rows])
+        return rows
+    except Exception:
+        return read_csv_secure(path, fieldnames)
 
 
 def write_rows(path: Path, fieldnames: list[str], rows: Iterable[dict]) -> None:
-    ensure_csv(path, fieldnames)
-    headers = _current_headers(path, fieldnames)
-    with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=headers)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({field: row.get(field, "") for field in headers})
-    _notify_cache_changed()
+    write_csv_secure(path, fieldnames, rows)
+    request_cache.clear_user()
+    _notify_cache_changed(path)
 
 
 def append_row(path: Path, fieldnames: list[str], row: dict) -> None:
-    ensure_csv(path, fieldnames)
-    headers = _current_headers(path, fieldnames)
-    with path.open("a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=headers)
-        writer.writerow({field: row.get(field, "") for field in headers})
-    _notify_cache_changed()
+    append_csv_row_secure(path, fieldnames, row)
+    request_cache.clear_user()
+    _notify_cache_changed(path)
 
 
 def next_numeric_id(rows: list[dict], field: str = "id") -> int:

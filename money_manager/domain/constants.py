@@ -1,5 +1,37 @@
+
+
+ACCOUNT_LEDGER_FIELDS = [
+    "id",
+    "ledger_group_id",
+    "transaction_uid",
+    "transaction_type",
+    "transaction_id",
+    "source_kind",
+    "source_id",
+    "date",
+    "effective_date",
+    "account_id",
+    "account_name_snapshot",
+    "counterparty_account_id",
+    "counterparty_account_name_snapshot",
+    "payment_method_id",
+    "payment_method_name_snapshot",
+    "movement_kind",
+    "direction",
+    "amount",
+    "currency",
+    "signed_amount",
+    "status",
+    "is_void",
+    "voided_by_ledger_group_id",
+    "created_from_resolution_json",
+    "notes",
+    "created_at",
+]
+
 TRANSACTION_FIELDS = [
     "id",
+    "transaction_uid",
     "date",
     "category",
     "sub_category",
@@ -10,12 +42,30 @@ TRANSACTION_FIELDS = [
     "exchange_correction_to_eur",
     "exchange_effective_rate_to_eur",
     "account",
+    "account_id",
     "account_key_snapshot",
     "account_name_snapshot",
     "account_due_day_snapshot",
-    # Optional payment/contact metadata. Older CSVs are migrated automatically
-    # with blank values by repositories.csv_files.ensure_csv().
+    # Optional payment/contact/ledger metadata. Older CSVs are migrated
+    # automatically with blank values by repositories.csv_files.ensure_csv().
     "payment_method",
+    "payment_method_id",
+    "payment_method_name_snapshot",
+    "payment_channel_method_id_snapshot",
+    "payment_channel_name_snapshot",
+    "funding_account_id_snapshot",
+    "funding_account_name_snapshot",
+    "settlement_account_id_snapshot",
+    "settlement_account_name_snapshot",
+    "liability_account_id_snapshot",
+    "liability_account_name_snapshot",
+    "settlement_mode_snapshot",
+    "payment_due_date_snapshot",
+    "payment_due_day_snapshot",
+    "payment_statement_period_snapshot",
+    "payment_resolution_json",
+    "ledger_group_id",
+    "ledger_status",
     "contact_id",
     "contact_name",
     "iban_snapshot",
@@ -30,12 +80,51 @@ TRANSACTION_FIELDS = [
 
 INTERNAL_TRANSFER_FIELDS = [
     "id",
+    "transfer_uid",
     "date",
+    # Legacy display fields retained for old CSV compatibility.
     "from_account",
     "to_account",
+    # Stable account-routing fields used by the ledger-backed flow.
+    "from_account_id",
+    "from_account_name_snapshot",
+    "to_account_id",
+    "to_account_name_snapshot",
     "amount",
+    "fee_amount",
+    "fee_payment_method_id",
+    "fee_payment_method_name_snapshot",
+    "ledger_group_id",
+    "status",
+    "transfer_kind",
+    "metadata_json",
     "description",
     "created_at",
+    "updated_at",
+]
+
+CREDIT_SETTLEMENT_FIELDS = [
+    "id",
+    "settlement_uid",
+    "payment_method_id",
+    "payment_method_name_snapshot",
+    "liability_account_id",
+    "liability_account_name_snapshot",
+    "settlement_account_id",
+    "settlement_account_name_snapshot",
+    "statement_period",
+    "due_date",
+    "amount",
+    "currency",
+    "status",
+    "ledger_group_id",
+    "pending_id",
+    "executed_transaction_uid",
+    "created_from_ledger_group_ids_json",
+    "created_at",
+    "updated_at",
+    "executed_at",
+    "notes",
 ]
 
 PENDING_FIELDS = [
@@ -56,6 +145,11 @@ PENDING_FIELDS = [
     "account_label",
     "statement_month",
     "date_charge",
+    "account_id",
+    "account_name_snapshot",
+    "payment_method_id",
+    "payment_method_name_snapshot",
+    "payment_resolution_template_json",
 ]
 
 RECURRING_FIELDS = [
@@ -71,10 +165,16 @@ RECURRING_FIELDS = [
     "end_date",
     "max_occurrences",
     "last_generated",
+    "account_id",
+    "account_name_snapshot",
+    "payment_method_id",
+    "payment_method_name_snapshot",
+    "payment_resolution_template_json",
 ]
 
 SPARAGNAT_FIELDS = [
     "id",
+    "transaction_uid",
     "date",
     "kind",
     "person",
@@ -86,12 +186,30 @@ SPARAGNAT_FIELDS = [
     "exchange_correction_to_eur",
     "exchange_effective_rate_to_eur",
     "account",
+    "account_id",
     "account_key_snapshot",
     "account_name_snapshot",
     "account_due_day_snapshot",
-    # Optional payment/contact metadata. Older CSVs are migrated automatically
-    # with blank values by repositories.csv_files.ensure_csv().
+    # Optional payment/contact/ledger metadata. Older CSVs are migrated
+    # automatically with blank values by repositories.csv_files.ensure_csv().
     "payment_method",
+    "payment_method_id",
+    "payment_method_name_snapshot",
+    "payment_channel_method_id_snapshot",
+    "payment_channel_name_snapshot",
+    "funding_account_id_snapshot",
+    "funding_account_name_snapshot",
+    "settlement_account_id_snapshot",
+    "settlement_account_name_snapshot",
+    "liability_account_id_snapshot",
+    "liability_account_name_snapshot",
+    "settlement_mode_snapshot",
+    "payment_due_date_snapshot",
+    "payment_due_day_snapshot",
+    "payment_statement_period_snapshot",
+    "payment_resolution_json",
+    "ledger_group_id",
+    "ledger_status",
     "contact_id",
     "contact_name",
     "iban_snapshot",
@@ -113,6 +231,10 @@ PARENT_SUPPORT_FIELDS = [
     "payment_method",
     "description",
     "created_at",
+    "account_id",
+    "account_name_snapshot",
+    "payment_method_id",
+    "payment_method_name_snapshot",
 ]
 
 PARENT_SUPPORT_RULE_FIELDS = [
@@ -129,6 +251,10 @@ PARENT_SUPPORT_RULE_FIELDS = [
     "description",
     "active",
     "created_at",
+    "account_id",
+    "account_name_snapshot",
+    "payment_method_id",
+    "payment_method_name_snapshot",
 ]
 
 DEBT_FIELDS = [
@@ -145,6 +271,10 @@ DEBT_FIELDS = [
     "status",
     "created_at",
     "closed_at",
+    "account_id",
+    "account_name_snapshot",
+    "preferred_payment_method_id",
+    "preferred_payment_method_name_snapshot",
 ]
 
 DEBT_RULE_FIELDS = [
@@ -175,6 +305,10 @@ RECEIVABLE_FIELDS = [
     "linked_expense_transaction_id",
     "created_at",
     "closed_at",
+    "account_id",
+    "account_name_snapshot",
+    "preferred_payment_method_id",
+    "preferred_payment_method_name_snapshot",
 ]
 
 PAYABLE_FIELDS = [
@@ -191,6 +325,10 @@ PAYABLE_FIELDS = [
     "status",
     "created_at",
     "closed_at",
+    "account_id",
+    "account_name_snapshot",
+    "preferred_payment_method_id",
+    "preferred_payment_method_name_snapshot",
 ]
 
 EXPENSE_PROJECT_FIELDS = [
@@ -232,6 +370,10 @@ EXPENSE_PROJECT_PLANNED_ITEM_FIELDS = [
     "payable_id",
     "created_at",
     "closed_at",
+    "account_id",
+    "account_name_snapshot",
+    "preferred_payment_method_id",
+    "preferred_payment_method_name_snapshot",
 ]
 
 INVESTMENT_ASSET_FIELDS = [
@@ -242,6 +384,10 @@ INVESTMENT_ASSET_FIELDS = [
     "currency",
     "active",
     "created_at",
+    "funding_account_id",
+    "funding_account_name_snapshot",
+    "payment_method_id",
+    "payment_method_name_snapshot",
 ]
 
 WEEKDAY_ORDER = [

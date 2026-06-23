@@ -11,7 +11,6 @@ from typing import Any
 
 import pandas as pd
 
-from money_manager.services.account_service import main_account_transactions
 from money_manager.services.overview_service import build_overview_context
 from money_manager.services.transaction_service import load_transactions, prepare_transactions_for_display
 from money_manager.utils.stats import summary_totals
@@ -20,11 +19,13 @@ from money_manager.utils.stats import summary_totals
 MAX_EXPLANATION_ROWS = 80
 
 
-def build_net_explanation_context() -> dict[str, Any]:
-    """Build a read-only explanation for the current overview balances."""
-    overview = build_overview_context()
+def build_net_explanation_context(scope: str = "global") -> dict[str, Any]:
+    """Build a read-only explanation for the current scoped overview balances."""
+    from money_manager.services.account_scope_service import transactions_for_scope
+
+    overview = build_overview_context(scope=scope)
     all_transactions = load_transactions()
-    main_transactions = main_account_transactions(all_transactions)
+    main_transactions = transactions_for_scope(all_transactions, scope)
     main_totals = summary_totals(main_transactions)
 
     return {
@@ -44,9 +45,9 @@ def _headline_rows(overview: dict[str, Any]) -> list[dict[str, Any]]:
     totals = overview["totals"]
     return [
         {
-            "label": "Main bank net",
+            "label": "Selected scope net",
             "value": totals["net"],
-            "caption": "Same value used in the top bar and overview. It is not changed by this page.",
+            "caption": "Same scoped value used in the selected overview/dashboard.",
         },
         {
             "label": "Visible liquidity",
@@ -78,8 +79,8 @@ def _formula_rows(overview: dict[str, Any]) -> list[dict[str, Any]]:
 
     return [
         {
-            "name": "Main bank net",
-            "formula": "income - expenses - non-dividend investments ± internal transfers",
+            "name": "Selected scope net",
+            "formula": "scoped income - scoped expenses - scoped investments ± scoped transfers",
             "parts": [
                 _part("Income", totals["income"]),
                 _part("Expenses", -totals["expenses"]),
@@ -89,8 +90,8 @@ def _formula_rows(overview: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "name": "Visible liquidity",
-            "formula": "main bank net + separate liquid accounts",
-            "parts": [_part("Main bank net", totals["net"]), _part("Separate liquid accounts", aux)],
+            "formula": "selected scope net + other visible liquid accounts",
+            "parts": [_part("Selected scope net", totals["net"]), _part("Other visible accounts", aux)],
             "result": visible,
         },
         {
@@ -151,13 +152,13 @@ def _display_rows(df: pd.DataFrame, *, limit: int) -> list[dict[str, Any]]:
     records = display.to_dict(orient="records")
     for row in records:
         row["signed_amount_str"] = f"{float(row.get('signed_amount', 0.0) or 0.0):.2f}"
-        row["account_display"] = row.get("account_label") or row.get("account") or "Main bank"
+        row["account_display"] = row.get("account_label") or row.get("account") or "Selected account"
     return records
 
 
 def _notes() -> list[str]:
     return [
         "This page is read-only and reuses the same overview calculations already used by the app.",
-        "Separate liquid-account rows are shown to explain why they are not part of the conservative main-bank net.",
-        "Internal-transfer effects are included through the existing main_account_transactions service, so the result matches the top bar.",
+        "Rows are filtered using the selected account scope when account_id is present.",
+        "Linked-wallet payments can appear in both the wallet and the card's funding Conto when the payment method is configured that way.",
     ]

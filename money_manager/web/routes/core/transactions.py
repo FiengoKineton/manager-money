@@ -3,15 +3,17 @@ import json
 
 from flask import Blueprint, redirect, render_template, request, url_for
 
-from money_manager.config import TRANSACTION_TYPES, account_options_for_forms, default_date_range
+from money_manager.config import TRANSACTION_TYPES, default_date_range
 from money_manager.domain.transaction import TransactionInput
-from money_manager.services.account_service import main_account_transactions
 from money_manager.services.analytics_service import apply_transaction_filters
+from money_manager.services.account_scope_service import transactions_for_scope
 from money_manager.services.category_service import category_context
 from money_manager.services.currency_service import currency_options_for_forms
 from money_manager.services.quick_log_service import handle_quick_log, quick_log_context
+from money_manager.services.payment_form_service import payment_form_context
 from money_manager.utils.stats import summary_totals
 from money_manager.web.transaction_filter_state import resolve_transaction_filter_state
+from money_manager.web.context import resolve_request_scope, scope_template_context
 from money_manager.services.transaction_service import (
     delete_existing_transaction,
     load_transactions,
@@ -31,7 +33,9 @@ bp = Blueprint("transactions", __name__)
 @bp.route("/transactions")
 def transactions_page():
     df = load_transactions()
-    main_df = main_account_transactions(df)
+    selected_scope = resolve_request_scope(request)
+    scope_key = selected_scope["scope"]
+    main_df = transactions_for_scope(df, scope_key)
 
     start_default, end_default = default_date_range()
     filter_state = resolve_transaction_filter_state(request.args, start_default, end_default, TRANSACTION_TYPES)
@@ -49,9 +53,10 @@ def transactions_page():
     # summary uses full historical main-net rows by default, so older opening
     # transactions still count. When the user actually changes filters, the
     # summary switches to that selected scope.
-    filtered = apply_transaction_filters(df, start, end, types, categories, query, amount_min, amount_max)
+    scoped_df = main_df
+    filtered = apply_transaction_filters(scoped_df, start, end, types, categories, query, amount_min, amount_max)
     display_rows = filtered.copy()
-    calculation_main = main_account_transactions(filtered) if has_effective_filters else main_df
+    calculation_main = filtered if has_effective_filters else main_df
     calculation_totals = summary_totals(calculation_main)
     filtered = prepare_transactions_for_display(filtered)
     all_categories = sorted(main_df["category"].dropna().unique().tolist()) if not main_df.empty else []
@@ -85,6 +90,7 @@ def transactions_page():
         has_non_date_filters=bool(filter_state.get("has_non_date_filters")),
         uses_full_history_for_calculations=not has_effective_filters,
         visual_scope_label=filter_state.get("display_scope_label", "current year"),
+        **scope_template_context(selected_scope),
     )
 
 
@@ -108,7 +114,8 @@ def add_transaction():
         tx_input = TransactionInput.from_form(request.form)
         result = save_new_transaction(tx_input)
         if result.get("ok"):
-            return redirect(url_for("transactions.transactions_page"))
+            scoped_account_id = request.form.get("account_id") or request.args.get("account_id") or ""
+            return redirect(url_for("transactions.transactions_page", account_id=scoped_account_id) if scoped_account_id else url_for("transactions.transactions_page"))
         form_error = result.get("error", "The transaction was not saved.")
         form_values = request.form.to_dict()
         transaction_type = tx_input.type
@@ -122,10 +129,16 @@ def add_transaction():
     special_context = quick_log_context() if show_special_log else {"quick_log_modes": [], "quick_log_context": {}}
 
     context = category_context(transaction_type)
+    payment_context = payment_form_context(
+        transaction_type=transaction_type,
+        selected_account_id=form_values.get("account_id") or form_values.get("account") or request.args.get("account_id"),
+        selected_payment_method_id=form_values.get("payment_method_id") or request.args.get("payment_method_id"),
+    )
     currency_options = currency_options_for_forms()
     return render_template(
         "core/add_transaction.html",
         **context,
+        **payment_context,
         today=date.today().isoformat(),
         currency_options=currency_options,
         currency_options_json=json.dumps(currency_options),
@@ -144,24 +157,42 @@ def add_transaction():
 
 @bp.route("/transaction/<int:row_index>", methods=["GET", "POST"])
 def transaction_detail(row_index: int):
+    warning = ""
     if request.method == "POST":
         action = request.form.get("action")
 
         if action == "delete":
-            delete_existing_transaction(row_index)
-            return redirect(url_for("transactions.transactions_page"))
+            result = delete_existing_transaction(row_index, confirm_settled_edit=request.form.get("confirm_settled_edit") == "1")
+            if result.get("ok"):
+                scoped_account_id = request.args.get("account_id") or request.form.get("account_id") or ""
+                return redirect(url_for("transactions.transactions_page", account_id=scoped_account_id) if scoped_account_id else url_for("transactions.transactions_page"))
+            warning = result.get("error", "The transaction was not deleted.")
         
-        if action == "delay":
-            delay_existing_transaction(row_index, request.form.get("delay_date", ""))
-            return redirect(request.referrer or url_for("transactions.transactions_page"))
+        elif action == "delay":
+            result = delay_existing_transaction(row_index, request.form.get("delay_date", ""))
+            if result.get("ok"):
+                return redirect(request.referrer or url_for("transactions.transactions_page"))
+            warning = result.get("error", "The transaction date was not changed.")
 
-        if action == "update":
-            update_existing_transaction(row_index, request.form)
-            return redirect(url_for("transactions.transaction_detail", row_index=row_index))
+        elif action == "update":
+            result = update_existing_transaction(row_index, request.form)
+            if result.get("ok"):
+                return redirect(url_for("transactions.transaction_detail", row_index=row_index))
+            warning = result.get("error", "The transaction was not updated.")
 
     try:
         tx, categories = transaction_detail_context(row_index)
     except LookupError:
         return f"Transaction {row_index} not found", 404
 
-    return render_template("core/transaction_detail.html", tx=tx, categories=categories, account_options=account_options_for_forms())
+    return render_template(
+        "core/transaction_detail.html",
+        tx=tx,
+        categories=categories,
+        **payment_form_context(
+            transaction_type=tx.get("type"),
+            selected_account_id=tx.get("account_id") or tx.get("account_key") or tx.get("account"),
+            selected_payment_method_id=tx.get("payment_method_id"),
+        ),
+        transaction_warning=warning or request.args.get("warning", ""),
+    )

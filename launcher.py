@@ -29,6 +29,8 @@ APP_CONFIG_FILE_NAME = "config.json"
 LEGACY_CONFIG_FILE = ".money_manager_launcher_config.json"
 LEGACY_PATH_CACHE_FILE = ".money_manager_project_path.txt"
 BROWSER_PROFILE_DIR = ".launcher_browser_profile"
+DATA_HOME_ENV = "MONEY_MANAGER_DATA_HOME"
+DATA_HOME_FOLDER_NAME = "MoneyManagerData"
 
 
 def _launcher_dir() -> Path:
@@ -93,6 +95,14 @@ def _write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
+def _update_launcher_config(**values) -> dict:
+    path = _config_path()
+    payload = _read_json(path)
+    payload.update({key: str(value) for key, value in values.items() if value is not None})
+    _write_json(path, payload)
+    return payload
+
+
 def _candidate_project_dirs(config_path: Path) -> list[Path]:
     candidates: list[Path] = []
 
@@ -153,7 +163,7 @@ def _ask_for_project_dir(config_path: Path) -> Path:
             continue
         candidate = Path(raw).expanduser().resolve()
         if _is_project_dir(candidate):
-            _write_json(config_path, {"project_dir": str(candidate)})
+            _update_launcher_config(project_dir=candidate)
             return candidate
         print("That folder does not look like the Money Manager repo. Try again.")
 
@@ -165,7 +175,7 @@ def find_project_dir() -> Path:
             # Store the path for future runs, useful when the launcher becomes an .exe
             # or when a copied/renamed .bat is moved outside the repo.
             try:
-                _write_json(config_path, {"project_dir": str(candidate)})
+                _update_launcher_config(project_dir=candidate)
             except Exception:
                 pass
             return candidate
@@ -180,11 +190,67 @@ def project_dir_from_arg(raw_path: str) -> Path:
         raise SystemExit(1)
 
     try:
-        _write_json(_config_path(), {"project_dir": str(candidate)})
+        _update_launcher_config(project_dir=candidate)
     except Exception:
         pass
 
     return candidate
+
+
+def _resolve_data_home(project_dir: Path, requested: str | None = None) -> Path:
+    if requested:
+        return Path(requested).expanduser().resolve()
+    env_home = os.environ.get(DATA_HOME_ENV)
+    if env_home:
+        return Path(env_home).expanduser().resolve()
+    config = _read_json(_config_path())
+    if config.get("data_home"):
+        return Path(str(config["data_home"])).expanduser().resolve()
+    return (project_dir / DATA_HOME_FOLDER_NAME).resolve()
+
+
+def ensure_data_home(project_dir: Path, data_home: Path) -> None:
+    for folder in (
+        data_home / "app_config",
+        data_home / "data" / "_system",
+        data_home / "data" / "users",
+        data_home / "backups",
+        data_home / "updates" / "inbox",
+        data_home / "updates" / "staging",
+        data_home / "updates" / "installed",
+        data_home / "updates" / "failed",
+        data_home / "updates" / "rollback",
+        data_home / "logs",
+        data_home / "cache",
+    ):
+        folder.mkdir(parents=True, exist_ok=True)
+    _update_launcher_config(project_dir=project_dir, data_home=data_home)
+
+    env = os.environ.copy()
+    env[DATA_HOME_ENV] = str(data_home)
+    command = find_base_python() + [
+        "-c",
+        "from money_manager.config.app_home import ensure_app_home; ensure_app_home()",
+    ]
+    result = _run_capture(command, cwd=project_dir, env=env)
+    if result.returncode != 0:
+        print(result.stdout)
+        print("Data folder configuration could not be initialized.")
+        raise SystemExit(result.returncode)
+
+
+def apply_staged_updates_before_start(project_dir: Path, data_home: Path) -> None:
+    tool = project_dir / "tools" / "apply_update.py"
+    if not tool.exists():
+        return
+    env = os.environ.copy()
+    env[DATA_HOME_ENV] = str(data_home)
+    result = _run_capture(find_base_python() + [str(tool)], cwd=project_dir, env=env)
+    if result.stdout.strip():
+        print(result.stdout.strip())
+    if result.returncode != 0:
+        print("A staged update failed. The launcher will continue with the current code if rollback succeeded.")
+
 
 def _run_capture(command: Sequence[str], **kwargs) -> subprocess.CompletedProcess:
     return subprocess.run(
@@ -432,7 +498,7 @@ def _wait_until_browser_closes(server_process: subprocess.Popen, browser_process
         time.sleep(0.5)
 
 
-def start_app(project_dir: Path, venv_python: Path, *, use_default_browser: bool = False) -> int:
+def start_app(project_dir: Path, venv_python: Path, *, data_home: Path, use_default_browser: bool = False) -> int:
     command = [
         str(venv_python),
         str(project_dir / "run_money_manager.py"),
@@ -445,6 +511,7 @@ def start_app(project_dir: Path, venv_python: Path, *, use_default_browser: bool
 
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
+    env[DATA_HOME_ENV] = str(data_home)
 
     print(f"Starting Money Manager at {APP_URL}")
     server_process = subprocess.Popen(command, cwd=project_dir, env=env)
@@ -480,6 +547,10 @@ def _parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         help="Project folder resolved by launcher.bat. If valid, no folder prompt is shown.",
     )
     parser.add_argument(
+        "--data-home",
+        help="External MoneyManagerData folder. Defaults to a sibling folder next to the app code.",
+    )
+    parser.add_argument(
         "--default-browser",
         action="store_true",
         help="Open the normal default browser instead of a managed app window. Auto-stop on browser close is disabled.",
@@ -500,9 +571,14 @@ def main(argv: Iterable[str] | None = None) -> int:
     else:
         project_dir = find_project_dir()
 
+    data_home = _resolve_data_home(project_dir, args.data_home)
+    ensure_data_home(project_dir, data_home)
     print(f"Using project folder: {project_dir}")
+    print(f"Using data folder: {data_home}")
+
+    apply_staged_updates_before_start(project_dir, data_home)
     venv_python = ensure_environment(project_dir)
-    return start_app(project_dir, venv_python, use_default_browser=args.default_browser)
+    return start_app(project_dir, venv_python, data_home=data_home, use_default_browser=args.default_browser)
 
 
 if __name__ == "__main__":

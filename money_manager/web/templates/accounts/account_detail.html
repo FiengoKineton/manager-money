@@ -2,163 +2,280 @@
 {% block page_title %}{{ account.label }}{% endblock %}
 
 {% block content %}
-<section class="account-detail-hero panel-card account-{{ account.balance_tone }}">
-  <div>
-    <a class="back-link" href="{{ url_for('accounts.accounts_page') }}">← {{ t("accounts.all_accounts") }}</a>
-    <span class="eyebrow">{{ t("accounts.configured_account") }}</span>
-    <h2>{{ account.label }}{% if not account.is_active %} · {{ t("common.archived") }}{% endif %}</h2>
-    <p>{{ account.description }}</p>
-    <p class="muted">{{ t("accounts.routing_policy") }}: <strong>{{ t('account.policy.' ~ account.main_net_policy) }}</strong> · {{ t("accounts.source_key") }}: <code>{{ account.key }}</code></p>
+<section class="conto-home-hero conto-command-hero panel-card">
+  <div class="conto-home-main">
+    <div class="conto-home-topline">
+      <a class="secondary-btn compact-btn" href="{{ url_for('accounts.accounts_page') }}">← All Conti</a>
+      <span class="eyebrow">Selected Conto</span>
+    </div>
+    <h2>{{ account.label|text_masked }}</h2>
+    <p class="conto-home-subtitle">
+      {{ account.account_kind|replace('_', ' ')|title }}
+      {% if account.institution %} · {{ account.institution|text_masked }}{% endif %}
+      {% if account.parent_label %} · Parent: {{ account.parent_label|text_masked }}{% endif %}
+    </p>
+    <div class="conto-identity-chips conto-identity-chips-minimal">
+      <span>{{ account.currency or 'EUR' }}</span>
+      <span>{{ account.iban|mask_iban if account.iban else 'No IBAN saved' }}</span>
+      {% if account.is_default %}<span>Default</span>{% endif %}
+    </div>
+    <div class="conto-home-actions">
+      <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', account_id=account.key, type='expense') }}">Add transaction</a>
+      <button class="secondary-btn compact-btn" type="button" data-mm-dialog-open="account-info-dialog">Account info</button>
+      <a class="secondary-btn compact-btn" href="{{ url_for('dashboard.overview', account_id=account.key) }}">Quick overview</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('dashboard.index', account_id=account.key) }}">Dashboard</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page', account_id=account.key) }}">Transactions</a>
+    </div>
   </div>
-  <div class="account-detail-balance">
-    <span>{{ t("accounts.current_balance") }}</span>
-    <strong>{{ totals.balance|money_masked }}</strong>
-    <small>{{ t("accounts.movement_count_label", count=totals.movements) }}</small>
-  </div>
+  <aside class="conto-net-tile conto-net-tile-modern">
+    <span>Net balance of this Conto</span>
+    <strong>{{ local_summary.net_balance|money_masked }}</strong>
+    <small>Projected after pending, payables and recurring: {{ local_summary.projected_net|money_masked }}</small>
+  </aside>
 </section>
 
-<section class="kpi-grid account-kpi-grid">
-  <article class="kpi-card tone-income"><span>{{ t("accounts.total_in") }}</span><strong>{{ totals.incoming|money_masked }}</strong><small>{{ t("accounts.total_in_hint") }}</small></article>
-  <article class="kpi-card tone-expense"><span>{{ t("accounts.total_out") }}</span><strong>{{ totals.outgoing|money_masked }}</strong><small>{{ t("accounts.total_out_hint") }}</small></article>
-  <article class="kpi-card tone-net"><span>{{ t("accounts.initial_balance") }}</span><strong>{{ account.initial_balance|money_masked }}</strong><small>{{ t("accounts.initial_balance_hint") }}</small></article>
-  <article class="kpi-card tone-investment"><span>{{ t("accounts.transactions") }}</span><strong>{{ totals.movements }}</strong><small>{{ t("accounts.transactions_hint") }}</small></article>
+<section class="conto-metrics-grid conto-metrics-wallet" aria-label="{{ account.label }} local metrics">
+  <button type="button" data-mm-dialog-open="metric-pending-dialog"><span>Pending</span><strong>{{ local_summary.pending_total|money_masked }}</strong><small>linked here</small></button>
+  <button type="button" data-mm-dialog-open="metric-recurring-dialog"><span>Recurring monthly</span><strong>{{ local_summary.recurring_monthly_total|money_masked }}</strong><small>rules on this Conto</small></button>
+  <button type="button" data-mm-dialog-open="metric-payables-dialog"><span>Payables</span><strong>{{ local_summary.payables_total|money_masked }}</strong><small>to pay from here</small></button>
+  <button type="button" data-mm-dialog-open="metric-net-after-pending-dialog"><span>Net after pending</span><strong>{{ local_summary.net_after_pending|money_masked }}</strong><small>local pressure</small></button>
+  <button type="button" data-mm-dialog-open="metric-transactions-dialog"><span>Transactions</span><strong>{{ local_summary.transactions_count }}</strong><small>matched rows</small></button>
 </section>
 
-<section class="panel-card">
-  <div class="panel-header">
+<section class="wallet-stage wallet-stage-centered panel-card">
+  <div class="wallet-stage-header wallet-stage-header-sticky">
     <div>
-      <span class="eyebrow">{{ t("accounts.settings_eyebrow") }}</span>
-      <h3>{{ t("accounts.routing_details") }}</h3>
-      <p>{{ t("accounts.routing_details_hint") }}</p>
+      <span class="eyebrow">Wallet</span>
+      <h3>Cards connected to {{ account.label|text_masked }}</h3>
+      <p>Scroll on the wallet or click a peeking card to bring it forward. Click the focused card to edit details, routing and controls.</p>
     </div>
+    <button class="primary-btn compact-btn" type="button" data-mm-dialog-open="new-card-dialog">+ Add card</button>
   </div>
-  <form method="post" class="custom-account-form">
-    <input type="hidden" name="action" value="update_account">
-    <input type="hidden" name="_category_match_checkbox_present" value="1">
-    <div><label>{{ t("common.name") }}</label><input type="text" name="label" value="{{ account.display_label or account.label }}" required></div>
-    <div>
-      <label>{{ t("common.type") }}</label>
-      <select name="type">
-        {% for value in ['wallet', 'cash', 'bank', 'prepaid_card', 'credit_card', 'container'] %}
-          <option value="{{ value }}" {% if account.type == value %}selected{% endif %}>{{ t('account.type.' ~ value) }}</option>
+
+  <div class="wallet-scene wallet-scene-vertical" aria-label="Wallet cards linked to this Conto">
+    {% if card_payment_methods %}
+      <div class="wallet-carousel-vivid wallet-carousel-vertical" role="list">
+        {% for method in card_payment_methods %}
+          <button role="listitem" type="button" id="method-{{ method.id }}" class="wallet-card-vivid wallet-card-vivid-{{ method.method_type }} {{ 'is-selected' if selected_payment_method_id == method.id else '' }} {{ 'is-archived' if method.is_archived else '' }}" data-mm-dialog-open="card-dialog-{{ method.id }}">
+            <span class="wallet-vivid-shine"></span>
+            <span class="wallet-card-kind">{{ method.method_type|replace('_', ' ')|title }}</span>
+            <strong>{{ method.label|text_masked }}</strong>
+            <span class="wallet-card-chip"></span>
+            <span class="wallet-card-contactless">)))</span>
+            <div class="wallet-card-meta">
+              <span>{{ method.card_network or 'Network not saved' }}</span>
+              <span>{% if method.card_last4 %}•••• {{ method.card_last4 }}{% else %}No last 4{% endif %}</span>
+            </div>
+            <div class="wallet-card-foot">
+              <small>{% if method.card_expiry %}EXP {{ method.card_expiry }}{% else %}No expiry saved{% endif %}</small>
+              <small>{{ method.settlement_mode|replace('_', ' ')|title }}</small>
+            </div>
+          </button>
         {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label>{{ t("accounts.main_net_behavior") }}</label>
-      <select name="main_net_policy">
-        {% for policy in policy_options %}
-          <option value="{{ policy.value }}" {% if account.main_net_policy == policy.value %}selected{% endif %}>{{ t('account.policy.' ~ policy.value) }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div><label>{{ t("accounts.initial_balance") }}</label><input type="number" step="0.01" name="initial_balance" value="{{ '%.2f'|format(account.initial_balance) }}"></div>
-    <div><label>{{ t("common.currency") }}</label><input type="text" name="currency" value="{{ account.currency }}"></div>
-    <div><label>{{ t("accounts.institution_bank") }}</label><input type="text" name="institution" value="{{ account.institution }}"></div>
-    <div><label>{{ t("accounts.iban_info") }}</label><input type="text" name="iban" value="{{ account.iban }}"></div>
-    <div><label>{{ t("accounts.display_order") }}</label><input type="number" name="display_order" value="{{ account.display_order }}"></div>
-    <div>
-      <label>{{ t("accounts.parent_container") }}</label>
-      <select name="parent_account_id">
-        <option value="">{{ t("accounts.top_level_account") }}</option>
-        {% for parent in parent_account_options %}
-          <option value="{{ parent.key }}" {% if account.parent_account_id == parent.key or account.parent_key == parent.key %}selected{% endif %}>{{ parent.label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div data-credit-only><label>{{ t("accounts.due_day") }}</label><input type="number" min="1" max="31" name="due_day" value="{{ account.due_day or 15 }}"><small>{{ t("accounts.credit_pending_hint") }}</small></div>
-    <div data-credit-only><label>{{ t("accounts.statement_day") }}</label><input type="number" min="1" max="31" name="statement_day" value="{{ account.statement_day or '' }}"></div>
-    <div class="form-field-wide"><label>{{ t("common.description") }}</label><input type="text" name="description" value="{{ account.description }}"></div>
-    <div class="form-field-wide"><label>{{ t("accounts.account_aliases") }}</label><input type="text" name="aliases" value="{{ account.aliases_text }}"></div>
-    <div class="form-field-wide"><label>{{ t("accounts.category_aliases") }}</label><input type="text" name="category_aliases" value="{{ account.category_aliases_text }}"></div>
-    <div class="form-field-wide"><label class="inline-checkbox"><input type="checkbox" name="category_match_enabled" value="1" {% if account.category_match_enabled %}checked{% endif %}> {{ t("accounts.enable_category_matching") }}</label></div>
-    <div class="form-actions-row form-field-wide"><button type="submit" class="primary-btn">{{ t("accounts.save_account_settings") }}</button></div>
-  </form>
-  <form method="post" class="form-actions-row">
-    {% if account.is_active %}
-      <input type="hidden" name="action" value="archive_account"><button type="submit" class="secondary-btn">{{ t("accounts.archive_account") }}</button>
+      </div>
+      <div class="wallet-stack-help" aria-hidden="true"><span>Scroll</span><span>Click peeking cards</span><span>Focused card opens details</span></div>
     {% else %}
-      <input type="hidden" name="action" value="restore_account"><button type="submit" class="secondary-btn">{{ t("accounts.restore_account") }}</button>
+      <div class="wallet-empty-state centered-wallet-empty">
+        <strong>No card linked yet.</strong>
+        <p>Create the first debit card for this Conto, then add credit or prepaid cards only when you really have them.</p>
+        <button class="primary-btn compact-btn" type="button" data-mm-dialog-open="new-card-dialog">Create first card</button>
+      </div>
     {% endif %}
-  </form>
+  </div>
 </section>
 
-<section class="panel-card">
-  <div class="panel-header"><div><span class="eyebrow">{{ t("accounts.cards") }}</span><h3>{{ t("accounts.connected_cards") }}</h3><p>{{ t("accounts.cards_hint") }}</p></div></div>
-  <form method="post" class="custom-account-form">
-    <input type="hidden" name="action" value="add_card">
-    <div><label>{{ t("accounts.card_label") }}</label><input type="text" name="card_label" placeholder="{{ t('accounts.card_placeholder') }}"></div>
-    <div><label>{{ t("common.type") }}</label><select name="card_type"><option value="debit">{{ t("account.type.debit") }}</option><option value="credit">{{ t("account.type.credit") }}</option></select></div>
-    <div><label>{{ t("accounts.network") }}</label><input type="text" name="network" placeholder="{{ t('accounts.network_placeholder') }}"></div>
-    <div><label>{{ t("accounts.last4") }}</label><input type="text" name="last4" maxlength="4"></div>
-    <div class="form-actions-row form-field-wide"><button type="submit" class="secondary-btn">{{ t("accounts.add_card") }}</button></div>
-  </form>
-  {% if account.cards %}
-    <div class="account-transaction-list">
-      {% for card in account.cards %}
-        <article class="account-transaction-row">
-          <div class="movement-main"><span class="movement-source">{{ t('accounts.card_type', type=t('account.type.' ~ card.card_type)) }}</span><strong>{{ card.label }}</strong><p>{{ card.network }} {{ card.last4 }}</p></div>
-          <div class="movement-amount">
-            {% if card.is_active %}
-              <form method="post"><input type="hidden" name="action" value="archive_card"><input type="hidden" name="card_id" value="{{ card.id }}"><button class="secondary-btn compact-btn" type="submit">{{ t("common.archive") }}</button></form>
-            {% else %}
-              <span>{{ t("common.archived") }}</span>
-            {% endif %}
-          </div>
+{% if other_payment_methods %}
+<section class="panel-card payment-rails-panel compact-rails-panel">
+  <details class="payment-rails-details">
+    <summary><strong>Payment rails</strong> <span class="muted">Bank transfer, cash route, stored-balance route and other non-card methods.</span></summary>
+    <div class="horizontal-card-strip large-card-strip">
+      {% for method in other_payment_methods %}
+        <button type="button" id="method-{{ method.id }}" class="payment-method-card {{ 'is-selected' if selected_payment_method_id == method.id else '' }} {{ 'is-archived' if method.is_archived else '' }}" data-mm-dialog-open="card-dialog-{{ method.id }}">
+          <span>{{ method.method_type|replace('_', ' ')|title }} · {{ method.settlement_mode|replace('_', ' ')|title }}</span>
+          <strong>{{ method.label|text_masked }}</strong>
+          <small>Linked: {{ method.linked_account_id or '—' }} · Funding: {{ method.funding_account_id or '—' }}</small>
+        </button>
+      {% endfor %}
+    </div>
+  </details>
+</section>
+{% endif %}
+
+<section class="panel-card dependent-wallet-panel">
+  <div class="panel-header"><div><span class="eyebrow">Dependent accounts</span><h3>Wallets and balances under this Conto</h3></div></div>
+  {% if dependent_accounts %}
+    <div class="account-directory-grid">
+      {% for child in dependent_accounts %}
+        <article class="account-directory-card account-{{ child.balance_tone }}">
+          <div class="account-directory-head"><div><span>{{ child.account_kind|replace('_', ' ')|title }}</span><h3>{{ child.label|text_masked }}</h3></div><a href="{{ url_for('accounts.account_detail', account_key=child.key) }}">Open</a></div>
+          <p>Parent: {{ account.label|text_masked }} · Roll-up: {{ child.liquidity_rollup_policy or 'own_only' }}</p>
+          <strong>{{ child.net_balance|money_masked }}</strong>
         </article>
       {% endfor %}
     </div>
   {% else %}
-    <p class="empty">{{ t("accounts.no_cards") }}</p>
+    <p class="empty">No dependent accounts linked under this Conto.</p>
   {% endif %}
 </section>
 
-<section class="cleanup-panel panel-card account-{{ account.balance_tone }}">
-  <div class="panel-header"><div><span class="eyebrow">{{ t("accounts.clean_balance") }}</span><h3>{{ t("accounts.reconcile_title", account=account.label) }}</h3><p>{{ t("accounts.reconcile_hint") }}</p></div></div>
-  <form method="post" class="cleanup-form">
-    <input type="hidden" name="action" value="cleanup">
-    <div><label>{{ t("common.date") }}</label><input type="date" name="date" value="{{ today if today is defined else '' }}"></div>
-    <div><label>{{ t("accounts.real_balance_now") }}</label><input type="number" step="0.01" name="target_balance" placeholder="150.00" required></div>
-    <div class="form-field-wide"><label>{{ t("common.description") }}</label><input type="text" name="description" placeholder="{{ t('accounts.manual_reconciliation') }}"></div>
-    <div class="form-actions-row form-field-wide"><button type="submit" class="secondary-btn">{{ t("accounts.cleanup_button") }}</button></div>
-  </form>
+<section class="panel-card recent-account-movements-card">
+  <div class="panel-header"><div><span class="eyebrow">Transactions</span><h3>Recent rows linked to this account</h3></div><a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page', account_id=account.key) }}">Open full scoped log</a></div>
+  {% if movements %}
+    <div class="account-transaction-list">
+      {% for tx in movements[:10] %}
+        <article class="account-transaction-row">
+          <div class="movement-main"><span class="movement-source">{{ tx.date_str }} · {{ tx.source_label }}</span><strong>{{ tx.category }}</strong><p>{{ tx.description }}</p></div>
+          <div class="movement-amount {{ tx.direction }}"><strong>{{ tx.signed_amount_str }}</strong></div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">No transactions linked to this account yet.</p>
+  {% endif %}
 </section>
 
-<section class="dashboard-grid dashboard-grid-large-left account-analysis-layout">
-  <article class="panel-card">
-    <div class="panel-header"><div><span class="eyebrow">{{ t("accounts.monthly_plot") }}</span><h3>{{ t("accounts.income_expenses_month") }}</h3></div></div>
-    {% if monthly %}<div class="monthly-flow-chart">{% for row in monthly %}<div class="monthly-flow-row"><span class="month-label">{{ row.month }}</span><div class="monthly-flow-bars"><div class="bar-line"><small>{{ t("common.in") }}</small><i class="bar-in" style="width: {{ row.in_pct }}%"></i><b>€ {{ '%.2f'|format(row.incoming) }}</b></div><div class="bar-line"><small>{{ t("common.out") }}</small><i class="bar-out" style="width: {{ row.out_pct }}%"></i><b>€ {{ '%.2f'|format(row.outgoing) }}</b></div><div class="bar-line net-line net-{{ row.net_tone }}"><small>{{ t("common.net") }}</small><i style="width: {{ row.net_pct }}%"></i><b>€ {{ '%.2f'|format(row.net) }}</b></div></div></div>{% endfor %}</div>{% else %}<p class="empty">{{ t("accounts.no_monthly_data") }}</p>{% endif %}
-  </article>
-  <article class="panel-card">
-    <div class="panel-header"><div><span class="eyebrow">{{ t("accounts.split") }}</span><h3>{{ t("accounts.relevant_categories") }}</h3></div></div>
-    {% if top_categories %}<div class="category-bars">{% for row in top_categories %}<div class="category-bar-row"><div><span>{{ row.category }}</span><strong>€ {{ '%.2f'|format(row.total) }}</strong></div><div class="category-bar"><span style="width: {{ row.pct }}%"></span></div></div>{% endfor %}</div>{% else %}<p class="empty">{{ t("accounts.no_categories") }}</p>{% endif %}
-  </article>
-</section>
+<dialog id="account-info-dialog" class="mm-modal account-info-modal">
+  <div class="mm-modal-card">
+    <form method="dialog" class="mm-modal-close-form"><button type="submit" aria-label="Close">×</button></form>
+    <div class="panel-header compact-panel-header">
+      <div><span class="eyebrow">Account info</span><h3>{{ account.label|text_masked }}</h3><p>Identity and editable settings for this Conto.</p></div>
+      {% if account.is_default %}<span class="status-pill">Default</span>{% endif %}
+      {% if account.is_archived or account.is_closed %}<span class="status-pill warning">Archived / closed</span>{% endif %}
+    </div>
+    <div class="identity-grid modal-identity-grid">
+      <div><span>Name</span><strong>{{ account.label|text_masked }}</strong></div>
+      <div><span>Kind</span><strong>{{ account.account_kind|replace('_', ' ')|title }}</strong></div>
+      <div><span>Bank / institution</span><strong>{{ account.institution|default('—')|text_masked }}</strong></div>
+      <div><span>IBAN</span><strong>{{ account.iban|mask_iban }}</strong></div>
+      <div><span>BIC/SWIFT</span><strong>{{ account.bic_swift|default('—')|text_masked }}</strong></div>
+      <div><span>Currency</span><strong>{{ account.currency or 'EUR' }}</strong></div>
+      <div><span>Parent account</span><strong>{{ account.parent_label|default('—')|text_masked }}</strong></div>
+      <div><span>Source key</span><strong><code>{{ account.key }}</code></strong></div>
+    </div>
+    <form method="post" class="custom-account-form spaced-form modal-form-grid">
+      <input type="hidden" name="action" value="update_account">
+      <div><label>Name</label><input type="text" name="label" value="{{ account.label }}"></div>
+      <div><label>Kind</label><select name="type">
+        {% for value in ['current_account', 'cash', 'wallet_balance', 'dependent_wallet', 'prepaid_balance', 'meal_voucher', 'credit_card_liability', 'external_account', 'container', 'other'] %}
+          <option value="{{ value }}" {% if account.account_kind == value %}selected{% endif %}>{{ value|replace('_', ' ')|title }}</option>
+        {% endfor %}
+      </select></div>
+      <div><label>Currency</label><input type="text" name="currency" value="{{ account.currency or 'EUR' }}"></div>
+      <div><label>Bank / institution</label><input type="text" name="institution" value="{{ account.institution }}"></div>
+      <div><label>IBAN</label><input type="text" name="iban" value="{{ account.iban }}"></div>
+      <div><label>BIC/SWIFT</label><input type="text" name="bic_swift" value="{{ account.bic_swift }}"></div>
+      <div><label>Parent account</label><select name="parent_account_id"><option value="">Top-level / independent</option>{% for parent in parent_account_options %}<option value="{{ parent.value }}" {% if account.parent_account_id == parent.value %}selected{% endif %}>{{ parent.label }}</option>{% endfor %}</select></div>
+      <div><label>Initial balance</label><input type="number" step="0.01" name="initial_balance" value="{{ account.initial_balance }}"></div>
+      <div><label>Aliases</label><input type="text" name="aliases" value="{{ account.aliases|join(', ') if account.aliases is defined else '' }}"></div>
+      <div><label>Category aliases</label><input type="text" name="category_aliases" value="{{ account.category_aliases|join(', ') if account.category_aliases is defined else '' }}"></div>
+      <div class="form-field-wide"><label>Description</label><input type="text" name="description" value="{{ account.description }}"></div>
+      <div class="form-actions-row form-field-wide"><button class="primary-btn" type="submit">Save account settings</button></div>
+    </form>
+  </div>
+</dialog>
 
-<section class="panel-card">
-  <div class="panel-header"><div><span class="eyebrow">{{ t("accounts.account_transactions") }}</span><h3>{{ t("accounts.movements_connected", account=account.label) }}</h3></div></div>
-  {% if movements %}<div class="account-transaction-list">{% for tx in movements %}<article class="account-transaction-row movement-{{ tx.direction }}"><div class="movement-date"><small>{{ t("common.date") }}</small><span>{{ tx.date_str }}</span></div><div class="movement-main"><span class="movement-source">{{ tx.source_label }}</span><strong>{{ tx.category }}</strong>{% if tx.description %}<p>{{ tx.description }}</p>{% endif %}</div><div class="movement-amount"><strong>{{ tx.signed_amount_str }}</strong>{% if tx.source_url_kind == 'transaction' %}<a href="{{ url_for('transactions.transaction_detail', row_index=tx.source_row_index) }}" class="icon-link-btn icon-link-edit" title="{{ t('common.edit') }}" aria-label="{{ t('common.edit') }}">✎</a>{% elif tx.source_url_kind == 'internal_transfer' %}<a href="{{ url_for('internal_transfers.internal_transfers_page') }}" class="secondary-btn compact-btn">{{ t("accounts.open_transfer") }}</a>{% elif tx.source_url_kind == 'sparagnat' %}<a href="{{ url_for('sparagnat.sparagnat_page') }}" class="secondary-btn compact-btn">{{ t("accounts.open_tracker") }}</a>{% endif %}</div></article>{% endfor %}</div>{% else %}<p class="empty">{{ t("accounts.no_movements") }}</p>{% endif %}
-</section>
+<dialog id="new-card-dialog" class="mm-modal card-edit-modal">
+  <div class="mm-modal-card">
+    <form method="dialog" class="mm-modal-close-form"><button type="submit" aria-label="Close">×</button></form>
+    <div class="panel-header compact-panel-header"><div><span class="eyebrow">New card</span><h3>Create a card for {{ account.label|text_masked }}</h3><p>Debit by default; use credit or prepaid only when it exists in real life.</p></div></div>
+    <form method="post" class="custom-account-form spaced-form card-editor-form modal-form-grid">
+      <input type="hidden" name="action" value="create_account_card_method">
+      <input type="hidden" name="linked_account_id" value="{{ account.key }}">
+      <input type="hidden" name="funding_account_id" value="{{ account.key }}">
+      <input type="hidden" name="settlement_account_id" value="{{ account.key }}">
+      <div><label>Card name</label><input type="text" name="name" placeholder="{{ account.label }} debit card" required></div>
+      <div><label>Card type</label><select name="method_type">
+        <option value="debit_card">Debit card</option>
+        <option value="credit_card">Credit card</option>
+        <option value="prepaid_card">Prepaid card</option>
+      </select></div>
+      <div><label>Network</label><input type="text" name="card_network" placeholder="Visa, Mastercard..."></div>
+      <div><label>Last 4 digits</label><input type="text" name="card_last4" maxlength="4"></div>
+      <div><label>Expiry month</label><input type="text" name="card_expiry_month" placeholder="MM"></div>
+      <div><label>Expiry year</label><input type="text" name="card_expiry_year" placeholder="YY or YYYY"></div>
+      <div><label>Holder name</label><input type="text" name="card_holder_name"></div>
+      <div><label>Credit liability account</label><input type="text" name="liability_account_id" placeholder="Only for credit cards"></div>
+      <div><label>Credit due day</label><input type="number" min="1" max="31" name="due_day"></div>
+      <div class="form-field-wide"><label>Aliases</label><input type="text" name="aliases" placeholder="comma separated aliases"></div>
+      <div class="form-actions-row form-field-wide"><button class="primary-btn" type="submit">Create card</button></div>
+    </form>
+  </div>
+</dialog>
+
+{% for method in card_payment_methods + other_payment_methods %}
+<dialog id="card-dialog-{{ method.id }}" class="mm-modal card-edit-modal" {% if selected_payment_method_id == method.id %}data-mm-open-on-load="1"{% endif %}>
+  <div class="mm-modal-card">
+    <form method="dialog" class="mm-modal-close-form"><button type="submit" aria-label="Close">×</button></form>
+    <div class="modal-card-preview wallet-card-vivid wallet-card-vivid-{{ method.method_type }}">
+      <span class="wallet-vivid-shine"></span>
+      <span class="wallet-card-kind">{{ method.method_type|replace('_', ' ')|title }}</span>
+      <strong>{{ method.label|text_masked }}</strong>
+      <span class="wallet-card-chip"></span>
+      <span class="wallet-card-contactless">)))</span>
+      <div class="wallet-card-meta"><span>{{ method.card_network or 'Network not saved' }}</span><span>{% if method.card_last4 %}•••• {{ method.card_last4 }}{% else %}No last 4{% endif %}</span></div>
+      <div class="wallet-card-foot"><small>{% if method.card_expiry %}EXP {{ method.card_expiry }}{% else %}No expiry saved{% endif %}</small><small>{{ method.settlement_mode|replace('_', ' ')|title }}</small></div>
+    </div>
+    <div class="panel-header compact-panel-header">
+      <div><span class="eyebrow">Card details</span><h3>{{ method.label|text_masked }}</h3><p>{{ method.method_type|replace('_', ' ')|title }} · {{ method.settlement_mode|replace('_', ' ')|title }}</p></div>
+      {% if method.is_default %}<span class="status-pill">Default</span>{% endif %}
+      {% if method.is_archived %}<span class="status-pill warning">Archived</span>{% endif %}
+    </div>
+    <form method="post" action="{{ url_for('accounts.account_payment_method_detail', account_key=account.key, method_id=method.id) }}" class="custom-account-form spaced-form card-editor-form modal-form-grid">
+      <input type="hidden" name="action" value="update_payment_method">
+      <input type="hidden" name="payment_method_id" value="{{ method.id }}">
+      <div><label>Name</label><input type="text" name="name" value="{{ method.name or method.label }}"></div>
+      <div><label>Type</label><select name="method_type">
+        {% for value in ['debit_card', 'credit_card', 'prepaid_card', 'wallet_linked_card'] %}<option value="{{ value }}" {% if method.method_type == value %}selected{% endif %}>{{ value|replace('_', ' ')|title }}</option>{% endfor %}
+      </select></div>
+      <div><label>Settlement mode</label><select name="settlement_mode">
+        {% for value in ['immediate', 'delayed', 'stored_balance', 'delegated'] %}<option value="{{ value }}" {% if method.settlement_mode == value %}selected{% endif %}>{{ value|replace('_', ' ')|title }}</option>{% endfor %}
+      </select></div>
+      <div><label>Card network</label><input type="text" name="card_network" value="{{ method.card_network }}" placeholder="Visa, Mastercard..."></div>
+      <div><label>Last 4 digits</label><input type="text" name="card_last4" value="{{ method.card_last4 }}" maxlength="4"></div>
+      <div><label>Expiry month</label><input type="text" name="card_expiry_month" value="{{ method.card_expiry_month }}" placeholder="MM"></div>
+      <div><label>Expiry year</label><input type="text" name="card_expiry_year" value="{{ method.card_expiry_year }}" placeholder="YY or YYYY"></div>
+      <div><label>Holder name</label><input type="text" name="card_holder_name" value="{{ method.card_holder_name }}"></div>
+      <div><label>Linked account</label><input type="text" name="linked_account_id" value="{{ method.linked_account_id or account.key }}"></div>
+      <div><label>Funding account</label><input type="text" name="funding_account_id" value="{{ method.funding_account_id or account.key }}"></div>
+      <div><label>Settlement account</label><input type="text" name="settlement_account_id" value="{{ method.settlement_account_id or account.key }}"></div>
+      <div><label>Liability account</label><input type="text" name="liability_account_id" value="{{ method.liability_account_id }}" placeholder="Only for credit cards"></div>
+      <div><label>Credit due day</label><input type="number" min="1" max="31" name="due_day" value="{{ method.due_day }}"></div>
+      <div><label>Delegated method</label><input type="text" name="delegates_to_payment_method_id" value="{{ method.delegates_to_payment_method_id }}"></div>
+      <div class="form-field-wide"><label>Aliases</label><input type="text" name="aliases" value="{{ method.aliases_text }}"></div>
+      <div class="form-actions-row form-field-wide"><button class="primary-btn" type="submit">Save card</button></div>
+    </form>
+    <form method="post" action="{{ url_for('accounts.account_payment_method_detail', account_key=account.key, method_id=method.id) }}" class="inline-form modal-archive-form">
+      <input type="hidden" name="action" value="{{ 'restore_payment_method' if method.is_archived else 'archive_payment_method' }}">
+      <button class="secondary-btn compact-btn" type="submit">{{ 'Restore card' if method.is_archived else 'Archive card' }}</button>
+    </form>
+  </div>
+</dialog>
+{% endfor %}
+
+{% set metric_dialogs = [
+  ('metric-pending-dialog', 'Pending linked to this Conto', local_summary.pending_total, 'Open pending items that are assigned to this account scope.'),
+  ('metric-recurring-dialog', 'Recurring monthly on this Conto', local_summary.recurring_monthly_total, 'Monthly recurring pressure generated by rules assigned to this account.'),
+  ('metric-payables-dialog', 'Payables from this Conto', local_summary.payables_total, 'Open payables that should be paid from this account.'),
+  ('metric-net-after-pending-dialog', 'Net after pending', local_summary.net_after_pending, 'Current account net after open pending movements.'),
+  ('metric-transactions-dialog', 'Transactions matched here', local_summary.transactions_count, 'Transactions visible in this selected account scope.')
+] %}
+{% for dialog_id, title, value, description in metric_dialogs %}
+<dialog id="{{ dialog_id }}" class="mm-modal metric-info-modal">
+  <div class="mm-modal-card compact-mm-modal-card">
+    <form method="dialog" class="mm-modal-close-form"><button type="submit" aria-label="Close">×</button></form>
+    <span class="eyebrow">Account metric</span>
+    <h3>{{ title }}</h3>
+    <strong class="modal-big-number">{{ value|money_masked if dialog_id != 'metric-transactions-dialog' else value }}</strong>
+    <p>{{ description }}</p>
+    <div class="modal-action-strip">
+      <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page', account_id=account.key) }}">Transactions</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('dashboard.index', account_id=account.key) }}">Dashboard</a>
+    </div>
+  </div>
+</dialog>
+{% endfor %}
 {% endblock %}
 
 {% block scripts %}
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll("form.custom-account-form").forEach((form) => {
-      const typeSelect = form.querySelector('select[name="type"]');
-      const policySelect = form.querySelector('select[name="main_net_policy"]');
-      const creditFields = form.querySelectorAll("[data-credit-only]");
-      function syncCreditFields() {
-        const isCredit = (typeSelect && typeSelect.value === "credit_card") || (policySelect && policySelect.value === "credit_pending");
-        creditFields.forEach((field) => { field.hidden = !isCredit; });
-        if (typeSelect && typeSelect.value === "credit_card" && policySelect) {
-          policySelect.value = "credit_pending";
-        }
-      }
-      if (typeSelect) typeSelect.addEventListener("change", syncCreditFields);
-      if (policySelect) policySelect.addEventListener("change", syncCreditFields);
-      syncCreditFields();
-    });
-  });
-</script>
+<script src="{{ url_for('static', filename='js/account-wallet-ui.js') }}?v=wallet-stack-17e"></script>
 {% endblock %}

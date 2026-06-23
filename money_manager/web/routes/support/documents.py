@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import mimetypes
+from io import BytesIO
 from pathlib import Path
 
 from flask import Blueprint, Response, abort, jsonify, make_response, render_template, send_file, send_from_directory, url_for
@@ -16,6 +17,7 @@ from money_manager.repositories.documents import (
     list_files,
 )
 from money_manager.security.protection_manager import safe_join
+from money_manager.security.secure_storage import read_binary_secure
 
 bp = Blueprint("documents", __name__)
 
@@ -28,7 +30,9 @@ def documents_background(filename):
     safe_path = safe_join(documents_dir, filename)
     if not safe_path.exists() or not safe_path.is_file():
         abort(404)
-    return send_from_directory(documents_dir, safe_path.relative_to(documents_dir))
+    data = read_binary_secure(safe_path)
+    mimetype = mimetypes.guess_type(safe_path.name)[0] or "application/octet-stream"
+    return send_file(BytesIO(data), mimetype=mimetype, as_attachment=False, download_name=safe_path.name, conditional=False, max_age=3600)
 
 
 @bp.route("/profile-photo")
@@ -36,7 +40,7 @@ def profile_photo():
     photo = safe_join(user_documents_dir(), "selfie.jpg")
     if not photo.exists() or not photo.is_file():
         abort(404)
-    return send_file(photo, mimetype="image/jpeg", conditional=True, max_age=3600)
+    return send_file(BytesIO(read_binary_secure(photo)), mimetype="image/jpeg", as_attachment=False, download_name="selfie.jpg", conditional=False, max_age=3600)
 
 
 @bp.route("/documents")
@@ -61,7 +65,7 @@ def api_files(folder):
 def serve_document(folder, filename):
     path = _safe_document_path(folder, filename)
     mimetype = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
-    response = make_response(send_file(path, mimetype=mimetype, as_attachment=False, download_name=path.name, conditional=True))
+    response = make_response(send_file(BytesIO(read_binary_secure(path)), mimetype=mimetype, as_attachment=False, download_name=path.name, conditional=False))
     response.headers["Content-Disposition"] = f'inline; filename="{path.name}"'
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response
@@ -79,10 +83,11 @@ def preview_document(folder, filename):
     elif suffix in {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".svg"}:
         body = f'<div class="doc-image-wrap"><img src="{raw_url}" alt="{title}"></div>'
     elif suffix == ".txt":
+        raw = read_binary_secure(path)
         try:
-            content = path.read_text(encoding="utf-8")
+            content = raw.decode("utf-8")
         except UnicodeDecodeError:
-            content = path.read_text(encoding="latin-1", errors="replace")
+            content = raw.decode("latin-1", errors="replace")
         body = f'<pre class="doc-text-preview">{html.escape(content)}</pre>'
     else:
         body = f'<p class="doc-preview-empty">Preview unavailable. <a href="{raw_url}" target="_blank" rel="noopener">Open file</a></p>'

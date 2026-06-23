@@ -2,193 +2,113 @@
 {% block page_title %}{{ t("page.dashboard") }}{% endblock %}
 
 {% block content %}
-<section class="dashboard-hero panel-card">
+{% include "components/scope_switcher.html" %}
+<section class="dashboard-hero panel-card dashboard-wallet-hero">
   <div class="dashboard-hero-copy">
-    <span class="eyebrow">Financial command center</span>
-    <h2>{{ t("dashboard.title") }}</h2>
-    <p>Charts, totals and short-term risk stay here. The detailed log remains separated in Transactions.</p>
+    <span class="eyebrow">{{ 'Selected Conto' if scope_is_account else 'All Conti dashboard' }}</span>
+    <h2>{{ scope_label if scope_is_account else 'All Conti' }}</h2>
+    <p>{{ 'Minimal view for this account. Tap any card for the full explanation.' if scope_is_account else 'Minimal command view across all independent Conti. Tap any card for the full explanation.' }}</p>
     <div class="dashboard-hero-actions">
-      <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">+ Add expense</a>
-      <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page') }}">Open transactions</a>
-      <a class="secondary-btn compact-btn" href="{{ url_for('net_explanation.net_explanation') }}">Why this net?</a>
+      <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense', account_id=selected_account_id) if selected_account_id else url_for('transactions.add_transaction', type='expense') }}">+ Add expense</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page', account_id=selected_account_id) if selected_account_id else url_for('transactions.transactions_page') }}">Transactions</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=selected_account_id) if selected_account_id else url_for('accounts.accounts_page') }}">{{ 'Conto home' if scope_is_account else 'All Conti home' }}</a>
     </div>
   </div>
 
-  <div class="dashboard-hero-balance">
-    <span>Tracked net</span>
+  <button type="button" class="dashboard-hero-balance dashboard-wallet-balance" data-mm-dialog-open="dash-net-dialog">
+    <span>{{ "Account net" if scope_is_account else "All Conti net" }}</span>
     <strong>{{ totals.net|money_masked }}</strong>
     <small>After open pending: {{ net_after_pending|money_masked }}</small>
-    <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
-  </div>
+    <small>{{ money_calculation_label|default('full history') }}</small>
+  </button>
 </section>
 
-<section class="filters app-filter-bar dashboard-filter-bar">
-  <form method="get" action="{{ url_for('dashboard.index') }}" class="filters-form">
-    <div class="filter-date">
-      <label class="block-label">Date window</label>
-      <div class="date-inputs">
-        <div>
-          <span class="small-label">From</span>
-          <input type="date" name="from" value="{{ start }}">
-        </div>
-        <div>
-          <span class="small-label">To</span>
-          <input type="date" name="to" value="{{ end }}">
-        </div>
-      </div>
-    </div>
-
-    <div class="filter-main">
-      <div class="filter-row dashboard-filter-row">
-        <div class="filter-field">
-          <label>Types</label>
-          <div class="types-group">
-            {% for t in all_types %}
-              <label class="checkbox-inline">
-                <input type="checkbox"
-                       class="type-checkbox"
-                       name="types"
-                       value="{{ t }}"
-                       {% if t in active_types %}checked{% endif %}>
-                {{ t.capitalize() }}
-              </label>
-            {% endfor %}
-          </div>
-        </div>
-
-        <div class="filter-field">
-          <label>Category</label>
-          <select name="category" id="category-select" multiple size="4">
-            {% for c in categories_all %}
-              <option value="{{ c }}" {% if c in categories_selected %}selected{% endif %}>{{ c }}</option>
-            {% endfor %}
-          </select>
-          <p class="hint">Hold Ctrl (Cmd) to select multiple.</p>
-        </div>
-
-        <div class="filter-field">
-          <label>Search</label>
-          <input type="text" name="q" value="{{ q }}" placeholder="Description, category, account">
-        </div>
-
-        <div class="filter-field amount-range-field">
-          <label>Amount range (€)</label>
-          <div class="amount-range-inputs">
-            <input type="number" step="0.01" min="0" name="amount_min" value="{{ amount_min }}" placeholder="Min">
-            <input type="number" step="0.01" min="0" name="amount_max" value="{{ amount_max }}" placeholder="Max">
-          </div>
-          <p class="hint">Uses the displayed absolute amount.</p>
-        </div>
-      </div>
-
-      <div class="filters-actions">
-        <button type="submit" class="primary-btn">Apply</button>
-        <button type="submit" name="reset_filters" value="1" class="secondary-btn">Current year</button>
-      </div>
-    </div>
-  </form>
+<section class="dashboard-wallet-strip" aria-label="Dashboard quick cards">
+  <button type="button" class="dashboard-wallet-stat tone-income" data-mm-dialog-open="dash-income-dialog"><span>Income</span><strong>{{ totals.income|money_masked }}</strong><small>{{ visual_scope_label }}</small></button>
+  <button type="button" class="dashboard-wallet-stat tone-expense" data-mm-dialog-open="dash-expense-dialog"><span>Expenses</span><strong>{{ totals.expenses|money_masked }}</strong><small>{{ visual_scope_label }}</small></button>
+  <button type="button" class="dashboard-wallet-stat tone-investment" data-mm-dialog-open="dash-investment-dialog"><span>Investments</span><strong>{{ totals.investments|money_masked }}</strong><small>{{ visual_scope_label }}</small></button>
+  <button type="button" class="dashboard-wallet-stat tone-pending" data-mm-dialog-open="dash-pending-dialog"><span>Open pending</span><strong>{{ pending_this_month|money_masked }}</strong><small>not executed yet</small></button>
+  <button type="button" class="dashboard-wallet-stat tone-availability" data-mm-dialog-open="dash-availability-dialog"><span>Availability</span><strong>{{ totals.total_availability|money_masked }}</strong><small>{{ 'selected Conto' if scope_is_account else 'All Conti' }}</small></button>
+  <button type="button" class="dashboard-wallet-stat tone-net" data-mm-dialog-open="dash-savings-dialog"><span>Savings rate</span><strong>{{ '%.1f'|format(totals.savings_rate) }}%</strong><small>{{ money_calculation_label|default('full history') }}</small></button>
 </section>
 
-<section class="panel-card dashboard-calculation-note">
-  <span class="eyebrow">Calculation scope</span>
-  <p>Charts/tables show {{ start }} → {{ end }} by default. Money totals use {{ money_calculation_label|default('full history') }}. The cumulative balance chart carries forward the opening balance from older logs unless you apply non-date filters.</p>
-</section>
-
-<section class="dashboard-kpi-grid">
-  <article class="summary-card dashboard-kpi tone-income">
-    <span>Income</span>
-    <strong>{{ totals.income|money_masked }}</strong>
-    <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
-  </article>
-
-  <article class="summary-card dashboard-kpi tone-expense">
-    <span>Expenses</span>
-    <strong>{{ totals.expenses|money_masked }}</strong>
-    <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
-  </article>
-
-  <article class="summary-card dashboard-kpi tone-investment">
-    <span>Investments</span>
-    <strong>{{ totals.investments|money_masked }}</strong>
-    <small>Calculated from {{ money_calculation_label|default('full history') }}.</small>
-  </article>
-
-  <article class="summary-card dashboard-kpi tone-net">
-    <span>Savings rate</span>
-    <strong>{{ '%.1f'|format(totals.savings_rate) }}%</strong>
-    <small>Based on {{ money_calculation_label|default('full history') }}.</small>
-  </article>
-
-  <article class="summary-card dashboard-kpi tone-pending">
-    <span>Open pending impact</span>
-    <strong>{{ pending_this_month|money_masked }}</strong>
-    <small>Pending not yet executed.</small>
-  </article>
-
-  <article class="summary-card dashboard-kpi tone-availability">
-    <span>Main availability</span>
-    <strong>{{ totals.total_availability|money_masked }}</strong>
-    <small>Uses {{ money_calculation_label|default('full history') }}.</small>
-  </article>
+<section class="filters app-filter-bar dashboard-filter-bar dashboard-filter-minimal">
+  <details>
+    <summary><strong>Date and filters</strong> <span class="muted">Charts can be filtered without changing the selected Conto.</span></summary>
+    <form method="get" action="{{ url_for('dashboard.index') }}" class="filters-form">
+      {% if selected_account_id %}<input type="hidden" name="account_id" value="{{ selected_account_id }}">{% endif %}
+      <div class="filter-date">
+        <label class="block-label">Date window</label>
+        <div class="date-inputs">
+          <div><span class="small-label">From</span><input type="date" name="from" value="{{ start }}"></div>
+          <div><span class="small-label">To</span><input type="date" name="to" value="{{ end }}"></div>
+        </div>
+      </div>
+      <div class="filter-main">
+        <div class="filter-row dashboard-filter-row">
+          <div class="filter-field"><label>Types</label><div class="types-group">{% for t in all_types %}<label class="checkbox-inline"><input type="checkbox" class="type-checkbox" name="types" value="{{ t }}" {% if t in active_types %}checked{% endif %}>{{ t.capitalize() }}</label>{% endfor %}</div></div>
+          <div class="filter-field"><label>Category</label><select name="category" id="category-select" multiple size="4">{% for c in categories_all %}<option value="{{ c }}" {% if c in categories_selected %}selected{% endif %}>{{ c }}</option>{% endfor %}</select><p class="hint">Hold Ctrl (Cmd) to select multiple.</p></div>
+          <div class="filter-field"><label>Search</label><input type="text" name="q" value="{{ q }}" placeholder="Description, category, account"></div>
+          <div class="filter-field amount-range-field"><label>Amount range (€)</label><div class="amount-range-inputs"><input type="number" step="0.01" min="0" name="amount_min" value="{{ amount_min }}" placeholder="Min"><input type="number" step="0.01" min="0" name="amount_max" value="{{ amount_max }}" placeholder="Max"></div><p class="hint">Uses the displayed absolute amount.</p></div>
+        </div>
+        <div class="filters-actions"><button type="submit" class="primary-btn">Apply</button><button type="submit" name="reset_filters" value="1" class="secondary-btn">Current year</button></div>
+      </div>
+    </form>
+  </details>
 </section>
 
 {% if stats_3_months is defined and stats_this_month is defined %}
-<section class="dashboard-period-strip">
-  <article class="panel-card period-card-redesigned">
-    <span class="eyebrow">Last 3 months</span>
-    <div>
-      <p class="income-text">Income: {{ stats_3_months.income|money_masked }}</p>
-      <p class="expense-text">Expenses: {{ stats_3_months.expenses|money_masked }}</p>
-    </div>
-  </article>
-
-  <article class="panel-card period-card-redesigned">
-    <span class="eyebrow">This month</span>
-    <div>
-      <p class="income-text">Income: {{ stats_this_month.income|money_masked }}</p>
-      <p class="expense-text">Expenses: {{ stats_this_month.expenses|money_masked }}</p>
-    </div>
-  </article>
+<section class="dashboard-period-strip dashboard-wallet-period-strip">
+  <button type="button" class="panel-card period-card-redesigned" data-mm-dialog-open="dash-three-month-dialog"><span class="eyebrow">Last 3 months</span><div><p class="income-text">Income: {{ stats_3_months.income|money_masked }}</p><p class="expense-text">Expenses: {{ stats_3_months.expenses|money_masked }}</p></div></button>
+  <button type="button" class="panel-card period-card-redesigned" data-mm-dialog-open="dash-this-month-dialog"><span class="eyebrow">This month</span><div><p class="income-text">Income: {{ stats_this_month.income|money_masked }}</p><p class="expense-text">Expenses: {{ stats_this_month.expenses|money_masked }}</p></div></button>
 </section>
 {% endif %}
 
-<section class="panel-header dashboard-chart-heading">
-  <div>
-    <span class="eyebrow">Visual analysis</span>
-    <h2>Charts</h2>
-  </div>
-</section>
+<section class="panel-header dashboard-chart-heading"><div><span class="eyebrow">Visual analysis</span><h2>Charts</h2><p class="muted">Charts stay below the command cards so the dashboard is quick to scan first.</p></div></section>
 
 {% if charts is defined and charts %}
 <section class="dashboard-charts dashboard-charts-home dashboard-charts-redesigned">
-  <div class="chart-card chart-full">
-    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
-    {{ charts.monthly_summary|safe }}
-  </div>
-
-  <div class="chart-card">
-    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
-    {{ charts.expenses_by_category|safe }}
-  </div>
-
-  <div class="chart-card">
-    <button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>
-    {{ charts.cumulative_balance|safe }}
-  </div>
+  <div class="chart-card chart-full"><button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>{{ charts.monthly_summary|safe }}</div>
+  <div class="chart-card"><button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>{{ charts.expenses_by_category|safe }}</div>
+  <div class="chart-card"><button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>{{ charts.cumulative_balance|safe }}</div>
 </section>
 {% else %}
 <section class="dashboard-charts dashboard-charts-home dashboard-charts-redesigned">
-  <div class="chart-card chart-full">
-    <img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='monthly_summary.png') }}" alt="Monthly summary">
-  </div>
-
-  <div class="chart-card">
-    <img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='expenses_by_category.png') }}" alt="Expenses by category">
-  </div>
-
-  <div class="chart-card">
-    <img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='cumulative_balance.png') }}" alt="Cumulative balance">
-  </div>
+  <div class="chart-card chart-full"><img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='monthly_summary.png') }}" alt="Monthly summary"></div>
+  <div class="chart-card"><img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='expenses_by_category.png') }}" alt="Expenses by category"></div>
+  <div class="chart-card"><img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='cumulative_balance.png') }}" alt="Cumulative balance"></div>
 </section>
 {% endif %}
+
+{% set dashboard_dialogs = [
+  ('dash-net-dialog', 'Net position', totals.net, 'This is the real selected scope balance: one Conto if you opened a bank, or All Conti if you are outside a specific account.'),
+  ('dash-income-dialog', 'Income', totals.income, 'Income calculated for the selected dashboard scope.'),
+  ('dash-expense-dialog', 'Expenses', totals.expenses, 'Expenses calculated for the selected dashboard scope.'),
+  ('dash-investment-dialog', 'Investments', totals.investments, 'Investment movements calculated for the selected dashboard scope.'),
+  ('dash-pending-dialog', 'Open pending', pending_this_month, 'Pending movements not executed yet.'),
+  ('dash-availability-dialog', 'Availability', totals.total_availability, 'Visible liquidity for the selected scope.'),
+  ('dash-savings-dialog', 'Savings rate', totals.savings_rate, 'Savings rate based on the selected calculation scope.'),
+  ('dash-three-month-dialog', 'Last 3 months', stats_3_months.net if stats_3_months is defined else 0, 'Net movement over the last three months.'),
+  ('dash-this-month-dialog', 'This month', stats_this_month.net if stats_this_month is defined else 0, 'Net movement in the current month.')
+] %}
+{% for dialog_id, title, value, description in dashboard_dialogs %}
+<dialog id="{{ dialog_id }}" class="mm-modal metric-info-modal dashboard-info-dialog">
+  <div class="mm-modal-card compact-mm-modal-card">
+    <form method="dialog" class="mm-modal-close-form"><button type="submit" aria-label="Close">×</button></form>
+    <span class="eyebrow">Dashboard info</span>
+    <h3>{{ title }}</h3>
+    <strong class="modal-big-number">{% if dialog_id == 'dash-savings-dialog' %}{{ '%.1f'|format(value) }}%{% else %}{{ value|money_masked }}{% endif %}</strong>
+    <p>{{ description }}</p>
+    <p class="muted">Scope: {{ scope_label if scope_is_account else 'All Conti' }} · {{ money_calculation_label|default('full history') }}</p>
+    <div class="modal-action-strip">
+      <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page', account_id=selected_account_id) if selected_account_id else url_for('transactions.transactions_page') }}">Transactions</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=selected_account_id) if selected_account_id else url_for('accounts.accounts_page') }}">{{ 'Conto home' if scope_is_account else 'All Conti home' }}</a>
+    </div>
+  </div>
+</dialog>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/account-wallet-ui.js') }}"></script>
 {% endblock %}

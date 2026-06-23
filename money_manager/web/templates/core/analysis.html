@@ -2,10 +2,11 @@
 {% block page_title %}{{ t("page.analysis") }}{% endblock %}
 
 {% block content %}
+{% include "components/scope_switcher.html" %}
 <section class="analysis-hero analysis-executive-hero">
   <div class="analysis-hero-copy">
     <span class="eyebrow">Decision report</span>
-    <h2>Financial command center</h2>
+    <h2>Analysis — {{ scope_label if scope_is_account else 'All accounts' }}</h2>
     <p>
       A professional view of the selected period: cashflow, fixed commitments, income quality,
       spending concentration, obligations, receivables and portfolio behaviour.
@@ -22,7 +23,7 @@
 
     <div class="analysis-period-switcher" aria-label="Analysis period selector">
       {% for option in period_options %}
-        <a href="{{ url_for('analysis.analysis', period=option.key) }}" class="analysis-period-chip {{ 'active' if option.active else '' }}">
+        <a href="{{ url_for('analysis.analysis', period=option.key, account_id=selected_account_id) if selected_account_id else url_for('analysis.analysis', period=option.key) }}" class="analysis-period-chip {{ 'active' if option.active else '' }}">
           <strong>{{ option.label }}</strong>
           <small>{{ option.small }}</small>
         </a>
@@ -52,9 +53,14 @@
     <small>{{ period.start }} → {{ period.end }}</small>
   </div>
   <div>
-    <span>Real main-bank net</span>
-    <strong>€ {{ '%.2f'|format(full_totals.net) }}</strong>
-    <small>Full CSV history, not only the selected period</small>
+    <span>{{ "Account net" if scope_is_account else "Global net" }}</span>
+    <strong>€ {{ '%.2f'|format(scope_summary.net_balance if scope_summary is defined else full_totals.net) }}</strong>
+    <small>{{ "Selected Conto + roll-up dependent accounts" if scope_is_account else "Sum of the individual Conti Correnti / financial centers" }}</small>
+  </div>
+  <div>
+    <span>Pending / payables</span>
+    <strong>€ {{ '%.2f'|format((scope_summary.pending_total if scope_summary is defined else 0) + (scope_summary.payables_total if scope_summary is defined else 0)) }}</strong>
+    <small>Scoped to this {{ "Conto" if scope_is_account else "global overview" }}</small>
   </div>
   <div>
     <span>Previous-period delta</span>
@@ -67,6 +73,46 @@
     {% endif %}
   </div>
 </section>
+
+{% if scope_is_global and financial_center_breakdown %}
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Overall analysis</span>
+      <h2>Simplified summary of each Conto Corrente / financial center</h2>
+      <p>The global view is built from the individual scoped centers. Open a Conto for the full detailed analysis of only that account.</p>
+    </div>
+  </div>
+  <div class="summary-grid account-scope-summary-grid mini">
+    {% for account in financial_center_breakdown %}
+      <article class="summary-card">
+        <span>{{ account.label }}</span>
+        <strong>{{ account.net_balance|money_masked }}</strong>
+        <small>Pending {{ account.pending_total|money_masked }} · Payables {{ account.payables_total|money_masked }} · Recurring {{ account.recurring_monthly_total|money_masked }}</small>
+        <div class="form-actions-row scope-action-row"><a class="secondary-btn compact-btn" href="{{ url_for('analysis.analysis', account_id=account.account_id) }}">Full account analysis</a></div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% elif scope_is_account and scope_summary is defined %}
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Individual Conto analysis</span>
+      <h2>{{ scope_label }}</h2>
+      <p>This full analysis is scoped to the selected Conto and its roll-up dependent accounts only. Other independent Conti are excluded.</p>
+    </div>
+  </div>
+  <div class="summary-grid account-scope-summary-grid mini">
+    <article class="summary-card"><span>Net balance</span><strong>{{ scope_summary.net_balance|money_masked }}</strong></article>
+    <article class="summary-card"><span>After pending</span><strong>{{ scope_summary.net_after_pending|money_masked }}</strong></article>
+    <article class="summary-card"><span>Payables</span><strong>{{ scope_summary.payables_total|money_masked }}</strong></article>
+    <article class="summary-card"><span>Recurring monthly</span><strong>{{ scope_summary.recurring_monthly_total|money_masked }}</strong></article>
+    <article class="summary-card"><span>Dependent accounts</span><strong>{{ scope_summary.dependent_accounts_count }}</strong></article>
+    <article class="summary-card"><span>Cards / methods</span><strong>{{ scope_summary.payment_methods_count }}</strong></article>
+  </div>
+</section>
+{% endif %}
 
 <section class="analysis-command-grid analysis-priority-grid">
   <article class="analysis-decision-card analysis-action-card">

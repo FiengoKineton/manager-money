@@ -1,0 +1,12 @@
+<section class="scope-switcher panel-card compact-scope-switcher" aria-label="Page scope selector">
+  <div class="scope-switcher-copy">
+    <span class="eyebrow">Scope</span>
+    <strong>{{ scope_label if scope_label else 'All accounts' }}</strong>
+    <small>{{ 'One Conto/account' if scope_is_account else 'All accounts together' }}</small>
+  </div>
+  <nav class="scope-switcher-links" aria-label="Switch account scope">
+    {% for link in scope_links %}
+      <a class="{{ 'active' if link.active else '' }}" href="{{ link.url }}">{{ link.label }}</a>
+    {% endfor %}
+  </nav>
+</section>

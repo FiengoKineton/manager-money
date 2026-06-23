@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from datetime import date
 
-from money_manager.config import categories_for, account_options_for_forms
+from money_manager.config import categories_for
 from money_manager.config.categories import PARENT_SUPPORT_CATEGORIES, PARENT_SUPPORT_KINDS, DEFAULT_PARENT_SUPPORT_CATEGORY
 from money_manager.repositories.debts import load_debts
 from money_manager.repositories.expense_projects import load_planned_items, load_projects
 from money_manager.repositories.payables import load_payables
 from money_manager.repositories.receivables import load_receivables
 from money_manager.services.debt_service import add_debt_from_form, pay_debt_from_form
+from money_manager.services.internal_transfer_service import create_transfer
+from money_manager.services.payment_form_service import account_options_for_payment_forms, payment_method_options_for_forms
 from money_manager.services.expense_project_service import add_planned_item_from_form, pay_planned_item_from_form
 from money_manager.services.parent_support_service import add_entry_from_form as add_parent_support_entry
 from money_manager.services.payable_service import add_payable_from_form, pay_payable_from_form
@@ -137,8 +139,9 @@ def _quick_log_context_uncached() -> dict:
             "parent_support_default_category": DEFAULT_PARENT_SUPPORT_CATEGORY,
             "sparagnat_kinds": SPARAGNAT_KIND_LABELS,
             "expense_categories": categories_for("expense"),
-            "account_options": account_options_for_forms(include_credit=True),
-            "transfer_account_options": account_options_for_forms(include_credit=False),
+            "account_options": account_options_for_payment_forms(include_credit=True),
+            "payment_method_options": payment_method_options_for_forms(),
+            "transfer_account_options": account_options_for_payment_forms(include_credit=False),
         },
     }
 
@@ -153,6 +156,8 @@ def handle_quick_log(form) -> dict:
     if mode == "internal_transfer":
         result = create_transfer({
             "date": form.get("date") or date.today().isoformat(),
+            "from_account_id": form.get("from_account_id") or form.get("from_account", ""),
+            "to_account_id": form.get("to_account_id") or form.get("to_account", ""),
             "from_account": form.get("from_account", ""),
             "to_account": form.get("to_account", ""),
             "amount": form.get("amount", "0"),
@@ -193,6 +198,8 @@ def handle_quick_log(form) -> dict:
             "original_amount": amount,
             "remaining_amount": form.get("remaining_amount") or amount,
             "account": form.get("account", ""),
+            "account_id": form.get("account_id") or form.get("account", ""),
+            "payment_method_id": form.get("payment_method_id", ""),
             "start_date": form.get("date") or date.today().isoformat(),
             "due_date": form.get("due_date", ""),
             "description": form.get("description", ""),
@@ -216,6 +223,8 @@ def handle_quick_log(form) -> dict:
             "original_amount": amount,
             "remaining_amount": form.get("remaining_amount") or amount,
             "account": form.get("account", ""),
+            "account_id": form.get("account_id") or form.get("account", ""),
+            "payment_method_id": form.get("payment_method_id", ""),
             "start_date": form.get("date") or date.today().isoformat(),
             "due_date": form.get("due_date", ""),
             "description": form.get("description", ""),
@@ -240,6 +249,8 @@ def handle_quick_log(form) -> dict:
             "remaining_amount": form.get("remaining_amount") or amount,
             "category": form.get("category") or "Payable",
             "account": form.get("account", ""),
+            "account_id": form.get("account_id") or form.get("account", ""),
+            "payment_method_id": form.get("payment_method_id", ""),
             "start_date": form.get("date") or date.today().isoformat(),
             "due_date": form.get("due_date", ""),
             "description": form.get("description", ""),
@@ -268,6 +279,8 @@ def handle_quick_log(form) -> dict:
             "category": form.get("category") or "Construction",
             "sub_category": form.get("sub_category", ""),
             "account": form.get("account", ""),
+            "account_id": form.get("account_id") or form.get("account", ""),
+            "payment_method_id": form.get("payment_method_id", ""),
             "start_date": form.get("date") or date.today().isoformat(),
             "due_date": form.get("due_date", ""),
             "description": form.get("description", ""),
@@ -289,6 +302,8 @@ def _base_payload(form) -> dict:
         "date": form.get("date") or date.today().isoformat(),
         "amount": form.get("amount", "0"),
         "account": form.get("account", ""),
+        "account_id": form.get("account_id") or form.get("account", ""),
+        "payment_method_id": form.get("payment_method_id", ""),
         "description": form.get("description", ""),
         "account_payment_method": form.get("account_payment_method", ""),
         "account_insufficient_action": form.get("account_insufficient_action", ""),

@@ -5,6 +5,13 @@
 <section class="form-section">
   <h2>Transaction #{{ tx.id }} ({{ tx.type|capitalize }})</h2>
 
+  {% if transaction_warning %}
+    <div class="form-field-wide currency-total-box transaction-metadata-box">
+      <strong>Payment edit warning</strong>
+      <p>{{ transaction_warning }}</p>
+    </div>
+  {% endif %}
+
   {% if tx.payment_method or tx.contact_name or tx.transfer_status %}
     <div class="form-field-wide currency-total-box transaction-metadata-box">
       <strong>{{ t("transaction.bonifico_metadata") if tx.payment_method == 'bonifico' else t("transaction.payment_method") }}</strong>
@@ -24,7 +31,26 @@
     </div>
   {% endif %}
 
+  {% if tx.account_id or tx.account_name_snapshot or tx.payment_method_id or tx.payment_method_name_snapshot or tx.funding_account_id_snapshot or tx.settlement_account_id_snapshot or tx.liability_account_id_snapshot or tx.payment_due_date_snapshot or tx.ledger_group_id or tx.payment_routing_explanation %}
+    <div class="form-field-wide currency-total-box transaction-metadata-box">
+      <strong>Payment routing / Ledger</strong>
+      <p>
+        {% if tx.account_name_snapshot or tx.account_id %}<span>Account / Conto: <b>{{ tx.account_name_snapshot or tx.account_id }}</b>{% if tx.account_id %} <small>({{ tx.account_id }})</small>{% endif %}</span>{% endif %}
+        {% if tx.payment_method_name_snapshot or tx.payment_method_id %}<br><span>Payment Method / Metodo di pagamento: <b>{{ tx.payment_method_name_snapshot or tx.payment_method_id }}</b>{% if tx.payment_method_id %} <small>({{ tx.payment_method_id }})</small>{% endif %}</span>{% endif %}
+        {% if tx.payment_channel_name_snapshot and tx.payment_channel_name_snapshot != tx.payment_method_name_snapshot %}<br><span>Payment channel: <b>{{ tx.payment_channel_name_snapshot }}</b></span>{% endif %}
+        {% if tx.funding_account_name_snapshot or tx.funding_account_id_snapshot %}<br><span>Funding account: <b>{{ tx.funding_account_name_snapshot or tx.funding_account_id_snapshot }}</b></span>{% endif %}
+        {% if tx.settlement_account_name_snapshot or tx.settlement_account_id_snapshot %}<br><span>Settlement account: <b>{{ tx.settlement_account_name_snapshot or tx.settlement_account_id_snapshot }}</b></span>{% endif %}
+        {% if tx.liability_account_name_snapshot or tx.liability_account_id_snapshot %}<br><span>Liability account: <b>{{ tx.liability_account_name_snapshot or tx.liability_account_id_snapshot }}</b></span>{% endif %}
+        {% if tx.payment_due_date_snapshot %}<br><span>Due date: <b>{{ tx.payment_due_date_snapshot }}</b>{% if tx.payment_due_day_snapshot %} <small>(day {{ tx.payment_due_day_snapshot }})</small>{% endif %}</span>{% endif %}
+        {% if tx.payment_statement_period_snapshot %}<br><span>Statement period: <b>{{ tx.payment_statement_period_snapshot }}</b></span>{% endif %}
+        <br><span>Ledger status: <b>{{ tx.ledger_status }}</b>{% if tx.active_ledger_count %} <small>{{ tx.active_ledger_count }} active movement(s)</small>{% endif %}</span>
+      </p>
+      {% if tx.payment_routing_explanation %}<small>{{ tx.payment_routing_explanation }}</small>{% endif %}
+    </div>
+  {% endif %}
+
   <form method="post" class="transaction-form">
+    <input type="hidden" name="payment_channel_method_id" value="{{ tx.payment_channel_method_id_snapshot }}">
     <div>
       <label>Date</label>
       <input type="date" name="date" value="{{ tx.date }}">
@@ -59,23 +85,46 @@
     {% endif %}
 
     <div>
-      <label>Account</label>
-      <select name="account">
-        {% for account in account_options %}
-          {% set account_value = account.value %}
-          <option value="{{ account_value }}"
-            {% if (tx.account_key == account.key) or (tx.account == account.label) or (tx.account == account.key) or (tx.account == account.value) or (not tx.account and account.key == 'main_bank') %}selected{% endif %}>
-            {{ account.label }}
+      <label>Account / Conto</label>
+      <select name="account_id">
+        {% for account in payment_form.account_options %}
+          <option value="{{ account.id }}"
+            {% if (tx.account_id or tx.account_key or payment_form.selected_account_id) == account.id %}selected{% endif %}
+            {% if account.disabled_reason %}disabled{% endif %}>
+            {{ account.label }}{% if account.disabled_reason %} — {{ account.disabled_reason }}{% endif %}
           </option>
         {% endfor %}
       </select>
-      <small class="hint">Blank = main bank. Separate accounts stay out of main net/category charts unless their policy says otherwise. Credit/pending rows impact the main account when executed.</small>
+      <input type="hidden" name="account" value="{{ tx.account }}">
+      <small class="hint">Real account/balance container. Changing it rebuilds the ledger route when the payment context changes.</small>
+    </div>
+
+    <div>
+      <label>Payment Method / Metodo di pagamento</label>
+      <select name="payment_method_id">
+        {% if tx.type == 'income' %}<option value="">Optional for income</option>{% endif %}
+        {% for method in payment_form.payment_method_options %}
+          <option value="{{ method.id }}"
+            {% if (tx.payment_method_id or payment_form.selected_payment_method_id) == method.id %}selected{% endif %}
+            {% if method.disabled_reason %}disabled{% endif %}>
+            {{ method.label }}{% if method.disabled_reason %} — {{ method.disabled_reason }}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+      <small class="hint">{{ payment_form.selected_payment_method_explanation }}</small>
     </div>
 
     <div class="form-field-wide">
       <label>Description</label>
       <textarea name="description" rows="2">{{ tx.description }}</textarea>
     </div>
+
+    {% if tx.payment_due_date_snapshot or tx.settlement_mode_snapshot == 'delayed' %}
+    <div class="form-field-wide">
+      <label class="inline-checkbox"><input type="checkbox" name="confirm_settled_edit" value="1"> Confirm settled/delayed payment edit</label>
+      <small class="hint">Use only when you intentionally want the backend to create adjustment ledger rows instead of silently rewriting settled credit history.</small>
+    </div>
+    {% endif %}
 
     <div class="form-actions-row form-field-wide inline-action-rail">
       <button type="submit" name="action" value="update" class="icon-action-btn icon-action-update" title="Update transaction" aria-label="Update transaction">✎</button>

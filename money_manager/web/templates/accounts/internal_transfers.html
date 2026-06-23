@@ -30,6 +30,10 @@
     <h3>{{ t("transfers.count") }}</h3>
     <p>{{ totals.count }}</p>
   </div>
+  <div class="summary-card neutral">
+    <h3>{{ t("transfers.fees") }}</h3>
+    <p>{{ '%.2f'|format(totals.fees) }}</p>
+  </div>
 </section>
 
 <section class="form-section internal-transfer-card">
@@ -70,6 +74,31 @@
       </label>
     </div>
 
+    <div class="form-field">
+      <label>{{ t("transfers.transfer_kind") }}</label>
+      <select name="transfer_kind">
+        {% for kind in transfer_kind_options %}
+          <option value="{{ kind }}" {% if kind == 'normal_transfer' %}selected{% endif %}>{{ kind.replace('_', ' ')|title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label>{{ t("transfers.fee_amount") }}</label>
+      <input type="number" step="0.01" name="fee_amount" value="0.00">
+    </div>
+
+    <div class="form-field">
+      <label>{{ t("transfers.fee_payment_method") }}</label>
+      <select name="fee_payment_method_id">
+        <option value="">{{ t("common.none") }}</option>
+        {% for method in payment_method_options %}
+          <option value="{{ method.id }}">{{ method.label }}</option>
+        {% endfor %}
+      </select>
+      <small class="hint">{{ t("transfers.fee_hint") }}</small>
+    </div>
+
     <div class="form-field form-field-wide">
       <label>{{ t("common.description") }}</label>
       <input type="text" name="description" placeholder="{{ t('transfers.description_placeholder') }}">
@@ -98,6 +127,8 @@
         <th>{{ t("common.from") }}</th>
         <th>{{ t("common.to") }}</th>
         <th>{{ t("transfers.amount_eur") }}</th>
+        <th>{{ t("transfers.transfer_kind") }}</th>
+        <th>{{ t("transfers.fee_amount") }}</th>
         <th>{{ t("common.description") }}</th>
         <th>{{ t("common.actions") }}</th>
       </tr>
@@ -114,18 +145,26 @@
         <td>
           <select form="transfer-update-{{ transfer.id }}" name="from_account">
             {% for account in account_options %}
-              <option value="{{ account.key }}" {% if account.label == transfer.from_label %}selected{% endif %}>{{ account.label }}</option>
+              <option value="{{ account.key }}" {% if account.key == transfer.from_account_id %}selected{% endif %}>{{ account.label }}</option>
             {% endfor %}
           </select>
         </td>
         <td>
           <select form="transfer-update-{{ transfer.id }}" name="to_account">
             {% for account in account_options %}
-              <option value="{{ account.key }}" {% if account.label == transfer.to_label %}selected{% endif %}>{{ account.label }}</option>
+              <option value="{{ account.key }}" {% if account.key == transfer.to_account_id %}selected{% endif %}>{{ account.label }}</option>
             {% endfor %}
           </select>
         </td>
         <td><input form="transfer-update-{{ transfer.id }}" type="number" step="0.01" name="amount" value="{{ transfer.amount }}" required></td>
+        <td>
+          <select form="transfer-update-{{ transfer.id }}" name="transfer_kind">
+            {% for kind in transfer_kind_options %}
+              <option value="{{ kind }}" {% if kind == transfer.transfer_kind %}selected{% endif %}>{{ kind.replace('_', ' ')|title }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td><input form="transfer-update-{{ transfer.id }}" type="number" step="0.01" name="fee_amount" value="{{ transfer.fee_amount }}"></td>
         <td><input form="transfer-update-{{ transfer.id }}" type="text" name="description" value="{{ transfer.description }}" class="table-note-input"></td>
         <td>
           <div class="table-action-rail">

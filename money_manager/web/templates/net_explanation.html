@@ -56,7 +56,7 @@
       {% include "components/money_rows_table.html" %}
     {% endwith %}
   {% else %}
-    {% with title='No counted rows', text='No transaction rows currently affect the main-bank net.' %}
+    {% with title='No counted rows', text='No transaction rows currently affect the selected net.' %}
       {% include "components/empty_state.html" %}
     {% endwith %}
   {% endif %}
@@ -66,7 +66,7 @@
   <div class="section-heading compact-heading">
     <div>
       <span class="eyebrow">Separate accounts</span>
-      <h3>Rows tracked outside the conservative main-bank net</h3>
+      <h3>Rows tracked outside the selected/global net</h3>
       <p>Showing up to {{ excluded_rows|length }} of {{ excluded_count }} separate liquid-account rows.</p>
     </div>
   </div>

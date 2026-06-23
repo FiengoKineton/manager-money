@@ -35,6 +35,10 @@ def append_investment_asset(data: dict) -> None:
         "label": str(data.get("label", "")).strip(),
         "allocation_pct": _pct(data.get("allocation_pct", 100)),
         "currency": str(data.get("currency", "EUR") or "EUR").strip().upper(),
+        "funding_account_id": data.get("funding_account_id", ""),
+        "funding_account_name_snapshot": data.get("funding_account_name_snapshot", ""),
+        "payment_method_id": data.get("payment_method_id", ""),
+        "payment_method_name_snapshot": data.get("payment_method_name_snapshot", ""),
         "active": str(data.get("active", "1") or "1"),
         "created_at": datetime.now().isoformat(timespec="seconds"),
     }
@@ -52,7 +56,7 @@ def update_investment_asset(asset_id: int, updates: dict) -> None:
     for row in rows:
         if str(row.get("id")) != str(asset_id):
             continue
-        for key in ["symbol", "label", "allocation_pct", "currency", "active"]:
+        for key in ["symbol", "label", "allocation_pct", "currency", "funding_account_id", "funding_account_name_snapshot", "payment_method_id", "payment_method_name_snapshot", "active"]:
             if key in updates:
                 row[key] = updates[key]
         break

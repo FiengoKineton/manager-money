@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block page_title %}Search{% endblock %}
+
+{% block content %}
+<section class="panel-card search-hero">
+  <div>
+    <span class="eyebrow">Global app search</span>
+    <h2>Search Money Manager</h2>
+    <p>Find accounts, cards/payment methods, transactions, pending items, recurring rules, payables, contacts and safe document metadata.</p>
+  </div>
+  <form method="get" action="{{ url_for('search.search_page') }}" class="global-search-page-form">
+    <input type="search" name="q" value="{{ q }}" placeholder="Search accounts, cards, transactions..." autofocus>
+    <button class="primary-btn" type="submit">Search</button>
+  </form>
+</section>
+
+{% if locked %}
+  <section class="alert-card"><strong>Encrypted vault locked.</strong> Some encrypted user data cannot be searched until you unlock it.</section>
+{% endif %}
+
+{% if q %}
+  <section class="search-results-grid">
+    {% for group in groups %}
+      <article class="panel-card search-result-group">
+        <div class="panel-header">
+          <div>
+            <span class="eyebrow">{{ group.label }}</span>
+            <h3>{{ group["items"]|length }} result{{ '' if group["items"]|length == 1 else 's' }}</h3>
+          </div>
+        </div>
+        {% if group["items"] %}
+          <div class="account-transaction-list">
+            {% for item in group["items"] %}
+              <a class="account-transaction-row search-result-row" href="{{ item.url }}">
+                <div class="movement-main">
+                  <span class="movement-source">{{ item.meta }}</span>
+                  <strong>{{ item.title|text_masked }}</strong>
+                  {% if item.snippet %}<p>{{ item.snippet|text_masked }}</p>{% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="empty">No matches.</p>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </section>
+{% else %}
+  <section class="panel-card"><p class="empty">Type something to search across the app.</p></section>
+{% endif %}
+{% endblock %}

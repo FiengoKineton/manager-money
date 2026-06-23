@@ -1,4 +1,0 @@
-id,name,debtor,original_amount,remaining_amount,account,start_date,due_date,description,status,linked_expense_transaction_id,created_at,closed_at
-1,Mom's household stuff,Riccardo,250.0,250.0,,2026-04-28,,Lost,active,281,2026-06-10T18:18:09,
-2,Sopralluogo,Leroy Marlaine,30.0,0.0,,2026-05-05,,,collected,282,2026-06-10T23:44:52,2026-06-11T18:54:18
-3,Glovo Thiefs,Glovo,28.64,23.84,Other account,2026-06-12,,Hamburger order,active,290,2026-06-15T11:08:11,

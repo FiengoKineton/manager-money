@@ -4,30 +4,40 @@
 {% block content %}
 <section class="overview-decision-hero">
   <article class="overview-primary-card">
-    <span class="eyebrow">Decision view</span>
-    <h2>Can I spend, should I wait, or should I fix something?</h2>
+    <span class="eyebrow">{{ 'Selected Conto' if scope_is_account else 'Decision view' }}</span>
+    <h2>{% if scope_is_account %}{{ scope_label|text_masked }} quick overview{% else %}Can I spend, should I wait, or should I fix something?{% endif %}</h2>
     <p>
-      This quick overview keeps the same money information, but orders it around decisions:
-      available position, pressure, recoverable money, investments and next actions.
+      {% if scope_is_account %}
+        This view is locked to the selected Conto. The net, pressure and transactions below are not the All Conti total.
+      {% else %}
+        This quick overview keeps the same money information, but orders it around decisions:
+        available position, pressure, recoverable money, investments and next actions.
+      {% endif %}
     </p>
     <div class="overview-primary-value">
-      <span>Main available position</span>
+      <span>{{ 'Net balance of this Conto' if scope_is_account else 'All Conti available position' }}</span>
       <strong>{{ cash_position|money_masked }}</strong>
-      <small>All account nets + invested capital. Market P/L is shown separately.</small>
+      <small>{% if scope_is_account %}Selected account only. Global modules stay available from Planning and Analysis.{% else %}All Conti net + invested capital. Market P/L is shown separately.{% endif %}</small>
     </div>
     <div class="overview-action-row">
-      <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Add expense</a>
-      <a class="secondary-btn" href="{{ url_for('dashboard.overview_detailed') }}">Detailed overview</a>
-      <a class="secondary-btn" href="{{ url_for('analysis.analysis') }}">Open analysis</a>
+      {% if scope_is_account %}
+        <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense', account_id=selected_account_id) }}">Add expense here</a>
+        <a class="secondary-btn" href="{{ url_for('dashboard.overview_detailed', account_id=selected_account_id) }}">Detailed overview</a>
+        <a class="secondary-btn" href="{{ url_for('transactions.transactions_page', account_id=selected_account_id) }}">Transactions</a>
+      {% else %}
+        <a class="primary-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Add expense</a>
+        <a class="secondary-btn" href="{{ url_for('dashboard.overview_detailed') }}">Detailed overview</a>
+        <a class="secondary-btn" href="{{ url_for('analysis.analysis') }}">Open analysis</a>
+      {% endif %}
     </div>
   </article>
 
   <article class="overview-status-card">
     <span class="eyebrow">Pressure check</span>
     <div class="overview-status-main">
-      <span>Adjusted stress position</span>
+      <span>{{ 'Selected Conto pressure' if scope_is_account else 'Adjusted stress position' }}</span>
       <strong>{{ adjusted_stress_position|money_masked }}</strong>
-      <small>Stress + owed to me + investment P/L.</small>
+      <small>{% if scope_is_account %}Net minus linked pending/payables.{% else %}Stress + owed to me + investment P/L.{% endif %}</small>
     </div>
     <dl class="overview-status-list">
       <div><dt>Stress position</dt><dd>{{ stress_position|money_masked }}</dd></div>
@@ -40,19 +50,19 @@
 
 <section class="overview-metric-grid" aria-label="Financial metrics">
   <article class="summary-card net">
-    <span>Net balance</span>
+    <span>{{ 'Account net' if scope_is_account else 'Net balance' }}</span>
     <strong>{{ totals.net|money_masked }}</strong>
-    <small>Main bank net only.</small>
+    <small>{{ 'Selected Conto only.' if scope_is_account else 'All Conti net only.' }}</small>
   </article>
   <article class="summary-card tone-aux">
-    <span>Separate liquid</span>
+    <span>{{ 'Linked separate liquid' if scope_is_account else 'Separate liquid' }}</span>
     <strong>{{ auxiliary_balance|money_masked }}</strong>
-    <small>Configured separate accounts.</small>
+    <small>{{ 'Not double-counted in account scope.' if scope_is_account else 'Configured separate accounts.' }}</small>
   </article>
   <article class="summary-card tone-net">
-    <span>Visible liquidity</span>
+    <span>{{ 'This Conto liquidity' if scope_is_account else 'Visible liquidity' }}</span>
     <strong>{{ combined_visible_liquidity|money_masked }}</strong>
-    <small>Main-bank net + separate liquid accounts.</small>
+    <small>{{ 'Selected account net.' if scope_is_account else 'All Conti net without dependent double-counting.' }}</small>
   </article>
   <article class="summary-card warning">
     <span>Credit pending</span>

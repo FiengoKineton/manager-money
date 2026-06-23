@@ -27,6 +27,10 @@ def append_debt(data: dict) -> None:
         "start_date": data.get("start_date", ""),
         "due_date": data.get("due_date", ""),
         "description": data.get("description", ""),
+        "account_id": data.get("account_id", ""),
+        "account_name_snapshot": data.get("account_name_snapshot", ""),
+        "preferred_payment_method_id": data.get("preferred_payment_method_id", ""),
+        "preferred_payment_method_name_snapshot": data.get("preferred_payment_method_name_snapshot", ""),
         "status": data.get("status", "active"),
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "closed_at": "",
@@ -39,7 +43,11 @@ def update_debt(debt_id: int, updates: dict) -> None:
     for row in rows:
         if str(row.get("id")) != str(debt_id):
             continue
-        for key in ["name", "creditor", "category", "account", "start_date", "due_date", "description", "status", "closed_at"]:
+        for key in [
+            "name", "creditor", "category", "account", "account_id", "account_name_snapshot",
+            "preferred_payment_method_id", "preferred_payment_method_name_snapshot",
+            "start_date", "due_date", "description", "status", "closed_at"
+        ]:
             if key in updates:
                 row[key] = updates[key]
         for key in ["original_amount", "remaining_amount"]:

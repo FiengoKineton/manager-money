@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 
 from money_manager.config.paths import CURRENCIES_JSON
+from money_manager.security.secure_storage import read_json_secure, write_json_secure
 
 BASE_CURRENCY = "EUR"
 FRANKFURTER_V2_RATES_URL = "https://api.frankfurter.dev/v2/rates"
@@ -34,8 +35,10 @@ def load_currency_settings() -> dict:
         return payload
 
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        payload = read_json_secure(path, None)
+    except Exception:
+        payload = None
+    if payload is None:
         payload = _default_payload()
         _write_payload(payload)
         return payload
@@ -361,7 +364,7 @@ def _write_payload(payload: dict) -> None:
     path = Path(CURRENCIES_JSON)
     path.parent.mkdir(exist_ok=True, parents=True)
     payload["currencies"] = _merge_with_defaults(payload.get("currencies", []))
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json_secure(path, payload)
     try:
         from money_manager.services.cache_service import notify_data_changed
 

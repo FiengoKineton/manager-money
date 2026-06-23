@@ -25,7 +25,7 @@ def onboarding_page():
         action = str(request.form.get("action") or "complete").strip().casefold()
         if action == "skip":
             mark_onboarding_completed()
-            return redirect(next_url or url_for("dashboard.overview"))
+            return redirect(next_url or url_for("accounts.accounts_page"))
 
         language = request.form.get("language", "en")
         theme = request.form.get("theme", "day")
@@ -49,7 +49,7 @@ def onboarding_page():
         )
         _update_main_account_from_onboarding(request.form)
         mark_onboarding_completed()
-        return redirect(next_url or url_for("dashboard.overview"))
+        return redirect(next_url or url_for("accounts.accounts_page"))
 
     state = onboarding_state()
     return render_template(

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t("security.title") }}{% endblock %}
+
+{% block content %}
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Encryption by default</span>
+      <h2>{{ t("security.title") }}</h2>
+      <p>The active user data folder is scanned here. This page does not only trust a setting flag: it checks encrypted file headers and, when the vault is unlocked, verifies decryptability.</p>
+    </div>
+    <div class="form-actions-row">
+      <form method="post" action="{{ url_for('security.scan_encryption') }}"><button class="secondary-btn" type="submit">Scan encryption status</button></form>
+      <form method="post" action="{{ url_for('security.lock') }}">
+        <input type="hidden" name="next" value="{{ url_for('security.security_page') }}">
+        <button class="secondary-btn" type="submit">Lock vault</button>
+      </form>
+      {% if audit.encryption_enabled and not vault.unlocked %}<a class="primary-btn" href="{{ url_for('security.unlock', next=url_for('security.security_page')) }}">Unlock vault</a>{% endif %}
+    </div>
+  </div>
+
+  {% if saved %}<p class="success-message">Saved: {{ saved }}</p>{% endif %}
+  {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+
+  <div class="summary-grid">
+    <article class="summary-card"><span>Active data folder</span><strong class="small-text">{{ audit.active_data_path }}</strong></article>
+    <article class="summary-card"><span>Current user ID</span><strong>{{ audit.user_id }}</strong></article>
+    <article class="summary-card"><span>Encryption</span><strong>{{ 'Enabled' if audit.encryption_enabled else 'Disabled' }}</strong></article>
+    <article class="summary-card"><span>Vault</span><strong>{{ 'Unlocked' if vault.unlocked else 'Locked' }}</strong></article>
+    <article class="summary-card"><span>Sensitive files scanned</span><strong>{{ verification.files_scanned }}</strong></article>
+    <article class="summary-card"><span>Encrypted sensitive files</span><strong>{{ verification.encrypted_count }}</strong></article>
+    <article class="summary-card"><span>Still plaintext</span><strong>{{ verification.plaintext_count }}</strong></article>
+    <article class="summary-card"><span>Corrupt encrypted files</span><strong>{{ verification.corrupt_count }}</strong></article>
+    <article class="summary-card"><span>Cache encrypted/plaintext</span><strong>{{ verification.cache_encrypted_count }} / {{ verification.cache_plaintext_count }}</strong></article>
+    <article class="summary-card"><span>Documents encrypted/plaintext</span><strong>{{ verification.documents_encrypted_count }} / {{ verification.documents_plaintext_count }}</strong></article>
+    <article class="summary-card"><span>Last migration</span><strong>{{ audit.metadata.updated_at or '—' }}</strong></article>
+    <article class="summary-card"><span>Verification result</span><strong>{{ 'Clean' if verification.success else 'Needs action' }}</strong></article>
+  </div>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Migration</span>
+      <h2>Encrypt old plaintext files now</h2>
+      <p>Enter your password to unlock the vault, encrypt existing plaintext sensitive files, verify they can be read, and clear disposable sensitive cache.</p>
+    </div>
+  </div>
+  <form method="post" action="{{ url_for('security.migrate_encryption') }}" class="profile-form">
+    <label>Password</label>
+    <input type="password" name="password" required>
+    <div class="form-actions">
+      <button class="primary-btn" type="submit">Encrypt old plaintext files now</button>
+    </div>
+  </form>
+</section>
+
+{% if not audit.encryption_enabled %}
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Enable encryption</span>
+      <h2>Protect this user data folder</h2>
+      <p>New users are encrypted by default. This button upgrades old users without permanently decrypting the active data folder.</p>
+    </div>
+  </div>
+  <form method="post" action="{{ url_for('security.enable_encryption') }}" class="profile-form">
+    <label>Password</label>
+    <input type="password" name="password" required>
+    <div class="form-actions"><button class="primary-btn" type="submit">Enable encryption</button></div>
+  </form>
+</section>
+{% endif %}
+
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Backup / export</span>
+      <h2>Encrypted backup vs temporary decrypted copy</h2>
+      <p>The normal backup is the safe default. The decrypted export is temporary, password-confirmed, and expires after {{ temp_export_ttl_minutes }} minutes.</p>
+    </div>
+  </div>
+  <div class="form-actions-row">
+    <a class="primary-btn" href="{{ url_for('backup.export_backup') }}">Download encrypted backup</a>
+    <a class="secondary-btn" href="{{ url_for('security.export_decrypted_page') }}">Export decrypted copy temporarily</a>
+  </div>
+  <p class="muted small-text">A timer deletes only the app-side temporary decrypted ZIP/folder. It cannot delete a copy already downloaded to your PC.</p>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">Audit results</span><h2>Security checks</h2></div></div>
+  <div class="table-responsive">
+    <table>
+      <thead><tr><th>Status</th><th>Check</th><th>Message</th></tr></thead>
+      <tbody>
+        {% for check in audit.checks %}
+        <tr>
+          <td><strong>{{ check.status }}</strong></td>
+          <td>{{ check.name }}</td>
+          <td>{{ check.message }}{% if check.details %}<br><small>{{ check.details|join(', ') }}</small>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if verification.plaintext_files or verification.corrupt_encrypted_files %}
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">File details</span><h2>Files needing attention</h2></div></div>
+  {% if verification.plaintext_files %}
+    <h3>Plaintext sensitive files</h3>
+    <ul class="small-text">{% for path in verification.plaintext_files[:40] %}<li>{{ path }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if verification.corrupt_encrypted_files %}
+    <h3>Corrupt encrypted files</h3>
+    <ul class="small-text">{% for row in verification.corrupt_encrypted_files[:40] %}<li>{{ row.path }} — {{ row.error }}</li>{% endfor %}</ul>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="panel-card">
+  <div class="panel-header">
+    <div><span class="eyebrow">Change password</span><h2>Re-wrap encryption key</h2><p>Changing the login password also re-wraps the data key when encryption is enabled.</p></div>
+  </div>
+  <form method="post" action="{{ url_for('security.change_password') }}" class="profile-form">
+    <label>Old password</label><input type="password" name="old_password" required>
+    <label>New password</label><input type="password" name="new_password" required>
+    <label>Confirm password</label><input type="password" name="confirm_password" required>
+    <div class="form-actions"><button class="secondary-btn" type="submit">Change password</button></div>
+  </form>
+</section>
+{% endblock %}

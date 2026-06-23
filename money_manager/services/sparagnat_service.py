@@ -3,10 +3,22 @@ from datetime import date
 import pandas as pd
 
 from money_manager.repositories.sparagnat import append_entry, delete_entry, load_entries, update_entry
+from money_manager.services.payment_form_service import payment_form_context, snapshot_account, snapshot_payment_method
 from money_manager.services.account_service import main_account_transactions
 from money_manager.services.transaction_service import load_transactions
 from money_manager.utils.filters import filter_by_date
 from money_manager.utils.stats import summary_totals
+
+def _payment_fields(form) -> dict:
+    account_id = form.get("account_id") or form.get("account", "")
+    method_id = form.get("payment_method_id", "")
+    return {
+        "account": form.get("account", "cash") or account_id,
+        **snapshot_account(account_id),
+        "payment_method_id": snapshot_payment_method(method_id)["payment_method_id"],
+        "payment_method_name_snapshot": snapshot_payment_method(method_id)["payment_method_name_snapshot"],
+    }
+
 
 KIND_SAVED_EXPENSE = "saved_expense"
 KIND_CASH_COLLECTED = "cash_collected"
@@ -35,7 +47,7 @@ def add_entry_from_form(form) -> None:
         "person": form.get("person", ""),
         "category": form.get("category", ""),
         "amount": parse_amount(form.get("amount")),
-        "account": form.get("account", "cash"),
+        **_payment_fields(form),
         "description": form.get("description", ""),
     })
 
@@ -56,7 +68,7 @@ def update_entry_from_form(form) -> None:
         "person": form.get("person", ""),
         "category": form.get("category", ""),
         "amount": parse_amount(form.get("amount")),
-        "account": form.get("account", "cash"),
+        **_payment_fields(form),
         "description": form.get("description", ""),
     })
 
@@ -98,6 +110,7 @@ def page_context(start: str, end: str, use_full_history_for_net: bool = True) ->
         },
         "monthly": monthly,
         "kind_labels": KIND_LABELS,
+        **payment_form_context("expense"),
     }
 
 

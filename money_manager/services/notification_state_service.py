@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import json
 import threading
 from datetime import datetime
-from pathlib import Path
-from tempfile import NamedTemporaryFile
 from typing import Any
 
 from money_manager.config.paths import NOTIFICATIONS_STATE_JSON
+from money_manager.security.secure_storage import read_json_secure, write_json_secure
 
 _LOCK = threading.RLock()
 MAX_HISTORY = 120
@@ -24,11 +22,9 @@ def _empty_state() -> dict[str, Any]:
 def load_notification_state() -> dict[str, Any]:
     with _LOCK:
         try:
-            if not NOTIFICATIONS_STATE_JSON.exists():
+            state = read_json_secure(NOTIFICATIONS_STATE_JSON, default=None)
+            if state is None:
                 return _empty_state()
-
-            with NOTIFICATIONS_STATE_JSON.open("r", encoding="utf-8") as file:
-                state = json.load(file)
 
             if not isinstance(state, dict):
                 return _empty_state()
@@ -44,20 +40,7 @@ def load_notification_state() -> dict[str, Any]:
 def save_notification_state(state: dict[str, Any]) -> None:
     with _LOCK:
         try:
-            NOTIFICATIONS_STATE_JSON.parent.mkdir(parents=True, exist_ok=True)
-
-            with NamedTemporaryFile(
-                "w",
-                delete=False,
-                dir=str(NOTIFICATIONS_STATE_JSON.parent),
-                prefix=".notification_state.",
-                suffix=".tmp",
-                encoding="utf-8",
-            ) as tmp:
-                json.dump(state, tmp, indent=2, ensure_ascii=False)
-                temp_name = tmp.name
-
-            Path(temp_name).replace(NOTIFICATIONS_STATE_JSON)
+            write_json_secure(NOTIFICATIONS_STATE_JSON, state)
         except Exception:
             return
 

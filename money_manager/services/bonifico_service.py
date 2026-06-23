@@ -4,14 +4,14 @@ import re
 from datetime import date
 from typing import Any, Mapping
 
-from money_manager.config import MAIN_NET_CREDIT_PENDING, account_options_for_forms, account_policy_for_key, normalize_account_key
+from money_manager.config import MAIN_NET_CREDIT_PENDING, account_policy_for_key, normalize_account_key
 from money_manager.config import DEBT_PAYMENT_CATEGORY
-from money_manager.services.account_payment_policy_service import payment_selection_from_form
 from money_manager.services.contact_service import add_contact, get_contact, list_contacts
 from money_manager.services.debt_service import debt_by_id, register_debt_payment
 from money_manager.repositories.debts import load_debts
 from money_manager.repositories.payables import load_payables
 from money_manager.services.payable_service import DEFAULT_PAYABLE_EXPENSE_CATEGORY, payable_by_id, register_payable_payment
+from money_manager.services.payment_form_service import account_options_for_payment_forms, payment_method_options_for_forms, snapshot_account, snapshot_payment_method
 from money_manager.services.transaction_service import account_balances_for_preview, save_transaction_payload
 
 BONIFICO_PAYMENT_METHOD = "bonifico"
@@ -47,7 +47,7 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
     except ValueError:
         errors.append("Date is invalid.")
 
-    source_account = _clean_text(form.get("account"))
+    source_account = _clean_text(form.get("account_id") or form.get("account"))
     source_validation = _validate_source_account(source_account)
     if source_validation.get("error"):
         errors.append(str(source_validation["error"]))
@@ -150,9 +150,16 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
                 "bank_name_snapshot": manual_bank["bank_name"],
             }
 
-    payment_selection = payment_selection_from_form(form, source_validation["account_key"])
+    payment_method_id = _clean_text(form.get("payment_method_id")) or _default_bank_transfer_method(source_validation["account_key"])
+    if not _bank_transfer_method_valid_for_account(payment_method_id, source_validation["account_key"]):
+        return {"ok": False, "errors": ["Select a bank-transfer payment method linked to the source account."], "error": "Select a bank-transfer payment method linked to the source account.", "target_type": target_type}
+
     bonifico_fields = {
         "payment_method": BONIFICO_PAYMENT_METHOD,
+        "account_id": source_validation["account_key"],
+        **snapshot_account(source_validation["account_key"], user_id=user_id),
+        "payment_method_id": payment_method_id,
+        **snapshot_payment_method(payment_method_id, user_id=user_id),
         "contact_id": contact_snapshot["contact_id"],
         "contact_name": contact_snapshot["contact_name"],
         "iban_snapshot": contact_snapshot["iban_snapshot"],
@@ -168,9 +175,9 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
             amount=amount,
             payment_date=transfer_date,
             account=source_validation["account_value"],
+            account_id=source_validation["account_key"],
+            payment_method_id=payment_method_id,
             description=description,
-            payment_method=payment_selection["payment_method"],
-            insufficient_action=payment_selection["insufficient_action"],
             extra_tx_fields=bonifico_fields,
         )
     elif target_type == TARGET_PAYABLE:
@@ -179,9 +186,9 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
             amount=amount,
             payment_date=transfer_date,
             account=source_validation["account_value"],
+            account_id=source_validation["account_key"],
+            payment_method_id=payment_method_id,
             description=description,
-            payment_method=payment_selection["payment_method"],
-            insufficient_action=payment_selection["insufficient_action"],
             extra_tx_fields=bonifico_fields,
         )
     else:
@@ -192,13 +199,15 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
             "sub_category": sub_category,
             "amount": amount,
             "account": source_validation["account_value"],
+            "account_id": source_validation["account_key"],
+            "payment_method_id": payment_method_id,
             "description": description,
             **bonifico_fields,
         }
         result = save_transaction_payload(
             tx,
-            payment_method=payment_selection["payment_method"],
-            insufficient_action=payment_selection["insufficient_action"],
+            account_id=source_validation["account_key"],
+            payment_method_id=payment_method_id,
         )
 
     if not result.get("ok"):
@@ -224,16 +233,19 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
 
 
 def bonifico_form_context() -> dict[str, Any]:
-    """Return account options and linked-payment choices for the Bonifico form."""
-    account_options: list[dict[str, Any]] = []
-    for account in account_options_for_forms(include_credit=False):
-        if account.get("kind") == "container" or bool(account.get("is_container")):
-            continue
-        account_options.append(account)
-
+    """Return account options and bank-transfer payment choices for Bonifico."""
+    account_options = [
+        account for account in account_options_for_payment_forms(include_credit=False)
+        if account.get("account_kind") == "current_account"
+    ] or account_options_for_payment_forms(include_credit=False)
+    payment_methods = [
+        method for method in payment_method_options_for_forms()
+        if method.get("method_type") == "bank_transfer"
+    ]
     contacts = list_contacts()
     return {
         "account_options": account_options,
+        "payment_method_options": payment_methods,
         "account_balances": account_balances_for_preview(),
         "bonifico_targets": {
             "debts": _active_debt_options(contacts),
@@ -300,21 +312,40 @@ def _validate_source_account(value: str) -> dict[str, Any]:
     raw = _clean_text(value)
 
     for option in options:
-        option_value = str(option.get("value") or "")
-        option_key = str(option.get("key") or "")
+        option_value = str(option.get("value") or option.get("id") or "")
+        option_key = str(option.get("key") or option.get("id") or "")
         option_label = str(option.get("display_label") or option.get("label") or "")
         candidates = {option_value, option_key, option_label, str(option.get("label") or "")}
         if raw in candidates:
             key = normalize_account_key(option_value or option_key or raw)
             if account_policy_for_key(key) == MAIN_NET_CREDIT_PENDING:
                 return {"error": "Credit-card routes are not valid source accounts for Bonifico."}
-            return {"account_value": option_value, "account_key": key, "account": option}
+            return {"account_value": "" if key == "main_bank" else key, "account_key": key, "account": option}
 
-    key = normalize_account_key(raw)
-    if raw == "" and key:
-        return {"account_value": "", "account_key": key, "account": options[0] if options else {}}
+    if raw == "" and options:
+        key = str(options[0].get("id") or options[0].get("value") or "main_bank")
+        return {"account_value": "" if key == "main_bank" else key, "account_key": key, "account": options[0]}
 
     return {"error": "Selected source account is not valid or is archived."}
+
+
+def _default_bank_transfer_method(account_key: str) -> str:
+    for method in bonifico_form_context().get("payment_method_options", []):
+        if str(method.get("funding_account_id") or method.get("linked_account_id") or method.get("settlement_account_id") or "") == str(account_key or ""):
+            return str(method.get("id") or "")
+    methods = bonifico_form_context().get("payment_method_options", [])
+    return str(methods[0].get("id") or "") if methods else ""
+
+
+def _bank_transfer_method_valid_for_account(method_id: str, account_key: str) -> bool:
+    if not method_id:
+        return False
+    for method in bonifico_form_context().get("payment_method_options", []):
+        if str(method.get("id") or "") != str(method_id):
+            continue
+        refs = {str(method.get("funding_account_id") or ""), str(method.get("linked_account_id") or ""), str(method.get("settlement_account_id") or "")}
+        return not account_key or account_key in refs or account_key == "main_bank"
+    return False
 
 
 def _snapshot_from_contact(contact: Mapping[str, Any]) -> dict[str, str]:

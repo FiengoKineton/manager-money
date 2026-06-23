@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t("updates.title") }}{% endblock %}
+
+{% block content %}
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">{{ t("updates.eyebrow") }}</span>
+      <h2>{{ t("updates.title") }}</h2>
+      <p>{{ t("updates.description") }}</p>
+    </div>
+    <a class="secondary-btn" href="{{ url_for('profile.profile_page') }}">{{ t("common.back") }}</a>
+  </div>
+  <div class="kpi-grid account-kpi-grid">
+    <article class="kpi-card tone-net"><span>{{ t("updates.current_version") }}</span><strong>{{ status.current_version }}</strong><small>{{ status.app_id }}</small></article>
+    <article class="kpi-card tone-income"><span>{{ t("updates.schema_version") }}</span><strong>{{ status.data_schema_current }}</strong><small>{{ t("updates.data_schema") }}</small></article>
+    <article class="kpi-card tone-expense"><span>{{ t("updates.rollback") }}</span><strong>{{ t('common.yes') if status.rollback.available else t('common.no') }}</strong><small>{{ status.rollback.previous_version }}</small></article>
+    <article class="kpi-card tone-investment"><span>{{ t("updates.restart_required") }}</span><strong>{{ t('common.yes') if status.pending_update else t('common.no') }}</strong><small>{{ status.pending_update.status if status.pending_update else t('common.ok') }}</small></article>
+  </div>
+</section>
+
+{% if error %}<section class="panel-card"><div class="alert-card alert-error">{{ error }}</div></section>{% endif %}
+{% if action_result %}<section class="panel-card"><div class="alert-card alert-success">{{ t("updates.update_staged") if action_result.restart_required else t("common.ok") }}</div></section>{% endif %}
+
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">{{ t("updates.paths") }}</span><h3>{{ t("updates.install_paths") }}</h3></div></div>
+  <div class="table-responsive">
+    <table>
+      <tbody>
+        <tr><th>{{ t("updates.app_folder") }}</th><td><code>{{ status.app_dir }}</code></td></tr>
+        <tr><th>{{ t("updates.data_folder") }}</th><td><code>{{ status.data_home }}</code></td></tr>
+        <tr><th>{{ t("updates.update_inbox") }}</th><td><code>{{ status.update_inbox }}</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">{{ t("updates.local_packages") }}</span><h3>{{ t("updates.available_packages") }}</h3><p>{{ t("updates.inbox_hint") }}</p></div></div>
+  <div class="table-responsive">
+    <table>
+      <thead><tr><th>{{ t("common.name") }}</th><th>{{ t("updates.version") }}</th><th>{{ t("updates.compatibility") }}</th><th>{{ t("updates.action") }}</th></tr></thead>
+      <tbody>
+      {% for package in packages %}
+        <tr>
+          <td><code>{{ package.filename }}</code></td>
+          <td>{{ package.manifest.version or "—" }}</td>
+          <td>{% if package.valid %}{{ t("common.ok") }}{% else %}<span class="negative-text">{{ package.error }}</span>{% endif %}</td>
+          <td>
+            {% if package.valid %}
+            <form method="post" action="{{ url_for('settings_updates.stage_update_route') }}">
+              <input type="hidden" name="package" value="{{ package.filename }}">
+              <button class="primary-btn" type="submit">{{ t("updates.stage_update") }}</button>
+            </form>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="empty">{{ t("updates.no_packages") }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header">
+    <div><span class="eyebrow">{{ t("updates.rollback") }}</span><h3>{{ t("updates.rollback_title") }}</h3><p>{{ t("updates.rollback_hint") }}</p></div>
+    <form method="post" action="{{ url_for('settings_updates.rollback_route') }}" onsubmit="return confirm({{ t('updates.rollback_confirm')|tojson }})">
+      <button class="secondary-btn" type="submit" {% if not status.rollback.available %}disabled{% endif %}>{{ t("updates.rollback") }}</button>
+    </form>
+  </div>
+</section>
+
+<section class="panel-card">
+  <div class="panel-header"><div><span class="eyebrow">{{ t("updates.history") }}</span><h3>{{ t("updates.last_update_history") }}</h3></div></div>
+  {% if status.history %}<ul>{% for item in status.history[-10:]|reverse %}<li><code>{{ item.at }}</code> — {{ item.event }} {{ item.version or item.to or "" }}</li>{% endfor %}</ul>{% else %}<p class="empty">{{ t("updates.no_history") }}</p>{% endif %}
+</section>
+{% endblock %}

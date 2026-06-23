@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t("data_registry.title") }}{% endblock %}
+
+{% block content %}
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">{{ t("data_registry.eyebrow") }}</span>
+      <h2>{{ t("data_registry.title") }}</h2>
+      <p>{{ t("data_registry.description") }}</p>
+    </div>
+    <a class="secondary-btn" href="{{ url_for('settings_updates.updates_page') }}">{{ t("updates.title") }}</a>
+  </div>
+</section>
+
+<section class="panel-card">
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>{{ t("data_registry.logical_name") }}</th>
+          <th>{{ t("data_registry.scope") }}</th>
+          <th>{{ t("data_registry.path") }}</th>
+          <th>{{ t("data_registry.exists") }}</th>
+          <th>{{ t("data_registry.file_type") }}</th>
+          <th>{{ t("data_registry.schema_version") }}</th>
+          <th>{{ t("data_registry.backup_policy") }}</th>
+          <th>{{ t("data_registry.encryption_policy") }}</th>
+          <th>{{ t("data_registry.sensitive_level") }}</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.name }}</td>
+          <td>{{ row.scope }}</td>
+          <td><code>{{ row.expected_path }}</code></td>
+          <td>{{ t('common.yes') if row.exists else t('common.no') }}</td>
+          <td>{{ row.file_type }}</td>
+          <td>{{ row.schema_version }}</td>
+          <td>{{ row.backup_policy }}</td>
+          <td>{{ row.future_encryption_policy }}</td>
+          <td>{{ row.sensitive_level }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

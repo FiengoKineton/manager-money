@@ -36,11 +36,11 @@
     <p>{{ '%.2f'|format(project.forecast_net_total) }}</p>
   </div>
   <div class="summary-card neutral">
-    <h3>Main net now</h3>
+    <h3>{{ "Account net now" if scope_is_account else "Global net now" }}</h3>
     <p>{{ '%.2f'|format(totals.main_net_now) }}</p>
   </div>
   <div class="summary-card pending">
-    <h3>Main net if expected paid</h3>
+    <h3>{{ "Account net if expected paid" if scope_is_account else "Global net if expected paid" }}</h3>
     <p>{{ '%.2f'|format(totals.main_net_if_remaining_paid) }}</p>
   </div>
 </section>
@@ -357,7 +357,7 @@
         <td><span class="pill {{ tx.amount_class }}">{{ tx.type_label }}</span></td>
         <td>{{ tx.category }}{% if tx.sub_category %}<br><small>{{ tx.sub_category }}</small>{% endif %}</td>
         <td>{{ tx.description }}{% if tx.note %}<br><small>{{ tx.note }}</small>{% endif %}</td>
-        <td>{{ tx.account or 'Main bank' }}</td>
+        <td>{{ tx.account or 'Selected account' }}</td>
         <td class="amount {{ tx.amount_class }}">{{ tx.amount_sign }} € {{ '%.2f'|format(tx.amount) }}</td>
         <td>{{ tx.source_label }}</td>
         <td>

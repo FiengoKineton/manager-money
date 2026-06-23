@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 MAIN_ACCOUNT_KEY = "main_bank"
-MAIN_ACCOUNT_LABEL = "Main bank account"
+MAIN_ACCOUNT_LABEL = "Primary current account"
 CREDIT_OPTION_KEY = "credit_card"
 PAYPAL_ACCOUNT_KEY = "paypal"  # compatibility key only; PayPal must be configured per user.
 PAYPAL_CREDIT_ACCOUNT_VALUE = "paypal_credit"
@@ -37,7 +37,6 @@ MAIN_ACCOUNT_ALIASES = {
 CREDIT_ACCOUNT_ALIASES = {
     "credit",
     "card",
-    "debit card",
     "credit card",
     "credit cards",
     "card credit",
@@ -90,7 +89,7 @@ def account_options_for_forms(include_credit: bool = True) -> list[dict[str, Any
             "id": MAIN_ACCOUNT_KEY,
             "label": MAIN_ACCOUNT_LABEL,
             "display_label": MAIN_ACCOUNT_LABEL,
-            "description": "Blank means this movement belongs to the main bank account.",
+            "description": "Blank means this movement belongs to the selected/default current account.",
             "value": "",
             "kind": "main",
             "main_net_policy": MAIN_NET_AFFECTS,
@@ -110,7 +109,7 @@ def account_options_for_forms(include_credit: bool = True) -> list[dict[str, Any
         }
     ]
     for account in _svc().account_display_options(include_archived=False, include_containers=True):
-        if not include_credit and (account.get("main_net_policy") == MAIN_NET_CREDIT_PENDING or account.get("type") == "credit_card"):
+        if not include_credit and (account.get("main_net_policy") == MAIN_NET_CREDIT_PENDING or account.get("type") == "credit_card" or account.get("account_kind") == "credit_card_liability"):
             continue
         account = dict(account)
         payment_logic = account.get("payment_logic") if isinstance(account.get("payment_logic"), dict) else {}
@@ -184,7 +183,8 @@ def save_custom_account(label: str, description: str = "", aliases: str = "", ca
         "description": description,
         "aliases": aliases,
         "category_aliases": category_aliases,
-        "type": "wallet",
+        "type": "wallet_balance",
+        "account_kind": "wallet_balance",
         "main_net_policy": MAIN_NET_SEPARATE,
         "category_match_enabled": "1",
         "parent_account_id": "other_account",

@@ -8,6 +8,7 @@ from money_manager.config.categories import (
     PARENT_SUPPORT_CATEGORIES,
     PARENT_SUPPORT_KINDS,
 )
+from money_manager.services.payment_form_service import payment_form_context, snapshot_account, snapshot_payment_method
 from money_manager.repositories.parent_support import (
     append_entry,
     append_rule,
@@ -18,6 +19,17 @@ from money_manager.repositories.parent_support import (
     update_entry,
     update_rule,
 )
+
+def _payment_fields(form) -> dict:
+    account_id = form.get("account_id", "")
+    payment_method_id = form.get("payment_method_id", "") or form.get("payment_method", "")
+    method_snapshot = snapshot_payment_method(payment_method_id)
+    return {
+        **snapshot_account(account_id),
+        "payment_method_id": method_snapshot["payment_method_id"],
+        "payment_method_name_snapshot": method_snapshot["payment_method_name_snapshot"],
+    }
+
 
 KIND_DIRECT_MONEY = "direct_money"
 KIND_COVERED_EXPENSE = "covered_expense"
@@ -71,6 +83,7 @@ def add_rule_from_form(form) -> None:
         "start_date": form.get("start_date", date.today().isoformat()),
         "end_date": form.get("end_date", ""),
         "payment_method": form.get("payment_method", ""),
+        **_payment_fields(form),
         "description": form.get("description", ""),
         "active": "yes",
     })
@@ -103,6 +116,7 @@ def update_rule_from_form(form) -> None:
         "start_date": form.get("start_date", ""),
         "end_date": form.get("end_date", ""),
         "payment_method": form.get("payment_method", ""),
+        **_payment_fields(form),
         "description": form.get("description", ""),
         "active": "yes" if form.get("active") else "no",
     })
@@ -124,6 +138,7 @@ def add_entry_from_form(form) -> None:
         "category": category,
         "amount": parse_amount(form.get("amount")),
         "payment_method": form.get("payment_method", ""),
+        **_payment_fields(form),
         "description": form.get("description", ""),
     })
 
@@ -152,6 +167,7 @@ def update_entry_from_form(form) -> None:
         "category": form.get("category", DEFAULT_PARENT_SUPPORT_CATEGORY).strip() or DEFAULT_PARENT_SUPPORT_CATEGORY,
         "amount": parse_amount(form.get("amount")),
         "payment_method": form.get("payment_method", ""),
+        **_payment_fields(form),
         "description": form.get("description", ""),
     })
 
@@ -170,6 +186,7 @@ def page_context(start: str, end: str) -> dict:
         "kind_labels": PARENT_SUPPORT_KINDS,
         "categories": PARENT_SUPPORT_CATEGORIES,
         "default_category": DEFAULT_PARENT_SUPPORT_CATEGORY,
+        **payment_form_context("expense"),
     }
 
 
@@ -261,6 +278,10 @@ def generate_monthly_rule_entries(start: str | None, end: str | None) -> list[di
                     "category": rule.get("category", ""),
                     "amount": amount,
                     "payment_method": rule.get("payment_method", ""),
+                    "account_id": rule.get("account_id", ""),
+                    "account_name_snapshot": rule.get("account_name_snapshot", ""),
+                    "payment_method_id": rule.get("payment_method_id", ""),
+                    "payment_method_name_snapshot": rule.get("payment_method_name_snapshot", ""),
                     "description": rule.get("description", rule.get("name", "")),
                     "created_at": rule.get("created_at", ""),
                     "generated": "yes",
@@ -296,6 +317,10 @@ def prepare_rules_for_display() -> list[dict]:
             "start_date": rule.get("start_date", ""),
             "end_date": rule.get("end_date", ""),
             "payment_method": rule.get("payment_method", ""),
+            "account_id": rule.get("account_id", ""),
+            "account_name_snapshot": rule.get("account_name_snapshot", ""),
+            "payment_method_id": rule.get("payment_method_id", ""),
+            "payment_method_name_snapshot": rule.get("payment_method_name_snapshot", ""),
             "description": rule.get("description", ""),
             "active": is_active(rule.get("active", "yes")),
         })

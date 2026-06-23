@@ -1,0 +1,9 @@
+{
+  "app_id": "money_manager",
+  "version": "0.14.0",
+  "data_schema_min": 1,
+  "data_schema_current": 14,
+  "requires_registry_version": 1,
+  "release_channel": "local",
+  "created_at": "2026-06-23T00:00:00+00:00"
+}

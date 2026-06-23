@@ -7,7 +7,7 @@
     <span class="eyebrow">Financial command center</span>
     <h2>Overview</h2>
     <p>
-      One clean place for the main bank balance, separated liquid accounts, pending money,
+      One clean place for global balance, financial centers, pending money,
       debts, saved expenses, cash collected, and parent support.
     </p>
     <div class="hero-actions">
@@ -41,7 +41,7 @@
       <span class="eyebrow">Real tracked money</span>
       <h3>Net balance</h3>
       <strong>€ {{ '%.2f'|format(totals.net) }}</strong>
-      <p>Income minus expenses and investments for the main route only. Explicit separate accounts are excluded unless their policy says they affect the main net.</p>
+      <p>Income minus expenses and investments for the selected/global scope. Explicit separate accounts are included only when their routing policy says they belong there.</p>
     </div>
     <a href="{{ url_for('transactions.transactions_page') }}">See main transactions</a>
   </article>

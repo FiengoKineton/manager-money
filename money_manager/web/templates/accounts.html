@@ -7,7 +7,7 @@
     <span class="eyebrow">Per-user account routing</span>
     <h2>Accounts, wallets, cards and containers</h2>
     <p>
-      Accounts are loaded from your <strong>accounts.json</strong>. Blank old transactions keep affecting the main net,
+      Accounts are loaded from your <strong>accounts.json</strong>. Blank old transactions keep affecting the global net,
       while matching categories can also create shadow movements in the matching account.
     </p>
   </div>
@@ -23,7 +23,7 @@
     <div>
       <span class="eyebrow">Add account</span>
       <h3>Create a user-specific account</h3>
-      <p>The default routing is the separate-wallet style: explicit spending is outside the main net, while old blank-account category matches stay in the main net and appear here as shadow top-ups.</p>
+      <p>The default routing is the separate-wallet style: explicit spending is outside the global net unless configured otherwise, while old blank-account category matches stay in the global net and appear here as shadow top-ups.</p>
     </div>
   </div>
 
@@ -48,7 +48,7 @@
       <label>Main-net behavior</label>
       <select name="main_net_policy">
         <option value="separate_when_explicit" selected>Separate when explicit</option>
-        <option value="affects_main_net">Affects main net</option>
+        <option value="affects_main_net">Affects selected/global net</option>
         <option value="credit_pending">Credit / pending</option>
       </select>
     </div>

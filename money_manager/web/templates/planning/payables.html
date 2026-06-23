@@ -2,10 +2,11 @@
 {% block page_title %}Payables{% endblock %}
 
 {% block content %}
+{% include "components/scope_switcher.html" %}
 <section class="page-heading workflow-heading">
   <div>
     <span class="eyebrow">Project liabilities</span>
-    <h2>Payables</h2>
+    <h2>Payables — {{ scope_label if scope_is_account else 'All accounts' }}</h2>
     <p>
       Track money you still need to pay without recording the expense immediately.
       When you pay all or part of it, the app creates an expense in the chosen account
@@ -23,11 +24,11 @@
     <p>{{ '%.2f'|format(totals.active_remaining) }}</p>
   </div>
   <div class="summary-card neutral">
-    <h3>Main net now</h3>
+    <h3>{{ "Account net now" if scope_is_account else "Global net now" }}</h3>
     <p>{{ '%.2f'|format(totals.main_net_now) }}</p>
   </div>
   <div class="summary-card pending">
-    <h3>Main net if paid all now</h3>
+    <h3>{{ "Account net if paid all now" if scope_is_account else "Global net if paid all now" }}</h3>
     <p>{{ '%.2f'|format(totals.main_net_if_paid_all) }}</p>
   </div>
   <div class="summary-card pending">
@@ -71,10 +72,21 @@
     </div>
 
     <div class="form-field">
-      <label>Account to pay from</label>
-      <select name="account">
+      <label>Account / Conto</label>
+      <select name="account_id">
         {% for account in account_options %}
-          <option value="{{ account.value }}">{{ account.label }}</option>
+          <option value="{{ account.id or account.value }}" {% if selected_account_id and selected_account_id == (account.id or account.value) %}selected{% endif %}>{{ account.label }}</option>
+        {% endfor %}
+      </select>
+      <input type="hidden" name="account" value="">
+    </div>
+
+    <div class="form-field">
+      <label>Preferred Payment Method / Metodo di pagamento</label>
+      <select name="preferred_payment_method_id">
+        <option value="">Select when paying</option>
+        {% for method in payment_form.payment_method_options or payment_method_options %}
+          <option value="{{ method.id }}">{{ method.label }}</option>
         {% endfor %}
       </select>
     </div>
@@ -142,9 +154,16 @@
         <td>
           <input form="payable-update-{{ item.id }}" type="date" name="due_date" value="{{ item.due_date }}" aria-label="Due date">
           <input form="payable-update-{{ item.id }}" type="date" name="start_date" value="{{ item.start_date }}" aria-label="Start date">
-          <select form="payable-update-{{ item.id }}" name="account" aria-label="Payment account">
+          <select form="payable-update-{{ item.id }}" name="account_id" aria-label="Account / Conto">
             {% for account in account_options %}
-              <option value="{{ account.value }}" {% if account.value == item.account or account.key == item.account or account.label == item.account %}selected{% endif %}>{{ account.label }}</option>
+              {% set account_value = account.id or account.value %}
+              <option value="{{ account_value }}" {% if account_value == item.account_id or account_value == item.account or account.label == item.account %}selected{% endif %}>{{ account.label }}</option>
+            {% endfor %}
+          </select>
+          <select form="payable-update-{{ item.id }}" name="preferred_payment_method_id" aria-label="Preferred Payment Method">
+            <option value="">Select when paying</option>
+            {% for method in payment_form.payment_method_options or payment_method_options %}
+              <option value="{{ method.id }}" {% if method.id == item.preferred_payment_method_id %}selected{% endif %}>{{ method.label }}</option>
             {% endfor %}
           </select>
         </td>
@@ -165,7 +184,8 @@
               <input type="hidden" name="id" value="{{ item.id }}">
               <input type="hidden" name="amount" value="{{ item.remaining_amount }}">
               <input type="hidden" name="date" value="{{ today }}">
-              <input type="hidden" name="account" value="{{ item.account }}">
+              <input type="hidden" name="account_id" value="{{ item.account_id or item.account }}">
+              <input type="hidden" name="payment_method_id" value="{{ item.preferred_payment_method_id }}">
               <button type="submit" class="secondary-btn compact-btn" onclick="return confirm('Create the expense and mark this payable as paid?')">Pay all</button>
             </form>
 
@@ -174,9 +194,16 @@
               <input type="hidden" name="id" value="{{ item.id }}">
               <input type="date" name="date" value="{{ today }}" aria-label="Payment date">
               <input type="number" step="0.01" name="amount" placeholder="Partial" required>
-              <select name="account" aria-label="Payment account">
+              <select name="account_id" aria-label="Account / Conto">
                 {% for account in account_options %}
-                  <option value="{{ account.value }}" {% if account.value == item.account or account.key == item.account or account.label == item.account %}selected{% endif %}>{{ account.label }}</option>
+                  {% set account_value = account.id or account.value %}
+                  <option value="{{ account_value }}" {% if account_value == item.account_id or account_value == item.account or account.label == item.account %}selected{% endif %}>{{ account.label }}</option>
+                {% endfor %}
+              </select>
+              <select name="payment_method_id" aria-label="Payment Method">
+                <option value="{{ item.preferred_payment_method_id }}">Use preferred method{% if item.preferred_payment_method_name_snapshot %}: {{ item.preferred_payment_method_name_snapshot }}{% endif %}</option>
+                {% for method in payment_form.payment_method_options or payment_method_options %}
+                  <option value="{{ method.id }}" {% if method.id == item.preferred_payment_method_id %}selected{% endif %}>{{ method.label }}</option>
                 {% endfor %}
               </select>
               <button type="submit" class="secondary-btn compact-btn">Pay</button>

@@ -20,6 +20,7 @@ from money_manager.config import (
 )
 from money_manager.repositories.pending import load_pending, mark_executed, append_pending, write_pending
 from money_manager.repositories.transactions import append_transaction
+from money_manager.services.transaction_service import save_transaction_payload
 
 CREDIT_STATEMENT_SOURCE = "credit_account_statement"
 CREDIT_STATEMENT_KIND = "credit_statement"
@@ -88,12 +89,21 @@ def prepare_pending_for_display(rows: list[dict]) -> dict:
 
 
 def execute_pending_by_id(tx_id: int | str, execution_date: str | None = None) -> bool:
-    """Execute one open pending row and write the real settlement transaction."""
+    """Execute one open pending row.
+
+    New credit-settlement rows are executed by credit_settlement_service so the
+    ledger receives the cash-out and liability-decrease pair exactly once.
+    """
     for tx in load_pending():
         if str(tx.get("id", "")) != str(tx_id):
             continue
         if str(tx.get("status", "pending")).lower() != "pending":
             return False
+        if tx.get("source") == "credit_settlement":
+            from money_manager.services.credit_settlement_service import execute_credit_settlement
+
+            result = execute_credit_settlement(tx.get("source_id", ""), execution_date=execution_date)
+            return bool(result.get("ok"))
         _execute_pending_row(tx, execution_date=execution_date)
         mark_executed(int(tx["id"]))
         return True
@@ -299,6 +309,16 @@ def sync_credit_account_statements(today: date | None = None) -> int:
 
     if changed:
         write_pending(rows)
+
+    # Prompt 11E bridge: build durable credit_settlements.csv rows from the
+    # ledger and mirror them into the Pending page without double-executing the
+    # legacy credit_account_statement rows above.
+    try:
+        from money_manager.services.credit_settlement_service import sync_credit_settlements
+
+        sync_credit_settlements(today=today, sync_pending=True)
+    except Exception:
+        pass
     return len(groups)
 
 
@@ -343,15 +363,23 @@ def _execute_pending_row(tx: dict, execution_date: str | None = None) -> None:
         })
         return
 
-    append_transaction({
-        "type": tx.get("type", "expense"),
-        "date": execution_date,
-        "category": tx.get("category", ""),
-        "sub_category": "",
-        "amount": float(tx.get("amount", 0.0)),
-        "account": tx.get("account", ""),
-        "description": tx.get("description", ""),
-    })
+    account_id = tx.get("account_id") or tx.get("account_key") or tx.get("account", "")
+    payment_method_id = tx.get("payment_method_id", "")
+    save_transaction_payload(
+        {
+            "type": tx.get("type", "expense"),
+            "date": execution_date,
+            "category": tx.get("category", ""),
+            "sub_category": tx.get("sub_category", ""),
+            "amount": float(tx.get("amount", 0.0)),
+            "account": tx.get("account", ""),
+            "account_id": account_id,
+            "payment_method_id": payment_method_id,
+            "description": tx.get("description", ""),
+        },
+        account_id=account_id,
+        payment_method_id=payment_method_id,
+    )
 
 
 def _is_separate_auxiliary_pending(account_value: str | None) -> bool:
@@ -530,3 +558,21 @@ def _safe_float(value, default: float = 0.0) -> float:
         return float(value or 0.0)
     except (TypeError, ValueError):
         return default
+
+# --- Scoped planning compatibility wrappers (Prompt 15B) ---
+def pending_rows_for_scope(rows: list[dict], scope, user_id: str | None = None) -> list[dict]:
+    from money_manager.services.account_scope_service import pending_rows_for_scope as _scoped_rows
+
+    return _scoped_rows(rows, scope, user_id=user_id)
+
+
+def pending_total_for_scope(scope, user_id: str | None = None) -> float:
+    from money_manager.services.account_scope_service import pending_total_for_scope as _scoped_total
+
+    return float(_scoped_total(scope, user_id=user_id))
+
+
+def pending_context_for_scope(scope, user_id: str | None = None) -> dict:
+    from money_manager.services.account_scope_service import pending_context_for_scope as _scoped_context
+
+    return _scoped_context(scope, user_id=user_id)

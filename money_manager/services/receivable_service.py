@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from money_manager.config import account_options_for_forms
 from money_manager.repositories.receivables import (
     append_receivable,
     delete_receivable,
     load_receivables,
     update_receivable,
 )
-from money_manager.repositories.transactions import append_transaction, delete_transaction, update_transaction
+from money_manager.repositories.transactions import delete_transaction, update_transaction
+from money_manager.services.payment_form_service import account_options_for_payment_forms, payment_form_context, snapshot_account, snapshot_payment_method
 from money_manager.services.transaction_service import save_transaction_payload
 
 DEFAULT_RECEIVABLE_INCOME_CATEGORY = "Refund"
@@ -22,7 +22,8 @@ def add_receivable_from_form(form) -> None:
         return
 
     start_date = form.get("start_date", date.today().isoformat()) or date.today().isoformat()
-    account = form.get("account", "")
+    account = form.get("account_id") or form.get("account", "")
+    payment_method_id = form.get("payment_method_id") or form.get("preferred_payment_method_id") or form.get("account_payment_method", "")
     name = form.get("name", "")
     debtor = form.get("debtor", "")
     description = form.get("description", "")
@@ -37,9 +38,13 @@ def add_receivable_from_form(form) -> None:
             "category": DEFAULT_RECEIVABLE_EXPENSE_CATEGORY,
             "sub_category": name or debtor,
             "amount": amount,
-            "account": account,
+            "account": form.get("account", "") or account,
+            "account_id": account,
+            "payment_method_id": payment_method_id,
             "description": _loan_expense_description(name, debtor, description),
         },
+        account_id=account,
+        payment_method_id=payment_method_id,
         payment_method=form.get("account_payment_method", ""),
         insufficient_action=form.get("account_insufficient_action", ""),
     )
@@ -51,7 +56,10 @@ def add_receivable_from_form(form) -> None:
         "debtor": debtor,
         "original_amount": amount,
         "remaining_amount": _amount(form.get("remaining_amount", amount)) or amount,
-        "account": account,
+        "account": form.get("account", "") or account,
+        **snapshot_account(account),
+        "preferred_payment_method_id": snapshot_payment_method(payment_method_id)["payment_method_id"],
+        "preferred_payment_method_name_snapshot": snapshot_payment_method(payment_method_id)["payment_method_name_snapshot"],
         "start_date": start_date,
         "due_date": form.get("due_date", ""),
         "description": description,
@@ -89,7 +97,8 @@ def update_receivable_from_form(form) -> None:
 
     name = form.get("name", "")
     debtor = form.get("debtor", "")
-    account = form.get("account", "")
+    account = form.get("account_id") or form.get("account", "")
+    payment_method_id = form.get("payment_method_id") or form.get("preferred_payment_method_id") or form.get("account_payment_method", "")
     start_date = form.get("start_date", "") or item.get("start_date", date.today().isoformat())
     description = form.get("description", "")
 
@@ -100,7 +109,9 @@ def update_receivable_from_form(form) -> None:
             "category": DEFAULT_RECEIVABLE_EXPENSE_CATEGORY,
             "sub_category": name or debtor,
             "amount": original_amount,
-            "account": account,
+            "account": form.get("account", "") or account,
+            "account_id": account,
+            "payment_method_id": payment_method_id,
             "description": _loan_expense_description(name, debtor, description),
         })
 
@@ -109,7 +120,10 @@ def update_receivable_from_form(form) -> None:
         "debtor": debtor,
         "original_amount": original_amount,
         "remaining_amount": remaining,
-        "account": account,
+        "account": form.get("account", "") or account,
+        **snapshot_account(account),
+        "preferred_payment_method_id": snapshot_payment_method(payment_method_id)["payment_method_id"],
+        "preferred_payment_method_name_snapshot": snapshot_payment_method(payment_method_id)["payment_method_name_snapshot"],
         "start_date": start_date,
         "due_date": form.get("due_date", ""),
         "description": description,
@@ -137,12 +151,13 @@ def collect_receivable_from_form(form) -> None:
         receivable_id=receivable_id,
         amount=amount,
         payment_date=form.get("date", date.today().isoformat()),
-        account=form.get("account", item.get("account", "")),
+        account=form.get("account_id") or form.get("account") or item.get("account_id") or item.get("account", ""),
+        account_id=form.get("account_id") or item.get("account_id") or form.get("account", ""),
         description=form.get("description", ""),
     )
 
 
-def register_receivable_collection(receivable_id, amount: float, payment_date: str, account: str = "", description: str = "") -> None:
+def register_receivable_collection(receivable_id, amount: float, payment_date: str, account: str = "", description: str = "", account_id: str | None = None) -> None:
     item = receivable_by_id(receivable_id)
     if not item:
         return
@@ -151,15 +166,17 @@ def register_receivable_collection(receivable_id, amount: float, payment_date: s
     if amount <= 0:
         return
 
-    append_transaction({
+    effective_account_id = account_id or account or item.get("account_id") or item.get("account", "")
+    save_transaction_payload({
         "type": "income",
         "date": payment_date or date.today().isoformat(),
         "category": DEFAULT_RECEIVABLE_INCOME_CATEGORY,
         "sub_category": item.get("name", ""),
         "amount": amount,
-        "account": account,
+        "account": account or effective_account_id,
+        "account_id": effective_account_id,
         "description": description or f"Money collected from {item.get('debtor', '')}: {item.get('name', '')}",
-    })
+    }, account_id=effective_account_id)
 
     remaining = max(0.0, _amount(item.get("remaining_amount")) - amount)
     updates = {"remaining_amount": remaining}
@@ -209,12 +226,15 @@ def page_context(main_net: float = 0.0, visible_liquidity: float = 0.0) -> dict:
     totals["main_net_if_repaid"] = float(main_net + totals["active_remaining"])
     totals["visible_liquidity_if_repaid"] = float(visible_liquidity + totals["active_remaining"])
 
+    form_ctx = payment_form_context("income")
+
     return {
         "receivables": rows,
         "active_receivables": active,
         "totals": totals,
         "today": date.today().isoformat(),
-        "account_options": account_options_for_forms(include_credit=False),
+        "account_options": account_options_for_payment_forms(include_credit=False),
+        **form_ctx,
     }
 
 

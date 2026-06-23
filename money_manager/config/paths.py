@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from money_manager.config.install_paths import BACKUPS_DIR, DATA_HOME, GLOBAL_CACHE_DIR, UPDATE_INBOX_DIR, UPDATES_DIR
 from money_manager.config.user_paths import (
     DATA_DIR,
     PROJECT_ROOT,
@@ -46,6 +47,8 @@ TRANSACTION_FILES = {
 
 PENDING_CSV = user_data_path("pending.csv")
 INTERNAL_TRANSFERS_CSV = user_data_path("internal_transfers.csv")
+CREDIT_SETTLEMENTS_CSV = user_data_path("credit_settlements.csv")
+ACCOUNT_EVENTS_JSON = user_data_path("account_events.json")
 RECURRING_CSV = user_data_path("recurring.csv")
 SPARAGNAT_CSV = user_data_path("sparagnat_fottut.csv")
 PARENT_SUPPORT_CSV = user_data_path("parent_support.csv")
@@ -63,10 +66,9 @@ CURRENCIES_JSON = user_data_path("currencies.json")
 
 
 def ensure_runtime_directories() -> None:
-    """Create system folders and, when a user is active, that user's folders."""
-    DATA_DIR.mkdir(exist_ok=True, parents=True)
-    SYSTEM_DIR.mkdir(exist_ok=True, parents=True)
-    USERS_DIR.mkdir(exist_ok=True, parents=True)
+    """Create external app-data folders and, when a user is active, that user's folders."""
+    for folder in (DATA_HOME, DATA_DIR, SYSTEM_DIR, USERS_DIR, BACKUPS_DIR, UPDATES_DIR, UPDATE_INBOX_DIR, GLOBAL_CACHE_DIR):
+        folder.mkdir(exist_ok=True, parents=True)
 
     user_id = get_current_user_id()
     if user_id:

@@ -71,8 +71,23 @@
     </div>
 
     <div class="form-field">
-      <label>Account</label>
-      <input type="text" name="account" placeholder="bank / cash / card">
+      <label>Preferred Account / Conto</label>
+      <select name="account_id">
+        {% for account in account_options %}
+          <option value="{{ account.id or account.value }}">{{ account.label }}</option>
+        {% endfor %}
+      </select>
+      <input type="hidden" name="account" value="">
+    </div>
+
+    <div class="form-field">
+      <label>Preferred Payment Method / Metodo di pagamento</label>
+      <select name="preferred_payment_method_id">
+        <option value="">Select when paying</option>
+        {% for method in payment_form.payment_method_options %}
+          <option value="{{ method.id }}">{{ method.label }}</option>
+        {% endfor %}
+      </select>
     </div>
 
     <div class="form-field form-field-wide">
@@ -120,7 +135,8 @@
           <input form="debt-update-{{ debt.id }}" type="hidden" name="action" value="update_debt">
           <input form="debt-update-{{ debt.id }}" type="hidden" name="id" value="{{ debt.id }}">
           <input form="debt-update-{{ debt.id }}" type="hidden" name="start_date" value="{{ debt.start_date }}">
-          <input form="debt-update-{{ debt.id }}" type="hidden" name="account" value="{{ debt.account }}">
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="account_id" value="{{ debt.account_id or debt.account }}">
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="preferred_payment_method_id" value="{{ debt.preferred_payment_method_id }}">
           <input form="debt-update-{{ debt.id }}" type="hidden" name="creditor" value="{{ debt.creditor }}">
 
           <input
@@ -197,6 +213,8 @@
             <form method="post" class="row-action-form">
               <input type="hidden" name="action" value="pay_debt">
               <input type="hidden" name="id" value="{{ debt.id }}">
+              <input type="hidden" name="account_id" value="{{ debt.account_id or debt.account }}">
+              <input type="hidden" name="payment_method_id" value="{{ debt.preferred_payment_method_id }}">
               <input type="hidden" name="amount" value="{{ debt.remaining_amount }}">
               <input type="hidden" name="date" value="{{ today }}">
               <button type="submit" class="secondary-btn compact-btn">Pay all</button>
@@ -205,6 +223,8 @@
             <form method="post" class="mini-pay-form">
               <input type="hidden" name="action" value="pay_debt">
               <input type="hidden" name="id" value="{{ debt.id }}">
+              <input type="hidden" name="account_id" value="{{ debt.account_id or debt.account }}">
+              <input type="hidden" name="payment_method_id" value="{{ debt.preferred_payment_method_id }}">
               <input type="date" name="date" value="{{ today }}" aria-label="Payment date">
               <input type="number" step="0.01" name="amount" placeholder="Partial" required>
               <button type="submit" class="secondary-btn compact-btn">Pay</button>
@@ -214,6 +234,8 @@
             <form method="post" class="row-action-form">
               <input type="hidden" name="action" value="delete_debt">
               <input type="hidden" name="id" value="{{ debt.id }}">
+              <input type="hidden" name="account_id" value="{{ debt.account_id or debt.account }}">
+              <input type="hidden" name="payment_method_id" value="{{ debt.preferred_payment_method_id }}">
               <button
                 type="submit"
                 class="icon-action-btn icon-action-delete"

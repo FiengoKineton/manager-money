@@ -2,16 +2,17 @@
 {% block page_title %}{{ t("page.transactions") }}{% endblock %}
 
 {% block content %}
+{% include "components/scope_switcher.html" %}
 <section class="transactions-hero panel-card">
   <div>
     <span class="eyebrow">Transaction log</span>
-    <h2>Transactions</h2>
+    <h2>Transactions — {{ scope_label if scope_is_account else 'All accounts' }}</h2>
     <p>Clean table, action drawer on row click, and filters kept compact so the log gets more room.</p>
   </div>
   <div class="transactions-hero-actions">
-    <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">+ Expense</a>
-    <a class="secondary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='income') }}">+ Income</a>
-    <a class="secondary-btn compact-btn" href="{{ url_for('dashboard.index') }}">Dashboard</a>
+    <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense', account_id=selected_account_id) if selected_account_id else url_for('transactions.add_transaction', type='expense') }}">+ Expense</a>
+    <a class="secondary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='income', account_id=selected_account_id) if selected_account_id else url_for('transactions.add_transaction', type='income') }}">+ Income</a>
+    <a class="secondary-btn compact-btn" href="{{ url_for('dashboard.index', account_id=selected_account_id) if selected_account_id else url_for('dashboard.index') }}">Dashboard</a>
   </div>
 </section>
 
@@ -45,6 +46,7 @@
 
 <section class="filters app-filter-bar transactions-filter-bar">
   <form method="get" action="{{ url_for('transactions.transactions_page') }}" class="filters-form">
+    {% if selected_account_id %}<input type="hidden" name="account_id" value="{{ selected_account_id }}">{% endif %}
     <div class="filter-date">
       <label class="block-label">Date window</label>
       <div class="date-inputs">
@@ -114,7 +116,7 @@
   <div class="panel-header">
     <div>
       <span class="eyebrow">Saved rows</span>
-      <h2>Transactions</h2>
+      <h2>Transactions — {{ scope_label if scope_is_account else 'All accounts' }}</h2>
     </div>
     <span class="section-count">{{ transactions|length }} shown</span>
   </div>

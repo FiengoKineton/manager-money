@@ -81,33 +81,33 @@
         <input id="birth_year" type="number" name="birth_year" value="{{ profile.birth_year }}" min="1900" max="2100" placeholder="{{ t('common.optional') }}">
       </div>
 
+      <div class="form-field-wide">
+        <label for="profile_notes">{{ t("profile.profile_notes") }}</label>
+        <textarea id="profile_notes" name="profile_notes" rows="3" placeholder="{{ t('common.optional') }}">{{ profile.profile_notes }}</textarea>
+      </div>
+
       <div class="profile-section-title form-field-wide">
-        <span class="eyebrow">{{ t("profile.money_profile") }}</span>
-        <h3>{{ t("profile.bank_defaults") }}</h3>
+        <span class="eyebrow">{{ t("profile.account_defaults") }}</span>
+        <h3>{{ t("profile.default_routes") }}</h3>
+        <p>{{ t("profile.default_routes_hint") }}</p>
       </div>
 
       <div>
-        <label for="bank_name">{{ t("profile.bank_name") }}</label>
-        <input id="bank_name" type="text" name="bank_name" value="{{ profile.bank_name }}" placeholder="{{ t('profile.bank_name_placeholder') }}">
-      </div>
-      <div>
-        <label for="default_main_account">{{ t("profile.default_main_account") }}</label>
-        <select id="default_main_account" name="default_main_account">
+        <label for="default_current_account_id">{{ t("profile.default_current_account") }}</label>
+        <select id="default_current_account_id" name="default_current_account_id">
           {% for account in account_options %}
-            <option value="{{ account.value }}" {% if profile.default_main_account == account.value %}selected{% endif %}>{{ account.label }}</option>
+            <option value="{{ account.value }}" {% if profile.default_current_account_id == account.value %}selected{% endif %}>{{ account.label }}</option>
           {% endfor %}
         </select>
       </div>
       <div>
-        <label for="iban">{{ t("profile.iban") }}</label>
-        <input id="iban" type="text" name="iban" value="{{ profile.iban }}" placeholder="{{ t('profile.iban_placeholder') }}">
-        {% if preferences.privacy_mode and profile.iban %}
-          <small>{{ t("profile.privacy_preview", value=(profile.iban|mask_iban)) }}</small>
-        {% endif %}
-      </div>
-      <div>
-        <label for="bic_swift">{{ t("profile.bic_swift") }}</label>
-        <input id="bic_swift" type="text" name="bic_swift" value="{{ profile.bic_swift }}" placeholder="{{ t('common.optional') }}">
+        <label for="default_payment_method_id">{{ t("profile.default_payment_method") }}</label>
+        <select id="default_payment_method_id" name="default_payment_method_id">
+          <option value="">{{ t("common.none") }}</option>
+          {% for method in payment_method_options %}
+            <option value="{{ method.value }}" {% if profile.default_payment_method_id == method.value %}selected{% endif %}>{{ method.label }}</option>
+          {% endfor %}
+        </select>
       </div>
       <div>
         <label for="currency">{{ t("common.currency") }}</label>
@@ -125,6 +125,14 @@
           {% endfor %}
         </select>
       </div>
+
+      {% if profile.bank_name or profile.iban or profile.bic_swift %}
+      <div class="alert-card form-field-wide">
+        <strong>{{ t("profile.bank_fields_migrated") }}</strong>
+        <p>{{ t("profile.bank_fields_migrated_hint") }}</p>
+        <small>{{ profile.bank_name }}{% if profile.iban %} · {{ profile.iban|mask_iban }}{% endif %}{% if profile.bic_swift %} · {{ profile.bic_swift }}{% endif %}</small>
+      </div>
+      {% endif %}
 
       <div class="form-actions-row form-field-wide">
         <button type="submit" class="primary-btn">{{ t("profile.save_profile") }}</button>
@@ -180,6 +188,21 @@
       <a class="primary-btn" href="{{ url_for('contacts.contacts_page') }}">{{ t("contacts.manage_contacts") }}</a>
     </article>
 
+    <article class="profile-card panel-card">
+      <div class="panel-header compact-profile-header">
+        <div>
+          <span class="eyebrow">{{ t("profile.account_defaults") }}</span>
+          <h3>{{ t("profile.manage_money_model") }}</h3>
+          <p>{{ t("profile.manage_money_model_hint") }}</p>
+        </div>
+      </div>
+      <div class="profile-backup-actions">
+        <a class="primary-btn" href="{{ url_for('accounts.accounts_page') }}">{{ t("profile.manage_bank_accounts") }}</a>
+        <a class="secondary-btn" href="{{ url_for('accounts.accounts_page') }}#payment-methods">{{ t("profile.manage_payment_methods") }}</a>
+        <a class="secondary-btn" href="{{ url_for('integrity.integrity_page') }}">{{ t("integrity.title") }}</a>
+      </div>
+    </article>
+
     <article id="backup" class="profile-card panel-card">
       <div class="panel-header compact-profile-header">
         <div>
@@ -221,6 +244,36 @@
       </form>
     </article>
   </aside>
+</section>
+
+
+<section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">{{ t("profile.accounts_summary") }}</span>
+      <h3>{{ t("profile.accounts_summary_title") }}</h3>
+      <p>{{ t("profile.accounts_summary_hint") }}</p>
+    </div>
+  </div>
+  {% if account_summary %}
+    <div class="account-transaction-list">
+      {% for account in account_summary %}
+        <article class="account-transaction-row {{ 'is-archived' if account.is_archived else '' }}">
+          <div class="movement-main">
+            <span class="movement-source">{{ account.institution or t('common.not_set') }}</span>
+            <strong>{{ account.label }}{% if account.is_archived %} · {{ t('common.archived') }}{% endif %}</strong>
+            <p>{{ account.iban_masked or t('profile.no_iban_on_account') }}</p>
+          </div>
+          <div class="movement-amount">
+            <span>{{ t("profile.payment_methods_count", count=account.methods_count) }}</span>
+            <a class="secondary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=account.id) }}">{{ t("common.open") }}</a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">{{ t("accounts.no_accounts") }}</p>
+  {% endif %}
 </section>
 
 <section id="navigation" class="profile-navigation-panel panel-card">

@@ -47,7 +47,7 @@
   <article class="pending-insight-card tone-auxiliary">
     <span>Separate accounts</span>
     <strong>€ {{ '%.2f'|format(auxiliary_pending) }}</strong>
-    <small>Pending movements outside main net.</small>
+    <small>Pending movements outside the selected/global net.</small>
   </article>
 </section>
 
@@ -156,9 +156,16 @@
             <option value="executed">Executed</option>
           </select>
           <label>Account</label>
-          <select name="account">
+          <select name="account_id">
             {% for account in account_options %}
-              <option value="{{ account.value }}" {% if tx.account == account.value or tx.account == account.key or tx.account == account.label %}selected{% endif %}>{{ account.label }}</option>
+              <option value="{{ account.id or account.value }}" {% if tx.account_id == (account.id or account.value) or tx.account == (account.id or account.value) or tx.account == account.label %}selected{% endif %}>{{ account.label }}</option>
+            {% endfor %}
+          </select>
+          <label>Payment Method</label>
+          <select name="payment_method_id">
+            <option value="">Default / legacy</option>
+            {% for method in payment_method_options %}
+              <option value="{{ method.id }}" {% if method.id == tx.payment_method_id %}selected{% endif %}>{{ method.label }}</option>
             {% endfor %}
           </select>
           <label>Delay to</label>
@@ -224,9 +231,16 @@
             <option value="executed" {% if tx.status != 'pending' %}selected{% endif %}>Executed</option>
           </select>
           <label>Account</label>
-          <select name="account">
+          <select name="account_id">
             {% for account in account_options %}
-              <option value="{{ account.value }}" {% if tx.account == account.value or tx.account == account.key or tx.account == account.label %}selected{% endif %}>{{ account.label }}</option>
+              <option value="{{ account.id or account.value }}" {% if tx.account_id == (account.id or account.value) or tx.account == (account.id or account.value) or tx.account == account.label %}selected{% endif %}>{{ account.label }}</option>
+            {% endfor %}
+          </select>
+          <label>Payment Method</label>
+          <select name="payment_method_id">
+            <option value="">Default / legacy</option>
+            {% for method in payment_method_options %}
+              <option value="{{ method.id }}" {% if method.id == tx.payment_method_id %}selected{% endif %}>{{ method.label }}</option>
             {% endfor %}
           </select>
         </div>

@@ -7,12 +7,15 @@ import re
 from pathlib import Path
 from typing import Callable, Iterator
 
-from flask import has_request_context, session
+try:
+    from flask import has_request_context, session
+except Exception:  # allows launcher/update tools to run before Flask is installed
+    def has_request_context() -> bool:
+        return False
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = PROJECT_ROOT / "data"
-SYSTEM_DIR = DATA_DIR / "_system"
-USERS_DIR = DATA_DIR / "users"
+    session = {}
+
+from money_manager.config.install_paths import DATA_DIR, PROJECT_ROOT, SYSTEM_DIR, USERS_DIR
 
 _current_user_override: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "money_manager_current_user_id", default=None

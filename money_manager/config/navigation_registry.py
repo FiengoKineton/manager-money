@@ -68,7 +68,7 @@ DEFAULT_NAVIGATION: list[dict[str, Any]] = [
         "group_id": "planning",
         "label_key": "nav.planning",
         "default_open": False,
-        "default_order": 20,
+        "default_order": 30,
         "items": [
             {
                 "page_id": "pending_payments",
@@ -141,8 +141,8 @@ DEFAULT_NAVIGATION: list[dict[str, Any]] = [
     {
         "group_id": "accounts",
         "label_key": "nav.accounts",
-        "default_open": False,
-        "default_order": 30,
+        "default_open": True,
+        "default_order": 20,
         "items": [
             {
                 "page_id": "accounts",
@@ -157,7 +157,7 @@ DEFAULT_NAVIGATION: list[dict[str, Any]] = [
                 "endpoint": "contacts.contacts_page",
                 "label_key": "nav.contacts",
                 "default_visible": True,
-                "default_order": 20,
+                "default_order": 40,
                 "active_endpoints": [
                     "contacts.contacts_page",
                     "contacts.new_contact",
@@ -178,7 +178,7 @@ DEFAULT_NAVIGATION: list[dict[str, Any]] = [
                 "endpoint": "internal_transfers.internal_transfers_page",
                 "label_key": "nav.internal_transfers",
                 "default_visible": True,
-                "default_order": 40,
+                "default_order": 20,
                 "active_endpoints": ["internal_transfers.internal_transfers_page"],
             },
             {
@@ -247,6 +247,55 @@ DEFAULT_NAVIGATION: list[dict[str, Any]] = [
             },
         ],
     },
+    {
+        "group_id": "settings",
+        "label_key": "nav.settings",
+        "default_open": False,
+        "default_order": 90,
+        "items": [
+            {
+                "page_id": "integrity",
+                "endpoint": "integrity.integrity_page",
+                "label_key": "nav.integrity",
+                "default_visible": True,
+                "default_order": 10,
+                "active_endpoints": ["integrity.integrity_page"],
+            },
+            {
+                "page_id": "security",
+                "endpoint": "security.security_page",
+                "label_key": "nav.security",
+                "default_visible": True,
+                "default_order": 20,
+                "active_endpoints": ["security.security_page", "security.unlock"],
+            },
+            {
+                "page_id": "updates",
+                "endpoint": "settings_updates.updates_page",
+                "label_key": "nav.updates",
+                "default_visible": True,
+                "default_order": 30,
+                "active_endpoints": ["settings_updates.updates_page", "settings_updates.stage_update_route", "settings_updates.rollback_route"],
+            },
+            {
+                "page_id": "data_registry",
+                "endpoint": "settings_updates.data_registry_page",
+                "label_key": "nav.data_registry",
+                "default_visible": True,
+                "default_order": 40,
+                "active_endpoints": ["settings_updates.data_registry_page"],
+            },
+            {
+                "page_id": "cache",
+                "endpoint": "settings_cache.cache_page",
+                "label_key": "nav.cache",
+                "default_visible": True,
+                "default_order": 50,
+                "active_endpoints": ["settings_cache.cache_page", "settings_cache.clear_cache_route", "settings_cache.rebuild_cache_route", "settings_cache.cleanup_stale_route"],
+            },
+        ],
+    },
+
 ]
 
 

@@ -4,7 +4,7 @@ from datetime import date, datetime
 
 import pandas as pd
 
-from money_manager.config import MAIN_ACCOUNT_KEY, account_options_for_forms, categories_for, normalize_account_key
+from money_manager.config import MAIN_ACCOUNT_KEY, categories_for, normalize_account_key
 from money_manager.repositories.expense_projects import (
     append_movement,
     append_planned_item,
@@ -21,11 +21,22 @@ from money_manager.repositories.expense_projects import (
     update_project,
 )
 from money_manager.repositories.payables import load_payables
-from money_manager.repositories.transactions import append_transaction
+from money_manager.services.payment_form_service import account_options_for_payment_forms, payment_form_context, snapshot_account, snapshot_payment_method
 from money_manager.services.transaction_service import save_transaction_payload
 from money_manager.services.account_service import auxiliary_total, main_account_transactions
 from money_manager.services.transaction_service import load_transactions
 from money_manager.utils.stats import summary_totals
+
+def _preferred_payment_fields_from_form(form) -> dict:
+    account_id = form.get("account_id") or form.get("account", "")
+    method_id = form.get("preferred_payment_method_id") or form.get("payment_method_id") or form.get("account_payment_method", "")
+    return {
+        "account": form.get("account", "") or account_id,
+        **snapshot_account(account_id),
+        "preferred_payment_method_id": snapshot_payment_method(method_id)["payment_method_id"],
+        "preferred_payment_method_name_snapshot": snapshot_payment_method(method_id)["payment_method_name_snapshot"],
+    }
+
 
 DEFAULT_PROJECT_CATEGORY = "Construction"
 
@@ -82,7 +93,7 @@ def add_planned_item_from_form(project_id: int, form) -> None:
         "remaining_amount": _amount(form.get("remaining_amount", amount)) or amount,
         "category": form.get("category") or _project_category(project_id),
         "sub_category": form.get("sub_category", ""),
-        "account": form.get("account", ""),
+        **_preferred_payment_fields_from_form(form),
         "start_date": form.get("start_date", date.today().isoformat()) or date.today().isoformat(),
         "due_date": form.get("due_date", ""),
         "description": form.get("description", ""),
@@ -110,6 +121,10 @@ def link_payable_to_project_from_form(project_id: int, form) -> None:
             "category": payable.get("category") or _project_category(project_id),
             "sub_category": form.get("sub_category") or "Linked payable",
             "account": payable.get("account", ""),
+            "account_id": payable.get("account_id", ""),
+            "account_name_snapshot": payable.get("account_name_snapshot", ""),
+            "preferred_payment_method_id": payable.get("preferred_payment_method_id", ""),
+            "preferred_payment_method_name_snapshot": payable.get("preferred_payment_method_name_snapshot", ""),
             "start_date": payable.get("start_date", "") or date.today().isoformat(),
             "due_date": payable.get("due_date", ""),
             "description": payable.get("description", ""),
@@ -141,7 +156,7 @@ def update_planned_item_from_form(form) -> None:
         "remaining_amount": remaining,
         "category": form.get("category", ""),
         "sub_category": form.get("sub_category", ""),
-        "account": form.get("account", ""),
+        **_preferred_payment_fields_from_form(form),
         "start_date": form.get("start_date", ""),
         "due_date": form.get("due_date", ""),
         "description": form.get("description", ""),
@@ -237,8 +252,12 @@ def pay_planned_item_from_form(project_id: int, form) -> None:
             "sub_category": item.get("sub_category") or item.get("name", ""),
             "amount": amount,
             "account": form.get("account", item.get("account", "")),
+            "account_id": form.get("account_id") or item.get("account_id") or form.get("account", item.get("account", "")),
+            "payment_method_id": form.get("payment_method_id") or item.get("preferred_payment_method_id", ""),
             "description": form.get("description") or f"Project payment: {item.get('name', '')}",
         },
+        account_id=form.get("account_id") or item.get("account_id") or form.get("account", item.get("account", "")),
+        payment_method_id=form.get("payment_method_id") or item.get("preferred_payment_method_id", ""),
         payment_method=form.get("account_payment_method", ""),
         insufficient_action=form.get("account_insufficient_action", ""),
     )
@@ -252,7 +271,9 @@ def pay_planned_item_from_form(project_id: int, form) -> None:
         })
 
     remaining = max(0.0, _amount(item.get("remaining_amount")) - amount)
-    updates = {"remaining_amount": remaining, "account": form.get("account", item.get("account", ""))}
+    effective_account_id = form.get("account_id") or item.get("account_id") or form.get("account", item.get("account", ""))
+    effective_method_id = form.get("payment_method_id") or item.get("preferred_payment_method_id", "")
+    updates = {"remaining_amount": remaining, "account": form.get("account", item.get("account", "")), **snapshot_account(effective_account_id), "preferred_payment_method_id": effective_method_id, "preferred_payment_method_name_snapshot": snapshot_payment_method(effective_method_id)["payment_method_name_snapshot"]}
     if remaining <= 0.005:
         updates["status"] = "paid"
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
@@ -306,7 +327,8 @@ def detail_context(project_id: int) -> dict | None:
         "payable_candidates": _payable_link_candidates(project_id),
         "today": date.today().isoformat(),
         "expense_categories": categories_for("expense"),
-        "account_options": account_options_for_forms(include_credit=True),
+        "account_options": account_options_for_payment_forms(include_credit=True),
+        **payment_form_context("expense"),
         "totals": {
             "main_net_now": float(main_totals["net"]),
             "visible_liquidity_now": float(visible_liquidity),

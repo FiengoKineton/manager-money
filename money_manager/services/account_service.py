@@ -26,9 +26,11 @@ from money_manager.services.account_config_service import (
     add_card_to_account,
     archive_account,
     archive_card,
+    account_by_key,
     create_account_from_form as create_config_account_from_form,
     restore_account,
     update_account_from_form,
+    all_accounts,
 )
 
 
@@ -324,10 +326,18 @@ def account_balance_rows(df: pd.DataFrame) -> list[dict]:
             "category_aliases": option.get("category_aliases", []),
             "aliases_text": ", ".join(option.get("aliases", [])),
             "category_aliases_text": ", ".join(option.get("category_aliases", [])),
-            "type": option.get("type", "wallet"),
+            "type": option.get("type", option.get("account_kind", "wallet_balance")),
+            "account_kind": option.get("account_kind", option.get("type", "wallet_balance")),
             "currency": option.get("currency", "EUR"),
             "institution": option.get("institution", ""),
             "iban": option.get("iban", ""),
+            "bic_swift": option.get("bic_swift", ""),
+            "is_current_account": option.get("is_current_account", False),
+            "is_dependent_account": option.get("is_dependent_account", False),
+            "is_liability": option.get("is_liability", False),
+            "is_closed": option.get("is_closed", False),
+            "closed_at": option.get("closed_at", ""),
+            "replacement_account_id": option.get("replacement_account_id", ""),
             "display_order": option.get("display_order", 100),
             "category_match_enabled": option.get("category_match_enabled", True),
             "category_match_mode": option.get("category_match_mode", "top_up_shadow"),
@@ -365,78 +375,339 @@ def auxiliary_total(df: pd.DataFrame, include_credit_pending: bool = False) -> f
     return float(sum(row["balance"] for row in rows))
 
 
+def _safe_money(value) -> float:
+    try:
+        return round(float(str(value or 0).replace(",", ".")), 2)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _method_display_name(method: dict) -> str:
+    return str(method.get("name") or method.get("label") or method.get("id") or "Payment method")
+
+
+def _payment_method_views(methods: list[dict]) -> list[dict]:
+    rows: list[dict] = []
+    for method in methods:
+        rules = method.get("rules") if isinstance(method.get("rules"), dict) else {}
+        row = dict(method)
+        row["label"] = _method_display_name(row)
+        row["display_name"] = row["label"]
+        row["due_day"] = row.get("due_day") or rules.get("due_day") or ""
+        row["statement_day"] = row.get("statement_day") or rules.get("statement_day") or ""
+        row["aliases_text"] = ", ".join(row.get("aliases") or [])
+        metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+        card_meta = metadata.get("card") if isinstance(metadata.get("card"), dict) else {}
+        row["card_network"] = str(card_meta.get("network") or "")
+        row["card_last4"] = str(card_meta.get("last4") or "")
+        row["card_holder_name"] = str(card_meta.get("holder_name") or "")
+        row["card_expiry_month"] = str(card_meta.get("expiry_month") or "")
+        row["card_expiry_year"] = str(card_meta.get("expiry_year") or "")
+        row["card_expiry"] = "/".join(part for part in [row["card_expiry_month"], row["card_expiry_year"]] if part)
+        row["is_credit"] = str(row.get("method_type") or "") == "credit_card" or str(row.get("settlement_mode") or "") == "delayed"
+        rows.append(row)
+    return rows
+
+
+def _account_identity_view(account: dict, summary: dict | None = None) -> dict:
+    row = dict(account)
+    key = str(row.get("key") or row.get("id") or summary.get("account_id") if summary else row.get("key") or row.get("id") or "")
+    row["key"] = key
+    row["id"] = row.get("id") or key
+    row["label"] = str(row.get("label") or row.get("name") or (summary or {}).get("label") or key)
+    row["display_label"] = row.get("display_label") or row["label"]
+    row["account_kind"] = str(row.get("account_kind") or row.get("type") or "other")
+    row["parent_account_id"] = str(row.get("parent_account_id") or row.get("parent_key") or "")
+    row["parent_key"] = row["parent_account_id"]
+    row["is_active"] = bool(row.get("is_active", True)) and not bool(row.get("is_archived")) and not bool(row.get("is_closed"))
+    row["is_archived"] = bool(row.get("is_archived")) or not bool(row.get("is_active", True))
+    row["is_technical"] = bool(row.get("is_container")) or bool(row.get("is_liability")) or row["account_kind"] in {"container", "credit_card_liability"}
+    if summary:
+        row.update({
+            "balance": _safe_money(summary.get("net_balance")),
+            "net_balance": _safe_money(summary.get("net_balance")),
+            "pending_total": _safe_money(summary.get("pending_total")),
+            "recurring_monthly_total": _safe_money(summary.get("recurring_monthly_total")),
+            "payables_total": _safe_money(summary.get("payables_total")),
+            "net_after_pending": _safe_money(summary.get("net_after_pending")),
+            "net_after_payables": _safe_money(summary.get("net_after_payables")),
+            "projected_net": _safe_money(summary.get("projected_net")),
+            "transactions_count": int(summary.get("transactions_count") or 0),
+            "payment_methods_count": int(summary.get("payment_methods_count") or 0),
+            "dependent_accounts_count": int(summary.get("dependent_accounts_count") or 0),
+            "scope_summary": dict(summary),
+        })
+    else:
+        row.setdefault("balance", _account_initial_balance(row))
+        row.setdefault("net_balance", row.get("balance", 0.0))
+        row.setdefault("pending_total", 0.0)
+        row.setdefault("recurring_monthly_total", 0.0)
+        row.setdefault("payables_total", 0.0)
+        row.setdefault("net_after_pending", row.get("balance", 0.0))
+        row.setdefault("net_after_payables", row.get("balance", 0.0))
+        row.setdefault("projected_net", row.get("balance", 0.0))
+        row.setdefault("transactions_count", 0)
+        row.setdefault("payment_methods_count", 0)
+        row.setdefault("dependent_accounts_count", 0)
+        row.setdefault("scope_summary", {})
+    row["balance_tone"] = "positive" if _safe_money(row.get("balance")) >= 0 else "negative"
+    return row
+
+
 def accounts_page_context(df: pd.DataFrame) -> dict:
-    rows = account_balance_rows(df)
+    """Build the Conti Correnti-first accounts landing page.
 
-    # Show Other account as a parent bucket with custom/small accounts below it.
-    children_by_parent: dict[str, list[dict]] = {}
-    for row in rows:
-        parent_key = row.get("parent_key")
-        if parent_key:
-            children_by_parent.setdefault(parent_key, []).append(row)
+    The old implementation returned one mixed bucket of auxiliary/liquid rows.
+    Prompt 16 needs a stronger page model: global totals first, then real
+    financial centers, with dependent wallets and payment methods visually under
+    their parent account.
+    """
+    try:
+        from money_manager.services.account_scope_service import (
+            account_level,
+            account_level_label,
+            all_financial_center_summaries,
+            dependent_accounts_for,
+            financial_centers,
+            global_balance_summary,
+            payment_methods_for_account,
+            scope_balance_summary,
+        )
+    except Exception:
+        rows = account_balance_rows(df)
+        return {
+            "accounts": rows,
+            "financial_centers_overview": rows,
+            "global_summary": {"net_balance": sum(float(row.get("balance", 0) or 0) for row in rows)},
+            "totals": {"balance": sum(float(row.get("balance", 0) or 0) for row in rows), "incoming": 0.0, "outgoing": 0.0, "movements": 0},
+            "dependent_groups": [],
+            "payment_method_groups": [],
+            "archived_accounts": [],
+            "technical_accounts": [],
+        }
 
-    display_rows: list[dict] = []
-    for row in rows:
-        if row.get("parent_key"):
+    accounts_by_key = {str(account.get("key") or account.get("id") or ""): dict(account) for account in all_accounts(include_archived=True, include_main=True)}
+    center_summary_by_id = {str(row.get("account_id") or row.get("key") or ""): dict(row) for row in all_financial_center_summaries()}
+    global_summary = dict(global_balance_summary())
+
+    centers: list[dict] = []
+    seen_center_ids: set[str] = set()
+    for center in financial_centers(include_archived=False):
+        center_id = str(center.get("key") or center.get("id") or "")
+        if not center_id:
             continue
-        row = dict(row)
-        children = children_by_parent.get(row["key"], [])
-        row["children"] = children
-        if children:
-            child_balance = sum(float(child.get("balance", 0.0) or 0.0) for child in children)
-            child_incoming = sum(float(child.get("incoming", 0.0) or 0.0) for child in children)
-            child_outgoing = sum(float(child.get("outgoing", 0.0) or 0.0) for child in children)
-            child_count = sum(int(child.get("count", 0) or 0) for child in children)
-            row["own_balance"] = row["balance"]
-            row["own_incoming"] = row["incoming"]
-            row["own_outgoing"] = row["outgoing"]
-            row["own_count"] = row["count"]
-            row["balance"] = row["balance"] + child_balance
-            row["incoming"] = row["incoming"] + child_incoming
-            row["outgoing"] = row["outgoing"] + child_outgoing
-            row["count"] = row["count"] + child_count
-            row["child_count"] = len(children)
-            row["child_balance"] = child_balance
-            row["child_incoming"] = child_incoming
-            row["child_outgoing"] = child_outgoing
-            row["balance_tone"] = "positive" if row["balance"] >= 0 else "negative"
-        else:
-            row["own_balance"] = row["balance"]
-            row["own_incoming"] = row["incoming"]
-            row["own_outgoing"] = row["outgoing"]
-            row["own_count"] = row["count"]
-            row["child_count"] = 0
-            row["child_balance"] = 0.0
-            row["child_incoming"] = 0.0
-            row["child_outgoing"] = 0.0
-            row["children"] = []
-        display_rows.append(row)
+        seen_center_ids.add(center_id)
+        summary = center_summary_by_id.get(center_id) or scope_balance_summary(f"account:{center_id}")
+        row = _account_identity_view(dict(center), summary)
+        row["account_level"] = account_level(center)
+        row["account_level_label"] = account_level_label(center)
+        row["is_cashflow_account"] = row["account_level"] == 2
+        dependents = []
+        for dep in dependent_accounts_for(center_id, include_archived=False):
+            dep_id = str(dep.get("key") or dep.get("id") or "")
+            dep_summary = scope_balance_summary(f"account:{dep_id}") if dep_id else {}
+            dependents.append(_account_identity_view(dict(dep), dep_summary))
+        methods = _payment_method_views(payment_methods_for_account(center_id, include_archived=False))
+        row["dependent_accounts"] = dependents
+        row["dependent_accounts_count"] = len(dependents)
+        row["payment_methods"] = methods
+        row["payment_methods_count"] = len(methods)
+        row["cards_count"] = sum(1 for method in methods if str(method.get("method_type") or "") in {"debit_card", "credit_card", "prepaid_card", "wallet_linked_card"})
+        centers.append(row)
 
-    total_balance = sum(row["balance"] for row in display_rows)
-    total_in = sum(row["incoming"] for row in display_rows)
-    total_out = sum(row["outgoing"] for row in display_rows)
+    dependent_groups: list[dict] = []
+    payment_method_groups: list[dict] = []
+    for center in centers:
+        if center.get("dependent_accounts"):
+            dependent_groups.append({"parent": center, "accounts": center.get("dependent_accounts", [])})
+        if center.get("payment_methods"):
+            payment_method_groups.append({"parent": center, "methods": center.get("payment_methods", [])})
+
+    archived_accounts: list[dict] = []
+    technical_accounts: list[dict] = []
+    for key, account in accounts_by_key.items():
+        if not key or key in seen_center_ids:
+            continue
+        summary = None
+        try:
+            summary = scope_balance_summary(f"account:{key}")
+        except Exception:
+            summary = None
+        row = _account_identity_view(account, summary)
+        is_default_credit_bucket = key == "credit_card" and row.get("account_kind") == "credit_card_liability" and not row.get("is_custom")
+        if is_default_credit_bucket:
+            # The default credit-card liability bucket is an implementation detail.
+            # Users add real credit cards as payment methods inside a Conto; do not
+            # make this bucket look like a separate account on All Conti.
+            continue
+        if row.get("is_archived") or row.get("is_closed"):
+            archived_accounts.append(row)
+        elif row.get("is_technical"):
+            technical_accounts.append(row)
+
+    total_in = sum(float(row.get("incoming", 0.0) or 0.0) for row in centers)
+    total_out = sum(float(row.get("outgoing", 0.0) or 0.0) for row in centers)
+    current_accounts = [row for row in centers if int(row.get("account_level") or 0) == 1]
+    cashflow_accounts = [row for row in centers if int(row.get("account_level") or 0) == 2]
+    all_dependents = []
+    for group in dependent_groups:
+        parent = group.get("parent") or {}
+        for child in group.get("accounts", []):
+            child = dict(child)
+            child["parent_label"] = parent.get("label", "")
+            child["parent_key"] = parent.get("key", "")
+            all_dependents.append(child)
+
     return {
-        "accounts": display_rows,
+        "accounts": centers,
+        "financial_centers_overview": centers,
+        "current_accounts_overview": current_accounts,
+        "cashflow_overview": cashflow_accounts,
+        "dependent_accounts_overview": all_dependents,
+        "global_summary": global_summary,
+        "dependent_groups": dependent_groups,
+        "payment_method_groups": payment_method_groups,
+        "archived_accounts": archived_accounts,
+        "technical_accounts": technical_accounts,
         "totals": {
-            "balance": float(total_balance),
+            "balance": _safe_money(global_summary.get("net_balance")),
             "incoming": float(total_in),
             "outgoing": float(total_out),
-            "movements": int(sum(row["count"] for row in display_rows)),
+            "movements": int(global_summary.get("transactions_count") or sum(int(row.get("transactions_count") or 0) for row in centers)),
+            "current_accounts_count": len(current_accounts),
+            "cashflow_count": len(cashflow_accounts),
+            "dependent_accounts_count": len(all_dependents),
+            "payment_methods_count": sum(int(row.get("payment_methods_count") or 0) for row in centers),
         },
     }
 
 
+def _parent_account_options_for_linking(exclude_key: str = "") -> list[dict]:
+    """Accounts that can own/link dependent wallets.
+
+    Prompt 11G moved bank ownership to current accounts, so dependent wallets
+    should be linkable to a current account as well as to legacy container
+    buckets. Credit liabilities are excluded because they are not funding parents.
+    """
+    options: list[dict] = []
+    for account in all_accounts(include_archived=False, include_main=True):
+        key = str(account.get("key") or account.get("id") or "")
+        if not key or key == exclude_key:
+            continue
+        kind = str(account.get("account_kind") or account.get("type") or "")
+        if kind == "credit_card_liability" or account.get("is_liability"):
+            continue
+        if not (account.get("is_current_account") or account.get("is_container") or kind in {"current_account", "container"}):
+            continue
+        options.append({
+            "key": key,
+            "value": key,
+            "label": str(account.get("label") or account.get("name") or key),
+            "account_kind": kind,
+            "is_current_account": bool(account.get("is_current_account") or kind == "current_account"),
+            "is_container": bool(account.get("is_container") or kind == "container"),
+        })
+    return sorted(options, key=lambda item: (0 if item.get("is_current_account") else 1, str(item.get("label") or "")))
+
 def account_detail_context(df: pd.DataFrame, account_key: str) -> dict | None:
     account_key = normalize_account_key(account_key)
-    if account_key not in auxiliary_account_keys():
+    account = account_by_key(account_key, include_archived=True)
+    if not account:
         return None
 
-    rows_by_key = {row["key"]: row for row in account_balance_rows(df)}
-    summary = rows_by_key.get(account_key)
-    if not summary:
-        return None
+    try:
+        from money_manager.services.account_scope_service import (
+            cards_for_account,
+            dependent_accounts_for,
+            payment_methods_for_account,
+            scope_balance_summary,
+            transactions_for_scope,
+        )
 
-    movements = account_movements(df, account_key=account_key)
+        scoped_summary = scope_balance_summary(f"account:{account_key}")
+        movements = transactions_for_scope(df, f"account:{account_key}")
+        scoped_cards = cards_for_account(account_key, include_archived=True)
+        scoped_methods = payment_methods_for_account(account_key, include_archived=False)
+        dependent_rows_raw = dependent_accounts_for(account_key, include_archived=True)
+    except Exception:
+        scoped_summary = {}
+        movements = account_movements(df, account_key=account_key) if account_key != MAIN_ACCOUNT_KEY else main_account_transactions(df)
+        scoped_cards = account.get("cards", [])
+        scoped_methods = []
+        dependent_rows_raw = []
+
+    if movements.empty and account_key != MAIN_ACCOUNT_KEY:
+        movements = account_movements(df, account_key=account_key)
+    if "account_signed_amount" not in movements.columns and "signed_amount" in movements.columns:
+        movements = movements.copy()
+        movements["account_signed_amount"] = movements["signed_amount"]
+    incoming = _sum_direction(movements, "in") if "account_signed_amount" in movements.columns else 0.0
+    outgoing = _sum_direction(movements, "out") if "account_signed_amount" in movements.columns else 0.0
+    balance = float(scoped_summary.get("net_balance", _account_initial_balance(account)) or 0.0)
+
+    dependent_rows: list[dict] = []
+    for dep in dependent_rows_raw:
+        dep_key = str(dep.get("key") or dep.get("id") or "")
+        dep_summary = {}
+        if dep_key:
+            try:
+                from money_manager.services.account_scope_service import scope_balance_summary
+
+                dep_summary = scope_balance_summary(f"account:{dep_key}")
+            except Exception:
+                dep_summary = {}
+        dependent_rows.append(_account_identity_view(dict(dep), dep_summary))
+
+    method_views = _payment_method_views(scoped_methods)
+    card_method_types = {"debit_card", "credit_card", "prepaid_card", "wallet_linked_card"}
+    card_method_views = [method for method in method_views if str(method.get("method_type") or "") in card_method_types]
+    other_method_views = [method for method in method_views if str(method.get("method_type") or "") not in card_method_types]
+    card_views = _payment_method_views(scoped_cards) if scoped_cards and isinstance(scoped_cards[0], dict) else scoped_cards
+
+    summary = dict(account)
+    parent_id = str(account.get("parent_account_id") or account.get("parent_key") or "")
+    summary.update({
+        "key": account_key,
+        "id": account.get("id") or account_key,
+        "label": account_label_for_key(account_key),
+        "display_label": account.get("label") or account_label_for_key(account_key),
+        "description": account_description_for_key(account_key),
+        "initial_balance": _account_initial_balance(account),
+        "movement_balance": balance - _account_initial_balance(account),
+        "balance": balance,
+        "net_balance": balance,
+        "income": incoming,
+        "incoming": incoming,
+        "expenses": outgoing,
+        "outgoing": outgoing,
+        "count": int(len(movements)),
+        "balance_tone": "positive" if balance >= 0 else "negative",
+        "cards": card_views,
+        "payment_methods": method_views,
+        "card_payment_methods": card_method_views,
+        "other_payment_methods": other_method_views,
+        "payment_methods_count": len(method_views),
+        "card_payment_methods_count": len(card_method_views),
+        "dependent_accounts": dependent_rows,
+        "dependent_accounts_count": len(dependent_rows),
+        "parent_account_id": parent_id,
+        "parent_label": account_label_for_key(parent_id) if parent_id else "",
+        "scope_summary": scoped_summary,
+        "is_archived": bool(account.get("is_archived")) or not bool(account.get("is_active", True)),
+        "is_closed": bool(account.get("is_closed")),
+        "is_default": bool(account.get("is_default")),
+    })
+    local_summary = {
+        "net_balance": balance,
+        "pending_total": _safe_money(scoped_summary.get("pending_total")),
+        "recurring_monthly_total": _safe_money(scoped_summary.get("recurring_monthly_total")),
+        "payables_total": _safe_money(scoped_summary.get("payables_total")),
+        "net_after_pending": _safe_money(scoped_summary.get("net_after_pending", balance)),
+        "net_after_payables": _safe_money(scoped_summary.get("net_after_payables", balance)),
+        "projected_net": _safe_money(scoped_summary.get("projected_net", balance)),
+        "transactions_count": int(scoped_summary.get("transactions_count") or int(len(movements))),
+    }
+
     monthly = _monthly_summary_for_account(movements, limit=None)
     max_month = max([row["total"] for row in monthly], default=0.0)
     for row in monthly:
@@ -453,13 +724,19 @@ def account_detail_context(df: pd.DataFrame, account_key: str) -> dict | None:
     return {
         "today": date.today().isoformat(),
         "account": summary,
+        "local_summary": local_summary,
+        "dependent_accounts": dependent_rows,
+        "payment_methods": method_views,
+        "card_payment_methods": card_method_views,
+        "other_payment_methods": other_method_views,
+        "cards": card_views,
         "movements": display,
         "monthly": monthly,
         "top_categories": top_categories,
-        "parent_account_options": [row for row in account_balance_rows(df) if row.get("is_container") and row.get("key") != account_key],
+        "parent_account_options": _parent_account_options_for_linking(exclude_key=account_key),
         "policy_options": [
             {"value": MAIN_NET_SEPARATE, "label": "Separate when explicit"},
-            {"value": MAIN_NET_AFFECTS, "label": "Affects main net"},
+            {"value": MAIN_NET_AFFECTS, "label": "Affects selected/global net"},
             {"value": MAIN_NET_CREDIT_PENDING, "label": "Credit / pending"},
         ],
         "totals": {
@@ -844,6 +1121,16 @@ def _prepare_account_movements_for_display(df: pd.DataFrame) -> list[dict]:
     if df.empty:
         return []
     display = df.copy()
+    for column, default in {
+        "source_label": "Movement",
+        "direction": "",
+        "category": "",
+        "description": "",
+    }.items():
+        if column not in display.columns:
+            display[column] = default
+    if "account_signed_amount" not in display.columns:
+        display["account_signed_amount"] = display.get("signed_amount", 0.0)
     display["date_str"] = display["date"].dt.strftime("%Y-%m-%d")
     if "display_signed_amount" in display.columns:
         display["display_signed_amount"] = pd.to_numeric(display["display_signed_amount"], errors="coerce").fillna(display["account_signed_amount"])
