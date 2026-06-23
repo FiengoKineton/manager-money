@@ -1,21 +1,21 @@
 {
   "schema_version": 1,
   "app_name": "Money Manager",
-  "app_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\others\\temp\\v17",
-  "data_home": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\others\\temp\\v17\\MoneyManagerData",
-  "data_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\others\\temp\\v17\\MoneyManagerData\\data",
-  "system_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\others\\temp\\v17\\MoneyManagerData\\data\\_system",
-  "users_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\others\\temp\\v17\\MoneyManagerData\\data\\users",
-  "updates_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\others\\temp\\v17\\MoneyManagerData\\updates",
-  "backups_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\others\\temp\\v17\\MoneyManagerData\\backups",
-  "logs_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\others\\temp\\v17\\MoneyManagerData\\logs",
-  "cache_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\others\\temp\\v17\\MoneyManagerData\\cache",
+  "app_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money",
+  "data_home": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\MoneyManagerData",
+  "data_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\MoneyManagerData\\data",
+  "system_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\MoneyManagerData\\data\\_system",
+  "users_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\MoneyManagerData\\data\\users",
+  "updates_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\MoneyManagerData\\updates",
+  "backups_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\MoneyManagerData\\backups",
+  "logs_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\MoneyManagerData\\logs",
+  "cache_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\MoneyManagerData\\cache",
   "update_source": {
     "mode": "local_folder",
-    "local_inbox": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\others\\temp\\v17\\MoneyManagerData\\updates\\inbox",
+    "local_inbox": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\MoneyManagerData\\updates\\inbox",
     "remote_manifest_url": ""
   },
   "auto_apply_updates": false,
   "created_at": "2026-06-23T09:24:30+00:00",
-  "updated_at": "2026-06-23T22:13:17+00:00"
+  "updated_at": "2026-06-23T22:22:55+00:00"
 }
