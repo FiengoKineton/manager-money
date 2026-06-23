@@ -296,3 +296,5 @@ id,date,category,sub_category,amount,original_amount,original_currency,exchange_
 306,2026-06-22,Housing,,39.33,,,,,,,,,,,,,,,,,,Polizza Casa e Famiglia,2026-06-22T12:08:01
 307,2026-02-15,Credit cards,Credit Card,283.4,,,,,,credit_card,credit_card,Credit Card,15.0,,,,,,,,,Credit Card statement payment 2026-01 (2026-02-15),2026-06-22T22:10:40
 308,2025-11-15,Credit cards,Credit Card,81.95,,,,,,credit_card,credit_card,Credit Card,15.0,,,,,,,,,Credit Card statement payment 2025-10 (2025-11-15),2026-06-22T22:10:40
+310,2026-06-23,Other,,12.5,,EUR,1.0,0.0,1.0,,,,,,,,,,,,,,2026-06-23T21:03:36
+311,2026-06-23,Shopping,Samsung,411.29,,EUR,1.00000000,0.00000000,1.00000000,,,,,,,,,,,,,,2026-06-23T21:05:18
