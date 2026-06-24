@@ -1,4 +1,5 @@
 from flask import Blueprint, abort, redirect, render_template, request, url_for
+from time import monotonic
 
 from money_manager.services.account_service import (
     account_detail_context,
@@ -7,6 +8,7 @@ from money_manager.services.account_service import (
     archive_account_from_form,
     archive_card_from_form,
     create_custom_account_from_form,
+    ensure_prepaid_card_balance_account,
     reconcile_account_balance,
     restore_account_from_form,
     update_account_settings_from_form,
@@ -31,10 +33,18 @@ from money_manager.web.context import scope_template_context
 
 bp = Blueprint("accounts", __name__, url_prefix="/accounts")
 
+_CREDIT_REFRESH_INTERVAL_SECONDS = 60
+_last_credit_refresh_at = 0.0
 
-def _refresh_credit_statements() -> None:
+
+def _refresh_credit_statements(*, force: bool = False) -> None:
+    global _last_credit_refresh_at
+    now = monotonic()
+    if not force and now - _last_credit_refresh_at < _CREDIT_REFRESH_INTERVAL_SECONDS:
+        return
     sync_credit_account_statements()
     process_pending(credit_only=True)
+    _last_credit_refresh_at = now
 
 
 @bp.route("", methods=["GET", "POST"])
@@ -71,7 +81,6 @@ def accounts_page():
         return redirect(url_for("accounts.accounts_page"))
 
     _refresh_credit_statements()
-    df = load_transactions()
     context = get_account_dashboard_summary_cached()
     context.update(_account_settings_context())
     return render_template("accounts/accounts.html", **context, **scope_template_context("global"))
@@ -123,7 +132,6 @@ def _parent_account_options_for_linking() -> list[dict]:
 @bp.route("/<account_key>", methods=["GET", "POST"])
 def account_detail(account_key: str):
     _refresh_credit_statements()
-    df = load_transactions()
     error = ""
     message = request.args.get("message", "")
 
@@ -134,6 +142,7 @@ def account_detail(account_key: str):
                 target_balance = float(str(request.form.get("target_balance", "0")).replace(",", "."))
             except ValueError:
                 target_balance = 0.0
+            df = load_transactions()
             reconcile_account_balance(
                 df,
                 account_key=account_key,
@@ -174,12 +183,19 @@ def account_detail(account_key: str):
                 "prepaid_card": "stored_balance",
             }.get(card_type, "immediate")
             card_form = dict(request.form)
+            card_account_key = account_key
+            if card_type == "prepaid_card":
+                card_account_key = ensure_prepaid_card_balance_account(
+                    account_key,
+                    card_form.get("name") or card_form.get("label") or "Prepaid card",
+                )
             card_form.update({
                 "method_type": card_type,
                 "settlement_mode": settlement_mode,
-                "linked_account_id": account_key,
-                "funding_account_id": account_key,
-                "settlement_account_id": account_key,
+                "linked_account_id": card_account_key,
+                "funding_account_id": card_account_key,
+                "settlement_account_id": card_account_key,
+                "parent_account_id": account_key,
                 "is_active": "1",
             })
             if card_type != "credit_card":
@@ -189,7 +205,11 @@ def account_detail(account_key: str):
                 return redirect(url_for("accounts.account_payment_method_detail", account_key=account_key, method_id=method["id"], _anchor="payment-method-detail"))
             return redirect(url_for("accounts.account_detail", account_key=account_key))
 
-    context = cached_context("account_detail_summary", lambda: account_detail_context(df, account_key), params={"account_key": account_key})
+    context = cached_context(
+        "account_detail_summary",
+        lambda: account_detail_context(load_transactions(), account_key),
+        params={"account_key": account_key},
+    )
     if context is None:
         abort(404)
     context["closure_precheck"] = account_closure_precheck(account_key)
@@ -211,8 +231,11 @@ def account_payment_method_detail(account_key: str, method_id: str):
             restore_payment_method(method_id)
         return redirect(url_for("accounts.account_payment_method_detail", account_key=account_key, method_id=method_id))
 
-    df = load_transactions()
-    context = cached_context("account_detail_summary", lambda: account_detail_context(df, account_key), params={"account_key": account_key, "method_id": method_id})
+    context = cached_context(
+        "account_detail_summary",
+        lambda: account_detail_context(load_transactions(), account_key),
+        params={"account_key": account_key},
+    )
     if context is None:
         abort(404)
     selected = None

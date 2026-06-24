@@ -21,18 +21,29 @@ if not defined PROJECT_DIR exit /b 1
 set "LAUNCHER_PY=%PROJECT_DIR%\launcher.py"
 set "DATA_HOME=%PROJECT_DIR%\MoneyManagerData"
 
-if /I "%~1"=="--foreground" goto run_foreground
-if /I "%~1"=="--debug" goto run_foreground
-
-start "Money Manager Launcher" /D "%PROJECT_DIR%" /min %PY_CMD% "%LAUNCHER_PY%" --project-dir "%PROJECT_DIR%" --data-home "%DATA_HOME%" %*
-exit /b 0
+rem Default to foreground mode so double-click startup errors stay visible.
+rem Use --background if you explicitly want the old minimized launcher behavior.
+if /I "%~1"=="--background" goto run_background
+if /I "%~1"=="--minimized" goto run_background
 
 :run_foreground
 pushd "%PROJECT_DIR%" >nul 2>nul
 %PY_CMD% "%LAUNCHER_PY%" --project-dir "%PROJECT_DIR%" --data-home "%DATA_HOME%" %*
 set "RUN_EXIT=%errorlevel%"
 popd >nul 2>nul
+if not "%RUN_EXIT%"=="0" (
+    echo.
+    echo Money Manager did not start correctly. Exit code: %RUN_EXIT%
+    echo Check the launcher log inside:
+    echo   %DATA_HOME%\logs\launcher_latest.log
+    echo.
+    pause
+)
 exit /b %RUN_EXIT%
+
+:run_background
+start "Money Manager Launcher" /D "%PROJECT_DIR%" /min %PY_CMD% "%LAUNCHER_PY%" --project-dir "%PROJECT_DIR%" --data-home "%DATA_HOME%" %*
+exit /b 0
 
 :find_python
 py -3 -c "import sys" >nul 2>nul

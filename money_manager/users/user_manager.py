@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -20,30 +21,68 @@ JSON_DEFAULTS: dict[str, Any] = json_defaults()
 FLAT_DATA_FILENAMES = flat_migration_filenames()
 DOCUMENT_METADATA = {"schema_version": 1, "documents": []}
 
+_USERS_LOCK = threading.RLock()
+_USERS_CACHE: tuple[int, int, list[dict[str, Any]]] | None = None
+_SYSTEM_FILES_READY = False
+
+
+def _users_stat() -> tuple[int, int]:
+    try:
+        stat = USERS_JSON.stat()
+        return int(stat.st_mtime_ns), int(stat.st_size)
+    except OSError:
+        return 0, 0
+
+
+def _ensure_system_files_once() -> None:
+    global _SYSTEM_FILES_READY
+    if _SYSTEM_FILES_READY:
+        return
+    with _USERS_LOCK:
+        if not _SYSTEM_FILES_READY:
+            ensure_system_files()
+            _SYSTEM_FILES_READY = True
+
+
+def clear_users_cache() -> None:
+    global _USERS_CACHE
+    with _USERS_LOCK:
+        _USERS_CACHE = None
+
 
 def _empty_payload() -> dict[str, Any]:
     return {"schema_version": SCHEMA_VERSION, "users": []}
 
 
 def load_users() -> list[dict[str, Any]]:
-    ensure_system_files()
+    global _USERS_CACHE
+    _ensure_system_files_once()
+    mtime_ns, size = _users_stat()
+    with _USERS_LOCK:
+        if _USERS_CACHE and _USERS_CACHE[0] == mtime_ns and _USERS_CACHE[1] == size:
+            return [dict(user) for user in _USERS_CACHE[2]]
+
     payload = read_json(USERS_JSON, _empty_payload())
     if not isinstance(payload, dict):
-        return []
-    users = payload.get("users", [])
-    if not isinstance(users, list):
-        return []
-    clean: list[dict[str, Any]] = []
-    for user in users:
-        if isinstance(user, dict) and user.get("id") and user.get("username"):
-            clean.append(user)
-    return clean
+        users_clean: list[dict[str, Any]] = []
+    else:
+        users = payload.get("users", [])
+        users_clean = []
+        if isinstance(users, list):
+            for user in users:
+                if isinstance(user, dict) and user.get("id") and user.get("username"):
+                    users_clean.append(dict(user))
+    mtime_ns, size = _users_stat()
+    with _USERS_LOCK:
+        _USERS_CACHE = (mtime_ns, size, [dict(user) for user in users_clean])
+    return [dict(user) for user in users_clean]
 
 
 def save_users(users: list[dict[str, Any]]) -> None:
     SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
     payload = {"schema_version": SCHEMA_VERSION, "users": users}
     write_json_atomic(USERS_JSON, payload)
+    clear_users_cache()
 
 
 def has_any_user() -> bool:

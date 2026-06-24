@@ -31,6 +31,7 @@ from money_manager.services.account_config_service import (
     restore_account,
     update_account_from_form,
     all_accounts,
+    slugify,
 )
 
 
@@ -487,8 +488,8 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
         }
 
     accounts_by_key = {str(account.get("key") or account.get("id") or ""): dict(account) for account in all_accounts(include_archived=True, include_main=True)}
-    center_summary_by_id = {str(row.get("account_id") or row.get("key") or ""): dict(row) for row in all_financial_center_summaries()}
-    global_summary = dict(global_balance_summary())
+    center_summary_by_id = {str(row.get("account_id") or row.get("key") or ""): dict(row) for row in all_financial_center_summaries(df=df)}
+    global_summary = dict(global_balance_summary(df=df))
 
     centers: list[dict] = []
     seen_center_ids: set[str] = set()
@@ -497,7 +498,7 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
         if not center_id:
             continue
         seen_center_ids.add(center_id)
-        summary = center_summary_by_id.get(center_id) or scope_balance_summary(f"account:{center_id}")
+        summary = center_summary_by_id.get(center_id) or scope_balance_summary(f"account:{center_id}", df=df)
         row = _account_identity_view(dict(center), summary)
         row["account_level"] = account_level(center)
         row["account_level_label"] = account_level_label(center)
@@ -505,7 +506,7 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
         dependents = []
         for dep in dependent_accounts_for(center_id, include_archived=False):
             dep_id = str(dep.get("key") or dep.get("id") or "")
-            dep_summary = scope_balance_summary(f"account:{dep_id}") if dep_id else {}
+            dep_summary = scope_balance_summary(f"account:{dep_id}", df=df) if dep_id else {}
             dependents.append(_account_identity_view(dict(dep), dep_summary))
         methods = _payment_method_views(payment_methods_for_account(center_id, include_archived=False))
         row["dependent_accounts"] = dependents
@@ -530,7 +531,7 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
             continue
         summary = None
         try:
-            summary = scope_balance_summary(f"account:{key}")
+            summary = scope_balance_summary(f"account:{key}", df=df)
         except Exception:
             summary = None
         row = _account_identity_view(account, summary)
@@ -624,7 +625,7 @@ def account_detail_context(df: pd.DataFrame, account_key: str) -> dict | None:
             transactions_for_scope,
         )
 
-        scoped_summary = scope_balance_summary(f"account:{account_key}")
+        scoped_summary = scope_balance_summary(f"account:{account_key}", df=df)
         movements = transactions_for_scope(df, f"account:{account_key}")
         scoped_cards = cards_for_account(account_key, include_archived=True)
         scoped_methods = payment_methods_for_account(account_key, include_archived=False)
@@ -653,7 +654,7 @@ def account_detail_context(df: pd.DataFrame, account_key: str) -> dict | None:
             try:
                 from money_manager.services.account_scope_service import scope_balance_summary
 
-                dep_summary = scope_balance_summary(f"account:{dep_key}")
+                dep_summary = scope_balance_summary(f"account:{dep_key}", df=df)
             except Exception:
                 dep_summary = {}
         dependent_rows.append(_account_identity_view(dict(dep), dep_summary))
@@ -749,13 +750,63 @@ def account_detail_context(df: pd.DataFrame, account_key: str) -> dict | None:
     }
 
 
+def _ensure_payment_methods_after_account_change() -> None:
+    """Create/repair default payment methods after account settings change."""
+    try:
+        from money_manager.services.payment_method_service import ensure_payment_methods_file
+
+        ensure_payment_methods_file()
+    except Exception:
+        pass
+
+
 def create_custom_account_from_form(form) -> dict | None:
     """Persist a new custom liquid account from the accounts page form."""
-    return create_config_account_from_form(form)
+    account = create_config_account_from_form(form)
+    if account:
+        _ensure_payment_methods_after_account_change()
+    return account
 
 
 def update_account_settings_from_form(account_key: str, form) -> dict | None:
-    return update_account_from_form(account_key, form)
+    account = update_account_from_form(account_key, form)
+    if account:
+        _ensure_payment_methods_after_account_change()
+    return account
+
+
+def ensure_prepaid_card_balance_account(parent_account_key: str, card_name: str = "", user_id: str | None = None) -> str:
+    """Return/create the dependent stored-balance account used by one prepaid card.
+
+    Prepaid-card expenses should reduce the prepaid balance, not the parent bank
+    account again.  Reloads/top-ups are recorded separately as Internal Transfer /
+    Money Transfer movements from the bank to this dependent account.
+    """
+    parent_key = normalize_account_key(parent_account_key, user_id=user_id)
+    base_name = str(card_name or "Prepaid card").strip() or "Prepaid card"
+    account_key = f"{parent_key}_{slugify(base_name)}_balance"
+
+    existing = account_by_key(account_key, user_id=user_id, include_archived=True)
+    if existing:
+        return account_key
+
+    create_config_account_from_form({
+        "key": account_key,
+        "label": f"{base_name} balance",
+        "type": "prepaid_balance",
+        "currency": "EUR",
+        "institution": "",
+        "iban": "",
+        "bic_swift": "",
+        "initial_balance": "0",
+        "description": "Stored balance for a prepaid card. Reload it with Internal Transfer / Money Transfer; payments spend this balance only.",
+        "aliases": f"{base_name}, {base_name} balance",
+        "category_aliases": "",
+        "category_match_enabled": "0",
+        "parent_account_id": parent_key,
+        "main_net_policy": MAIN_NET_SEPARATE,
+    }, user_id=user_id)
+    return account_key
 
 
 def archive_account_from_form(account_key: str) -> bool:

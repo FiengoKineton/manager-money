@@ -445,7 +445,7 @@ def prepare_transactions_for_display(df: pd.DataFrame) -> pd.DataFrame:
 def transaction_detail_context(row_index: int) -> tuple[dict, list[str]]:
     from money_manager.config import categories_for
 
-    df = load_all()
+    df = load_transactions()
 
     try:
         row = df.loc[row_index]
@@ -519,7 +519,7 @@ def delay_existing_transaction(row_index: int, new_date: str) -> dict:
     if not new_date:
         return {"ok": False, "error": "Missing delay date."}
 
-    df = load_all()
+    df = load_transactions()
     row = df.loc[row_index]
     raw = _plain_row(row)
     form = {
@@ -538,7 +538,7 @@ def delay_existing_transaction(row_index: int, new_date: str) -> dict:
 
 
 def update_existing_transaction(row_index: int, form) -> dict:
-    df = load_all()
+    df = load_transactions()
     row = df.loc[row_index]
     original = _plain_row(row)
     tx_input = TransactionInput.from_form({**form, "type": original.get("type", "")})
@@ -636,7 +636,7 @@ def update_existing_transaction(row_index: int, form) -> dict:
 
 
 def delete_existing_transaction(row_index: int, confirm_settled_edit: bool = False) -> dict:
-    df = load_all()
+    df = load_transactions()
     row = df.loc[row_index]
     original = _plain_row(row)
     uid = original.get("transaction_uid") or make_transaction_uid(original.get("type", ""), original.get("id", ""))

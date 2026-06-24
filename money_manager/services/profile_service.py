@@ -36,8 +36,10 @@ _PROFILE_BANK_MIGRATION_FLAG = "profile_bank_fields_migration"
 
 def load_profile(user_id: str | None = None) -> dict[str, Any]:
     profile = _normalize_profile(load_user_config(PROFILE_FILE, user_id=user_id))
-    migrate_profile_bank_info(profile, user_id=user_id)
-    return _normalize_profile(load_user_config(PROFILE_FILE, user_id=user_id))
+    migration = migrate_profile_bank_info(profile, user_id=user_id)
+    if isinstance(migration, dict) and migration.get("changed"):
+        return _normalize_profile(load_user_config(PROFILE_FILE, user_id=user_id))
+    return profile
 
 
 def save_profile(profile: Mapping[str, Any], user_id: str | None = None) -> dict[str, Any]:

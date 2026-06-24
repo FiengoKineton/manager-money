@@ -9,19 +9,42 @@ from money_manager.services.notification_service import build_notification_conte
 from money_manager.services.navigation_service import get_effective_navigation
 from money_manager.services.preferences_service import load_preferences
 from money_manager.services.profile_service import display_name_from_profile, initials_from_profile, load_profile
-from money_manager.services.transaction_service import load_transactions
 from money_manager.utils.formatting import format_euro, format_number, thousands_format_filter
 from money_manager.utils.privacy import format_masked_amount, mask_amount, mask_iban, mask_money, mask_text, should_mask_sensitive
 from money_manager.web.auth import current_user as auth_current_user, is_authenticated
+
+
+def _cached_context_value(name: str, builder, *, params: dict | None = None, allow_stale: bool = True):
+    try:
+        from money_manager.services.calculation_service import cached_context
+
+        return cached_context(name, builder, params=params or {}, allow_stale_on_error=allow_stale)
+    except Exception:
+        return builder()
+
+
+def _cached_scope_summary(scope: str) -> dict:
+    if not is_authenticated():
+        return {}
+    try:
+        from money_manager.services.calculation_service import cached_context
+        from money_manager.services.account_scope_service import scope_balance_summary
+
+        return cached_context(
+            "scope_balance_summary",
+            lambda: scope_balance_summary(scope),
+            params={"scope": str(scope or "global")},
+            allow_stale_on_error=True,
+        ) or {}
+    except Exception:
+        return {}
 
 
 def _topbar_main_bank_net() -> float:
     if not is_authenticated():
         return 0.0
     try:
-        from money_manager.services.account_scope_service import global_balance_summary
-
-        return float(global_balance_summary().get("net_balance", 0.0) or 0.0)
+        return float(_cached_scope_summary("global").get("net_balance", 0.0) or 0.0)
     except Exception:
         return 0.0
 
@@ -47,9 +70,7 @@ def _topbar_scope_net_context(active_account: dict | None = None) -> dict:
     account_id = str(active.get("account_id") or "").strip() if active else ""
     if account_id:
         try:
-            from money_manager.services.account_scope_service import scope_balance_summary
-
-            summary = scope_balance_summary(f"account:{account_id}")
+            summary = _cached_scope_summary(f"account:{account_id}")
             label = str(summary.get("label") or active.get("account_label") or account_id)
             return {
                 "topbar_global_net": global_net,
@@ -204,7 +225,7 @@ def _current_user_config_context(user: dict | None) -> dict:
 
     if user and is_authenticated():
         try:
-            profile = load_profile()
+            profile = _cached_context_value("profile_context", lambda: load_profile(), params={"part": "profile"})
         except Exception:
             profile.update(
                 {
@@ -214,7 +235,7 @@ def _current_user_config_context(user: dict | None) -> dict:
                 }
             )
         try:
-            preferences = load_preferences()
+            preferences = _cached_context_value("preferences_context", lambda: load_preferences(), params={"part": "preferences"})
         except Exception:
             preferences = deepcopy(DEFAULT_PREFERENCES)
 
@@ -254,7 +275,11 @@ def register_context_processors(app):
         user = auth_current_user()
         try:
             sidebar_navigation = (
-                get_effective_navigation(current_endpoint=request.endpoint)
+                _cached_context_value(
+                    "navigation_context",
+                    lambda: get_effective_navigation(current_endpoint=request.endpoint),
+                    params={"endpoint": str(request.endpoint or "")},
+                )
                 if user and is_authenticated()
                 else []
             )

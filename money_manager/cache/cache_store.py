@@ -4,6 +4,7 @@ import copy
 import json
 import pickle
 import shutil
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +20,8 @@ from money_manager.security.key_manager import is_encryption_enabled
 from money_manager.security.session_vault import get_dek
 
 CACHE_FORMAT_VERSION = 2
+_INDEX_LOCK = threading.RLock()
+_INDEX_CACHE: dict[str, tuple[int, int, dict[str, Any]]] = {}
 
 
 def utc_now() -> str:
@@ -31,6 +34,15 @@ def resolve_user_id(user_id: str | None = None) -> str:
         raise RuntimeError("No authenticated user available for cache storage.")
     return normalize_user_id(resolved)
 
+
+
+
+def _index_stat(path: Path) -> tuple[int, int]:
+    try:
+        stat = path.stat()
+        return int(stat.st_mtime_ns), int(stat.st_size)
+    except OSError:
+        return 0, 0
 
 def ensure_cache_dirs(user_id: str | None = None) -> Path:
     root = user_cache_root(user_id)
@@ -47,8 +59,14 @@ def index_path(root: Path | None = None, user_id: str | None = None) -> Path:
 
 
 def read_index(user_id: str | None = None) -> dict[str, Any]:
-    root = ensure_cache_dirs(user_id)
+    safe_id = resolve_user_id(user_id)
+    root = ensure_cache_dirs(safe_id)
     path = index_path(root)
+    mtime_ns, size = _index_stat(path)
+    with _INDEX_LOCK:
+        cached = _INDEX_CACHE.get(safe_id)
+        if cached and cached[0] == mtime_ns and cached[1] == size:
+            return copy.deepcopy(cached[2])
     try:
         payload = json.loads(path.read_text(encoding="utf-8")) if path.exists() and path.stat().st_size else {}
     except Exception:
@@ -56,11 +74,16 @@ def read_index(user_id: str | None = None) -> dict[str, Any]:
     if not isinstance(payload, dict):
         payload = {}
     entries = payload.get("entries") if isinstance(payload.get("entries"), dict) else {}
-    return {"schema_version": int(payload.get("schema_version") or 1), "entries": entries}
+    clean = {"schema_version": int(payload.get("schema_version") or 1), "entries": entries}
+    mtime_ns, size = _index_stat(path)
+    with _INDEX_LOCK:
+        _INDEX_CACHE[safe_id] = (mtime_ns, size, copy.deepcopy(clean))
+    return copy.deepcopy(clean)
 
 
 def write_index(index: dict[str, Any], user_id: str | None = None) -> None:
-    root = user_cache_root(user_id)
+    safe_id = resolve_user_id(user_id)
+    root = user_cache_root(safe_id)
     root.mkdir(parents=True, exist_ok=True)
     payload = {"schema_version": 1, "entries": dict((index or {}).get("entries") or {})}
     path = index_path(root)
@@ -68,6 +91,9 @@ def write_index(index: dict[str, Any], user_id: str | None = None) -> None:
         json.dump(payload, tmp, indent=2, ensure_ascii=False)
         temp_name = tmp.name
     Path(temp_name).replace(path)
+    mtime_ns, size = _index_stat(path)
+    with _INDEX_LOCK:
+        _INDEX_CACHE[safe_id] = (mtime_ns, size, copy.deepcopy(payload))
 
 
 def read_entry(key: str, definition: CacheDefinition, source_fingerprint: dict[str, Any], *, user_id: str | None = None) -> tuple[bool, Any, str]:
@@ -285,7 +311,22 @@ def _atomic_write_bytes(path: Path, payload: bytes) -> None:
 
 def _safe_copy(value: Any) -> Any:
     try:
-        return copy.deepcopy(value)
+        import pandas as pd  # type: ignore
+
+        if isinstance(value, pd.DataFrame):
+            return value.copy(deep=False)
+    except Exception:
+        pass
+    if isinstance(value, dict):
+        return dict(value)
+    if isinstance(value, list):
+        return list(value)
+    if isinstance(value, tuple):
+        return tuple(value)
+    if isinstance(value, set):
+        return set(value)
+    try:
+        return copy.copy(value)
     except Exception:
         return value
 

@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
   "created_at": "2026-06-23T11:43:22+00:00",
-  "updated_at": "2026-06-23T22:23:00+00:00",
-  "hits": 222,
-  "misses": 120,
-  "recomputes": 115,
-  "invalidations": 35,
-  "stale_skips": 12,
-  "errors": 0,
-  "total_compute_time_seconds": 1522.4722281000077,
-  "compute_samples": 115,
+  "updated_at": "2026-06-24T17:17:16+00:00",
+  "hits": 432,
+  "misses": 234,
+  "recomputes": 219,
+  "invalidations": 54,
+  "stale_skips": 18,
+  "errors": 10,
+  "total_compute_time_seconds": 2644.201380000043,
+  "compute_samples": 219,
   "last_rebuild_at": "2026-06-23T12:08:49+00:00",
   "last_clear_at": "",
-  "last_error": ""
+  "last_error": "Your encrypted Money Manager vault is locked. Log in or unlock it again."
 }

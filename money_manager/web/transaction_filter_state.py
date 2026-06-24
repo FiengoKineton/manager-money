@@ -5,7 +5,7 @@ from typing import Any, Iterable
 from flask import session
 
 SESSION_KEY = "transaction_filter_state"
-SESSION_VERSION = 2
+SESSION_VERSION = 3
 FILTER_PARAM_NAMES = {"from", "to", "types", "category", "q", "amount_min", "amount_max"}
 RESET_PARAM_NAMES = {"reset_filters", "clear_filters"}
 
@@ -138,7 +138,7 @@ def _with_calculation_metadata(
     state["has_non_date_filters"] = has_non_date_filters
     state["uses_full_history_for_calculations"] = not has_filters
     state["calculation_scope_label"] = "selected filters" if has_filters else "full history"
-    state["display_scope_label"] = "selected filters" if has_filters else "current year"
+    state["display_scope_label"] = "selected filters" if has_filters else "previous month + current month"
     return state
 
 
@@ -150,8 +150,8 @@ def resolve_transaction_filter_state(args: Any, start_default: str, end_default:
     - money scope: full history, so older opening rows still count.
 
     If the user submits filters/date range, both visual scope and money scope
-    follow the selected filters. Reset returns to current-year visuals plus
-    full-history money calculations.
+    follow the selected filters. Reset returns to rolling-window visuals plus
+    historical initial-condition money calculations.
     """
     if _should_reset(args):
         session.pop(SESSION_KEY, None)

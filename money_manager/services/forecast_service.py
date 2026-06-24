@@ -6,7 +6,6 @@ from math import isfinite
 import pandas as pd
 import plotly.graph_objects as go
 
-from money_manager.repositories.transactions import load_all
 from money_manager.services.account_service import auxiliary_total, main_account_transactions
 from money_manager.services.investment_service import investment_habit_snapshot, overview_snapshot
 from money_manager.utils.stats import monthly_summary, summary_totals
@@ -103,7 +102,9 @@ def _build_forecast_defaults_uncached() -> dict:
     - frequency, so repeated monthly behaviour is trusted more than one-off logs;
     - robust clipping, so big refunds/top-ups do not dominate the forecast.
     """
-    df = load_all()
+    from money_manager.services.transaction_service import load_transactions
+
+    df = load_transactions()
     main_df = main_account_transactions(df)
     monthly = monthly_summary(main_df)
 

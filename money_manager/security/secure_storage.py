@@ -18,6 +18,13 @@ from money_manager.security.session_vault import require_dek
 from money_manager.storage.data_registry import definition_by_name, definition_for_filename
 
 
+def _file_read_cache():
+    """Import the decrypted file cache lazily to avoid secure_storage <-> cache startup cycles."""
+    import importlib
+
+    return importlib.import_module("money_manager.cache.file_read_cache")
+
+
 def read_json_secure(logical_name_or_path: str | os.PathLike[str], default: Any = None, user_id: str | None = None) -> Any:
     path, logical_name, resolved_user_id = _resolve(logical_name_or_path, user_id=user_id)
     try:
@@ -94,6 +101,7 @@ def secure_delete(user_id: str | None, path: str | os.PathLike[str]) -> None:
     target, logical_name, resolved_user_id = _resolve(path, user_id=user_id)
     try:
         target.unlink(missing_ok=True)
+        _file_read_cache().invalidate_path(target, user_id=resolved_user_id)
     finally:
         _notify_cache_changed(path=target, logical_name=logical_name, user_id=resolved_user_id)
 
@@ -104,14 +112,51 @@ def secure_exists(user_id: str | None, path: str | os.PathLike[str]) -> bool:
 
 
 def read_csv_secure(logical_name_or_path: str | os.PathLike[str], fieldnames: list[str], user_id: str | None = None) -> list[dict[str, str]]:
-    ensure_csv_secure(logical_name_or_path, fieldnames, user_id=user_id)
+    """Read a protected CSV with at most one decrypt/read pass.
+
+    Older code called ``ensure_csv_secure()`` before every read.  With encrypted
+    storage this decrypted the whole CSV once for schema validation and then
+    decrypted it again for the actual read.  This function now performs the
+    cheap missing-file check first, reads once, and only rewrites when headers
+    really need repair.
+    """
     path, logical_name, resolved_user_id = _resolve(logical_name_or_path, user_id=user_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists() or path.stat().st_size == 0:
+        output = StringIO()
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        _write_bytes(path, output.getvalue().encode("utf-8"), logical_name=logical_name, user_id=resolved_user_id, content_type="text/csv")
+        return []
+
     raw = _read_bytes(path, logical_name=logical_name, user_id=resolved_user_id)
     text = raw.decode("utf-8-sig") if raw else ""
     if not text.strip():
+        output = StringIO()
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        _write_bytes(path, output.getvalue().encode("utf-8"), logical_name=logical_name, user_id=resolved_user_id, content_type="text/csv")
         return []
+
     reader = csv.DictReader(StringIO(text))
-    return [dict(row) for row in reader]
+    existing_fields = list(reader.fieldnames or [])
+    rows = [dict(row) for row in reader]
+    if not existing_fields:
+        output = StringIO()
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        _write_bytes(path, output.getvalue().encode("utf-8"), logical_name=logical_name, user_id=resolved_user_id, content_type="text/csv")
+        return []
+
+    missing = [field for field in fieldnames if field not in existing_fields]
+    if missing:
+        final_fields = [*fieldnames, *[field for field in existing_fields if field not in fieldnames]]
+        for row in rows:
+            for field in missing:
+                row[field] = ""
+        write_csv_secure(path, final_fields, rows, user_id=resolved_user_id)
+
+    return rows
 
 
 def write_csv_secure(logical_name_or_path: str | os.PathLike[str], fieldnames: list[str], rows: Iterable[dict[str, Any]], user_id: str | None = None) -> None:
@@ -213,26 +258,40 @@ def is_path_encrypted(path: str | os.PathLike[str]) -> bool:
 
 
 def _read_bytes(path: Path, *, logical_name: str = "", user_id: str | None = None) -> bytes:
+    resolved_user_id = user_id or _infer_user_id(path) or get_current_user_id()
+    cache = _file_read_cache()
+    cached = cache.get(path, user_id=resolved_user_id)
+    if cached is not cache.sentinel():
+        return bytes(cached)
+
     raw = path.read_bytes()
     if is_encrypted_bytes(raw):
-        dek = require_dek(user_id or _infer_user_id(path) or get_current_user_id())
-        return decrypt_bytes(raw, dek)
-    return raw
+        dek = require_dek(resolved_user_id)
+        decoded = decrypt_bytes(raw, dek)
+    else:
+        decoded = raw
+    cache.set_value(path, decoded, user_id=resolved_user_id)
+    return decoded
 
 
 def _write_bytes(path: Path, raw: bytes, *, logical_name: str = "", user_id: str | None = None, content_type: str = "application/octet-stream", original_filename: str = "") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     resolved_user_id = user_id or _infer_user_id(path) or get_current_user_id()
+    plaintext = bytes(raw or b"")
+    payload = plaintext
     if _should_encrypt(path, logical_name=logical_name, user_id=resolved_user_id):
         dek = require_dek(resolved_user_id)
-        raw = encrypt_bytes(
-            raw,
+        payload = encrypt_bytes(
+            plaintext,
             dek,
             content_type=content_type,
             original_logical_name=logical_name or _relative_logical_name(path, resolved_user_id) or path.name,
             original_filename=original_filename or path.name,
         )
-    _atomic_write_bytes(path, raw)
+    cache = _file_read_cache()
+    cache.invalidate_path(path, user_id=resolved_user_id)
+    _atomic_write_bytes(path, payload)
+    cache.set_value(path, plaintext, user_id=resolved_user_id)
 
 
 def _should_encrypt(path: Path, *, logical_name: str = "", user_id: str | None = None) -> bool:

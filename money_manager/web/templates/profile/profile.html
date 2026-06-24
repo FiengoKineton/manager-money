@@ -19,6 +19,11 @@
       {% if status %}
         <div class="profile-status profile-status-{{ status.tone }}" role="status">{{ t(status.key) }}</div>
       {% endif %}
+      <div class="profile-quick-actions">
+        <a class="secondary-btn compact-btn" href="#first_name">Edit identity</a>
+        <a class="secondary-btn compact-btn" href="#account-summary">Bank details</a>
+        <a class="secondary-btn compact-btn" href="#backup">Backup</a>
+      </div>
     </div>
   </div>
   <div class="profile-hero-meta">
@@ -54,6 +59,7 @@
 </section>
 
 <section class="profile-grid">
+  <div class="profile-main-stack">
   <article class="profile-card panel-card profile-card-main">
     <div class="panel-header">
       <div>
@@ -139,6 +145,37 @@
       </div>
     </form>
   </article>
+
+    <section class="panel-card profile-account-summary-card" id="account-summary">
+      <div class="panel-header compact-profile-header">
+        <div>
+          <span class="eyebrow">{{ t("profile.accounts_summary") }}</span>
+          <h3>{{ t("profile.accounts_summary_title") }}</h3>
+          <p>{{ t("profile.accounts_summary_hint") }}</p>
+        </div>
+        <a class="secondary-btn compact-btn" href="{{ url_for('accounts.accounts_page') }}">{{ t("profile.manage_bank_accounts") }}</a>
+      </div>
+      {% if account_summary %}
+        <div class="profile-account-summary-list">
+          {% for account in account_summary %}
+            <article class="profile-account-summary-row {{ 'is-archived' if account.is_archived else '' }}">
+              <div>
+                <span class="movement-source">{{ account.institution or t('common.not_set') }}</span>
+                <strong>{{ account.label }}{% if account.is_archived %} · {{ t('common.archived') }}{% endif %}</strong>
+                <p>{{ account.iban_masked or t('profile.no_iban_on_account') }}</p>
+              </div>
+              <div class="profile-account-summary-actions">
+                <span>{{ t("profile.payment_methods_count", count=account.methods_count) }}</span>
+                <a class="secondary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=account.id) }}#account-bank-details">{{ t("common.open") }}</a>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty">{{ t("accounts.no_accounts") }}</p>
+      {% endif %}
+    </section>
+  </div>
 
   <aside class="profile-side-stack">
     <article class="profile-card panel-card">
@@ -246,35 +283,6 @@
   </aside>
 </section>
 
-
-<section class="panel-card">
-  <div class="panel-header">
-    <div>
-      <span class="eyebrow">{{ t("profile.accounts_summary") }}</span>
-      <h3>{{ t("profile.accounts_summary_title") }}</h3>
-      <p>{{ t("profile.accounts_summary_hint") }}</p>
-    </div>
-  </div>
-  {% if account_summary %}
-    <div class="account-transaction-list">
-      {% for account in account_summary %}
-        <article class="account-transaction-row {{ 'is-archived' if account.is_archived else '' }}">
-          <div class="movement-main">
-            <span class="movement-source">{{ account.institution or t('common.not_set') }}</span>
-            <strong>{{ account.label }}{% if account.is_archived %} · {{ t('common.archived') }}{% endif %}</strong>
-            <p>{{ account.iban_masked or t('profile.no_iban_on_account') }}</p>
-          </div>
-          <div class="movement-amount">
-            <span>{{ t("profile.payment_methods_count", count=account.methods_count) }}</span>
-            <a class="secondary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=account.id) }}">{{ t("common.open") }}</a>
-          </div>
-        </article>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p class="empty">{{ t("accounts.no_accounts") }}</p>
-  {% endif %}
-</section>
 
 <section id="navigation" class="profile-navigation-panel panel-card">
   <div class="panel-header navigation-settings-header">

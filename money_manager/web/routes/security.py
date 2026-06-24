@@ -17,6 +17,7 @@ from money_manager.security.encryption_policy import TEMP_EXPORT_TTL_MINUTES
 from money_manager.security.key_manager import UnlockFailed, is_encryption_enabled, rewrap_dek
 from money_manager.security.security_audit_service import security_audit, verify_user_encryption
 from money_manager.security.session_vault import is_unlocked, lock_vault, unlock_user, vault_status
+from money_manager.cache.precompute_service import warm_cache_on_login
 from money_manager.users.user_manager import authenticate_user, update_user_password
 from money_manager.web.auth import login_required
 
@@ -39,6 +40,10 @@ def unlock():
         except Exception:
             error = "Wrong password or corrupted vault metadata."
         else:
+            try:
+                warm_cache_on_login(user_id)
+            except Exception:
+                pass
             return redirect(next_url)
     return render_template("settings/unlock.html", error=error, next_url=next_url)
 

@@ -493,28 +493,61 @@ def _resolve_method(payment_method_id: str | None, *, tx_type: str, account_id: 
     return _default_method_for_account_or_type(account, tx_type=tx_type, user_id=user_id)
 
 
+def _method_touches_account(method: Mapping[str, Any], account_key: str) -> bool:
+    return account_key in {
+        str(method.get("linked_account_id") or ""),
+        str(method.get("funding_account_id") or ""),
+        str(method.get("settlement_account_id") or ""),
+        str(method.get("liability_account_id") or ""),
+    }
+
+
+def _first_method_for_account(
+    account_key: str,
+    *,
+    user_id: str | None,
+    method_type: str | None = None,
+    settlement_mode: str | None = None,
+) -> dict[str, Any] | None:
+    wanted_type = clean_text(method_type or "")
+    wanted_mode = clean_text(settlement_mode or "")
+    for method in active_payment_methods(user_id=user_id):
+        if not _method_touches_account(method, account_key):
+            continue
+        if wanted_type and clean_text(method.get("method_type") or "") != wanted_type:
+            continue
+        if wanted_mode and clean_text(method.get("settlement_mode") or "") != wanted_mode:
+            continue
+        return method
+    return None
+
+
 def _default_method_for_account_or_type(account: Mapping[str, Any] | None, *, tx_type: str = "expense", user_id: str | None) -> dict[str, Any] | None:
     if account:
         key = str(account.get("key") or account.get("id") or "")
         kind = str(account.get("account_kind") or account.get("type") or "")
-        for method in active_payment_methods(user_id=user_id):
-            if key and key in {
-                str(method.get("linked_account_id") or ""),
-                str(method.get("funding_account_id") or ""),
-                str(method.get("settlement_account_id") or ""),
-                str(method.get("liability_account_id") or ""),
-            }:
-                return method
-        if kind == "credit_card_liability":
-            return payment_method_by_id("credit_card", include_archived=False, user_id=user_id)
-        if kind == "cash":
-            return payment_method_by_id("cash", include_archived=False, user_id=user_id)
-        if kind == "prepaid_balance":
-            return payment_method_by_id("pre_paid_card", include_archived=False, user_id=user_id)
-        if kind == "meal_voucher":
-            return payment_method_by_id("edenred", include_archived=False, user_id=user_id)
-        if key == MAIN_ACCOUNT_KEY or kind == "current_account":
-            return payment_method_by_id("main_bank_transfer", include_archived=False, user_id=user_id)
+
+        if key and (kind == "current_account" or account.get("is_current_account")):
+            # A blank payment method inside a bank account means the original/default
+            # debit card, not a bank transfer. Credit cards are explicit delayed
+            # methods; prepaid cards point to their own stored-balance account.
+            return (
+                _first_method_for_account(key, user_id=user_id, method_type="debit_card")
+                or _first_method_for_account(key, user_id=user_id, method_type="bank_transfer")
+                or _first_method_for_account(key, user_id=user_id)
+                or (payment_method_by_id("main_bank_debit_card", include_archived=False, user_id=user_id) if key == MAIN_ACCOUNT_KEY else None)
+            )
+
+        if key and kind == "credit_card_liability":
+            return _first_method_for_account(key, user_id=user_id, method_type="credit_card") or payment_method_by_id("credit_card", include_archived=False, user_id=user_id)
+        if key and kind == "cash":
+            return _first_method_for_account(key, user_id=user_id, method_type="cash") or payment_method_by_id("cash", include_archived=False, user_id=user_id)
+        if key and kind == "prepaid_balance":
+            return _first_method_for_account(key, user_id=user_id, method_type="prepaid_card") or _first_method_for_account(key, user_id=user_id, settlement_mode="stored_balance")
+        if key and kind == "meal_voucher":
+            return _first_method_for_account(key, user_id=user_id, method_type="meal_voucher") or payment_method_by_id("edenred", include_archived=False, user_id=user_id)
+        if key:
+            return _first_method_for_account(key, user_id=user_id)
     return _default_expense_method(user_id=user_id) if tx_type == "expense" else payment_method_by_id("main_bank_transfer", include_archived=False, user_id=user_id)
 
 
@@ -523,7 +556,7 @@ def _default_expense_method(user_id: str | None) -> dict[str, Any] | None:
     for method in methods:
         if method.get("is_default"):
             return method
-    for wanted in ("main_bank_transfer", "cash", "credit_card"):
+    for wanted in ("main_bank_debit_card", "main_bank_transfer", "cash", "credit_card"):
         method = payment_method_by_id(wanted, include_archived=False, user_id=user_id)
         if method:
             return method

@@ -6,7 +6,7 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-from money_manager.cache import request_cache
+from money_manager.cache import file_read_cache, process_cache, request_cache
 from money_manager.cache.cache_keys import build_cache_key, digest_payload
 from money_manager.cache.cache_registry import CacheDefinition, get_cache_definition
 from money_manager.cache.cache_stats_service import record
@@ -45,12 +45,32 @@ def get_or_compute(
         if cached_request_value is not sentinel:
             return _safe_copy(cached_request_value)
 
+    process_sentinel = process_cache.sentinel()
+    process_value = process_cache.get(
+        key,
+        user_id=resolved_user_id,
+        source_digest=str(fingerprint.get("digest") or ""),
+    )
+    if process_value is not process_sentinel:
+        record("hits", user_id=resolved_user_id)
+        if definition.request_cache_allowed:
+            request_cache.set(request_key, _safe_copy(process_value))
+        return _safe_copy(process_value)
+
     cached_value = None
     cached_status = ""
     if definition.disk_cache_allowed:
         hit, cached_value, cached_status = read_entry(key, definition, fingerprint, user_id=resolved_user_id)
         if hit:
             record("hits", user_id=resolved_user_id)
+            process_cache.set_value(
+                key,
+                cached_value,
+                user_id=resolved_user_id,
+                source_digest=str(fingerprint.get("digest") or ""),
+                tags=definition.dependencies,
+                ttl_seconds=definition.ttl_seconds,
+            )
             if definition.request_cache_allowed:
                 request_cache.set(request_key, _safe_copy(cached_value))
             return _safe_copy(cached_value)
@@ -70,6 +90,14 @@ def get_or_compute(
     record("recomputes", user_id=resolved_user_id, compute_time=compute_time)
     if definition.disk_cache_allowed:
         write_entry(key, value, definition, fingerprint, user_id=resolved_user_id)
+    process_cache.set_value(
+        key,
+        value,
+        user_id=resolved_user_id,
+        source_digest=str(fingerprint.get("digest") or ""),
+        tags=definition.dependencies,
+        ttl_seconds=definition.ttl_seconds,
+    )
     if definition.request_cache_allowed:
         request_cache.set(request_key, _safe_copy(value))
     return _safe_copy(value)
@@ -94,11 +122,29 @@ def rebuild_cache_entry(name: str, *, user_id: str | None = None, params: dict[s
 
 
 def cache_status(user_id: str | None = None) -> dict[str, Any]:
-    return cache_inventory(user_id=user_id)
+    status = cache_inventory(user_id=user_id)
+    status["process_cache"] = process_cache.stats()
+    status["file_read_cache"] = file_read_cache.stats()
+    return status
 
 
 def _safe_copy(value: Any) -> Any:
     try:
-        return copy.deepcopy(value)
+        import pandas as pd  # type: ignore
+
+        if isinstance(value, pd.DataFrame):
+            return value.copy(deep=False)
+    except Exception:
+        pass
+    if isinstance(value, dict):
+        return dict(value)
+    if isinstance(value, list):
+        return list(value)
+    if isinstance(value, tuple):
+        return tuple(value)
+    if isinstance(value, set):
+        return set(value)
+    try:
+        return copy.copy(value)
     except Exception:
         return value

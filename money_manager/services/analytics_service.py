@@ -71,6 +71,7 @@ def build_dashboard_metrics(
     totals_df: pd.DataFrame | None = None,
     opening_source_df: pd.DataFrame | None = None,
     include_opening_balance: bool = True,
+    opening_balance_override: float | None = None,
 ) -> dict:
     """Build dashboard charts and totals with separate display/calculation scopes.
 
@@ -93,6 +94,7 @@ def build_dashboard_metrics(
         start=start,
         opening_source_df=opening_source_df,
         include_opening_balance=include_opening_balance,
+        opening_balance_override=opening_balance_override,
     )
 
     plot_monthly_summary(df_month)
@@ -117,6 +119,7 @@ def cumulative_balance_with_opening(
     start: str | None = None,
     opening_source_df: pd.DataFrame | None = None,
     include_opening_balance: bool = True,
+    opening_balance_override: float | None = None,
 ) -> pd.DataFrame:
     """Return cumulative balance for visible rows, optionally with carried balance.
 
@@ -125,8 +128,8 @@ def cumulative_balance_with_opening(
     current year or selected date window.
     """
     if visible_df.empty:
-        if include_opening_balance and opening_source_df is not None and start:
-            opening_balance = _opening_balance_before(opening_source_df, start)
+        if include_opening_balance and start:
+            opening_balance = float(opening_balance_override) if opening_balance_override is not None else _opening_balance_before(opening_source_df, start)
             if abs(opening_balance) > 1e-9:
                 return pd.DataFrame([{
                     "date": pd.to_datetime(start, errors="coerce"),
@@ -138,7 +141,7 @@ def cumulative_balance_with_opening(
     if not include_opening_balance or opening_source_df is None or not start:
         return df_cum
 
-    opening_balance = _opening_balance_before(opening_source_df, start)
+    opening_balance = float(opening_balance_override) if opening_balance_override is not None else _opening_balance_before(opening_source_df, start)
     if abs(opening_balance) <= 1e-9:
         return df_cum
 
@@ -180,12 +183,40 @@ def build_analysis_metrics(df: pd.DataFrame, period_key: str = "ytd", scope: str
     """
     selected_scope = scope or "global"
     main_df_all = transactions_for_scope(df, selected_scope)
+
+    from money_manager.services.transaction_window_service import (
+        rolling_transaction_window,
+        split_transactions_at,
+        totals_with_initial_conditions,
+        transaction_initial_conditions_for_frame,
+    )
+
+    window = rolling_transaction_window()
+    historical_df, recent_df = split_transactions_at(main_df_all, str(window["start"]))
+    initial_conditions = transaction_initial_conditions_for_frame(
+        historical_df,
+        scope=selected_scope,
+        start=str(window["start"]),
+    )
+
     period = _resolve_analysis_period(main_df_all, period_key)
+    # Default heavy analysis works on the rolling window.  Older rows are kept as
+    # opening balance / initial condition so the page does not regroup the whole
+    # encrypted transaction history on every route change.
+    period_start_dt = pd.to_datetime(period["start"], errors="coerce")
+    window_start_dt = pd.to_datetime(window["start"], errors="coerce")
+    if period["key"] in {"ytd", "all"} and not pd.isna(window_start_dt):
+        period["requested_start"] = period["start"]
+        period["start"] = max(period_start_dt, window_start_dt).strftime("%Y-%m-%d") if not pd.isna(period_start_dt) else str(window["start"])
+        period["label"] = f'{period["label"]} · working window from {period["start"]}'
+
     main_df_display = filter_by_date(main_df_all, period["start"], period["end"])
     previous_df = _previous_period_frame(main_df_all, period)
 
-    full_totals = summary_totals(main_df_all)
+    full_totals = totals_with_initial_conditions(recent_df, initial_conditions)
     period_totals = summary_totals(main_df_display)
+    if period["key"] in {"ytd", "all"}:
+        period_totals = totals_with_initial_conditions(main_df_display, initial_conditions)
     previous_totals = summary_totals(previous_df) if not previous_df.empty else _empty_totals()
 
     df_wd = weekday_spending(main_df_display)
@@ -204,16 +235,18 @@ def build_analysis_metrics(df: pd.DataFrame, period_key: str = "ytd", scope: str
         start=period["start"],
         opening_source_df=main_df_all,
         include_opening_balance=True,
+        opening_balance_override=float(initial_conditions.get("opening_net", 0.0) or 0.0) if period["key"] in {"ytd", "all"} else None,
     )
 
-    habits_month = monthly_summary(main_df_all)
-    habits = _spending_habits(main_df_all, habits_month, df_cat, df_wd)
+    habits_source = recent_df if period["key"] in {"ytd", "all"} else main_df_all
+    habits_month = monthly_summary(habits_source)
+    habits = _spending_habits(habits_source, habits_month, df_cat, df_wd)
     investment = investment_habit_snapshot(refresh=False)
     recurring_pressure = _recurring_pressure_snapshot(selected_scope)
     liabilities = _liability_snapshot(selected_scope)
     from money_manager.services.account_scope_service import all_financial_center_summaries, scope_balance_summary
-    scope_summary = scope_balance_summary(selected_scope)
-    financial_center_breakdown = all_financial_center_summaries() if selected_scope == "global" else []
+    scope_summary = scope_balance_summary(selected_scope, df=df)
+    financial_center_breakdown = all_financial_center_summaries(df=df) if selected_scope == "global" else []
     income_sources = _income_sources(main_df_display)
     category_rows = _category_rows(df_cat, previous_df)
     cashflow_statement = _cashflow_statement(period_totals)
@@ -264,6 +297,8 @@ def build_analysis_metrics(df: pd.DataFrame, period_key: str = "ytd", scope: str
         "weekday_data": df_wd.to_dict(orient="records"),
         "top_expenses": top_expenses.to_dict(orient="records"),
         "selected_scope": selected_scope,
+        "transaction_window": {**window, "opening_net": float(initial_conditions.get("opening_net", 0.0) or 0.0), "historical_rows": int(initial_conditions.get("historical_rows", 0) or 0)},
+        "uses_transaction_initial_conditions": True,
         "charts": {
             "cashflow_waterfall": chart_cashflow_waterfall(cashflow_statement),
             "monthly_summary": chart_monthly_summary(df_month),

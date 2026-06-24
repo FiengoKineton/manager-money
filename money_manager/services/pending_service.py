@@ -207,11 +207,11 @@ def sync_credit_account_statements(today: date | None = None) -> int:
     first_day_this_month = date(today.year, today.month, 1)
 
     try:
-        from money_manager.repositories.transactions import load_all
+        from money_manager.services.transaction_service import load_transactions
     except Exception:
         return 0
 
-    df = load_all()
+    df = load_transactions()
     groups: dict[tuple[str, str], dict] = {}
     if not df.empty:
         for _, row in df.iterrows():
@@ -516,10 +516,10 @@ def _credit_statement_charge_details(account_value: str | None, statement_month:
     if not key or not statement_month:
         return []
     try:
-        from money_manager.repositories.transactions import load_all
+        from money_manager.services.transaction_service import load_transactions
     except Exception:
         return []
-    df = load_all()
+    df = load_transactions()
     if df.empty:
         return []
     details: list[dict] = []

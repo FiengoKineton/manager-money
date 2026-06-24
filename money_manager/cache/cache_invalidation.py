@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from money_manager.cache import request_cache
+from money_manager.cache import process_cache, request_cache, runtime_epoch
 from money_manager.cache.cache_stats_service import record
 from money_manager.cache.cache_store import cleanup_stale_entries as _cleanup_stale_entries, clear_user_cache as _clear_user_cache, mark_stale
 from money_manager.cache.source_fingerprint_service import TAG_ALIASES
@@ -25,9 +25,18 @@ def invalidate_tags(tags: Iterable[str], user_id: str | None = None) -> int:
     expanded = expand_tags(tags)
     if not safe_id:
         request_cache.clear_user()
+        process_cache.clear()
         return 0
+    runtime_epoch.bump(safe_id, expanded)
     count = mark_stale(tags=expanded, user_id=safe_id, reason="tag_invalidation")
     request_cache.clear_user(safe_id)
+    process_cache.clear(user_id=safe_id, tags=expanded)
+    try:
+        from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
+
+        clear_fingerprint_caches(user_id=safe_id)
+    except Exception:
+        pass
     record("invalidations", user_id=safe_id)
     return count
 
@@ -36,9 +45,18 @@ def invalidate_key(key: str, user_id: str | None = None) -> int:
     safe_id = _resolve_optional_user(user_id)
     if not safe_id:
         request_cache.clear_user()
+        process_cache.clear()
         return 0
+    runtime_epoch.bump(safe_id, ())
     count = mark_stale(entry_ids=[key], user_id=safe_id, reason="key_invalidation")
     request_cache.clear_user(safe_id)
+    process_cache.clear(user_id=safe_id)
+    try:
+        from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
+
+        clear_fingerprint_caches(user_id=safe_id)
+    except Exception:
+        pass
     record("invalidations", user_id=safe_id)
     return count
 
@@ -47,9 +65,18 @@ def invalidate_user_cache(user_id: str | None = None) -> int:
     safe_id = _resolve_optional_user(user_id)
     if not safe_id:
         request_cache.clear_user()
+        process_cache.clear()
         return 0
+    runtime_epoch.bump(safe_id, ())
     count = mark_stale(user_id=safe_id, reason="user_invalidation")
     request_cache.clear_user(safe_id)
+    process_cache.clear(user_id=safe_id)
+    try:
+        from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
+
+        clear_fingerprint_caches(user_id=safe_id)
+    except Exception:
+        pass
     record("invalidations", user_id=safe_id)
     return count
 
@@ -75,9 +102,18 @@ def clear_user_cache(user_id: str | None = None) -> int:
     safe_id = _resolve_optional_user(user_id)
     if not safe_id:
         request_cache.clear_user()
+        process_cache.clear()
         return 0
+    runtime_epoch.bump(safe_id, ())
     count = _clear_user_cache(user_id=safe_id)
     request_cache.clear_user(safe_id)
+    process_cache.clear(user_id=safe_id)
+    try:
+        from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
+
+        clear_fingerprint_caches(user_id=safe_id)
+    except Exception:
+        pass
     record("invalidations", user_id=safe_id)
     return count
 

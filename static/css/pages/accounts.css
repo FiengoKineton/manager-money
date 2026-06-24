@@ -468,3 +468,26 @@
   margin: 0.55rem 0 0;
   padding-left: 1.1rem;
 }
+
+.account-bank-details-panel {
+  margin: 1rem 0;
+}
+
+.account-bank-details-panel .panel-header {
+  align-items: flex-start;
+}
+
+.account-bank-details-form {
+  margin-top: 1rem;
+}
+
+.account-bank-details-form input,
+.account-bank-details-form select {
+  min-height: 44px;
+}
+
+@media (max-width: 900px) {
+  .account-bank-details-panel .panel-header {
+    flex-direction: column;
+  }
+}

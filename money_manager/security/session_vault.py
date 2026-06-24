@@ -100,10 +100,13 @@ def is_unlocked(user_id: str | None, vault_id: str | None = None) -> bool:
 
 def lock_vault(vault_id: str | None = None) -> None:
     vault_key = vault_id or current_vault_id()
-    if vault_key:
+    locked_user_id = ""
+    if vault_key and vault_key in _VAULT:
+        locked_user_id = _VAULT[vault_key].user_id
         _VAULT.pop(vault_key, None)
     if has_request_context():
         clear_session_vault_id()
+    _clear_runtime_sensitive_caches(locked_user_id or None)
 
 
 def lock_user(user_id: str | None) -> None:
@@ -113,6 +116,7 @@ def lock_user(user_id: str | None) -> None:
             _VAULT.pop(vault_id, None)
     if has_request_context() and safe_id:
         clear_session_vault_id()
+    _clear_runtime_sensitive_caches(safe_id or None)
 
 
 def vault_status(user_id: str | None) -> dict[str, Any]:
@@ -123,3 +127,19 @@ def vault_status(user_id: str | None) -> dict[str, Any]:
         "vault_id_present": bool(current_vault_id()),
         "timeout_seconds": DEFAULT_TIMEOUT_SECONDS,
     }
+
+
+def _clear_runtime_sensitive_caches(user_id: str | None = None) -> None:
+    try:
+        from money_manager.cache import file_read_cache, process_cache, request_cache
+
+        if user_id:
+            file_read_cache.clear_user(user_id)
+            process_cache.clear(user_id=user_id)
+            request_cache.clear_user(user_id)
+        else:
+            file_read_cache.clear_all()
+            process_cache.clear()
+            request_cache.clear_user()
+    except Exception:
+        pass

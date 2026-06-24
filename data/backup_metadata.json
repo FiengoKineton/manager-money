@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "app": "money_manager",
+  "created_at": "2026-06-24T16:47:28+00:00",
+  "source_user_id": "fiengokineton",
+  "backup_name": "money_manager_backup_fiengokineton_20260624_164728_201043.zip",
+  "backup_mode": "encrypted",
+  "encryption_enabled_at_export": true,
+  "backup_contents": "current-user data only; auth/password hashes excluded",
+  "security_metadata_included": true,
+  "plain_export_warning": "",
+  "excluded_by_default": [
+    "backups",
+    "cache",
+    "plots"
+  ]
+}

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import os
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,26 @@ KDF_ALGORITHM = "pbkdf2_sha256"
 KDF_ITERATIONS = 600_000
 KEY_BYTES = 32
 NONCE_BYTES = 12
+
+_METADATA_LOCK = threading.RLock()
+_METADATA_CACHE: dict[str, tuple[int, int, dict[str, Any]]] = {}
+
+
+def clear_security_metadata_cache(user_id: str | None = None) -> None:
+    safe_id = normalize_user_id(user_id) if user_id else ""
+    with _METADATA_LOCK:
+        if safe_id:
+            _METADATA_CACHE.pop(safe_id, None)
+        else:
+            _METADATA_CACHE.clear()
+
+
+def _metadata_stat(path: Path) -> tuple[int, int]:
+    try:
+        stat = path.stat()
+        return int(stat.st_mtime_ns), int(stat.st_size)
+    except OSError:
+        return 0, 0
 
 
 class KeyManagementError(RuntimeError):
@@ -70,12 +91,23 @@ def default_metadata(user_id: str) -> dict[str, Any]:
 def load_security_metadata(user_id: str, *, create: bool = True) -> dict[str, Any]:
     safe_id = normalize_user_id(user_id)
     path = metadata_path(safe_id)
+    mtime_ns, size = _metadata_stat(path)
+    if size:
+        with _METADATA_LOCK:
+            cached = _METADATA_CACHE.get(safe_id)
+            if cached and cached[0] == mtime_ns and cached[1] == size:
+                return dict(cached[2])
+
     payload = read_json(path, None)
     if not isinstance(payload, dict):
         payload = default_metadata(safe_id)
         if create:
             write_json_atomic(path, payload)
-        return payload
+            mtime_ns, size = _metadata_stat(path)
+        with _METADATA_LOCK:
+            _METADATA_CACHE[safe_id] = (mtime_ns, size, dict(payload))
+        return dict(payload)
+
     merged = default_metadata(safe_id)
     merged.update(payload)
     kdf = dict(default_metadata(safe_id)["kdf"])
@@ -85,7 +117,10 @@ def load_security_metadata(user_id: str, *, create: bool = True) -> dict[str, An
     merged["user_id"] = safe_id
     if create and merged != payload:
         write_json_atomic(path, merged)
-    return merged
+        mtime_ns, size = _metadata_stat(path)
+    with _METADATA_LOCK:
+        _METADATA_CACHE[safe_id] = (mtime_ns, size, dict(merged))
+    return dict(merged)
 
 
 def save_security_metadata(user_id: str, metadata: dict[str, Any]) -> None:
@@ -93,7 +128,11 @@ def save_security_metadata(user_id: str, metadata: dict[str, Any]) -> None:
     payload["schema_version"] = SECURITY_SCHEMA_VERSION
     payload["user_id"] = normalize_user_id(user_id)
     payload["updated_at"] = utc_now()
-    write_json_atomic(metadata_path(str(user_id)), payload)
+    path = metadata_path(str(user_id))
+    write_json_atomic(path, payload)
+    mtime_ns, size = _metadata_stat(path)
+    with _METADATA_LOCK:
+        _METADATA_CACHE[payload["user_id"]] = (mtime_ns, size, dict(payload))
 
 
 def is_encryption_enabled(user_id: str | None) -> bool:

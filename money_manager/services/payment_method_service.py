@@ -421,6 +421,29 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
             methods.append(method)
             existing_ids.add(str(method.get("id")))
 
+    def _method_touches_account(method: Mapping[str, Any], key: str) -> bool:
+        return key in {
+            str(method.get("linked_account_id") or ""),
+            str(method.get("funding_account_id") or ""),
+            str(method.get("settlement_account_id") or ""),
+        }
+
+    def _has_active_method(key: str, method_type: str) -> bool:
+        for method in methods:
+            if method.get("is_archived") or not method.get("is_active", True):
+                continue
+            if clean_text(method.get("method_type") or "") == method_type and _method_touches_account(method, key):
+                return True
+        return False
+
+    def _unique_method_id(base: str) -> str:
+        if base not in existing_ids:
+            return base
+        index = 2
+        while f"{base}_{index}" in existing_ids:
+            index += 1
+        return f"{base}_{index}"
+
     for account in accounts:
         key = str(account.get("key") or account.get("id") or "")
         if not key or account.get("is_container") or account.get("is_liability") or not account.get("is_active", True):
@@ -429,32 +452,34 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
         label = account.get("label") or account.get("name") or key.replace("_", " ").title()
         order = int(_safe_number(account.get("display_order"), 1000))
         if kind == "current_account":
-            _add({
-                "id": f"{key}_debit_card",
-                "name": "Debit Card" if key == "main_bank" else f"{label} debit card",
-                "method_type": "debit_card",
-                "settlement_mode": "immediate",
-                "linked_account_id": key,
-                "funding_account_id": key,
-                "settlement_account_id": key,
-                "display_order": order,
-                "aliases": [key, label, f"{label} debit", f"{label} debit card", f"{label} card"],
-                "legacy": {"migration_rule": "auto_current_account_debit_card"},
-                "metadata": {"auto_default": True, "visible_card": True},
-            })
-            _add({
-                "id": f"{key}_transfer",
-                "name": f"{label} transfer",
-                "method_type": "bank_transfer",
-                "settlement_mode": "immediate",
-                "linked_account_id": key,
-                "funding_account_id": key,
-                "settlement_account_id": key,
-                "display_order": order + 1,
-                "aliases": [key, label, f"{label} bank transfer", f"{label} bonifico"],
-                "legacy": {"migration_rule": "auto_current_account_bank_transfer"},
-                "metadata": {"auto_default": True, "visible_card": False},
-            })
+            if not _has_active_method(key, "debit_card"):
+                _add({
+                    "id": _unique_method_id(f"{key}_debit_card"),
+                    "name": "Debit Card" if key == "main_bank" else f"{label} debit card",
+                    "method_type": "debit_card",
+                    "settlement_mode": "immediate",
+                    "linked_account_id": key,
+                    "funding_account_id": key,
+                    "settlement_account_id": key,
+                    "display_order": order,
+                    "aliases": [key, label, f"{label} debit", f"{label} debit card", f"{label} card"],
+                    "legacy": {"migration_rule": "auto_current_account_debit_card"},
+                    "metadata": {"auto_default": True, "visible_card": True},
+                })
+            if not _has_active_method(key, "bank_transfer"):
+                _add({
+                    "id": _unique_method_id(f"{key}_transfer"),
+                    "name": f"{label} transfer",
+                    "method_type": "bank_transfer",
+                    "settlement_mode": "immediate",
+                    "linked_account_id": key,
+                    "funding_account_id": key,
+                    "settlement_account_id": key,
+                    "display_order": order + 1,
+                    "aliases": [key, label, f"{label} bank transfer", f"{label} bonifico"],
+                    "legacy": {"migration_rule": "auto_current_account_bank_transfer"},
+                    "metadata": {"auto_default": True, "visible_card": False},
+                })
         elif kind in {"cash", "investment_cash"} or key in {"cash_flow", "cashflow", "cash"}:
             _add({
                 "id": key,

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from functools import wraps
+import threading
 
-from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask import Blueprint, g, redirect, render_template, request, session, url_for
 
 from money_manager.security.key_manager import is_encryption_enabled
 from money_manager.security.session_vault import is_unlocked, lock_vault, unlock_user
@@ -17,21 +18,81 @@ from money_manager.users.user_manager import (
 
 bp = Blueprint("auth", __name__)
 
+_USER_FILES_READY: set[tuple[str, int]] = set()
+_USER_SCHEMA_REPAIR_RUNNING: set[tuple[str, int]] = set()
+_USER_SCHEMA_LOCK = threading.RLock()
+
+
+def _data_schema_version() -> int:
+    try:
+        from money_manager.config.app_home import load_app_version
+
+        return int(load_app_version().get("data_schema_current") or 0)
+    except Exception:
+        return 0
+
+
+def _ensure_user_files_once(user_id: str) -> None:
+    """Keep request-time file checks cheap.
+
+    Encrypted storage made the old full schema repair expensive because it
+    decrypted many files before every first page after login/unlock.  The request
+    path now only ensures folders exist.  A full repair is queued in the
+    background once per process/schema version, while individual readers still
+    lazily create/repair the exact file they need.
+    """
+    key = (str(user_id), _data_schema_version())
+    ensure_user_data_folder(user_id, create_files=False)
+    with _USER_SCHEMA_LOCK:
+        if key in _USER_FILES_READY:
+            return
+        _USER_FILES_READY.add(key)
+    _schedule_schema_repair(user_id, key)
+
+
+def _schedule_schema_repair(user_id: str, key: tuple[str, int]) -> None:
+    with _USER_SCHEMA_LOCK:
+        if key in _USER_SCHEMA_REPAIR_RUNNING:
+            return
+        _USER_SCHEMA_REPAIR_RUNNING.add(key)
+
+    def _run() -> None:
+        try:
+            from money_manager.config.user_paths import using_user
+
+            with using_user(str(user_id)):
+                ensure_user_data_folder(user_id, create_files=True)
+        except Exception:
+            with _USER_SCHEMA_LOCK:
+                _USER_FILES_READY.discard(key)
+        finally:
+            with _USER_SCHEMA_LOCK:
+                _USER_SCHEMA_REPAIR_RUNNING.discard(key)
+
+    thread = threading.Thread(target=_run, name=f"money-manager-schema-repair-{user_id}", daemon=True)
+    thread.start()
+
+
 PUBLIC_ENDPOINTS = {"auth.login", "auth.register", "static"}
 UNLOCK_ALLOWED_ENDPOINTS = {"security.unlock", "security.lock", "auth.logout", "static"}
 ONBOARDING_ALLOWED_ENDPOINTS = {"onboarding.onboarding_page", "onboarding.reset_onboarding", "auth.logout", "security.unlock", "security.lock"}
 
 
 def is_authenticated() -> bool:
-    user_id = session.get("user_id")
-    if not user_id:
-        return False
-    return get_user_by_id(str(user_id)) is not None
+    return current_user() is not None
 
 
 def current_user() -> dict | None:
     user_id = session.get("user_id")
-    return get_user_by_id(str(user_id)) if user_id else None
+    if not user_id:
+        return None
+    cache_key = "_money_manager_current_user"
+    cached = getattr(g, cache_key, None)
+    if isinstance(cached, dict) and str(cached.get("id") or "") == str(user_id):
+        return cached
+    user = get_user_by_id(str(user_id))
+    setattr(g, cache_key, user)
+    return user
 
 
 def login_required(view):
@@ -73,8 +134,9 @@ def require_login():
             return redirect(url_for("security.unlock", next=next_url))
 
         # Vault is unlocked, or encryption is disabled.
-        # Now it is safe to create/repair encrypted user files.
-        ensure_user_data_folder(user_id, create_files=True)
+        # Now it is safe to create/repair encrypted user files, but only a full
+        # repair pass once per user/schema version.
+        _ensure_user_files_once(user_id)
 
         if _should_redirect_to_onboarding(endpoint):
             next_url = request.full_path if request.query_string else request.path

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-CACHE_REGISTRY_VERSION = 1
+CACHE_REGISTRY_VERSION = 3
 DEFAULT_TTL_SECONDS = 15 * 60
 LONG_TTL_SECONDS = 60 * 60
 SHORT_TTL_SECONDS = 5 * 60
@@ -55,17 +55,21 @@ def _def(
 
 CACHE_DEFINITIONS: dict[str, CacheDefinition] = {
     # Core/dashboard
-    "dashboard_overview": _def("dashboard_overview", "v1", "Overview/dashboard context.", ("transactions", "ledger", "accounts", "payment_methods", "pending", "recurring", "debts", "investments"), rebuild="money_manager.services.dashboard_calculation_service.get_dashboard_overview_uncached"),
-    "quick_overview": _def("quick_overview", "v1", "Small fast overview cards.", ("transactions", "ledger", "accounts", "pending"), ttl=SHORT_TTL_SECONDS, rebuild="money_manager.services.dashboard_calculation_service.get_quick_overview_uncached"),
+    "dashboard_overview": _def("dashboard_overview", "v3", "Overview/dashboard context.", ("transactions", "ledger", "accounts", "payment_methods", "pending", "recurring", "debts", "investments"), rebuild="money_manager.services.dashboard_calculation_service.get_dashboard_overview_uncached"),
+    "overview.context": _def("overview.context", "v2", "Home/overview context.", ("transactions", "ledger", "accounts", "payment_methods", "pending", "recurring", "debts", "payables", "receivables", "investments"), rebuild="money_manager.services.overview_service._build_overview_context_uncached"),
+    "quick_overview": _def("quick_overview", "v3", "Small fast overview cards.", ("transactions", "ledger", "accounts", "pending"), ttl=SHORT_TTL_SECONDS, rebuild="money_manager.services.dashboard_calculation_service.get_quick_overview_uncached"),
+    "transactions.load_all": _def("transactions.load_all", "v3", "Normalized enriched transaction dataframe.", ("transactions", "accounts", "payment_methods", "internal_transfers", "credit_settlements"), ttl=None),
+    "transaction_initial_conditions": _def("transaction_initial_conditions", "v1", "Historical transaction totals before the rolling working window.", ("accounts", "payment_methods"), ttl=None),
     "net_explanation": _def("net_explanation", "v1", "Net-worth explanation context.", ("transactions", "ledger", "accounts", "payment_methods", "pending", "credit_settlements")),
-    "transaction_table_view": _def("transaction_table_view", "v1", "Prepared transaction table rows.", ("transactions", "accounts", "payment_methods"), ttl=SHORT_TTL_SECONDS),
+    "transaction_table_view": _def("transaction_table_view", "v2", "Prepared transaction table rows.", ("transactions", "accounts", "payment_methods"), ttl=SHORT_TTL_SECONDS),
     "transaction_filter_options": _def("transaction_filter_options", "v1", "Transaction filter category/type options.", ("transactions", "categories"), ttl=LONG_TTL_SECONDS),
-    "analysis_metrics": _def("analysis_metrics", "v1", "Analysis cockpit metrics.", ("transactions", "ledger", "accounts", "payment_methods", "pending", "recurring", "debts", "payables", "receivables", "investments"), ttl=DEFAULT_TTL_SECONDS),
+    "analysis_metrics": _def("analysis_metrics", "v2", "Analysis cockpit metrics.", ("transactions", "ledger", "accounts", "payment_methods", "pending", "recurring", "debts", "payables", "receivables", "investments"), ttl=DEFAULT_TTL_SECONDS),
 
     # Accounts/payment
-    "account_balances": _def("account_balances", "v1", "Account balance rows.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements"), rebuild="money_manager.services.account_calculation_service.get_account_balances_uncached"),
-    "account_dashboard_summary": _def("account_dashboard_summary", "v1", "Accounts page summary.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements"), rebuild="money_manager.services.account_calculation_service.get_account_dashboard_summary_uncached"),
-    "account_detail_summary": _def("account_detail_summary", "v1", "Account detail summary.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements")),
+    "account_balances": _def("account_balances", "v2", "Account balance rows.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements"), rebuild="money_manager.services.account_calculation_service.get_account_balances_uncached"),
+    "account_dashboard_summary": _def("account_dashboard_summary", "v2", "Accounts page summary.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements"), rebuild="money_manager.services.account_calculation_service.get_account_dashboard_summary_uncached"),
+    "account_detail_summary": _def("account_detail_summary", "v4", "Account detail summary.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements")),
+    "scope_balance_summary": _def("scope_balance_summary", "v3", "Scoped net/pending summary for topbar and account pills.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements", "pending", "payables", "recurring"), ttl=SHORT_TTL_SECONDS),
     "payment_method_summary": _def("payment_method_summary", "v1", "Payment method usage summary.", ("transactions", "payment_methods", "accounts", "ledger"), rebuild="money_manager.services.account_calculation_service.get_payment_method_summary_uncached"),
     "payment_method_options": _def("payment_method_options", "v1", "Payment method form options.", ("payment_methods", "accounts", "profile", "preferences"), ttl=LONG_TTL_SECONDS),
     "credit_settlement_summary": _def("credit_settlement_summary", "v1", "Credit settlement summary.", ("credit_settlements", "ledger", "pending", "transactions", "accounts")),
@@ -85,15 +89,15 @@ CACHE_DEFINITIONS: dict[str, CacheDefinition] = {
     "investment_summary": _def("investment_summary", "v1", "Investment summary.", ("investments", "investment_assets", "investment_market_cache")),
     "investment_habit_snapshot": _def("investment_habit_snapshot", "v1", "Investment habit snapshot.", ("investments", "investment_assets", "investment_market_cache"), rebuild="money_manager.services.investment_service.investment_habit_snapshot"),
     "yearly_summary": _def("yearly_summary", "v1", "Yearly financial summary.", ("transactions", "ledger", "pending", "recurring", "debts", "payables", "receivables", "internal_transfers", "investments"), ttl=LONG_TTL_SECONDS, rebuild="money_manager.services.analysis_calculation_service.get_yearly_summary_uncached"),
-    "category_summary": _def("category_summary", "v1", "Category summary.", ("transactions", "categories", "accounts", "payment_methods"), rebuild="money_manager.services.analysis_calculation_service.get_category_summary_uncached"),
-    "monthly_summary": _def("monthly_summary", "v1", "Monthly summary.", ("transactions", "accounts", "payment_methods"), rebuild="money_manager.services.analysis_calculation_service.get_monthly_summary_uncached"),
+    "category_summary": _def("category_summary", "v2", "Category summary.", ("transactions", "categories", "accounts", "payment_methods"), rebuild="money_manager.services.analysis_calculation_service.get_category_summary_uncached"),
+    "monthly_summary": _def("monthly_summary", "v2", "Monthly summary.", ("transactions", "accounts", "payment_methods"), rebuild="money_manager.services.analysis_calculation_service.get_monthly_summary_uncached"),
     "payment_method_breakdown": _def("payment_method_breakdown", "v1", "Payment method breakdown.", ("transactions", "payment_methods", "accounts"), rebuild="money_manager.services.analysis_calculation_service.get_payment_method_breakdown_uncached"),
-    "account_breakdown": _def("account_breakdown", "v1", "Account breakdown.", ("transactions", "accounts", "ledger"), rebuild="money_manager.services.analysis_calculation_service.get_account_breakdown_uncached"),
+    "account_breakdown": _def("account_breakdown", "v2", "Account breakdown.", ("transactions", "accounts", "ledger"), rebuild="money_manager.services.analysis_calculation_service.get_account_breakdown_uncached"),
 
     # User/app context
-    "profile_context": _def("profile_context", "v1", "Profile settings context.", ("profile", "accounts", "payment_methods"), ttl=LONG_TTL_SECONDS),
-    "preferences_context": _def("preferences_context", "v1", "Preferences context.", ("preferences",), ttl=LONG_TTL_SECONDS),
-    "navigation_context": _def("navigation_context", "v1", "Navigation context.", ("navigation", "preferences"), ttl=LONG_TTL_SECONDS, sensitive=False, encrypted=False),
+    "profile_context": _def("profile_context", "v2", "Profile settings context.", ("profile", "accounts", "payment_methods"), ttl=LONG_TTL_SECONDS),
+    "preferences_context": _def("preferences_context", "v2", "Preferences context.", ("preferences",), ttl=LONG_TTL_SECONDS),
+    "navigation_context": _def("navigation_context", "v2", "Navigation context.", ("navigation", "preferences"), ttl=LONG_TTL_SECONDS, sensitive=False, encrypted=False),
     "i18n_language_file": _def("i18n_language_file", "v1", "Loaded i18n language file.", ("i18n", "preferences"), ttl=LONG_TTL_SECONDS, sensitive=False, encrypted=False),
     "documents_summary": _def("documents_summary", "v1", "Documents registry summary.", ("documents", "document_types")),
     "contacts_summary": _def("contacts_summary", "v1", "Contacts summary.", ("contacts",)),

@@ -158,21 +158,41 @@ def dependent_accounts_for(parent_account_id: str, user_id: str | None = None, i
     return sorted(rows, key=lambda item: (int(float(item.get("display_order") or 1000)), str(item.get("label") or "")))
 
 
-def _method_account_ids(method: Mapping[str, Any], by_method: dict[str, Mapping[str, Any]], *, _seen: set[str] | None = None) -> set[str]:
+def _method_account_ids(
+    method: Mapping[str, Any],
+    by_method: dict[str, Mapping[str, Any]],
+    *,
+    user_id: str | None = None,
+    _seen: set[str] | None = None,
+) -> set[str]:
     ids = {
         str(method.get("linked_account_id") or "").strip(),
         str(method.get("funding_account_id") or "").strip(),
         str(method.get("settlement_account_id") or "").strip(),
         str(method.get("liability_account_id") or "").strip(),
+        str(method.get("parent_account_id") or "").strip(),
     }
     ids.discard("")
+
+    # A prepaid card usually points to its own stored-balance child account.  Add
+    # the parent account too so the card is visible under the bank/Conto wallet,
+    # while balance math still happens on the stored-balance account.
+    for account_id in list(ids):
+        try:
+            account = account_by_key(account_id, user_id=user_id, include_archived=True) or {}
+        except Exception:
+            account = {}
+        parent = str(account.get("parent_account_id") or account.get("parent_key") or "").strip()
+        if parent:
+            ids.add(parent)
+
     if str(method.get("settlement_mode") or "") == "delegated":
         seen = set(_seen or set())
         method_id = str(method.get("id") or "")
         delegate_id = str(method.get("delegates_to_payment_method_id") or "")
         if delegate_id and delegate_id not in seen and delegate_id in by_method:
             seen.add(method_id)
-            ids.update(_method_account_ids(by_method[delegate_id], by_method, _seen=seen))
+            ids.update(_method_account_ids(by_method[delegate_id], by_method, user_id=user_id, _seen=seen))
     return ids
 
 
@@ -183,16 +203,20 @@ def payment_methods_for_account(account_id: str, user_id: str | None = None, inc
     for method in by_method.values():
         if not include_archived and (method.get("is_archived") or not method.get("is_active", True)):
             continue
-        if key in _method_account_ids(method, by_method):
+        if key in _method_account_ids(method, by_method, user_id=user_id):
             result.append(dict(method))
     return sorted(result, key=lambda item: (int(float(item.get("display_order") or 1000)), str(item.get("name") or "")))
 
 
-def cards_for_account(account_id: str, user_id: str | None = None) -> list[dict[str, Any]]:
+def cards_for_account(
+    account_id: str,
+    user_id: str | None = None,
+    include_archived: bool = True,
+) -> list[dict[str, Any]]:
     key = normalize_account_key(account_id, user_id=user_id)
     cards: list[dict[str, Any]] = []
 
-    for method in payment_methods_for_account(key, user_id=user_id, active_only=False):
+    for method in payment_methods_for_account(key, user_id=user_id, include_archived=include_archived):
         method_type = str(method.get("method_type") or "")
 
         if (
@@ -307,6 +331,15 @@ def _ensure_enriched(df: pd.DataFrame | None) -> pd.DataFrame:
     return df.copy()
 
 
+def _load_enriched_transactions() -> pd.DataFrame:
+    try:
+        from money_manager.services.transaction_service import load_transactions
+
+        return _ensure_enriched(load_transactions())
+    except Exception:
+        return pd.DataFrame()
+
+
 def transactions_for_scope(df: pd.DataFrame | None, scope: str | Mapping[str, Any] | None, user_id: str | None = None) -> pd.DataFrame:
     data = _ensure_enriched(df)
     if data.empty:
@@ -333,7 +366,7 @@ def transactions_for_scope(df: pd.DataFrame | None, scope: str | Mapping[str, An
                 return False
             if method_id not in method_scope_cache:
                 method = by_method.get(method_id)
-                method_scope_cache[method_id] = bool(method and (_method_account_ids(method, by_method) & included))
+                method_scope_cache[method_id] = bool(method and (_method_account_ids(method, by_method, user_id=user_id) & included))
             return method_scope_cache[method_id]
         method_mask = pd.Series(False, index=data.index)
         for column in payment_columns:
@@ -401,25 +434,21 @@ def _ledger_balance_for_account(account_id: str, user_id: str | None = None) -> 
     # existing ledger loading logic here
 
 
-def _transaction_balance_for_account(account_id: str, user_id: str | None = None) -> float:
-    try:
-        from money_manager.services.transaction_service import load_transactions
-        df = load_transactions()
-    except Exception:
-        df = pd.DataFrame()
+def _transaction_balance_for_account(
+    account_id: str,
+    user_id: str | None = None,
+    df: pd.DataFrame | None = None,
+) -> float:
+    data = _ensure_enriched(df) if df is not None else _load_enriched_transactions()
 
-    data = _ensure_enriched(df)
+    account_key = normalize_account_key(account_id, user_id=user_id)
 
-    if data.empty:
-        return 0.0
-
-    if account_id == MAIN_ACCOUNT_KEY:
+    if account_key == MAIN_ACCOUNT_KEY:
         try:
             from money_manager.services.account_service import main_account_transactions
 
             main_rows = main_account_transactions(data)
-
-            if "signed_amount" in main_rows.columns:
+            if not main_rows.empty and "signed_amount" in main_rows.columns:
                 return float(
                     pd.to_numeric(main_rows["signed_amount"], errors="coerce")
                     .fillna(0.0)
@@ -427,35 +456,62 @@ def _transaction_balance_for_account(account_id: str, user_id: str | None = None
                 )
         except Exception:
             return 0.0
+        return 0.0
 
-    account_key = normalize_account_key(account_id, user_id=user_id)
-
-    if "account_key" in data.columns:
+    if data.empty:
+        transaction_total = 0.0
+    elif "account_key" in data.columns:
         sub = data[data["account_key"].astype(str) == account_key]
-    elif "account_id" in data.columns:
-        sub = data[data["account_id"].astype(str) == account_key]
-    else:
-        sub = pd.DataFrame()
-
-    total = 0.0
-
-    if not sub.empty and "signed_amount" in sub.columns:
-        total += float(
-            pd.to_numeric(sub["signed_amount"], errors="coerce")
+        amount_column = "account_signed_amount" if "account_signed_amount" in sub.columns else "signed_amount"
+        transaction_total = float(
+            pd.to_numeric(sub.get(amount_column, pd.Series(dtype=float)), errors="coerce")
             .fillna(0.0)
             .sum()
         )
+    elif "account_id" in data.columns:
+        sub = data[data["account_id"].astype(str) == account_key]
+        transaction_total = float(
+            pd.to_numeric(sub.get("signed_amount", pd.Series(dtype=float)), errors="coerce")
+            .fillna(0.0)
+            .sum()
+        )
+    else:
+        transaction_total = 0.0
 
-    return total
+    # Internal transfers are still stored separately while the app is in the CSV →
+    # ledger migration period.  Add their synthetic account movements for non-main
+    # accounts so top-ups, prepaid reloads and account-to-account movements are
+    # reflected on the selected Conto without requiring the ledger to be globally
+    # authoritative.
+    transfer_total = 0.0
+    try:
+        from money_manager.services.internal_transfer_service import auxiliary_transfer_movements
+
+        transfer_rows = auxiliary_transfer_movements(account_key=account_key)
+        if not transfer_rows.empty and "account_signed_amount" in transfer_rows.columns:
+            transfer_total = float(
+                pd.to_numeric(transfer_rows["account_signed_amount"], errors="coerce")
+                .fillna(0.0)
+                .sum()
+            )
+    except Exception:
+        transfer_total = 0.0
+
+    return transaction_total + transfer_total
 
 
-def net_balance_for_scope(scope: str | Mapping[str, Any] | None, user_id: str | None = None) -> float:
+def net_balance_for_scope(
+    scope: str | Mapping[str, Any] | None,
+    user_id: str | None = None,
+    df: pd.DataFrame | None = None,
+) -> float:
     resolved = resolve_account_scope(scope, user_id=user_id)
+    data = _ensure_enriched(df) if df is not None else None
     total = 0.0
     for account_id in _balance_account_ids_for_resolved(resolved):
         total += _initial_balance(account_id, user_id=user_id)
         ledger_total = _ledger_balance_for_account(account_id, user_id=user_id)
-        total += ledger_total if ledger_total is not None else _transaction_balance_for_account(account_id, user_id=user_id)
+        total += ledger_total if ledger_total is not None else _transaction_balance_for_account(account_id, user_id=user_id, df=data)
     return round(float(total), 2)
 
 
@@ -483,7 +539,7 @@ def _row_account_candidates(row: Mapping[str, Any], user_id: str | None = None) 
         by_method = _method_by_id(user_id=user_id, include_archived=True)
         method = by_method.get(method_id)
         if method:
-            candidates.update(_method_account_ids(method, by_method))
+            candidates.update(_method_account_ids(method, by_method, user_id=user_id))
     if not candidates:
         candidates.add(MAIN_ACCOUNT_KEY)
     return {candidate for candidate in candidates if candidate}
@@ -654,17 +710,17 @@ def receivables_for_scope(scope: str | Mapping[str, Any] | None, user_id: str | 
     return [dict(row) for row in rows if _row_in_scope(row, scope, user_id=user_id)]
 
 
-def net_after_pending_for_scope(scope: str | Mapping[str, Any] | None, user_id: str | None = None) -> float:
-    return round(net_balance_for_scope(scope, user_id=user_id) - pending_total_for_scope(scope, user_id=user_id), 2)
+def net_after_pending_for_scope(scope: str | Mapping[str, Any] | None, user_id: str | None = None, df: pd.DataFrame | None = None) -> float:
+    return round(net_balance_for_scope(scope, user_id=user_id, df=df) - pending_total_for_scope(scope, user_id=user_id), 2)
 
 
-def net_after_payables_for_scope(scope: str | Mapping[str, Any] | None, user_id: str | None = None) -> float:
-    return round(net_balance_for_scope(scope, user_id=user_id) - payables_total_for_scope(scope, user_id=user_id), 2)
+def net_after_payables_for_scope(scope: str | Mapping[str, Any] | None, user_id: str | None = None, df: pd.DataFrame | None = None) -> float:
+    return round(net_balance_for_scope(scope, user_id=user_id, df=df) - payables_total_for_scope(scope, user_id=user_id), 2)
 
 
-def projected_net_for_scope(scope: str | Mapping[str, Any] | None, user_id: str | None = None) -> float:
+def projected_net_for_scope(scope: str | Mapping[str, Any] | None, user_id: str | None = None, df: pd.DataFrame | None = None) -> float:
     return round(
-        net_balance_for_scope(scope, user_id=user_id)
+        net_balance_for_scope(scope, user_id=user_id, df=df)
         - pending_total_for_scope(scope, user_id=user_id)
         - payables_total_for_scope(scope, user_id=user_id)
         - recurring_monthly_total_for_scope(scope, user_id=user_id),
@@ -672,18 +728,20 @@ def projected_net_for_scope(scope: str | Mapping[str, Any] | None, user_id: str 
     )
 
 
-def scope_balance_summary(scope: str | Mapping[str, Any] | None, user_id: str | None = None) -> dict[str, Any]:
+def scope_balance_summary(
+    scope: str | Mapping[str, Any] | None,
+    user_id: str | None = None,
+    df: pd.DataFrame | None = None,
+) -> dict[str, Any]:
     resolved = resolve_account_scope(scope, user_id=user_id)
-    net = net_balance_for_scope(resolved, user_id=user_id)
+    data = _ensure_enriched(df) if df is not None else _load_enriched_transactions()
+    net = net_balance_for_scope(resolved, user_id=user_id, df=data)
     pending = pending_total_for_scope(resolved, user_id=user_id)
     payables = payables_total_for_scope(resolved, user_id=user_id)
     recurring = recurring_monthly_total_for_scope(resolved, user_id=user_id)
     account_id = resolved.get("account_id", "")
-    tx_count = 0
     try:
-        from money_manager.services.transaction_service import load_transactions
-
-        tx_count = int(len(transactions_for_scope(load_transactions(), resolved, user_id=user_id)))
+        tx_count = int(len(transactions_for_scope(data, resolved, user_id=user_id)))
     except Exception:
         tx_count = 0
     methods_count = len(payment_methods_for_account(account_id, user_id=user_id, include_archived=False)) if account_id else len(_method_rows(user_id=user_id, include_archived=False))
@@ -709,11 +767,12 @@ def scope_balance_summary(scope: str | Mapping[str, Any] | None, user_id: str | 
     }
 
 
-def all_financial_center_summaries(user_id: str | None = None) -> list[dict[str, Any]]:
+def all_financial_center_summaries(user_id: str | None = None, df: pd.DataFrame | None = None) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    data = _ensure_enriched(df) if df is not None else _load_enriched_transactions()
     for center in financial_centers(user_id=user_id, include_archived=False):
         center_id = _account_id(center)
-        summary = scope_balance_summary(f"account:{center_id}", user_id=user_id)
+        summary = scope_balance_summary(f"account:{center_id}", user_id=user_id, df=data)
         summary.update({
             "account_id": center_id,
             "key": center_id,
@@ -728,20 +787,21 @@ def all_financial_center_summaries(user_id: str | None = None) -> list[dict[str,
     return rows
 
 
-def global_balance_summary(user_id: str | None = None) -> dict[str, Any]:
-    return scope_balance_summary(SCOPE_GLOBAL, user_id=user_id)
+def global_balance_summary(user_id: str | None = None, df: pd.DataFrame | None = None) -> dict[str, Any]:
+    return scope_balance_summary(SCOPE_GLOBAL, user_id=user_id, df=df)
 
 
 def dashboard_context_for_scope(df: pd.DataFrame, scope: str | Mapping[str, Any] | None, user_id: str | None = None) -> dict[str, Any]:
     resolved = resolve_account_scope(scope, user_id=user_id)
+    data = _ensure_enriched(df)
     return {
         "selected_scope": resolved,
         "selected_scope_key": resolved["scope"],
         "scope_label": resolved["label"],
         "scope_is_global": resolved["is_global"],
         "scope_is_account": resolved["is_account"],
-        "scope_summary": scope_balance_summary(resolved, user_id=user_id),
-        "transactions": transactions_for_scope(df, resolved, user_id=user_id),
+        "scope_summary": scope_balance_summary(resolved, user_id=user_id, df=data),
+        "transactions": transactions_for_scope(data, resolved, user_id=user_id),
     }
 
 

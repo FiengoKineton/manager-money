@@ -22,7 +22,7 @@ from typing import Iterable, Sequence
 
 APP_HOST = "127.0.0.1"
 APP_PORT = 5000
-APP_URL = f"http://{APP_HOST}:{APP_PORT}"
+
 STATE_FILE = ".launcher_state.json"
 APP_CONFIG_DIR_NAME = "MoneyManagerLauncher"
 APP_CONFIG_FILE_NAME = "config.json"
@@ -31,6 +31,52 @@ LEGACY_PATH_CACHE_FILE = ".money_manager_project_path.txt"
 BROWSER_PROFILE_DIR = ".launcher_browser_profile"
 DATA_HOME_ENV = "MONEY_MANAGER_DATA_HOME"
 DATA_HOME_FOLDER_NAME = "MoneyManagerData"
+
+
+def _app_url(host: str, port: int) -> str:
+    return f"http://{host}:{port}"
+
+
+def _port_is_open(host: str, port: int) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=0.25):
+            return True
+    except OSError:
+        return False
+
+
+def _choose_available_port(host: str, preferred_port: int, *, search_count: int = 40) -> int:
+    if not _port_is_open(host, preferred_port):
+        return preferred_port
+    for port in range(preferred_port + 1, preferred_port + search_count + 1):
+        if not _port_is_open(host, port):
+            print(f"Port {preferred_port} is already in use. Using port {port} instead.")
+            return port
+    print(f"Ports {preferred_port}-{preferred_port + search_count} are busy.")
+    print("Close old Money Manager/Python windows from Task Manager, then try again.")
+    raise SystemExit(1)
+
+
+def _launcher_log_path(data_home: Path) -> Path:
+    logs_dir = data_home / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    return logs_dir / "launcher_latest.log"
+
+
+def _print_log_tail(path: Path, *, lines: int = 80) -> None:
+    try:
+        content = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except Exception:
+        return
+    tail = content[-lines:]
+    if not tail:
+        return
+    print("")
+    print(f"Last {len(tail)} launcher/server log lines from: {path}")
+    print("-" * 72)
+    for line in tail:
+        print(line)
+    print("-" * 72)
 
 
 def _launcher_dir() -> Path:
@@ -498,14 +544,23 @@ def _wait_until_browser_closes(server_process: subprocess.Popen, browser_process
         time.sleep(0.5)
 
 
-def start_app(project_dir: Path, venv_python: Path, *, data_home: Path, use_default_browser: bool = False) -> int:
+def start_app(
+    project_dir: Path,
+    venv_python: Path,
+    *,
+    data_home: Path,
+    use_default_browser: bool = False,
+    preferred_port: int = APP_PORT,
+) -> int:
+    port = _choose_available_port(APP_HOST, preferred_port)
+    url = _app_url(APP_HOST, port)
     command = [
         str(venv_python),
         str(project_dir / "run_money_manager.py"),
         "--host",
         APP_HOST,
         "--port",
-        str(APP_PORT),
+        str(port),
         "--no-browser",
     ]
 
@@ -513,31 +568,60 @@ def start_app(project_dir: Path, venv_python: Path, *, data_home: Path, use_defa
     env["PYTHONUNBUFFERED"] = "1"
     env[DATA_HOME_ENV] = str(data_home)
 
-    print(f"Starting Money Manager at {APP_URL}")
-    server_process = subprocess.Popen(command, cwd=project_dir, env=env)
+    log_path = _launcher_log_path(data_home)
+    log_handle = log_path.open("a", encoding="utf-8", errors="replace")
+    log_handle.write("\n" + "=" * 80 + "\n")
+    log_handle.write(time.strftime("%Y-%m-%d %H:%M:%S") + " starting Money Manager\n")
+    log_handle.write(f"project_dir={project_dir}\n")
+    log_handle.write(f"data_home={data_home}\n")
+    log_handle.write(f"command={' '.join(command)}\n")
+    log_handle.flush()
 
-    if not _wait_for_server(APP_HOST, APP_PORT, server_process):
-        print("The server stopped before it was ready. Check the messages above for the error.")
-        return int(server_process.returncode or 1)
-
-    browser_process = None
-    if not use_default_browser:
-        browser_process = _open_managed_browser_window(project_dir, APP_URL)
-
-    if browser_process is None:
-        _open_default_browser(APP_URL)
-        if not use_default_browser:
-            print(
-                "Could not find Edge/Chrome app mode. The server cannot reliably auto-stop "
-                "when a normal browser tab is closed."
-            )
+    print(f"Starting Money Manager at {url}")
+    print(f"Server log: {log_path}")
+    server_process = subprocess.Popen(
+        command,
+        cwd=project_dir,
+        env=env,
+        stdout=log_handle,
+        stderr=subprocess.STDOUT,
+    )
 
     try:
-        return _wait_until_browser_closes(server_process, browser_process)
-    except KeyboardInterrupt:
-        print("Stopping Money Manager...")
-        _stop_process(browser_process, "browser window")
-        return _stop_process(server_process, "Money Manager server")
+        if not _wait_for_server(APP_HOST, port, server_process):
+            try:
+                server_process.wait(timeout=2)
+            except Exception:
+                pass
+            log_handle.flush()
+            print("The server stopped before it was ready.")
+            _print_log_tail(log_path)
+            return int(server_process.returncode or 1)
+
+        browser_process = None
+        if not use_default_browser:
+            browser_process = _open_managed_browser_window(project_dir, url)
+
+        if browser_process is None:
+            _open_default_browser(url)
+            if not use_default_browser:
+                print(
+                    "Could not find Edge/Chrome app mode. The server cannot reliably auto-stop "
+                    "when a normal browser tab is closed."
+                )
+
+        try:
+            return _wait_until_browser_closes(server_process, browser_process)
+        except KeyboardInterrupt:
+            print("Stopping Money Manager...")
+            _stop_process(browser_process, "browser window")
+            return _stop_process(server_process, "Money Manager server")
+    finally:
+        try:
+            log_handle.flush()
+            log_handle.close()
+        except Exception:
+            pass
 
 
 def _parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
@@ -554,6 +638,12 @@ def _parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         "--default-browser",
         action="store_true",
         help="Open the normal default browser instead of a managed app window. Auto-stop on browser close is disabled.",
+    )
+    parser.add_argument(
+        "--port",
+        default=APP_PORT,
+        type=int,
+        help=f"Preferred local port. Default: {APP_PORT}. If busy, the launcher will pick the next free port.",
     )
     parser.add_argument(
         "--foreground",
@@ -578,7 +668,13 @@ def main(argv: Iterable[str] | None = None) -> int:
 
     apply_staged_updates_before_start(project_dir, data_home)
     venv_python = ensure_environment(project_dir)
-    return start_app(project_dir, venv_python, data_home=data_home, use_default_browser=args.default_browser)
+    return start_app(
+        project_dir,
+        venv_python,
+        data_home=data_home,
+        use_default_browser=args.default_browser,
+        preferred_port=int(args.port or APP_PORT),
+    )
 
 
 if __name__ == "__main__":
