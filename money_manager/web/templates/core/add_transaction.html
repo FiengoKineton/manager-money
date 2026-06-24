@@ -286,7 +286,7 @@
           </div>
 
           <div>
-            <label>Category</label>
+            <label>Category <a class="tiny-link" href="{{ url_for('settings_categories.categories_page') }}">manage</a></label>
             <select name="category" required>
               {% for c in categories %}
                 <option value="{{ c }}" {% if (form_values.category or default_category) == c %}selected{% endif %}>{{ c }}</option>

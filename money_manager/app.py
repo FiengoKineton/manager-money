@@ -14,9 +14,9 @@ def create_app() -> Flask:
 
     ensure_runtime_directories()
     try:
-        from money_manager.security.decrypted_export_service import cleanup_expired_decrypted_exports
+        from money_manager.security.decrypted_export_service import cleanup_expired_decrypted_exports_throttled
 
-        cleanup_expired_decrypted_exports()
+        cleanup_expired_decrypted_exports_throttled(force=True)
     except Exception:
         pass
 
@@ -50,9 +50,9 @@ def create_app() -> Flask:
     @app.after_request
     def _money_manager_cleanup_exports(response):
         try:
-            from money_manager.security.decrypted_export_service import cleanup_expired_decrypted_exports
+            from money_manager.security.decrypted_export_service import cleanup_expired_decrypted_exports_throttled
 
-            cleanup_expired_decrypted_exports()
+            cleanup_expired_decrypted_exports_throttled()
         except Exception:
             pass
         return response

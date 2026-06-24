@@ -9,9 +9,9 @@ from money_manager.cache.cache_registry import get_cache_definition
 from money_manager.cache.cache_stats_service import record_rebuild
 from money_manager.config.user_paths import get_current_user_id, normalize_user_id, using_user
 
-_SMALL_LOGIN_CACHES = ("profile_context", "preferences_context", "navigation_context", "payment_method_options", "quick_overview")
-_DASHBOARD_CACHES = ("dashboard_overview", "quick_overview", "account_balances", "account_dashboard_summary")
-_ACCOUNT_CACHES = ("account_balances", "account_dashboard_summary", "payment_method_summary")
+_SMALL_LOGIN_CACHES = ("profile_context", "preferences_context", "navigation_context")
+_DASHBOARD_CACHES = ("quick_overview",)
+_ACCOUNT_CACHES = ("account_balances",)
 
 
 def precompute_user_dashboard(user_id: str | None = None) -> dict:
@@ -31,7 +31,7 @@ def precompute_after_write(tags: Iterable[str], user_id: str | None = None) -> d
     invalidate_tags(tags, user_id=safe_id)
     # Keep post-write refresh deliberately light. Fingerprints still protect
     # correctness if nothing is precomputed.
-    return _precompute(("quick_overview", "account_balances"), user_id=safe_id)
+    return _precompute(("quick_overview",), user_id=safe_id)
 
 
 def warm_cache_on_login(user_id: str | None = None) -> None:

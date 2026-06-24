@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block page_title %}Categories{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <span class="eyebrow">Settings</span>
+  <h2>Custom categories</h2>
+  <p>Add your own categories, hide default categories you do not use, and choose the default category for each transaction type.</p>
+</section>
+
+{% if message %}
+  <div class="panel-card {{ 'danger-card' if status == 'error' else '' }}">
+    <strong>{{ 'Error' if status == 'error' else 'Saved' }}</strong>
+    <p>{{ message }}</p>
+  </div>
+{% endif %}
+
+<section class="grid two-columns">
+  {% for section in sections %}
+  <article class="panel-card category-settings-panel">
+    <div class="panel-header">
+      <div>
+        <span class="eyebrow">{{ section.active_count }} active</span>
+        <h3>{{ section.title }}</h3>
+      </div>
+      <span class="chip">Default: {{ section.default_category }}</span>
+    </div>
+
+    <form method="post" action="{{ url_for('settings_categories.add_category_route') }}" class="inline-form category-add-form">
+      <input type="hidden" name="transaction_type" value="{{ section.type }}">
+      <label>
+        New {{ section.type }} category
+        <input type="text" name="name" placeholder="Example: Car maintenance" required>
+      </label>
+      <button type="submit" class="primary-btn">Add</button>
+    </form>
+
+    <div class="table-panel compact-table-panel">
+      <table class="modern-table compact-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in section.custom_rows + section.base_rows %}
+          <tr class="{{ '' if row.active else 'is-muted' }}">
+            <td><strong>{{ row.name }}</strong></td>
+            <td>{{ row.kind }}</td>
+            <td>{{ 'default' if row.is_default else ('active' if row.active else 'hidden') }}</td>
+            <td class="row-actions compact-actions">
+              {% if row.active and not row.is_default %}
+                <form method="post" action="{{ url_for('settings_categories.default_category_route') }}">
+                  <input type="hidden" name="transaction_type" value="{{ section.type }}">
+                  <input type="hidden" name="name" value="{{ row.name }}">
+                  <button type="submit" class="secondary-btn compact-btn">Default</button>
+                </form>
+              {% endif %}
+              {% if row.active and not row.is_default %}
+                <form method="post" action="{{ url_for('settings_categories.hide_category_route') }}">
+                  <input type="hidden" name="transaction_type" value="{{ section.type }}">
+                  <input type="hidden" name="name" value="{{ row.name }}">
+                  <button type="submit" class="secondary-btn compact-btn">Hide</button>
+                </form>
+              {% elif not row.active %}
+                <form method="post" action="{{ url_for('settings_categories.restore_category_route') }}">
+                  <input type="hidden" name="transaction_type" value="{{ section.type }}">
+                  <input type="hidden" name="name" value="{{ row.name }}">
+                  <button type="submit" class="secondary-btn compact-btn">Restore</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4">No categories configured.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+
+<style>
+  .category-add-form { align-items: end; gap: 0.8rem; margin: 1rem 0; }
+  .category-add-form label { flex: 1; }
+  .compact-actions { display: flex; gap: .35rem; flex-wrap: wrap; }
+  .compact-actions form { display: inline; }
+  tr.is-muted { opacity: .55; }
+  .danger-card { border-color: rgba(239, 68, 68, .35); }
+</style>
+{% endblock %}

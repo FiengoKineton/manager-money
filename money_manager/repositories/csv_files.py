@@ -1,18 +1,36 @@
 from __future__ import annotations
 
+import threading
+import time
+from collections import OrderedDict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
 from money_manager.cache import request_cache
-from money_manager.config.user_paths import get_current_user_id
-from money_manager.cache.source_fingerprint_service import fingerprint_for_path
-
+from money_manager.config.user_paths import get_current_user_id, normalize_user_id
 from money_manager.security.secure_storage import (
     append_csv_row_secure,
     ensure_csv_secure,
     read_csv_secure,
     write_csv_secure,
 )
+
+_ROW_CACHE_MAX_ENTRIES = 256
+_ROW_CACHE_LOCK = threading.RLock()
+
+
+@dataclass
+class _RowCacheEntry:
+    key: str
+    user_id: str
+    path: str
+    rows: list[dict]
+    created_at: float
+    hits: int = 0
+
+
+_ROW_CACHE: "OrderedDict[str, _RowCacheEntry]" = OrderedDict()
 
 
 def _notify_cache_changed(path: Path | None = None) -> None:
@@ -42,28 +60,43 @@ def _current_headers(path: Path, fallback: list[str]) -> list[str]:
 
 
 def read_rows(path: Path, fieldnames: list[str]) -> list[dict]:
-    try:
-        fp = fingerprint_for_path(path, user_id=get_current_user_id())
-        key = f"csv_rows:{get_current_user_id() or ''}:{path}:{fp.get('mtime_ns')}:{fp.get('size')}:{fp.get('sha256')}"
-        sentinel = object()
-        cached = request_cache.get(key, sentinel)
-        if cached is not sentinel:
-            return [dict(row) for row in cached]
-        rows = read_csv_secure(path, fieldnames)
-        request_cache.set(key, [dict(row) for row in rows])
-        return rows
-    except Exception:
-        return read_csv_secure(path, fieldnames)
+    """Read CSV rows with cross-request parsed-row caching.
+
+    secure_storage already caches decrypted bytes, but parsing the same CSV into
+    dictionaries on every request still costs time.  This cache is keyed by
+    user + absolute path + mtime + size, so a write automatically makes the old
+    parsed rows unreachable without expensive hashing.
+    """
+    user_id = normalize_user_id(get_current_user_id()) if get_current_user_id() else ""
+    key = _row_cache_key(path, user_id=user_id)
+
+    sentinel = object()
+    request_value = request_cache.get(key, sentinel)
+    if request_value is not sentinel:
+        return [dict(row) for row in request_value]
+
+    cached = _row_cache_get(key)
+    if cached is not None:
+        request_cache.set(key, [dict(row) for row in cached])
+        return [dict(row) for row in cached]
+
+    rows = read_csv_secure(path, fieldnames)
+    clean_rows = [dict(row) for row in rows]
+    request_cache.set(key, [dict(row) for row in clean_rows])
+    _row_cache_set(key, path=path, user_id=user_id, rows=clean_rows)
+    return clean_rows
 
 
 def write_rows(path: Path, fieldnames: list[str], rows: Iterable[dict]) -> None:
     write_csv_secure(path, fieldnames, rows)
+    _invalidate_row_cache_for_path(path)
     request_cache.clear_user()
     _notify_cache_changed(path)
 
 
 def append_row(path: Path, fieldnames: list[str], row: dict) -> None:
     append_csv_row_secure(path, fieldnames, row)
+    _invalidate_row_cache_for_path(path)
     request_cache.clear_user()
     _notify_cache_changed(path)
 
@@ -71,3 +104,92 @@ def append_row(path: Path, fieldnames: list[str], row: dict) -> None:
 def next_numeric_id(rows: list[dict], field: str = "id") -> int:
     ids = [int(row[field]) for row in rows if str(row.get(field, "")).isdigit()]
     return max(ids, default=0) + 1
+
+
+def row_cache_stats() -> dict:
+    with _ROW_CACHE_LOCK:
+        return {
+            "entry_count": len(_ROW_CACHE),
+            "max_entries": _ROW_CACHE_MAX_ENTRIES,
+            "entries": [
+                {
+                    "user_id": entry.user_id,
+                    "path": entry.path,
+                    "rows": len(entry.rows),
+                    "age_seconds": round(time.time() - entry.created_at, 3),
+                    "hits": entry.hits,
+                }
+                for entry in _ROW_CACHE.values()
+            ],
+        }
+
+
+def clear_row_cache(user_id: str | None = None) -> int:
+    safe_id = normalize_user_id(user_id) if user_id else ""
+    removed = 0
+    with _ROW_CACHE_LOCK:
+        for key, entry in list(_ROW_CACHE.items()):
+            if safe_id and entry.user_id != safe_id:
+                continue
+            _ROW_CACHE.pop(key, None)
+            removed += 1
+    return removed
+
+
+def _row_cache_get(key: str) -> list[dict] | None:
+    with _ROW_CACHE_LOCK:
+        entry = _ROW_CACHE.get(key)
+        if entry is None:
+            return None
+        entry.hits += 1
+        _ROW_CACHE.move_to_end(key)
+        return [dict(row) for row in entry.rows]
+
+
+def _row_cache_set(key: str, *, path: Path, user_id: str, rows: list[dict]) -> None:
+    with _ROW_CACHE_LOCK:
+        _ROW_CACHE[key] = _RowCacheEntry(
+            key=key,
+            user_id=user_id,
+            path=_path_text(path),
+            rows=[dict(row) for row in rows],
+            created_at=time.time(),
+        )
+        _ROW_CACHE.move_to_end(key)
+        while len(_ROW_CACHE) > _ROW_CACHE_MAX_ENTRIES:
+            _ROW_CACHE.popitem(last=False)
+
+
+def _invalidate_row_cache_for_path(path: Path, user_id: str | None = None) -> int:
+    target_text = _path_text(path)
+    safe_id = normalize_user_id(user_id) if user_id else ""
+    removed = 0
+    with _ROW_CACHE_LOCK:
+        for key, entry in list(_ROW_CACHE.items()):
+            if entry.path != target_text:
+                continue
+            if safe_id and entry.user_id != safe_id:
+                continue
+            _ROW_CACHE.pop(key, None)
+            removed += 1
+    return removed
+
+
+def _row_cache_key(path: Path, *, user_id: str) -> str:
+    try:
+        stat = path.stat()
+        mtime_ns = int(stat.st_mtime_ns)
+        size = int(stat.st_size)
+        exists = path.is_file()
+    except OSError:
+        mtime_ns = 0
+        size = 0
+        exists = False
+    return f"csv_rows_v2:{user_id}:{_path_text(path)}:{int(exists)}:{mtime_ns}:{size}"
+
+
+def _path_text(path: Path) -> str:
+    try:
+        return str(path.resolve())
+    except Exception:
+        return str(path.absolute())

@@ -293,6 +293,20 @@ DEFAULT_NAVIGATION: list[dict[str, Any]] = [
                 "default_order": 50,
                 "active_endpoints": ["settings_cache.cache_page", "settings_cache.clear_cache_route", "settings_cache.rebuild_cache_route", "settings_cache.cleanup_stale_route"],
             },
+            {
+                "page_id": "categories",
+                "endpoint": "settings_categories.categories_page",
+                "label_key": "nav.categories",
+                "default_visible": True,
+                "default_order": 60,
+                "active_endpoints": [
+                    "settings_categories.categories_page",
+                    "settings_categories.add_category_route",
+                    "settings_categories.hide_category_route",
+                    "settings_categories.restore_category_route",
+                    "settings_categories.default_category_route",
+                ],
+            },
         ],
     },
 

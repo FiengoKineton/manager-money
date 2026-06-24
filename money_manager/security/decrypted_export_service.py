@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import threading
+import time
 import uuid
 import zipfile
 from datetime import datetime, timedelta, timezone
@@ -21,6 +24,9 @@ EXPORT_ZIP_NAME = "user_data_decrypted.zip"
 USER_DATA_PREFIX = "user_data"
 EXCLUDED_TOP_LEVEL = {"cache", "plots", "backups"}
 EXPIRED_METADATA_DIR = "_expired_metadata"
+_CLEANUP_LOCK = threading.RLock()
+_LAST_CLEANUP_AT = 0.0
+_CLEANUP_MIN_INTERVAL_SECONDS = float(os.environ.get("MONEY_MANAGER_EXPORT_CLEANUP_INTERVAL_SECONDS", "900") or 900)
 
 
 class DecryptedExportError(RuntimeError):
@@ -46,6 +52,22 @@ def user_temp_export_root(user_id: str | None = None) -> Path:
     path = temp_export_root() / safe_id
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def cleanup_expired_decrypted_exports_throttled(*, force: bool = False) -> dict[str, Any]:
+    """Throttle temp-export cleanup so normal page loads do not scan folders.
+
+    Decrypted export cleanup is important, but doing it after every request can
+    make the whole app feel slow on Windows disks.  Export creation/download
+    still calls the strict cleanup path when needed.
+    """
+    global _LAST_CLEANUP_AT
+    now = time.time()
+    with _CLEANUP_LOCK:
+        if not force and _LAST_CLEANUP_AT and now - _LAST_CLEANUP_AT < _CLEANUP_MIN_INTERVAL_SECONDS:
+            return {"skipped": True, "last_cleanup_at": _LAST_CLEANUP_AT}
+        _LAST_CLEANUP_AT = now
+    return cleanup_expired_decrypted_exports()
 
 
 def cleanup_expired_decrypted_exports() -> dict[str, Any]:

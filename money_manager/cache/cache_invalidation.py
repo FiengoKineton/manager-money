@@ -20,6 +20,15 @@ def expand_tags(tags: Iterable[str] | None) -> set[str]:
     return expanded
 
 
+def _clear_turbo_cache(user_id: str | None = None, tags: Iterable[str] | None = None) -> None:
+    try:
+        from money_manager.performance import fast_memory_cache
+
+        fast_memory_cache.clear(user_id=user_id, tags=tags)
+    except Exception:
+        pass
+
+
 def invalidate_tags(tags: Iterable[str], user_id: str | None = None) -> int:
     safe_id = _resolve_optional_user(user_id)
     expanded = expand_tags(tags)
@@ -31,6 +40,7 @@ def invalidate_tags(tags: Iterable[str], user_id: str | None = None) -> int:
     count = mark_stale(tags=expanded, user_id=safe_id, reason="tag_invalidation")
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id, tags=expanded)
+    _clear_turbo_cache(user_id=safe_id, tags=expanded)
     try:
         from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
 
@@ -51,6 +61,7 @@ def invalidate_key(key: str, user_id: str | None = None) -> int:
     count = mark_stale(entry_ids=[key], user_id=safe_id, reason="key_invalidation")
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id)
+    _clear_turbo_cache(user_id=safe_id)
     try:
         from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
 
@@ -71,6 +82,7 @@ def invalidate_user_cache(user_id: str | None = None) -> int:
     count = mark_stale(user_id=safe_id, reason="user_invalidation")
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id)
+    _clear_turbo_cache(user_id=safe_id)
     try:
         from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
 
@@ -108,6 +120,7 @@ def clear_user_cache(user_id: str | None = None) -> int:
     count = _clear_user_cache(user_id=safe_id)
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id)
+    _clear_turbo_cache(user_id=safe_id)
     try:
         from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
 

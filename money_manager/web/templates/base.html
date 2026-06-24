@@ -17,7 +17,8 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=receipt-paper-items-fix-3">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=fast-phone-1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=fast-phone-1" media="(max-width: 1120px), (hover: none) and (pointer: coarse)">
   {% set plotly_endpoints = [
     'dashboard.index',
     'analysis.analysis',
@@ -108,7 +109,7 @@
             <strong>Profile</strong>
           </a>
         {% endif %}
-        <details class="settings-drawer {{ 'is-active' if request.endpoint in ['integrity.integrity_page', 'security.security_page', 'settings_updates.updates_page', 'settings_updates.data_registry_page', 'settings_cache.cache_page'] else '' }}">
+        <details class="settings-drawer {{ 'is-active' if request.endpoint in ['integrity.integrity_page', 'security.security_page', 'settings_updates.updates_page', 'settings_updates.data_registry_page', 'settings_cache.cache_page', 'settings_categories.categories_page'] else '' }}">
           <summary><span class="profile-footer-icon" aria-hidden="true">⋯</span><strong>Settings</strong></summary>
           <div class="settings-drawer-links">
             {% if endpoint_exists('security.security_page') %}<a class="{{ 'active' if request.endpoint == 'security.security_page' else '' }}" href="{{ url_for('security.security_page') }}">Security</a>{% endif %}
@@ -116,6 +117,7 @@
             {% if endpoint_exists('settings_updates.updates_page') %}<a class="{{ 'active' if request.endpoint == 'settings_updates.updates_page' else '' }}" href="{{ url_for('settings_updates.updates_page') }}">Updates</a>{% endif %}
             {% if endpoint_exists('settings_updates.data_registry_page') %}<a class="{{ 'active' if request.endpoint == 'settings_updates.data_registry_page' else '' }}" href="{{ url_for('settings_updates.data_registry_page') }}">Data registry</a>{% endif %}
             {% if endpoint_exists('settings_cache.cache_page') %}<a class="{{ 'active' if request.endpoint == 'settings_cache.cache_page' else '' }}" href="{{ url_for('settings_cache.cache_page') }}">Cache</a>{% endif %}
+            {% if endpoint_exists('settings_categories.categories_page') %}<a class="{{ 'active' if request.endpoint == 'settings_categories.categories_page' else '' }}" href="{{ url_for('settings_categories.categories_page') }}">Categories</a>{% endif %}
           </div>
         </details>
         <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
@@ -258,6 +260,7 @@
   <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=receipt-paper-items-fix-3"></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=wallet-shell-17e"></script>
+  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=fast-phone-1" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

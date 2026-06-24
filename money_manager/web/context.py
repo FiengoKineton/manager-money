@@ -44,7 +44,9 @@ def _topbar_main_bank_net() -> float:
     if not is_authenticated():
         return 0.0
     try:
-        return float(_cached_scope_summary("global").get("net_balance", 0.0) or 0.0)
+        from money_manager.services.dashboard_calculation_service import get_quick_overview_cached
+
+        return float(get_quick_overview_cached().get("net_worth", 0.0) or 0.0)
     except Exception:
         return 0.0
 
@@ -69,17 +71,16 @@ def _topbar_scope_net_context(active_account: dict | None = None) -> dict:
     active = active_account or active_sidebar_account_context()
     account_id = str(active.get("account_id") or "").strip() if active else ""
     if account_id:
-        try:
-            summary = _cached_scope_summary(f"account:{account_id}")
-            label = str(summary.get("label") or active.get("account_label") or account_id)
-            return {
-                "topbar_global_net": global_net,
-                "topbar_display_net": float(summary.get("net_balance", 0.0) or 0.0),
-                "topbar_net_label": f"{label} net",
-                "topbar_net_href": url_for("accounts.account_detail", account_key=account_id),
-            }
-        except Exception:
-            pass
+        # Do not compute the full scoped account summary from the topbar.  It is
+        # expensive and it runs on every page render.  Account/detail pages still
+        # compute their real summaries inside their own route.
+        label = str(active.get("account_label") or account_id)
+        return {
+            "topbar_global_net": global_net,
+            "topbar_display_net": global_net,
+            "topbar_net_label": f"{label} / all net",
+            "topbar_net_href": url_for("accounts.account_detail", account_key=account_id),
+        }
 
     return {
         "topbar_global_net": global_net,
@@ -209,13 +210,26 @@ def active_sidebar_account_context() -> dict:
     return {"has_active_account": True, "account_id": account_id, "account_label": label}
 
 
+def _empty_notification_context() -> dict:
+    return {"count": 0, "unread_count": 0, "has_unread_candidate": False, "items": [], "history": []}
+
+
 def _topbar_notifications() -> dict:
     if not is_authenticated():
-        return {"count": 0, "unread_count": 0, "has_unread_candidate": False, "items": []}
+        return _empty_notification_context()
+    # Notification building touches pending/debts/payables/recurring data.  Keep
+    # normal navigation immediate by loading it only on pages where the user is
+    # already looking at planning/obligation data.
+    endpoint = str(request.endpoint or "")
+    heavy_endpoints = ("pending.", "payables.", "debts.", "receivables.", "forecast.")
+    if not endpoint.startswith(heavy_endpoints):
+        return _empty_notification_context()
     try:
-        return build_notification_context_cached()
+        payload = build_notification_context_cached()
+        payload.setdefault("history", [])
+        return payload
     except Exception:
-        return {"count": 0, "unread_count": 0, "has_unread_candidate": False, "items": []}
+        return _empty_notification_context()
 
 
 def _current_user_config_context(user: dict | None) -> dict:

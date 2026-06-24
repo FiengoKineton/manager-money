@@ -60,6 +60,8 @@ def _process_set(cache: dict[str, tuple[float, dict[str, Any]]], key: str, value
                 cache.pop(old_key, None)
 
 SMALL_FILE_HASH_LIMIT = 256 * 1024
+STRICT_CACHE_FINGERPRINT = os.environ.get("MONEY_MANAGER_STRICT_CACHE_FINGERPRINT", "").strip() == "1"
+
 
 TAG_ALIASES: dict[str, tuple[str, ...]] = {
     "transactions": ("expenses", "incomes", "investments", "money_rows"),
@@ -251,13 +253,18 @@ def _path_fingerprint(path: Path, *, schema_version: int = 1) -> dict[str, Any]:
             return item
         stat = path.stat()
         item.update({"exists": True, "mtime_ns": int(stat.st_mtime_ns), "size": int(stat.st_size)})
-        item["encrypted"] = bool(is_file_encrypted(path))
-        if item["encrypted"]:
-            metadata = read_envelope_metadata(path)
-            item["envelope_version"] = str(metadata.get("schema_version") or "")
-            item["envelope_algorithm"] = str(metadata.get("algorithm") or "")
-        if stat.st_size <= SMALL_FILE_HASH_LIMIT:
-            item["sha256"] = _sha256_file(path)
+        # Fast mode uses mtime/size + explicit runtime epochs.  Reading hashes
+        # and encrypted-envelope metadata for every dependent file made normal
+        # navigation feel extremely slow on Windows/AV/OneDrive setups.  Enable
+        # MONEY_MANAGER_STRICT_CACHE_FINGERPRINT=1 for forensic/debug runs.
+        if STRICT_CACHE_FINGERPRINT:
+            item["encrypted"] = bool(is_file_encrypted(path))
+            if item["encrypted"]:
+                metadata = read_envelope_metadata(path)
+                item["envelope_version"] = str(metadata.get("schema_version") or "")
+                item["envelope_algorithm"] = str(metadata.get("algorithm") or "")
+            if stat.st_size <= SMALL_FILE_HASH_LIMIT:
+                item["sha256"] = _sha256_file(path)
     except Exception as exc:
         item["error"] = str(exc)[:160]
     return item
@@ -275,7 +282,10 @@ def _dir_fingerprint(path: Path) -> dict[str, Any]:
                 rel = child.relative_to(path).as_posix()
                 total_size += int(stat.st_size)
                 latest_mtime = max(latest_mtime, int(stat.st_mtime_ns))
-                files.append({"path": rel, "mtime_ns": int(stat.st_mtime_ns), "size": int(stat.st_size), "encrypted": bool(is_file_encrypted(child))})
+                item = {"path": rel, "mtime_ns": int(stat.st_mtime_ns), "size": int(stat.st_size)}
+                if STRICT_CACHE_FINGERPRINT:
+                    item["encrypted"] = bool(is_file_encrypted(child))
+                files.append(item)
             except Exception:
                 continue
     digest = hashlib.sha256(json.dumps(files, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()

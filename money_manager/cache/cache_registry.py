@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-CACHE_REGISTRY_VERSION = 3
+CACHE_REGISTRY_VERSION = 4
 DEFAULT_TTL_SECONDS = 15 * 60
 LONG_TTL_SECONDS = 60 * 60
 SHORT_TTL_SECONDS = 5 * 60
@@ -65,6 +65,7 @@ CACHE_DEFINITIONS: dict[str, CacheDefinition] = {
     "transaction_filter_options": _def("transaction_filter_options", "v1", "Transaction filter category/type options.", ("transactions", "categories"), ttl=LONG_TTL_SECONDS),
     "analysis_metrics": _def("analysis_metrics", "v2", "Analysis cockpit metrics.", ("transactions", "ledger", "accounts", "payment_methods", "pending", "recurring", "debts", "payables", "receivables", "investments"), ttl=DEFAULT_TTL_SECONDS),
 
+    "phone.experience.summary": _def("phone.experience.summary", "v2", "Fast phone home summary.", ("transactions", "pending", "recurring", "debts", "payables"), ttl=SHORT_TTL_SECONDS),
     # Accounts/payment
     "account_balances": _def("account_balances", "v2", "Account balance rows.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements"), rebuild="money_manager.services.account_calculation_service.get_account_balances_uncached"),
     "account_dashboard_summary": _def("account_dashboard_summary", "v2", "Accounts page summary.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements"), rebuild="money_manager.services.account_calculation_service.get_account_dashboard_summary_uncached"),

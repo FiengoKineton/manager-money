@@ -22,3 +22,35 @@ data_home=C:\Repos\money-manager\MoneyManagerData
 command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
 Money Manager is starting on http://127.0.0.1:5000
 Press Ctrl+C in this window to stop it.
+
+================================================================================
+2026-06-25 00:35:36 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+
+================================================================================
+2026-06-25 00:41:42 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+
+================================================================================
+2026-06-25 00:52:20 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+
+================================================================================
+2026-06-25 00:52:58 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
