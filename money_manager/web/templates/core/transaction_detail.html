@@ -49,6 +49,78 @@
     </div>
   {% endif %}
 
+
+  {% set receipt = tx.receipt or {} %}
+  <section class="receipt-editor-panel form-field-wide">
+    <div class="receipt-editor-head">
+      <div>
+        <span class="eyebrow">Receipt</span>
+        <h3>Receipt / shopping list</h3>
+        <p>Keep the transaction as one movement, but split what was bought into editable receipt items.</p>
+      </div>
+      <div class="receipt-total-pill">
+        <span>Receipt total</span>
+        <strong>€ {{ receipt.total_display or tx.amount }}</strong>
+      </div>
+    </div>
+
+    <form method="post" class="receipt-editor-form" id="receipt-editor-form">
+      <input type="hidden" name="action" value="save_receipt">
+      <div class="receipt-meta-grid">
+        <div><label>Shop / merchant</label><input type="text" name="receipt_merchant" value="{{ receipt.merchant or tx.description or tx.category }}"></div>
+        <div><label>Timestamp</label><input type="text" name="receipt_purchased_at" value="{{ receipt.purchased_at or tx.created_at or tx.date }}" placeholder="YYYY-MM-DD or timestamp"></div>
+        <div><label>Used card</label><input type="text" name="receipt_card_label" value="{{ receipt.card_label or tx.payment_method_name_snapshot or tx.payment_method }}" placeholder="Card/payment method"></div>
+        <div><label>Card last 4</label><input type="text" maxlength="4" name="receipt_card_last4" value="{{ receipt.card_last4 }}" placeholder="0000"></div>
+        <div><label>Card network</label><input type="text" name="receipt_card_network" value="{{ receipt.card_network }}" placeholder="Visa, Mastercard..."></div>
+        <div><label>Account</label><input type="text" name="receipt_account_label" value="{{ receipt.account_label or tx.account_name_snapshot or tx.account_label or tx.account }}"></div>
+      </div>
+
+      <div class="receipt-items-table" id="receipt-items-table">
+        <div class="receipt-items-header"><span>Item</span><span>Qty</span><span>Unit €</span><span>Total</span><span></span></div>
+        {% for item in receipt.items or [] %}
+          <div class="receipt-item-row">
+            <input type="text" name="receipt_item_name" value="{{ item.name or ('Item %03d'|format(loop.index)) }}" placeholder="Item {{ '%03d'|format(loop.index) }}">
+            <input type="number" min="0" step="0.01" name="receipt_item_qty" value="{{ item.qty or 1 }}" data-receipt-qty>
+            <input type="number" min="0" step="0.01" name="receipt_item_unit_price" value="{{ item.unit_price }}" data-receipt-price>
+            <strong data-receipt-line-total>€ {{ item.line_total_display or item.line_total }}</strong>
+            <button type="button" class="receipt-remove-row" data-receipt-remove aria-label="Remove item">×</button>
+            <input type="hidden" name="receipt_item_note" value="{{ item.note }}">
+          </div>
+        {% else %}
+          <div class="receipt-item-row">
+            <input type="text" name="receipt_item_name" value="Item 001" placeholder="Item 001">
+            <input type="number" min="0" step="0.01" name="receipt_item_qty" value="1" data-receipt-qty>
+            <input type="number" min="0" step="0.01" name="receipt_item_unit_price" value="{{ tx.amount }}" data-receipt-price>
+            <strong data-receipt-line-total>€ {{ tx.amount }}</strong>
+            <button type="button" class="receipt-remove-row" data-receipt-remove aria-label="Remove item">×</button>
+            <input type="hidden" name="receipt_item_note" value="">
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="receipt-editor-actions">
+        <button type="button" class="secondary-btn compact-btn" id="receipt-add-item">+ Add item</button>
+        <div class="receipt-discount-controls">
+          <label>Discount</label>
+          <select name="receipt_discount_type" id="receipt-discount-type">
+            <option value="none" {% if receipt.discount_type == 'none' or not receipt.discount_type %}selected{% endif %}>No discount</option>
+            <option value="percent" {% if receipt.discount_type == 'percent' %}selected{% endif %}>Percent off</option>
+            <option value="voucher" {% if receipt.discount_type == 'voucher' %}selected{% endif %}>Voucher €</option>
+          </select>
+          <input type="number" min="0" step="0.01" name="receipt_discount_value" id="receipt-discount-value" value="{{ receipt.discount_value or 0 }}" placeholder="10 or 50">
+        </div>
+        <label class="inline-checkbox receipt-sync-checkbox"><input type="checkbox" name="receipt_sync_amount" value="1"> update transaction amount from receipt total</label>
+        <div class="receipt-live-total"><span>Subtotal € <b id="receipt-subtotal">{{ receipt.subtotal_display or tx.amount }}</b></span><span>Discount € <b id="receipt-discount-amount">{{ '%.2f'|format(receipt.discount_amount or 0) }}</b></span><strong>Total € <b id="receipt-grand-total">{{ receipt.total_display or tx.amount }}</b></strong></div>
+        <button class="primary-btn compact-btn" type="submit">Save receipt</button>
+      </div>
+
+      <div class="form-field-wide receipt-notes-field">
+        <label>Receipt notes</label>
+        <textarea name="receipt_notes" rows="2" placeholder="Optional receipt note">{{ receipt.notes }}</textarea>
+      </div>
+    </form>
+  </section>
+
   <form method="post" class="transaction-form">
     <input type="hidden" name="payment_channel_method_id" value="{{ tx.payment_channel_method_id_snapshot }}">
     <div>
@@ -142,4 +214,82 @@
     </div>
   </form>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  function money(value) {
+    const parsed = Number.parseFloat(String(value || "0").replace(",", "."));
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+  }
+  function format(value) { return money(value).toFixed(2); }
+  function itemNumber(count) { return String(count).padStart(3, "0"); }
+  function updateReceiptTotals() {
+    const rows = Array.from(document.querySelectorAll(".receipt-item-row"));
+    let subtotal = 0;
+    rows.forEach((row) => {
+      const qty = money(row.querySelector("[data-receipt-qty]")?.value || 1);
+      const price = money(row.querySelector("[data-receipt-price]")?.value || 0);
+      const total = qty * price;
+      subtotal += total;
+      const label = row.querySelector("[data-receipt-line-total]");
+      if (label) label.textContent = `€ ${format(total)}`;
+    });
+    const type = document.getElementById("receipt-discount-type")?.value || "none";
+    const value = money(document.getElementById("receipt-discount-value")?.value || 0);
+    let discount = 0;
+    if (type === "percent") discount = subtotal * Math.min(value, 100) / 100;
+    if (type === "voucher") discount = Math.min(subtotal, value);
+    const total = Math.max(0, subtotal - discount);
+    const subtotalEl = document.getElementById("receipt-subtotal");
+    const discountEl = document.getElementById("receipt-discount-amount");
+    const totalEl = document.getElementById("receipt-grand-total");
+    if (subtotalEl) subtotalEl.textContent = format(subtotal);
+    if (discountEl) discountEl.textContent = format(discount);
+    if (totalEl) totalEl.textContent = format(total);
+  }
+  function wireRow(row) {
+    row.querySelectorAll("input, select").forEach((input) => input.addEventListener("input", updateReceiptTotals));
+    const remove = row.querySelector("[data-receipt-remove]");
+    if (remove) remove.addEventListener("click", () => {
+      const rows = document.querySelectorAll(".receipt-item-row");
+      if (rows.length <= 1) {
+        row.querySelector("input[name='receipt_item_name']").value = "Item 001";
+        row.querySelector("[data-receipt-qty]").value = "1";
+        row.querySelector("[data-receipt-price]").value = "0.00";
+      } else {
+        row.remove();
+      }
+      updateReceiptTotals();
+    });
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".receipt-item-row").forEach(wireRow);
+    ["receipt-discount-type", "receipt-discount-value"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("input", updateReceiptTotals);
+      if (el) el.addEventListener("change", updateReceiptTotals);
+    });
+    const add = document.getElementById("receipt-add-item");
+    const table = document.getElementById("receipt-items-table");
+    if (add && table) add.addEventListener("click", () => {
+      const next = document.querySelectorAll(".receipt-item-row").length + 1;
+      const row = document.createElement("div");
+      row.className = "receipt-item-row";
+      row.innerHTML = `
+        <input type="text" name="receipt_item_name" value="Item ${itemNumber(next)}" placeholder="Item ${itemNumber(next)}">
+        <input type="number" min="0" step="0.01" name="receipt_item_qty" value="1" data-receipt-qty>
+        <input type="number" min="0" step="0.01" name="receipt_item_unit_price" value="0.00" data-receipt-price>
+        <strong data-receipt-line-total>€ 0.00</strong>
+        <button type="button" class="receipt-remove-row" data-receipt-remove aria-label="Remove item">×</button>
+        <input type="hidden" name="receipt_item_note" value="">`;
+      table.appendChild(row);
+      wireRow(row);
+      updateReceiptTotals();
+    });
+    updateReceiptTotals();
+  });
+})();
+</script>
 {% endblock %}

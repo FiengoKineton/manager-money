@@ -17,7 +17,7 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=wallet-stack-responsive-1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=receipt-support-nav-2">
   {% set plotly_endpoints = [
     'dashboard.index',
     'analysis.analysis',
@@ -126,6 +126,11 @@
 
     <div class="app-workspace">
       <header class="app-topbar">
+        <nav class="topbar-nav-buttons" aria-label="Page navigation">
+          <a class="topbar-nav-btn" href="{{ url_for('dashboard.overview') if endpoint_exists('dashboard.overview') else url_for('accounts.accounts_page') }}" title="Home" aria-label="Home">⌂</a>
+          <button type="button" class="topbar-nav-btn" data-browser-back title="Back" aria-label="Back">‹</button>
+          <button type="button" class="topbar-nav-btn" data-browser-forward title="Forward" aria-label="Forward">›</button>
+        </nav>
         <div class="app-topbar-title">
           <span class="eyebrow">{{ t("app.personal_finance") }}</span>
           <h1>{% block page_title %}{{ t("app.name") }}{% endblock %}</h1>
@@ -250,7 +255,7 @@
     </div>
   </div>
 
-  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=wallet-shell-17e"></script>
+  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=receipt-support-nav-2"></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=wallet-shell-17e"></script>
   {% block scripts %}{% endblock %}

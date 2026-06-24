@@ -174,6 +174,7 @@ USER_JSON_DEFINITIONS: tuple[DataFileDefinition, ...] = (
     _json("investment_market_cache", "investment_market_cache.json", {"symbols": {}, "last_refresh_attempt": ""}, description="Market-data cache for investment views.", sensitive="financial", backup="exclude", cache="cache_file"),
     _json("account_events", "account_events.json", {"schema_version": 1, "events": []}, description="Account lifecycle and closure/replacement event log.", sensitive="financial", encrypted_by_default=True),
     _json("documents_metadata", "documents/_metadata.json", {"schema_version": 1, "documents": []}, description="Document registry metadata.", sensitive="personal", encrypted_by_default=True),
+    _json("receipts", "receipts.json", {"schema_version": 1, "receipts": {}, "updated_at": ""}, description="Transaction receipt/shopping-list metadata.", sensitive="financial", encrypted_by_default=True),
 )
 
 USER_CSV_DEFINITIONS: tuple[DataFileDefinition, ...] = (

@@ -539,7 +539,8 @@ def _wait_until_browser_closes(server_process: subprocess.Popen, browser_process
         browser_status = browser_process.poll()
         if browser_status is not None:
             print("Browser window closed. Stopping Money Manager automatically...")
-            return _stop_process(server_process, "Money Manager server")
+            _stop_process(server_process, "Money Manager server")
+            return 0
 
         time.sleep(0.5)
 

@@ -1,7 +1,7 @@
 from datetime import date
 import json
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
 
 from money_manager.config import TRANSACTION_TYPES
 from money_manager.domain.transaction import TransactionInput
@@ -21,6 +21,7 @@ from money_manager.services.transaction_window_service import (
 )
 from money_manager.web.transaction_filter_state import resolve_transaction_filter_state
 from money_manager.web.context import resolve_request_scope, scope_template_context
+from money_manager.services.receipt_service import receipt_for_transaction, update_receipt_from_form
 from money_manager.services.transaction_service import (
     delete_existing_transaction,
     load_transactions,
@@ -203,13 +204,65 @@ def add_transaction():
     )
 
 
+@bp.route("/transaction/<int:row_index>/receipt")
+def transaction_receipt_snippet(row_index: int):
+    try:
+        tx, _categories = transaction_detail_context(row_index)
+    except LookupError:
+        return jsonify({"ok": False, "error": "Transaction not found"}), 404
+    except Exception:
+        current_app.logger.exception("Failed to load transaction %s for receipt snippet", row_index)
+        return jsonify({"ok": False, "error": "Receipt unavailable"}), 500
+
+    try:
+        receipt = tx.get("receipt") or receipt_for_transaction(tx)
+    except Exception:
+        current_app.logger.exception("Failed to load receipt for transaction %s", row_index)
+        receipt = _fallback_receipt_from_transaction(tx)
+
+    return jsonify({
+        "ok": True,
+        "transaction": {
+            "row_index": row_index,
+            "date": tx.get("date", ""),
+            "amount": tx.get("amount", ""),
+            "category": tx.get("category", ""),
+            "description": tx.get("description", ""),
+            "account": tx.get("account_name_snapshot") or tx.get("account_label") or tx.get("account") or "",
+            "payment_method": tx.get("payment_method_name_snapshot") or tx.get("payment_method") or "",
+        },
+        "receipt": receipt,
+    })
+
+
 @bp.route("/transaction/<int:row_index>", methods=["GET", "POST"])
 def transaction_detail(row_index: int):
     warning = ""
     if request.method == "POST":
         action = request.form.get("action")
 
-        if action == "delete":
+        if action == "save_receipt":
+            try:
+                tx, _categories = transaction_detail_context(row_index)
+            except LookupError:
+                return f"Transaction {row_index} not found", 404
+            result = update_receipt_from_form(tx, request.form)
+            if result.get("ok"):
+                if result.get("sync_amount"):
+                    sync_form = dict(request.form)
+                    sync_form["amount"] = f"{float(result.get('receipt', {}).get('total', tx.get('amount') or 0)):.2f}"
+                    sync_form["date"] = tx.get("date", "")
+                    sync_form["category"] = tx.get("category", "")
+                    sync_form["sub_category"] = tx.get("sub_category", "")
+                    sync_form["account"] = tx.get("account", "")
+                    sync_form["account_id"] = tx.get("account_id", "")
+                    sync_form["payment_method_id"] = tx.get("payment_method_id", "")
+                    sync_form["description"] = tx.get("description", "")
+                    update_existing_transaction(row_index, sync_form)
+                return redirect(url_for("transactions.transaction_detail", row_index=row_index))
+            warning = result.get("error", "The receipt was not saved.")
+
+        elif action == "delete":
             result = delete_existing_transaction(row_index, confirm_settled_edit=request.form.get("confirm_settled_edit") == "1")
             if result.get("ok"):
                 scoped_account_id = request.args.get("account_id") or request.form.get("account_id") or ""
@@ -233,14 +286,11 @@ def transaction_detail(row_index: int):
     except LookupError:
         return f"Transaction {row_index} not found", 404
 
+    payment_context = _safe_payment_form_context(tx)
     return render_template(
         "core/transaction_detail.html",
         tx=tx,
         categories=categories,
-        **payment_form_context(
-            transaction_type=tx.get("type"),
-            selected_account_id=tx.get("account_id") or tx.get("account_key") or tx.get("account"),
-            selected_payment_method_id=tx.get("payment_method_id"),
-        ),
+        **payment_context,
         transaction_warning=warning or request.args.get("warning", ""),
     )

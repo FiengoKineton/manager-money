@@ -403,6 +403,7 @@
           <h2 class="desktop-detail-title">Details</h2>
           <p class="desktop-detail-subtitle"></p>
           <strong class="desktop-detail-amount"></strong>
+          <div class="desktop-detail-receipt" hidden></div>
         </div>
         <div class="desktop-detail-body"></div>
         <div class="desktop-detail-actions" aria-label="Available actions"></div>
@@ -421,6 +422,7 @@
       title: drawer.querySelector(".desktop-detail-title"),
       subtitle: drawer.querySelector(".desktop-detail-subtitle"),
       amount: drawer.querySelector(".desktop-detail-amount"),
+      receipt: drawer.querySelector(".desktop-detail-receipt"),
       body: drawer.querySelector(".desktop-detail-body"),
       actions: drawer.querySelector(".desktop-detail-actions"),
     };
@@ -455,6 +457,69 @@
     collectRowExtraDetails(row, details).forEach((line) => details.push(line));
 
     return { headers, cells, summary, details, actionCells };
+  }
+
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function renderReceiptBox(root, payload) {
+    if (!root) return;
+    const receipt = payload && payload.receipt ? payload.receipt : null;
+    if (!receipt) {
+      root.hidden = true;
+      root.innerHTML = "";
+      return;
+    }
+
+    const items = Array.isArray(receipt.items) ? receipt.items.slice(0, 8) : [];
+    const itemRows = items.map((item, index) => `
+      <li>
+        <span>${escapeHtml(item.name || `Item ${String(index + 1).padStart(3, "0")}`)}</span>
+        <small>${escapeHtml(item.qty_display || item.qty || "1")} × € ${escapeHtml(item.unit_price_display || item.unit_price || "0.00")}</small>
+        <strong>€ ${escapeHtml(item.line_total_display || item.line_total || "0.00")}</strong>
+      </li>`).join("");
+
+    root.innerHTML = `
+      <div class="desktop-receipt-card">
+        <div class="desktop-receipt-head">
+          <span>Receipt</span>
+          <strong>${escapeHtml(receipt.merchant || "Transaction receipt")}</strong>
+          <small>${escapeHtml(receipt.purchased_at || "")}${receipt.card_label ? " · " + escapeHtml(receipt.card_label) : ""}${receipt.card_network ? " · " + escapeHtml(receipt.card_network) : ""}${receipt.card_last4 ? " · •••• " + escapeHtml(receipt.card_last4) : ""}</small>
+        </div>
+        <ul class="desktop-receipt-items">${itemRows || "<li><span>Item 001</span><strong>€ 0.00</strong></li>"}</ul>
+        <div class="desktop-receipt-totals">
+          <span>Subtotal <b>€ ${escapeHtml(receipt.subtotal_display || "0.00")}</b></span>
+          <span>Discount <b>${escapeHtml(receipt.discount_label || "No discount")}</b></span>
+          <strong>Total € ${escapeHtml(receipt.total_display || "0.00")}</strong>
+        </div>
+      </div>`;
+    root.hidden = false;
+  }
+
+  function loadDesktopDrawerReceipt(row, elements) {
+    if (!elements || !elements.receipt) return;
+    const url = row.dataset.receiptUrl || "";
+    if (!url) {
+      elements.receipt.hidden = true;
+      elements.receipt.innerHTML = "";
+      return;
+    }
+    elements.receipt.hidden = false;
+    elements.receipt.innerHTML = '<div class="desktop-receipt-card is-loading"><span>Receipt</span><small>Loading receipt details...</small></div>';
+    fetch(url, { headers: { "Accept": "application/json" } })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Receipt unavailable")))
+      .then((payload) => { renderReceiptBox(elements.receipt, payload); })
+      .catch(() => {
+        elements.receipt.hidden = true;
+        elements.receipt.innerHTML = "";
+      });
   }
 
   function addDesktopDrawerActions(actionsRoot, row, detail) {
@@ -515,6 +580,7 @@
     elements.subtitle.textContent = detail.summary.meta || "Click actions below to modify this row.";
     elements.amount.textContent = detail.summary.amount || "";
     elements.amount.style.display = detail.summary.amount ? "block" : "none";
+    loadDesktopDrawerReceipt(row, elements);
 
     elements.body.innerHTML = "";
     detail.details.forEach((item) => {

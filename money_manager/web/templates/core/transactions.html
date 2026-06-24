@@ -169,7 +169,8 @@
     <tbody>
     {% for tx in transactions_initial %}
       <tr class="row-{{ tx.type }} clickable-row"
-          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
+          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
+          data-receipt-url="{{ url_for('transactions.transaction_receipt_snippet', row_index=tx.row_index) }}">
         <td>{{ tx.date_str }}</td>
         <td>{{ tx.type.capitalize() }}</td>
         <td>
@@ -237,7 +238,8 @@
     <tbody id="full-transactions" class="is-hidden">
       {% for tx in transactions[50:] %}
       <tr class="row-{{ tx.type }} clickable-row"
-          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
+          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
+          data-receipt-url="{{ url_for('transactions.transaction_receipt_snippet', row_index=tx.row_index) }}">
         <td>{{ tx.date_str }}</td>
         <td>{{ tx.type.capitalize() }}</td>
         <td>

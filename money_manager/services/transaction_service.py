@@ -509,8 +509,16 @@ def transaction_detail_context(row_index: int) -> tuple[dict, list[str]]:
         "transfer_reference": _clean_display(raw.get("transfer_reference", "")),
         "transfer_status": _clean_display(raw.get("transfer_status", "")),
         "description": _clean_display(raw.get("description", "")),
+        "created_at": _clean_display(raw.get("created_at", "")),
         "delay_date_default": (date.today() + timedelta(days=1)).isoformat(),
     }
+
+    try:
+        from money_manager.services.receipt_service import receipt_for_transaction
+
+        tx["receipt"] = receipt_for_transaction(tx)
+    except Exception:
+        tx["receipt"] = {}
 
     return tx, categories_for(tx["type"])
 

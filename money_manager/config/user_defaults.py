@@ -289,6 +289,11 @@ DEFAULT_PAYMENT_METHODS: dict[str, Any] = {
         },
     ],
 }
+DEFAULT_RECEIPTS: dict[str, Any] = {
+    "schema_version": 1,
+    "receipts": {},
+    "updated_at": "",
+}
 
 USER_CONFIG_DEFAULTS: dict[str, dict[str, Any]] = {
     "profile.json": DEFAULT_PROFILE,
@@ -299,6 +304,7 @@ USER_CONFIG_DEFAULTS: dict[str, dict[str, Any]] = {
     "contacts.json": DEFAULT_CONTACTS,
     "navigation.json": DEFAULT_NAVIGATION,
     "document_types.json": DEFAULT_DOCUMENT_TYPES,
+    "receipts.json": DEFAULT_RECEIPTS,
 }
 
 

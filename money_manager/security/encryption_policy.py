@@ -41,6 +41,7 @@ SENSITIVE_USER_FILE_NAMES = {
     "account_ledger.csv",
     "credit_settlements.csv",
     "internal_transfers.csv",
+    "receipts.json",
     "sparagnat_fottut.csv",
     "documents/_metadata.json",
 }

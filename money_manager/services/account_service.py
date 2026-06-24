@@ -383,6 +383,44 @@ def _safe_money(value) -> float:
         return 0.0
 
 
+def _support_summary_for_account_scope(scope: str, movements: pd.DataFrame) -> dict[str, float | int]:
+    try:
+        from money_manager.services.account_scope_service import debts_for_scope, receivables_for_scope
+
+        debt_rows = debts_for_scope(scope)
+        receivable_rows = receivables_for_scope(scope)
+    except Exception:
+        debt_rows = []
+        receivable_rows = []
+
+    active_debts = [row for row in debt_rows if str(row.get("status") or "active").casefold() == "active" and _safe_money(row.get("remaining_amount")) > 0]
+    active_receivables = [row for row in receivable_rows if str(row.get("status") or "active").casefold() == "active" and _safe_money(row.get("remaining_amount")) > 0]
+    debts_remaining = round(sum(_safe_money(row.get("remaining_amount")) for row in active_debts), 2)
+    receivables_remaining = round(sum(_safe_money(row.get("remaining_amount")) for row in active_receivables), 2)
+
+    if movements is not None and not movements.empty and "type" in movements.columns:
+        inv_rows = movements[movements["type"].fillna("").astype(str).str.casefold() == "investment"]
+    else:
+        inv_rows = pd.DataFrame()
+    investment_total = 0.0
+    if not inv_rows.empty:
+        amount_col = "account_signed_amount" if "account_signed_amount" in inv_rows.columns else "signed_amount" if "signed_amount" in inv_rows.columns else "amount"
+        try:
+            investment_total = round(float(pd.to_numeric(inv_rows[amount_col], errors="coerce").fillna(0.0).abs().sum()), 2)
+        except Exception:
+            investment_total = 0.0
+
+    return {
+        "debts_total": debts_remaining,
+        "debts_count": len(active_debts),
+        "receivables_total": receivables_remaining,
+        "receivables_count": len(active_receivables),
+        "investments_total": investment_total,
+        "investments_count": int(len(inv_rows)),
+        "net_with_support": 0.0,
+    }
+
+
 def _method_display_name(method: dict) -> str:
     return str(method.get("name") or method.get("label") or method.get("id") or "Payment method")
 
@@ -708,6 +746,13 @@ def account_detail_context(df: pd.DataFrame, account_key: str) -> dict | None:
         "projected_net": _safe_money(scoped_summary.get("projected_net", balance)),
         "transactions_count": int(scoped_summary.get("transactions_count") or int(len(movements))),
     }
+    local_summary.update(_support_summary_for_account_scope(f"account:{account_key}", movements))
+    local_summary["net_with_support"] = round(
+        local_summary["projected_net"]
+        - local_summary["debts_total"]
+        + local_summary["receivables_total"],
+        2,
+    )
 
     monthly = _monthly_summary_for_account(movements, limit=None)
     max_month = max([row["total"] for row in monthly], default=0.0)

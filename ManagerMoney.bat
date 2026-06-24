@@ -21,10 +21,11 @@ if not defined PROJECT_DIR exit /b 1
 set "LAUNCHER_PY=%PROJECT_DIR%\launcher.py"
 set "DATA_HOME=%PROJECT_DIR%\MoneyManagerData"
 
-rem Default to foreground mode so double-click startup errors stay visible.
-rem Use --background if you explicitly want the old minimized launcher behavior.
-if /I "%~1"=="--background" goto run_background
-if /I "%~1"=="--minimized" goto run_background
+rem Default to minimized launcher behavior for normal double-click use.
+rem Use --foreground when you need to keep startup errors visible for debugging.
+if /I "%~1"=="--foreground" goto run_foreground
+if /I "%~1"=="--debug" goto run_foreground
+goto run_background
 
 :run_foreground
 pushd "%PROJECT_DIR%" >nul 2>nul
