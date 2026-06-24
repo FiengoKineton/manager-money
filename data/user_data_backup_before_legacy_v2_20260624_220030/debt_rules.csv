@@ -1,0 +1,3 @@
+id,debt_id,name,rule_type,amount,frequency,day_of_month,start_date,payoff_date,last_generated,active
+1,3,Phone Payments,monthly_instalment,100.0,1,10,2026-06-10,,2026-06-10,1
+2,4,Payoff,payoff_date,0.0,1,1,2026-06-08,2026-06-10,2026-06-10,0

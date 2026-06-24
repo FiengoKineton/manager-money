@@ -311,21 +311,43 @@
             <small class="hint">The CSV amount is saved in EUR. If this is not EUR, the original amount and rate are added to the description.</small>
           </div>
 
-          <div class="form-field-wide">
-            <label>Amounts (multiple)</label>
+          <div class="form-field-wide add-receipt-builder">
+            <label>Receipt items / amounts</label>
+            <small class="hint">The transaction CSV saves only the final total. Item names, quantities, prices and discounts are saved separately in the receipt data.</small>
 
-            <div id="amount-list" class="amount-list">
-              <input type="number" step="0.01" class="amount-input" placeholder="0.00" value="{{ form_values.amount or '' }}">
+            <div id="amount-list" class="amount-list receipt-input-list">
+              <div class="add-receipt-row">
+                <input type="text" name="receipt_item_name" class="receipt-item-name-input" value="Item 001" placeholder="Item 001">
+                <input type="number" min="0" step="0.01" name="receipt_item_qty" class="receipt-item-qty-input" value="1" placeholder="Qty" data-add-receipt-qty>
+                <input type="number" min="0" step="0.01" name="receipt_item_unit_price" class="amount-input receipt-item-price-input" placeholder="Unit €" value="{{ form_values.amount or '' }}" data-add-receipt-price>
+                <strong class="receipt-item-line-preview" data-add-receipt-line>€ 0.00</strong>
+                <button type="button" class="receipt-remove-row add-receipt-remove" data-add-receipt-remove aria-label="Remove item">×</button>
+                <input type="hidden" name="receipt_item_note" value="">
+              </div>
             </div>
 
-            <button type="button" id="add-amount-btn" class="secondary-btn">+ Add another</button>
+            <div class="receipt-add-controls">
+              <button type="button" id="add-amount-btn" class="secondary-btn">+ Add item</button>
+              <div class="receipt-discount-controls add-discount-controls">
+                <label>Discount</label>
+                <select name="receipt_discount_type" id="receipt-discount-type">
+                  <option value="none">No discount</option>
+                  <option value="percent">Percent off</option>
+                  <option value="voucher">Voucher €</option>
+                </select>
+                <input type="number" min="0" step="0.01" name="receipt_discount_value" id="receipt-discount-value" value="0" placeholder="10 or 50">
+              </div>
+            </div>
 
-            <div class="currency-total-box">
+            <div class="currency-total-box paper-total-preview">
               <p>
-                <strong>Total input: <span id="total-currency-code">EUR</span> <span id="total-amount">0.00</span></strong>
+                <strong>Subtotal: <span id="total-currency-code">EUR</span> <span id="total-amount">0.00</span></strong>
               </p>
               <p>
-                <strong>Saved in EUR: € <span id="eur-total-amount">0.00</span></strong>
+                <strong>Discount: <span id="receipt-discount-preview">0.00</span></strong>
+              </p>
+              <p>
+                <strong>Saved transaction total in EUR: € <span id="eur-total-amount">0.00</span></strong>
               </p>
               <small id="currency-rate-preview" class="hint">Rate: 1.000000 + correction 0.000000 = 1.000000 EUR per unit.</small>
             </div>

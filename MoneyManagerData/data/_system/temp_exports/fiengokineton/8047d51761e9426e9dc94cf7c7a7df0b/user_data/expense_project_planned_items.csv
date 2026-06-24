@@ -1,0 +1,5 @@
+id,project_id,name,vendor,original_amount,remaining_amount,category,sub_category,account,start_date,due_date,description,status,payable_id,created_at,closed_at,account_id,account_name_snapshot,preferred_payment_method_id,preferred_payment_method_name_snapshot
+1,1,construction costs,,30000.0,30000.0,Construction,,,2026-06-11,,,active,,2026-06-11T12:57:06,,,,,
+3,1,Ceramiche e Pavimenti,Spazio 121,15000.0,10311.7,Payable,Linked payable,,2026-06-11,,,active,1,2026-06-15T11:29:16,,,,,
+4,1,Infissi,Giuseppe,4280.0,2500.0,Payable,Linked payable,,2026-05-21,,persi 220eur,active,2,2026-06-15T11:29:39,,,,,
+5,1,CILA a nero,Umberto,500.0,500.0,Payable,Linked payable,Cash Flow,2026-06-15,,,active,3,2026-06-15T19:38:38,,,,,

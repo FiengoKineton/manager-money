@@ -74,6 +74,53 @@ def update_receipt_from_form(tx: Mapping[str, Any], form: Mapping[str, Any], use
     return {"ok": True, "receipt": finalize_receipt(receipt, tx), "sync_amount": _truthy(form.get("receipt_sync_amount"))}
 
 
+
+
+def receipt_form_has_items(form: Mapping[str, Any]) -> bool:
+    """Return true when the add/edit form contains a real receipt item list."""
+    names = _form_list(form, "receipt_item_name")
+    prices = _form_list(form, "receipt_item_unit_price")
+    qtys = _form_list(form, "receipt_item_qty")
+    return any(str(v or "").strip() for v in [*names, *prices, *qtys])
+
+
+def receipt_total_from_form(tx: Mapping[str, Any], form: Mapping[str, Any]) -> float:
+    """Calculate the transaction amount from receipt rows and discount."""
+    receipt = finalize_receipt(receipt_from_form(tx, form), tx)
+    return float(receipt.get("total", 0.0) or 0.0)
+
+
+def save_receipt_for_saved_transaction(
+    transaction_type: str,
+    transaction_id: int | str,
+    tx: Mapping[str, Any],
+    form: Mapping[str, Any],
+    user_id: str | None = None,
+) -> dict[str, Any]:
+    """Persist receipt metadata for a newly-created CSV transaction.
+
+    Receipt items stay in receipts.json, keyed by transaction_uid. The transaction
+    CSV keeps only the final total amount, so old transaction calculations remain
+    compatible and fast.
+    """
+    from money_manager.domain.transaction import make_transaction_uid
+
+    tx_type = str(transaction_type or tx.get("type") or "").strip().lower()
+    tx_id = str(transaction_id or tx.get("id") or tx.get("csv_id") or "").strip()
+    uid = make_transaction_uid(tx_type, tx_id) if tx_type and tx_id else ""
+    if not uid:
+        return {"ok": False, "error": "Missing saved transaction id for receipt."}
+
+    tx_for_receipt = dict(tx or {})
+    tx_for_receipt.update({
+        "type": tx_type,
+        "id": tx_id,
+        "csv_id": tx_id,
+        "transaction_uid": uid,
+    })
+    return update_receipt_from_form(tx_for_receipt, form, user_id=user_id)
+
+
 def receipt_from_form(tx: Mapping[str, Any], form: Mapping[str, Any]) -> dict[str, Any]:
     base = _default_receipt_from_transaction(tx)
     items = []

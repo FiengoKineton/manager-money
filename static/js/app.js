@@ -482,14 +482,17 @@
       </li>`).join("");
 
     root.innerHTML = `
-      <div class="desktop-receipt-card">
-        <div class="desktop-receipt-head">
+      <div class="desktop-receipt-card paper-receipt-card">
+        <div class="paper-receipt-tear"></div>
+        <div class="desktop-receipt-head paper-receipt-head">
           <span>Receipt</span>
           <strong>${escapeHtml(receipt.merchant || "Transaction receipt")}</strong>
-          <small>${escapeHtml(receipt.purchased_at || "")} ${receipt.card_label ? "· " + escapeHtml(receipt.card_label) : ""}${receipt.card_network ? " · " + escapeHtml(receipt.card_network) : ""}${receipt.card_last4 ? " · •••• " + escapeHtml(receipt.card_last4) : ""}</small>
+          <small>${escapeHtml(receipt.purchased_at || "")}${receipt.card_label ? " · " + escapeHtml(receipt.card_label) : ""}${receipt.card_network ? " · " + escapeHtml(receipt.card_network) : ""}${receipt.card_last4 ? " · •••• " + escapeHtml(receipt.card_last4) : ""}</small>
         </div>
-        <ul class="desktop-receipt-items">${itemRows || "<li><span>Item 001</span><strong>€ 0.00</strong></li>"}</ul>
-        <div class="desktop-receipt-totals">
+        <div class="paper-receipt-separator"></div>
+        <ul class="desktop-receipt-items paper-receipt-items">${itemRows || "<li><span>Item 001</span><strong>€ 0.00</strong></li>"}</ul>
+        <div class="paper-receipt-separator"></div>
+        <div class="desktop-receipt-totals paper-receipt-totals">
           <span>Subtotal <b>€ ${escapeHtml(receipt.subtotal_display || "0.00")}</b></span>
           <span>Discount <b>${escapeHtml(receipt.discount_label || "No discount")}</b></span>
           <strong>Total € ${escapeHtml(receipt.total_display || "0.00")}</strong>

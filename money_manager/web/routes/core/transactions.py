@@ -21,7 +21,13 @@ from money_manager.services.transaction_window_service import (
 )
 from money_manager.web.transaction_filter_state import resolve_transaction_filter_state
 from money_manager.web.context import resolve_request_scope, scope_template_context
-from money_manager.services.receipt_service import receipt_for_transaction, update_receipt_from_form
+from money_manager.services.receipt_service import (
+    receipt_for_transaction,
+    receipt_form_has_items,
+    receipt_total_from_form,
+    save_receipt_for_saved_transaction,
+    update_receipt_from_form,
+)
 from money_manager.services.transaction_service import (
     delete_existing_transaction,
     load_transactions,
@@ -160,10 +166,38 @@ def add_transaction():
         quick_values = request.form.to_dict()
         transaction_type = request.args.get("type", "expense")
     elif request.method == "POST":
-        tx_input = TransactionInput.from_form(request.form)
+        posted_form = request.form.copy()
+        provisional_tx = {
+            "type": posted_form.get("type", "expense"),
+            "date": posted_form.get("date", ""),
+            "category": posted_form.get("category", ""),
+            "sub_category": posted_form.get("sub_category", ""),
+            "description": posted_form.get("description", ""),
+            "account": posted_form.get("account", ""),
+            "account_id": posted_form.get("account_id", ""),
+            "payment_method_id": posted_form.get("payment_method_id", ""),
+            "amount": posted_form.get("amount", "0"),
+        }
+        if receipt_form_has_items(request.form):
+            posted_form["amount"] = f"{receipt_total_from_form(provisional_tx, request.form):.2f}"
+            provisional_tx["amount"] = posted_form["amount"]
+
+        tx_input = TransactionInput.from_form(posted_form)
         result = save_new_transaction(tx_input)
         if result.get("ok"):
-            scoped_account_id = request.form.get("account_id") or request.args.get("account_id") or ""
+            tx_ids = result.get("transaction_ids") or []
+            if tx_ids and receipt_form_has_items(request.form):
+                receipt_tx = tx_input.as_dict()
+                receipt_tx.update({
+                    "amount": f"{float(tx_input.amount or 0):.2f}",
+                    "payment_method_id": tx_input.payment_method_id,
+                    "account_id": tx_input.account_id,
+                })
+                try:
+                    save_receipt_for_saved_transaction(tx_input.type, tx_ids[0], receipt_tx, request.form)
+                except Exception:
+                    current_app.logger.exception("Failed to save receipt for newly-created transaction %s:%s", tx_input.type, tx_ids[0])
+            scoped_account_id = posted_form.get("account_id") or request.args.get("account_id") or ""
             return redirect(url_for("transactions.transactions_page", account_id=scoped_account_id) if scoped_account_id else url_for("transactions.transactions_page"))
         form_error = result.get("error", "The transaction was not saved.")
         form_values = request.form.to_dict()
@@ -294,3 +328,43 @@ def transaction_detail(row_index: int):
         **payment_context,
         transaction_warning=warning or request.args.get("warning", ""),
     )
+
+
+def _safe_payment_form_context(tx: dict) -> dict:
+    try:
+        return payment_form_context(
+            transaction_type=str(tx.get("type") or "expense"),
+            selected_account_id=tx.get("account_id") or tx.get("account_key") or tx.get("account"),
+            selected_payment_method_id=tx.get("payment_method_id") or tx.get("payment_channel_method_id_snapshot"),
+        )
+    except Exception:
+        current_app.logger.exception("Failed to build payment form context for transaction detail")
+        return {
+            "payment_form": {
+                "account_options": [],
+                "payment_method_options": [],
+                "selected_account_id": tx.get("account_id", ""),
+                "selected_payment_method_id": tx.get("payment_method_id", ""),
+                "selected_payment_method_explanation": "Payment options unavailable; existing transaction values are preserved.",
+            },
+            "payment_form_json": "{}",
+        }
+
+
+def _fallback_receipt_from_transaction(tx: dict) -> dict:
+    amount = str(tx.get("amount") or "0.00")
+    label = str(tx.get("sub_category") or tx.get("category") or tx.get("description") or "Item 001")
+    return {
+        "merchant": str(tx.get("description") or tx.get("category") or "Receipt"),
+        "purchased_at": str(tx.get("created_at") or tx.get("date") or ""),
+        "card_label": str(tx.get("payment_method_name_snapshot") or tx.get("payment_method") or ""),
+        "card_last4": "",
+        "card_network": "",
+        "account_label": str(tx.get("account_name_snapshot") or tx.get("account_label") or tx.get("account") or ""),
+        "items": [{"name": label, "qty": 1, "qty_display": "1", "unit_price": amount, "unit_price_display": amount, "line_total": amount, "line_total_display": amount}],
+        "subtotal_display": amount,
+        "discount_label": "No discount",
+        "discount_amount": 0,
+        "total_display": amount,
+        "item_count": 1,
+    }

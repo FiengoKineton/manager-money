@@ -1,2 +1,0 @@
-id,transfer_uid,date,from_account,to_account,from_account_id,from_account_name_snapshot,to_account_id,to_account_name_snapshot,amount,fee_amount,fee_payment_method_id,fee_payment_method_name_snapshot,ledger_group_id,status,transfer_kind,metadata_json,description,created_at,updated_at
-1,,2026-06-16,,Pre-paid card,,,,,51.0,,,,,,,,,2026-06-16T17:58:54,

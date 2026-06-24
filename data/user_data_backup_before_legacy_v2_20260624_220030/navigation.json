@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "hidden_pages": [],
+  "custom_order": {
+    "overview": [
+      "quick_overview",
+      "detailed_overview",
+      "dashboard",
+      "transactions",
+      "why_this_net"
+    ]
+  },
+  "group_order": [],
+  "collapsed_groups": []
+}

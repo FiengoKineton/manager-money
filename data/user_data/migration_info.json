@@ -122,5 +122,47 @@
       "default_main_account",
       "iban"
     ]
+  },
+  "legacy_data_backfill_v2": {
+    "applied_at": "2026-06-24T20:00:30+00:00",
+    "tool": "migrate_legacy_data_to_current_logic_v2.py",
+    "receipt_aware": true,
+    "default_missing_bank_payment_method": "main_bank_debit_card",
+    "report": {
+      "data_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\user_data",
+      "dry_run": false,
+      "accounts_added": [],
+      "payment_methods_added": [],
+      "payment_methods_repaired": [
+        "main_bank_debit_card",
+        "main_bank_transfer",
+        "main_bank_transfer",
+        "credit_card",
+        "paypal_via_credit_card"
+      ],
+      "transaction_rows_changed": {
+        "expenses.csv": 297,
+        "incomes.csv": 28,
+        "investments.csv": 8
+      },
+      "pending_rows_changed": 13,
+      "recurring_rows_changed": 10,
+      "support_rows_changed": {
+        "debts.csv": 4,
+        "payables.csv": 4,
+        "receivables.csv": 3,
+        "investment_assets.csv": 1
+      },
+      "internal_transfer_rows_changed": 1,
+      "ledger_rows_rebuilt": 340,
+      "receipts_added": 335,
+      "cache_dirs_cleared": [],
+      "backup_dir": "C:\\Users\\giuseppe.fiengo_kine\\Desktop\\MyDesktop\\Repos\\manager-money\\data\\user_data_backup_before_legacy_v2_20260624_220030"
+    }
+  },
+  "ledger_migration": {
+    "backfilled": true,
+    "authoritative": false,
+    "reason": "repo50 account_scope_service still uses CSV transaction math"
   }
 }

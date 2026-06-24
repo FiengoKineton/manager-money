@@ -22,14 +22,52 @@
     return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  function currentEurTotal() {
-    const inputs = document.querySelectorAll(".amount-input");
+  function parseMoney(value) {
+    const parsed = Number.parseFloat(String(value || "0").replace(",", "."));
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+  }
+
+  function receiptRows() {
+    return Array.from(document.querySelectorAll(".add-receipt-row"));
+  }
+
+  function receiptSubtotalRaw() {
+    const rows = receiptRows();
+    if (!rows.length) {
+      let total = 0;
+      document.querySelectorAll(".amount-input").forEach((input) => {
+        const value = Number.parseFloat(input.value);
+        if (!Number.isNaN(value)) total += value;
+      });
+      return total;
+    }
     let total = 0;
-    inputs.forEach((input) => {
-      const value = Number.parseFloat(input.value);
-      if (!Number.isNaN(value)) total += value;
+    rows.forEach((row) => {
+      const qty = parseMoney(row.querySelector("[data-add-receipt-qty]")?.value || 1);
+      const price = parseMoney(row.querySelector("[data-add-receipt-price]")?.value || 0);
+      const line = qty * price;
+      total += line;
+      const preview = row.querySelector("[data-add-receipt-line]");
+      if (preview) preview.textContent = `€ ${formatMoney(line)}`;
     });
-    return total * selectedCurrency().effective_rate_to_eur;
+    return total;
+  }
+
+  function receiptDiscountRaw(subtotal) {
+    const type = document.getElementById("receipt-discount-type")?.value || "none";
+    const value = parseMoney(document.getElementById("receipt-discount-value")?.value || 0);
+    if (type === "percent") return subtotal * Math.min(value, 100) / 100;
+    if (type === "voucher") return Math.min(subtotal, value);
+    return 0;
+  }
+
+  function receiptTotalRaw() {
+    const subtotal = receiptSubtotalRaw();
+    return Math.max(0, subtotal - receiptDiscountRaw(subtotal));
+  }
+
+  function currentEurTotal() {
+    return receiptTotalRaw() * selectedCurrency().effective_rate_to_eur;
   }
 
   function selectedAccountMeta() {
@@ -117,22 +155,21 @@
 
   function updateTotal() {
     const currency = selectedCurrency();
-    const eurTotal = currentEurTotal();
-    let rawTotal = 0;
-
-    document.querySelectorAll(".amount-input").forEach((input) => {
-      const value = Number.parseFloat(input.value);
-      if (!Number.isNaN(value)) rawTotal += value;
-    });
+    const subtotalRaw = receiptSubtotalRaw();
+    const discountRaw = receiptDiscountRaw(subtotalRaw);
+    const rawTotal = Math.max(0, subtotalRaw - discountRaw);
+    const eurTotal = rawTotal * currency.effective_rate_to_eur;
 
     const totalLabel = document.getElementById("total-amount");
     const totalCurrencyCode = document.getElementById("total-currency-code");
     const eurTotalLabel = document.getElementById("eur-total-amount");
+    const discountLabel = document.getElementById("receipt-discount-preview");
     const ratePreview = document.getElementById("currency-rate-preview");
     const hiddenAmount = document.getElementById("amount-hidden");
 
-    if (totalLabel) totalLabel.innerText = formatMoney(rawTotal);
+    if (totalLabel) totalLabel.innerText = formatMoney(subtotalRaw);
     if (totalCurrencyCode) totalCurrencyCode.innerText = currency.code;
+    if (discountLabel) discountLabel.innerText = formatMoney(discountRaw);
     if (eurTotalLabel) eurTotalLabel.innerText = formatMoney(eurTotal);
     if (ratePreview) {
       ratePreview.innerText = `Rate: ${currency.rate_to_eur.toFixed(6)} + correction ${currency.correction_to_eur.toFixed(6)} = ${currency.effective_rate_to_eur.toFixed(6)} EUR per unit.`;
@@ -141,9 +178,51 @@
     updateFuturePreview();
   }
 
+  function itemNumber(index) {
+    return String(index).padStart(3, "0");
+  }
+
+  function wireReceiptRow(row) {
+    row.querySelectorAll("input, select").forEach((input) => input.addEventListener("input", updateTotal));
+    const remove = row.querySelector("[data-add-receipt-remove]");
+    if (remove) {
+      remove.addEventListener("click", () => {
+        const rows = receiptRows();
+        if (rows.length <= 1) {
+          const name = row.querySelector("input[name='receipt_item_name']");
+          const qty = row.querySelector("[data-add-receipt-qty]");
+          const price = row.querySelector("[data-add-receipt-price]");
+          if (name) name.value = "Item 001";
+          if (qty) qty.value = "1";
+          if (price) price.value = "0.00";
+        } else {
+          row.remove();
+        }
+        updateTotal();
+      });
+    }
+  }
+
   function addAmountField() {
     const container = document.getElementById("amount-list");
     if (!container) return;
+
+    if (container.classList.contains("receipt-input-list")) {
+      const next = receiptRows().length + 1;
+      const row = document.createElement("div");
+      row.className = "add-receipt-row";
+      row.innerHTML = `
+        <input type="text" name="receipt_item_name" class="receipt-item-name-input" value="Item ${itemNumber(next)}" placeholder="Item ${itemNumber(next)}">
+        <input type="number" min="0" step="0.01" name="receipt_item_qty" class="receipt-item-qty-input" value="1" placeholder="Qty" data-add-receipt-qty>
+        <input type="number" min="0" step="0.01" name="receipt_item_unit_price" class="amount-input receipt-item-price-input" placeholder="Unit €" value="0.00" data-add-receipt-price>
+        <strong class="receipt-item-line-preview" data-add-receipt-line>€ 0.00</strong>
+        <button type="button" class="receipt-remove-row add-receipt-remove" data-add-receipt-remove aria-label="Remove item">×</button>
+        <input type="hidden" name="receipt_item_note" value="">`;
+      container.appendChild(row);
+      wireReceiptRow(row);
+      updateTotal();
+      return;
+    }
 
     const input = document.createElement("input");
     input.type = "number";
@@ -239,7 +318,11 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(".amount-input").forEach((input) => input.addEventListener("input", updateTotal));
+    document.querySelectorAll(".amount-input, [data-add-receipt-qty], #receipt-discount-type, #receipt-discount-value").forEach((input) => {
+      input.addEventListener("input", updateTotal);
+      input.addEventListener("change", updateTotal);
+    });
+    receiptRows().forEach(wireReceiptRow);
 
     const addButton = document.getElementById("add-amount-btn");
     if (addButton) addButton.addEventListener("click", addAmountField);

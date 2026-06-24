@@ -11,7 +11,7 @@
       "liability_account_id": "",
       "settlement_mode": "immediate",
       "delegates_to_payment_method_id": "",
-      "is_default": false,
+      "is_default": true,
       "is_active": true,
       "is_archived": false,
       "display_order": 0,
@@ -38,7 +38,7 @@
         "visible_card": true
       },
       "created_at": "",
-      "updated_at": "",
+      "updated_at": "2026-06-24T20:00:30+00:00",
       "archived_at": ""
     },
     {
@@ -51,7 +51,7 @@
       "liability_account_id": "",
       "settlement_mode": "immediate",
       "delegates_to_payment_method_id": "",
-      "is_default": true,
+      "is_default": false,
       "is_active": true,
       "is_archived": false,
       "display_order": 0,
@@ -73,9 +73,12 @@
       "legacy": {
         "migration_rule": "A.main_bank"
       },
-      "metadata": {},
+      "metadata": {
+        "auto_default": true,
+        "visible_card": false
+      },
       "created_at": "",
-      "updated_at": "",
+      "updated_at": "2026-06-24T20:00:30+00:00",
       "archived_at": ""
     },
     {
@@ -299,8 +302,8 @@
       "settlement_mode": "delayed",
       "delegates_to_payment_method_id": "",
       "is_default": false,
-      "is_active": false,
-      "is_archived": true,
+      "is_active": true,
+      "is_archived": false,
       "display_order": 50,
       "rules": {
         "due_day": 15,
@@ -319,12 +322,15 @@
       "legacy": {
         "migration_rule": "F.credit_card",
         "main_net_policy": "credit_pending",
-        "auto_archived_reason": "default_credit_card_removed_from_new_account_model"
+        "auto_archived_reason": "default_credit_card_removed_from_new_account_model",
+        "reactivated_by": "migrate_legacy_data_to_current_logic_v2"
       },
-      "metadata": {},
+      "metadata": {
+        "visible_card": true
+      },
       "created_at": "",
-      "updated_at": "",
-      "archived_at": "2026-06-23T20:43:27+00:00"
+      "updated_at": "2026-06-24T20:00:30+00:00",
+      "archived_at": ""
     },
     {
       "id": "glovo",
@@ -391,9 +397,11 @@
       "legacy": {
         "migration_rule": "G.paypal_via_credit_card"
       },
-      "metadata": {},
+      "metadata": {
+        "visible_card": true
+      },
       "created_at": "",
-      "updated_at": "",
+      "updated_at": "2026-06-24T20:00:30+00:00",
       "archived_at": ""
     },
     {
@@ -537,5 +545,5 @@
       "archived_at": ""
     }
   ],
-  "updated_at": "2026-06-24T15:52:19+00:00"
+  "updated_at": "2026-06-24T20:00:30+00:00"
 }

@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "first_name": "Giuseppe",
+  "last_name": "Fiengo",
+  "display_name": "Giuseppe Fiengo",
+  "birth_year": "2001",
+  "profile_image": "avatar.jpg",
+  "profile_notes": "",
+  "default_current_account_id": "main_bank",
+  "default_payment_method_id": "",
+  "onboarding_completed": true,
+  "bank_name": "",
+  "iban": "IT00 A000 0000 0000 0000 0000 0000",
+  "bic_swift": "",
+  "default_main_account": "main_bank",
+  "deprecated_fields": [
+    "bank_name",
+    "bic_swift",
+    "default_main_account",
+    "iban"
+  ],
+  "created_at": "2026-06-22T11:57:57+00:00",
+  "updated_at": "2026-06-24T16:36:46+00:00"
+}
