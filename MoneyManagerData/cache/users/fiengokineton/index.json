@@ -2554,7 +2554,7 @@
       "version": "legacy-v1",
       "path": "computed/2c56d3126b6f9936da79ecebc58c4e4d3e0e3845.mmcache",
       "created_at": "2026-06-24T21:54:25+00:00",
-      "updated_at": "2026-06-24T21:54:25+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
       "expires_at": "2026-06-24T22:09:25+00:00",
       "source_fingerprint": "d810d8ac1030660f7177d943885f8c39",
       "tags": [
@@ -2567,8 +2567,9 @@
       ],
       "sensitive": true,
       "encrypted": true,
-      "status": "valid",
-      "size_bytes": 728
+      "status": "stale",
+      "size_bytes": 728,
+      "stale_reason": "tag_invalidation"
     },
     "34863001ec1cca679f4ea83ef012114a82bf2087": {
       "key": "user:fiengokineton:transactions.load_all:v3:7de308718fcb02fb854211b7",
@@ -2576,7 +2577,7 @@
       "version": "v3",
       "path": "computed/34863001ec1cca679f4ea83ef012114a82bf2087.mmcache",
       "created_at": "2026-06-24T21:54:41+00:00",
-      "updated_at": "2026-06-24T21:54:42+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
       "expires_at": "",
       "source_fingerprint": "60ee88a9e4d5b196f091def8c74f3f81",
       "tags": [
@@ -2588,8 +2589,9 @@
       ],
       "sensitive": true,
       "encrypted": true,
-      "status": "valid",
-      "size_bytes": 539261
+      "status": "stale",
+      "size_bytes": 539261,
+      "stale_reason": "tag_invalidation"
     },
     "f0586e2d251800f8ac5d303d0e910a43f5e02a32": {
       "key": "user:fiengokineton:overview.context:v2:1130c967ffd0f8f744d1b240",
@@ -2597,7 +2599,7 @@
       "version": "v2",
       "path": "computed/f0586e2d251800f8ac5d303d0e910a43f5e02a32.mmcache",
       "created_at": "2026-06-24T21:54:53+00:00",
-      "updated_at": "2026-06-24T21:54:53+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
       "expires_at": "2026-06-24T22:09:53+00:00",
       "source_fingerprint": "0e5e9278a2837e089324e6d82d2ea9bc",
       "tags": [
@@ -2614,8 +2616,9 @@
       ],
       "sensitive": true,
       "encrypted": true,
-      "status": "valid",
-      "size_bytes": 33304
+      "status": "stale",
+      "size_bytes": 33304,
+      "stale_reason": "tag_invalidation"
     },
     "3ab4432c55435e9d9226e1b6283bdd85ee39486c": {
       "key": "user:fiengokineton:dashboard_overview:v3:17908da07b8d89710120ad11",
@@ -2623,7 +2626,7 @@
       "version": "v3",
       "path": "computed/3ab4432c55435e9d9226e1b6283bdd85ee39486c.mmcache",
       "created_at": "2026-06-24T21:54:53+00:00",
-      "updated_at": "2026-06-24T21:54:53+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
       "expires_at": "2026-06-24T22:09:53+00:00",
       "source_fingerprint": "66b62d1331abe24d2ab571eb2fe88699",
       "tags": [
@@ -2638,8 +2641,9 @@
       ],
       "sensitive": true,
       "encrypted": true,
-      "status": "valid",
-      "size_bytes": 33306
+      "status": "stale",
+      "size_bytes": 33306,
+      "stale_reason": "tag_invalidation"
     },
     "c18cabb7c59a594935a5fa0607079e712c1e44d6": {
       "key": "user:fiengokineton:scope_balance_summary:v3:d276ad8a392ef2a0506bb553",
@@ -2647,7 +2651,7 @@
       "version": "v3",
       "path": "computed/c18cabb7c59a594935a5fa0607079e712c1e44d6.mmcache",
       "created_at": "2026-06-24T21:55:01+00:00",
-      "updated_at": "2026-06-24T21:55:01+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
       "expires_at": "2026-06-24T22:00:01+00:00",
       "source_fingerprint": "87729ba19fd160acafad1f79afc9a9a7",
       "tags": [
@@ -2663,8 +2667,9 @@
       ],
       "sensitive": true,
       "encrypted": true,
-      "status": "valid",
-      "size_bytes": 4553
+      "status": "stale",
+      "size_bytes": 4553,
+      "stale_reason": "tag_invalidation"
     },
     "da4e68a5700a8f17c84cedf8e941bb2d5123b403": {
       "key": "user:fiengokineton:quick_overview:v3:706ce6db4d6e1259271247e3",
@@ -2672,7 +2677,7 @@
       "version": "v3",
       "path": "computed/da4e68a5700a8f17c84cedf8e941bb2d5123b403.mmcache",
       "created_at": "2026-06-24T21:55:13+00:00",
-      "updated_at": "2026-06-24T21:55:13+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
       "expires_at": "2026-06-24T22:00:13+00:00",
       "source_fingerprint": "e1995ba75d02648ee5b9f120c021b37c",
       "tags": [
@@ -2683,8 +2688,9 @@
       ],
       "sensitive": true,
       "encrypted": true,
-      "status": "valid",
-      "size_bytes": 646
+      "status": "stale",
+      "size_bytes": 646,
+      "stale_reason": "tag_invalidation"
     },
     "f1476dab057ac3d24cf322a86434fa477b9d484e": {
       "key": "user:fiengokineton:scope_balance_summary:v3:a1ed7d9f8d43b09e760519f3",
@@ -2692,7 +2698,7 @@
       "version": "v3",
       "path": "computed/f1476dab057ac3d24cf322a86434fa477b9d484e.mmcache",
       "created_at": "2026-06-24T21:55:21+00:00",
-      "updated_at": "2026-06-24T21:55:21+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
       "expires_at": "2026-06-24T22:00:21+00:00",
       "source_fingerprint": "87729ba19fd160acafad1f79afc9a9a7",
       "tags": [
@@ -2708,8 +2714,9 @@
       ],
       "sensitive": true,
       "encrypted": true,
-      "status": "valid",
-      "size_bytes": 3677
+      "status": "stale",
+      "size_bytes": 3677,
+      "stale_reason": "tag_invalidation"
     },
     "6428cd2f4e033539249fb53e04b7fe7e8675d81e": {
       "key": "user:fiengokineton:notifications.context:legacy-v1:5a114aa16f5fa8c5cd7eff17",
@@ -2717,7 +2724,7 @@
       "version": "legacy-v1",
       "path": "computed/6428cd2f4e033539249fb53e04b7fe7e8675d81e.mmcache",
       "created_at": "2026-06-24T21:55:22+00:00",
-      "updated_at": "2026-06-24T21:55:22+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
       "expires_at": "2026-06-24T22:10:22+00:00",
       "source_fingerprint": "37433d74947bab24e2fbb19e935467f3",
       "tags": [
@@ -2730,8 +2737,9 @@
       ],
       "sensitive": true,
       "encrypted": true,
-      "status": "valid",
-      "size_bytes": 2229
+      "status": "stale",
+      "size_bytes": 2229,
+      "stale_reason": "tag_invalidation"
     },
     "19547bbf4fc6f6cce8aa5e7515c32443d016a8a4": {
       "key": "user:fiengokineton:profile_context:v2:5ee9d526fcc06a006824ce26",
@@ -2793,7 +2801,7 @@
       "version": "v2",
       "path": "computed/06b470d0125a42b84642f05a5bb738a0238b6e0f.mmcache",
       "created_at": "2026-06-24T21:55:29+00:00",
-      "updated_at": "2026-06-24T21:55:29+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
       "expires_at": "2026-06-24T22:00:29+00:00",
       "source_fingerprint": "e01c27131b5cb0d77b2931ad83967bcd",
       "tags": [
@@ -2803,8 +2811,9 @@
       ],
       "sensitive": true,
       "encrypted": true,
-      "status": "valid",
-      "size_bytes": 159502
+      "status": "stale",
+      "size_bytes": 159502,
+      "stale_reason": "tag_invalidation"
     },
     "a8abfc06aa596a57766db7cd7d455e50b4a33a46": {
       "key": "user:fiengokineton:navigation_context:v2:eb8c90161515fde7299755ac",
@@ -2830,7 +2839,7 @@
       "version": "v2",
       "path": "computed/5dbbf50e1ee6f4feb27d286c63aed642b077dd74.mmcache",
       "created_at": "2026-06-24T21:55:37+00:00",
-      "updated_at": "2026-06-24T21:55:37+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
       "expires_at": "2026-06-24T22:10:37+00:00",
       "source_fingerprint": "e1efcd9f2bf748795ce649d5071fb53f",
       "tags": [
@@ -2843,8 +2852,9 @@
       ],
       "sensitive": true,
       "encrypted": true,
-      "status": "valid",
-      "size_bytes": 4896
+      "status": "stale",
+      "size_bytes": 4896,
+      "stale_reason": "tag_invalidation"
     },
     "93f36e232584b20943c34f7ad2b9c7e847be1f17": {
       "key": "user:fiengokineton:overview.context:v2:8674f43fe0c4d316ed25c4c5",
@@ -2852,9 +2862,169 @@
       "version": "v2",
       "path": "computed/93f36e232584b20943c34f7ad2b9c7e847be1f17.mmcache",
       "created_at": "2026-06-24T21:55:53+00:00",
-      "updated_at": "2026-06-24T21:55:53+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
       "expires_at": "2026-06-24T22:10:53+00:00",
       "source_fingerprint": "b7c029c4433b736a417c0bcf36dcacbd",
+      "tags": [
+        "transactions",
+        "ledger",
+        "accounts",
+        "payment_methods",
+        "pending",
+        "recurring",
+        "debts",
+        "payables",
+        "receivables",
+        "investments"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "stale",
+      "size_bytes": 33304,
+      "stale_reason": "tag_invalidation"
+    },
+    "105cdb644c6a07d2cc3cfc4ca27f0966cf25c527": {
+      "key": "user:fiengokineton:dashboard_overview:v3:72eb482250a7ba4767378a4b",
+      "name": "dashboard_overview",
+      "version": "v3",
+      "path": "computed/105cdb644c6a07d2cc3cfc4ca27f0966cf25c527.mmcache",
+      "created_at": "2026-06-24T21:55:53+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
+      "expires_at": "2026-06-24T22:10:53+00:00",
+      "source_fingerprint": "a4c3c4bf6770d05ad5e6b12af4e2bad0",
+      "tags": [
+        "transactions",
+        "ledger",
+        "accounts",
+        "payment_methods",
+        "pending",
+        "recurring",
+        "debts",
+        "investments"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "stale",
+      "size_bytes": 33306,
+      "stale_reason": "tag_invalidation"
+    },
+    "d12c89341a64f936ec4de7797b1d44fe9590a3e3": {
+      "key": "user:fiengokineton:account_dashboard_summary:v2:206eb7f472313523aa324b01",
+      "name": "account_dashboard_summary",
+      "version": "v2",
+      "path": "computed/d12c89341a64f936ec4de7797b1d44fe9590a3e3.mmcache",
+      "created_at": "2026-06-24T21:56:50+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
+      "expires_at": "2026-06-24T22:11:50+00:00",
+      "source_fingerprint": "e1efcd9f2bf748795ce649d5071fb53f",
+      "tags": [
+        "transactions",
+        "ledger",
+        "accounts",
+        "payment_methods",
+        "internal_transfers",
+        "credit_settlements"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "stale",
+      "size_bytes": 20073,
+      "stale_reason": "tag_invalidation"
+    },
+    "06f996a013f2d80aec02938b0e25797838b96653": {
+      "key": "user:fiengokineton:transactions.load_all:v3:e0e8dad3be657f770cfaacc8",
+      "name": "transactions.load_all",
+      "version": "v3",
+      "path": "computed/06f996a013f2d80aec02938b0e25797838b96653.mmcache",
+      "created_at": "2026-06-24T22:18:07+00:00",
+      "updated_at": "2026-06-24T22:18:13+00:00",
+      "expires_at": "",
+      "source_fingerprint": "49c61d7d90e5492cbdc34955c40a05e4",
+      "tags": [
+        "transactions",
+        "accounts",
+        "payment_methods",
+        "internal_transfers",
+        "credit_settlements"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "stale",
+      "size_bytes": 539261,
+      "stale_reason": "tag_invalidation"
+    },
+    "ee1cc35afc7c6782a68282a3c725e856158d5701": {
+      "key": "user:fiengokineton:quick_overview:v3:1febc04e7222af30c2bb80ea",
+      "name": "quick_overview",
+      "version": "v3",
+      "path": "computed/ee1cc35afc7c6782a68282a3c725e856158d5701.mmcache",
+      "created_at": "2026-06-24T22:18:18+00:00",
+      "updated_at": "2026-06-24T22:18:18+00:00",
+      "expires_at": "2026-06-24T22:23:18+00:00",
+      "source_fingerprint": "ce6f8500ed2b01b4e8b39c384819b52b",
+      "tags": [
+        "transactions",
+        "ledger",
+        "accounts",
+        "pending"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 646
+    },
+    "bff5f815a902081edd0800d9f9f848c439e70f70": {
+      "key": "user:fiengokineton:transactions.load_all:v3:52bd02942856c9d03c0ded07",
+      "name": "transactions.load_all",
+      "version": "v3",
+      "path": "computed/bff5f815a902081edd0800d9f9f848c439e70f70.mmcache",
+      "created_at": "2026-06-24T22:18:33+00:00",
+      "updated_at": "2026-06-24T22:18:33+00:00",
+      "expires_at": "",
+      "source_fingerprint": "5c19a354b078606d5404255bcc178d08",
+      "tags": [
+        "transactions",
+        "accounts",
+        "payment_methods",
+        "internal_transfers",
+        "credit_settlements"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 539261
+    },
+    "3fabb3aa66ee84c2dea1923f078be3509a10b8cd": {
+      "key": "user:fiengokineton:investment.overview_snapshot:legacy-v1:924a6caa7f2f739c30e1c920",
+      "name": "investment.overview_snapshot",
+      "version": "legacy-v1",
+      "path": "computed/3fabb3aa66ee84c2dea1923f078be3509a10b8cd.mmcache",
+      "created_at": "2026-06-24T22:19:11+00:00",
+      "updated_at": "2026-06-24T22:19:11+00:00",
+      "expires_at": "2026-06-24T22:34:11+00:00",
+      "source_fingerprint": "5be5cba11e49dbe7a02fce88ef43a5f7",
+      "tags": [
+        "transactions",
+        "money_rows",
+        "accounts",
+        "payment_methods",
+        "profile",
+        "preferences"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 728
+    },
+    "230f68b08471fec4d80c7dae9dd1a2001bc79a04": {
+      "key": "user:fiengokineton:overview.context:v2:14a9e0588b753d8517d19964",
+      "name": "overview.context",
+      "version": "v2",
+      "path": "computed/230f68b08471fec4d80c7dae9dd1a2001bc79a04.mmcache",
+      "created_at": "2026-06-24T22:19:29+00:00",
+      "updated_at": "2026-06-24T22:19:29+00:00",
+      "expires_at": "2026-06-24T22:34:29+00:00",
+      "source_fingerprint": "e073f4d41ef45deff7aecb9afd1569cf",
       "tags": [
         "transactions",
         "ledger",
@@ -2872,15 +3042,15 @@
       "status": "valid",
       "size_bytes": 33304
     },
-    "105cdb644c6a07d2cc3cfc4ca27f0966cf25c527": {
-      "key": "user:fiengokineton:dashboard_overview:v3:72eb482250a7ba4767378a4b",
+    "05e4a5e42c27399351f6083707f79d002e825d9f": {
+      "key": "user:fiengokineton:dashboard_overview:v3:b194d3c034a022ee562770db",
       "name": "dashboard_overview",
       "version": "v3",
-      "path": "computed/105cdb644c6a07d2cc3cfc4ca27f0966cf25c527.mmcache",
-      "created_at": "2026-06-24T21:55:53+00:00",
-      "updated_at": "2026-06-24T21:55:53+00:00",
-      "expires_at": "2026-06-24T22:10:53+00:00",
-      "source_fingerprint": "a4c3c4bf6770d05ad5e6b12af4e2bad0",
+      "path": "computed/05e4a5e42c27399351f6083707f79d002e825d9f.mmcache",
+      "created_at": "2026-06-24T22:19:29+00:00",
+      "updated_at": "2026-06-24T22:19:29+00:00",
+      "expires_at": "2026-06-24T22:34:29+00:00",
+      "source_fingerprint": "2c92cb11d0957b5af7c7bb06d95e9255",
       "tags": [
         "transactions",
         "ledger",
@@ -2896,15 +3066,180 @@
       "status": "valid",
       "size_bytes": 33306
     },
-    "d12c89341a64f936ec4de7797b1d44fe9590a3e3": {
-      "key": "user:fiengokineton:account_dashboard_summary:v2:206eb7f472313523aa324b01",
+    "fad210b8ee24eb5a5fc38ab48e2f6e59d4456dab": {
+      "key": "user:fiengokineton:quick_overview:v3:6556decbafb2a367726a67e8",
+      "name": "quick_overview",
+      "version": "v3",
+      "path": "computed/fad210b8ee24eb5a5fc38ab48e2f6e59d4456dab.mmcache",
+      "created_at": "2026-06-24T22:19:41+00:00",
+      "updated_at": "2026-06-24T22:19:41+00:00",
+      "expires_at": "2026-06-24T22:24:41+00:00",
+      "source_fingerprint": "2d06af29dbdba8212f9c8ad44fdb9427",
+      "tags": [
+        "transactions",
+        "ledger",
+        "accounts",
+        "pending"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 646
+    },
+    "15baf6ae75945b3c8829cfcda3fb33bff0465701": {
+      "key": "user:fiengokineton:account_dashboard_summary:v2:f6cb18d372510403a06647e5",
       "name": "account_dashboard_summary",
       "version": "v2",
-      "path": "computed/d12c89341a64f936ec4de7797b1d44fe9590a3e3.mmcache",
-      "created_at": "2026-06-24T21:56:50+00:00",
-      "updated_at": "2026-06-24T21:56:50+00:00",
-      "expires_at": "2026-06-24T22:11:50+00:00",
-      "source_fingerprint": "e1efcd9f2bf748795ce649d5071fb53f",
+      "path": "computed/15baf6ae75945b3c8829cfcda3fb33bff0465701.mmcache",
+      "created_at": "2026-06-24T22:19:41+00:00",
+      "updated_at": "2026-06-24T22:19:41+00:00",
+      "expires_at": "2026-06-24T22:34:41+00:00",
+      "source_fingerprint": "59769cf6e0cc1f27fbf3ee6a4020339e",
+      "tags": [
+        "transactions",
+        "ledger",
+        "accounts",
+        "payment_methods",
+        "internal_transfers",
+        "credit_settlements"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 20073
+    },
+    "6eaaaeb7cb52d7da61e6db7616491e03e052ff0b": {
+      "key": "user:fiengokineton:account_balances:v2:fffaea21e67b96710b5a4fe4",
+      "name": "account_balances",
+      "version": "v2",
+      "path": "computed/6eaaaeb7cb52d7da61e6db7616491e03e052ff0b.mmcache",
+      "created_at": "2026-06-24T22:19:58+00:00",
+      "updated_at": "2026-06-24T22:19:58+00:00",
+      "expires_at": "2026-06-24T22:34:58+00:00",
+      "source_fingerprint": "59769cf6e0cc1f27fbf3ee6a4020339e",
+      "tags": [
+        "transactions",
+        "ledger",
+        "accounts",
+        "payment_methods",
+        "internal_transfers",
+        "credit_settlements"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 4896
+    },
+    "efe71a5305fcb9854c63d6717686f6e623bb5577": {
+      "key": "user:fiengokineton:navigation_context:v2:196315a278f0a1dacdaaf479",
+      "name": "navigation_context",
+      "version": "v2",
+      "path": "computed/efe71a5305fcb9854c63d6717686f6e623bb5577.pkl",
+      "created_at": "2026-06-24T22:20:32+00:00",
+      "updated_at": "2026-06-24T22:20:32+00:00",
+      "expires_at": "2026-06-24T23:20:32+00:00",
+      "source_fingerprint": "1da4d9735fb2e0f37b6a9133c53f9937",
+      "tags": [
+        "navigation",
+        "preferences"
+      ],
+      "sensitive": false,
+      "encrypted": false,
+      "status": "valid",
+      "size_bytes": 3839
+    },
+    "e3a5a04ab8e88a4fbfe00cd77a7d1eefd2946e04": {
+      "key": "user:fiengokineton:scope_balance_summary:v3:5dc92673d8462d9879fbef8c",
+      "name": "scope_balance_summary",
+      "version": "v3",
+      "path": "computed/e3a5a04ab8e88a4fbfe00cd77a7d1eefd2946e04.mmcache",
+      "created_at": "2026-06-24T22:20:44+00:00",
+      "updated_at": "2026-06-24T22:20:44+00:00",
+      "expires_at": "2026-06-24T22:25:44+00:00",
+      "source_fingerprint": "300f6f10b4352b786ba282c761ec2263",
+      "tags": [
+        "transactions",
+        "ledger",
+        "accounts",
+        "payment_methods",
+        "internal_transfers",
+        "credit_settlements",
+        "pending",
+        "payables",
+        "recurring"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 4553
+    },
+    "bd678a7f0b6c3b75af4eaae1cd53412bdd061509": {
+      "key": "user:fiengokineton:notifications.context:legacy-v1:b0b91ea6176a24db5dbe6e3c",
+      "name": "notifications.context",
+      "version": "legacy-v1",
+      "path": "computed/bd678a7f0b6c3b75af4eaae1cd53412bdd061509.mmcache",
+      "created_at": "2026-06-24T22:20:44+00:00",
+      "updated_at": "2026-06-24T22:20:44+00:00",
+      "expires_at": "2026-06-24T22:35:44+00:00",
+      "source_fingerprint": "795aa63143a6cf46c458db3290f4d95d",
+      "tags": [
+        "transactions",
+        "money_rows",
+        "accounts",
+        "payment_methods",
+        "profile",
+        "preferences"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 2229
+    },
+    "7790b37e7b31d9d9dd64c1a5ef838ddc550bdd8d": {
+      "key": "user:fiengokineton:profile_context:v2:903f6a303c4e894a66684899",
+      "name": "profile_context",
+      "version": "v2",
+      "path": "computed/7790b37e7b31d9d9dd64c1a5ef838ddc550bdd8d.mmcache",
+      "created_at": "2026-06-24T22:20:44+00:00",
+      "updated_at": "2026-06-24T22:20:44+00:00",
+      "expires_at": "2026-06-24T23:20:44+00:00",
+      "source_fingerprint": "994d26cba18764b10ae5df33f2a8868f",
+      "tags": [
+        "profile",
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 1219
+    },
+    "cf9b1288f56cededaebb5977469d1a8ea20c2c08": {
+      "key": "user:fiengokineton:preferences_context:v2:abfd40eed5cf56a3ead7c2ce",
+      "name": "preferences_context",
+      "version": "v2",
+      "path": "computed/cf9b1288f56cededaebb5977469d1a8ea20c2c08.mmcache",
+      "created_at": "2026-06-24T22:20:44+00:00",
+      "updated_at": "2026-06-24T22:20:44+00:00",
+      "expires_at": "2026-06-24T23:20:44+00:00",
+      "source_fingerprint": "492d29040b8b1a49cfe4d4a5ef6d54ee",
+      "tags": [
+        "preferences"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 787
+    },
+    "e8a2ce56e8f6b67fdb4b57fd99401467acb6a549": {
+      "key": "user:fiengokineton:account_dashboard_summary:v2:6d8d57ae3bf52a69eeafd724",
+      "name": "account_dashboard_summary",
+      "version": "v2",
+      "path": "computed/e8a2ce56e8f6b67fdb4b57fd99401467acb6a549.mmcache",
+      "created_at": "2026-06-24T22:20:56+00:00",
+      "updated_at": "2026-06-24T22:20:56+00:00",
+      "expires_at": "2026-06-24T22:35:56+00:00",
+      "source_fingerprint": "59769cf6e0cc1f27fbf3ee6a4020339e",
       "tags": [
         "transactions",
         "ledger",

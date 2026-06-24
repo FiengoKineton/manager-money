@@ -1,21 +1,21 @@
 {
   "schema_version": 1,
   "app_name": "Money Manager",
-  "app_dir": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager",
-  "data_home": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\MoneyManagerData",
-  "data_dir": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\MoneyManagerData\\data",
-  "system_dir": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\MoneyManagerData\\data\\_system",
-  "users_dir": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\MoneyManagerData\\data\\users",
-  "updates_dir": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\MoneyManagerData\\updates",
-  "backups_dir": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\MoneyManagerData\\backups",
-  "logs_dir": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\MoneyManagerData\\logs",
-  "cache_dir": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\MoneyManagerData\\cache",
+  "app_dir": "C:\\Repos\\money-manager",
+  "data_home": "C:\\Repos\\money-manager\\MoneyManagerData",
+  "data_dir": "C:\\Repos\\money-manager\\MoneyManagerData\\data",
+  "system_dir": "C:\\Repos\\money-manager\\MoneyManagerData\\data\\_system",
+  "users_dir": "C:\\Repos\\money-manager\\MoneyManagerData\\data\\users",
+  "updates_dir": "C:\\Repos\\money-manager\\MoneyManagerData\\updates",
+  "backups_dir": "C:\\Repos\\money-manager\\MoneyManagerData\\backups",
+  "logs_dir": "C:\\Repos\\money-manager\\MoneyManagerData\\logs",
+  "cache_dir": "C:\\Repos\\money-manager\\MoneyManagerData\\cache",
   "update_source": {
     "mode": "local_folder",
-    "local_inbox": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\MoneyManagerData\\updates\\inbox",
+    "local_inbox": "C:\\Repos\\money-manager\\MoneyManagerData\\updates\\inbox",
     "remote_manifest_url": ""
   },
   "auto_apply_updates": false,
   "created_at": "2026-06-24T21:09:28+00:00",
-  "updated_at": "2026-06-24T21:36:46+00:00"
+  "updated_at": "2026-06-24T22:24:32+00:00"
 }
