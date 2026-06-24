@@ -8,8 +8,8 @@
       "display_name": "Giuseppe Fiengo",
       "first_name": "Giuseppe",
       "last_name": "Fiengo",
-      "password_hash": "scrypt:32768:8:1$K83PjYF4GTP3qdI7$3431cc2c208341ec514ee7dd49128646fdce5a0a3dec2749610f994c2027ee2358cd7faea862b47e060ee10ddfaca271e8493298367a8996cb28f022d2ed8814",
-      "created_at": "2026-06-22T11:50:39+00:00",
+      "password_hash": "scrypt:32768:8:1$Vuw5wwghW4pq88A2$7952d6ea76955c571226c9fc1202cc4e716d42f2bea1f6ee561c1d7e4023ce0145d1262b270cf4a979b13d3830356db91a61b9d304f0f860ff2b512ac23e1424",
+      "created_at": "2026-06-24T21:10:04+00:00",
       "active": true,
       "role": "owner"
     }

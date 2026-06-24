@@ -1,15 +1,2 @@
-{
-  "schema_version": 1,
-  "hidden_pages": [],
-  "custom_order": {
-    "overview": [
-      "quick_overview",
-      "detailed_overview",
-      "dashboard",
-      "transactions",
-      "why_this_net"
-    ]
-  },
-  "group_order": [],
-  "collapsed_groups": []
-}
+MMENC1
+{"magic":"MMENC1","schema_version":1,"algorithm":"AESGCM","nonce":"Zs07Xv2lxwSJx_13","content_type":"application/json","original_logical_name":"navigation.json","original_filename":"navigation.json","created_at":"2026-06-24T21:13:27+00:00","ciphertext":"Tt5-2kvpx4AEfzzdaBJJBZArqIQI0wG3Tl07AeHMl4kaRABk9t6R3wE30UXNqgj3ydCRIVDDnYRhw4eGVRoabMZ9OZ1rSVBZRu--7cSziYTFbDqdqKLY45e2CsVOf9uJ2Et7O0Ssj0EBszXKgtU-5rEk2xNRbpakN-4FrKqPKfwgPoyXV3ENhhjW3PgT1A3flPioUh8CRNxgM_bs3TzyPocFjKxu74uOY1QQaWlf8zjBpMOAIMtIENbiGOt-H-hZ4McnWdZxOWSOhO1BVnIzK-MZLeZIz9pUVVR84PDcxz3qtoyZkZraSLW7eWSfX8m9XWYbEgnMvIhUDs9_6UnIb6lNrBhhcx0YpuHMsqVhTf-C45aXyq0WV4ZpFReGuw=="}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "installed_version": "0.14.0",
+  "previous_version": "",
+  "current_app_dir": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager",
+  "data_home": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\MoneyManagerData",
+  "last_successful_update_at": "",
+  "last_failed_update_at": "",
+  "rollback_available": false,
+  "rollback_dir": "",
+  "data_schema_version": 14,
+  "pending_update": {},
+  "history": [
+    {
+      "event": "external_data_migration",
+      "at": "2026-06-24T21:09:28+00:00",
+      "source": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\data",
+      "target": "C:\\Users\\g7fie\\OneDrive\\Desktop\\money-manager\\MoneyManagerData\\data",
+      "old_repo_data_deleted": false,
+      "note": "Existing repo/data was copied to the external data folder. The original folder was left untouched."
+    }
+  ]
+}

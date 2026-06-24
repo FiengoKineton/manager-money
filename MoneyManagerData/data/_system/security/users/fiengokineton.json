@@ -4,13 +4,13 @@
   "encryption_enabled": true,
   "kdf": {
     "algorithm": "pbkdf2_sha256",
-    "salt": "-nwWtPLjuzquG-Ub_vCYzw==",
+    "salt": "RqCYQX_AbzpUHYOY3IPVCg==",
     "iterations": 600000
   },
-  "encrypted_dek": "GdYud5HjQ2xnhytW0TIyxWqCKZJXJnAu1CxoxaPZXVyWYZq7qVwYTx2sOe--QQ3W",
-  "dek_nonce": "XeUvemVCdSPINC96",
-  "created_at": "2026-06-23T09:40:00+00:00",
-  "updated_at": "2026-06-23T12:05:31+00:00",
+  "encrypted_dek": "2k2_6IqLrGWHwSnw6z_bIU5jRes33TVjgRgX3lZy_wofOUP-fmLJxt28t7tqkx1i",
+  "dek_nonce": "6eYgkJE-gLOGuKnG",
+  "created_at": "2026-06-24T21:10:04+00:00",
+  "updated_at": "2026-06-24T21:10:04+00:00",
   "recovery_enabled": false,
   "recovery_hint": ""
 }
