@@ -25,15 +25,28 @@ def _file_read_cache():
     return importlib.import_module("money_manager.cache.file_read_cache")
 
 
+def _json_object_cache():
+    """Import parsed JSON cache lazily to avoid startup cycles."""
+    import importlib
+
+    return importlib.import_module("money_manager.cache.json_read_cache")
+
+
 def read_json_secure(logical_name_or_path: str | os.PathLike[str], default: Any = None, user_id: str | None = None) -> Any:
     path, logical_name, resolved_user_id = _resolve(logical_name_or_path, user_id=user_id)
     try:
         if not path.exists():
             return default
+        json_cache = _json_object_cache()
+        cached = json_cache.get(path, user_id=resolved_user_id)
+        if cached is not json_cache.sentinel():
+            return cached
         raw = _read_bytes(path, logical_name=logical_name, user_id=resolved_user_id)
         if not raw:
             return default
-        return json.loads(raw.decode("utf-8-sig"))
+        payload = json.loads(raw.decode("utf-8-sig"))
+        json_cache.set_value(path, payload, user_id=resolved_user_id)
+        return payload
     except Exception:
         return default
 
@@ -41,7 +54,15 @@ def read_json_secure(logical_name_or_path: str | os.PathLike[str], default: Any 
 def write_json_secure(logical_name_or_path: str | os.PathLike[str], payload: Any, user_id: str | None = None) -> None:
     path, logical_name, resolved_user_id = _resolve(logical_name_or_path, user_id=user_id)
     raw = json.dumps(payload, indent=2, ensure_ascii=False).encode("utf-8")
+    try:
+        _json_object_cache().invalidate_path(path, user_id=resolved_user_id)
+    except Exception:
+        pass
     _write_bytes(path, raw, logical_name=logical_name, user_id=resolved_user_id, content_type="application/json")
+    try:
+        _json_object_cache().set_value(path, payload, user_id=resolved_user_id)
+    except Exception:
+        pass
     _notify_cache_changed(path=path, logical_name=logical_name, user_id=resolved_user_id)
 
 def secure_read_text(user_id: str | None, path: str | os.PathLike[str], encoding: str = "utf-8-sig") -> str:
@@ -102,6 +123,10 @@ def secure_delete(user_id: str | None, path: str | os.PathLike[str]) -> None:
     try:
         target.unlink(missing_ok=True)
         _file_read_cache().invalidate_path(target, user_id=resolved_user_id)
+        try:
+            _json_object_cache().invalidate_path(target, user_id=resolved_user_id)
+        except Exception:
+            pass
     finally:
         _notify_cache_changed(path=target, logical_name=logical_name, user_id=resolved_user_id)
 
@@ -290,6 +315,10 @@ def _write_bytes(path: Path, raw: bytes, *, logical_name: str = "", user_id: str
         )
     cache = _file_read_cache()
     cache.invalidate_path(path, user_id=resolved_user_id)
+    try:
+        _json_object_cache().invalidate_path(path, user_id=resolved_user_id)
+    except Exception:
+        pass
     _atomic_write_bytes(path, payload)
     cache.set_value(path, plaintext, user_id=resolved_user_id)
 

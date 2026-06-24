@@ -54,3 +54,27 @@ data_home=C:\Repos\money-manager\MoneyManagerData
 command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
 Money Manager is starting on http://127.0.0.1:5000
 Press Ctrl+C in this window to stop it.
+
+================================================================================
+2026-06-25 01:11:53 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 136931.7 ms GET /accounts?
+
+================================================================================
+2026-06-25 01:14:46 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 805.7 ms GET /security/unlock?next=/favicon.ico
+WARNING:money_manager.app:Slow request 780.0 ms GET /security/unlock?next=/phone/api/summary
+WARNING:money_manager.app:Slow request 140446.4 ms GET /accounts?
+WARNING:money_manager.app:Slow request 66805.8 ms GET /accounts/main_bank?
+WARNING:money_manager.app:Slow request 1850.3 ms GET /profile?
+WARNING:money_manager.app:Slow request 31838.1 ms GET /profile?saved=preferences
+WARNING:money_manager.app:Slow request 24173.7 ms GET /profile?saved=preferences

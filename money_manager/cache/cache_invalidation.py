@@ -29,6 +29,15 @@ def _clear_turbo_cache(user_id: str | None = None, tags: Iterable[str] | None = 
         pass
 
 
+def _note_turbo_data_changed(user_id: str | None = None, tags: Iterable[str] | None = None) -> None:
+    try:
+        from money_manager.performance import turbo_version_service
+
+        turbo_version_service.note_data_changed(user_id=user_id, tags=tags)
+    except Exception:
+        pass
+
+
 def invalidate_tags(tags: Iterable[str], user_id: str | None = None) -> int:
     safe_id = _resolve_optional_user(user_id)
     expanded = expand_tags(tags)
@@ -37,6 +46,7 @@ def invalidate_tags(tags: Iterable[str], user_id: str | None = None) -> int:
         process_cache.clear()
         return 0
     runtime_epoch.bump(safe_id, expanded)
+    _note_turbo_data_changed(user_id=safe_id, tags=expanded)
     count = mark_stale(tags=expanded, user_id=safe_id, reason="tag_invalidation")
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id, tags=expanded)
@@ -58,6 +68,7 @@ def invalidate_key(key: str, user_id: str | None = None) -> int:
         process_cache.clear()
         return 0
     runtime_epoch.bump(safe_id, ())
+    _note_turbo_data_changed(user_id=safe_id, tags=())
     count = mark_stale(entry_ids=[key], user_id=safe_id, reason="key_invalidation")
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id)
@@ -79,6 +90,7 @@ def invalidate_user_cache(user_id: str | None = None) -> int:
         process_cache.clear()
         return 0
     runtime_epoch.bump(safe_id, ())
+    _note_turbo_data_changed(user_id=safe_id, tags=())
     count = mark_stale(user_id=safe_id, reason="user_invalidation")
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id)
@@ -117,6 +129,7 @@ def clear_user_cache(user_id: str | None = None) -> int:
         process_cache.clear()
         return 0
     runtime_epoch.bump(safe_id, ())
+    _note_turbo_data_changed(user_id=safe_id, tags=())
     count = _clear_user_cache(user_id=safe_id)
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id)

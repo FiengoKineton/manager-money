@@ -149,4 +149,10 @@ def cache_status() -> dict[str, Any]:
         status["csv_row_cache"] = row_cache_stats()
     except Exception:
         pass
+    try:
+        from money_manager.cache import json_read_cache
+
+        status["json_object_cache"] = json_read_cache.stats()
+    except Exception:
+        pass
     return status

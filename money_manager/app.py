@@ -42,6 +42,12 @@ def create_app() -> Flask:
     @app.before_request
     def _money_manager_init_request_cache():
         init_request_cache()
+        try:
+            from money_manager.performance.request_profiler import start as _perf_start
+
+            _perf_start()
+        except Exception:
+            pass
 
     @app.teardown_request
     def _money_manager_clear_request_cache(error=None):
@@ -53,6 +59,12 @@ def create_app() -> Flask:
             from money_manager.security.decrypted_export_service import cleanup_expired_decrypted_exports_throttled
 
             cleanup_expired_decrypted_exports_throttled()
+        except Exception:
+            pass
+        try:
+            from money_manager.performance.request_profiler import finish as _perf_finish
+
+            response = _perf_finish(response)
         except Exception:
             pass
         return response

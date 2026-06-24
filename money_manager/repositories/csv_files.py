@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import threading
 import time
 from collections import OrderedDict
@@ -16,7 +17,8 @@ from money_manager.security.secure_storage import (
     write_csv_secure,
 )
 
-_ROW_CACHE_MAX_ENTRIES = 256
+_ROW_CACHE_MAX_ENTRIES = int(os.environ.get("MONEY_MANAGER_ROW_CACHE_ENTRIES", "512") or 512)
+_SAFE_ROW_COPIES = os.environ.get("MONEY_MANAGER_ROW_CACHE_SAFE_COPIES", "0").strip() == "1"
 _ROW_CACHE_LOCK = threading.RLock()
 
 
@@ -73,18 +75,18 @@ def read_rows(path: Path, fieldnames: list[str]) -> list[dict]:
     sentinel = object()
     request_value = request_cache.get(key, sentinel)
     if request_value is not sentinel:
-        return [dict(row) for row in request_value]
+        return _clone_rows(request_value)
 
     cached = _row_cache_get(key)
     if cached is not None:
-        request_cache.set(key, [dict(row) for row in cached])
-        return [dict(row) for row in cached]
+        request_cache.set(key, _clone_rows(cached))
+        return _clone_rows(cached)
 
     rows = read_csv_secure(path, fieldnames)
     clean_rows = [dict(row) for row in rows]
-    request_cache.set(key, [dict(row) for row in clean_rows])
+    request_cache.set(key, _clone_rows(clean_rows))
     _row_cache_set(key, path=path, user_id=user_id, rows=clean_rows)
-    return clean_rows
+    return _clone_rows(clean_rows)
 
 
 def write_rows(path: Path, fieldnames: list[str], rows: Iterable[dict]) -> None:
@@ -111,6 +113,7 @@ def row_cache_stats() -> dict:
         return {
             "entry_count": len(_ROW_CACHE),
             "max_entries": _ROW_CACHE_MAX_ENTRIES,
+            "safe_row_copies": _SAFE_ROW_COPIES,
             "entries": [
                 {
                     "user_id": entry.user_id,
@@ -143,7 +146,7 @@ def _row_cache_get(key: str) -> list[dict] | None:
             return None
         entry.hits += 1
         _ROW_CACHE.move_to_end(key)
-        return [dict(row) for row in entry.rows]
+        return _clone_rows(entry.rows)
 
 
 def _row_cache_set(key: str, *, path: Path, user_id: str, rows: list[dict]) -> None:
@@ -152,7 +155,7 @@ def _row_cache_set(key: str, *, path: Path, user_id: str, rows: list[dict]) -> N
             key=key,
             user_id=user_id,
             path=_path_text(path),
-            rows=[dict(row) for row in rows],
+            rows=_clone_rows(rows),
             created_at=time.time(),
         )
         _ROW_CACHE.move_to_end(key)
@@ -193,3 +196,11 @@ def _path_text(path: Path) -> str:
         return str(path.resolve())
     except Exception:
         return str(path.absolute())
+
+
+def _clone_rows(rows: Iterable[dict] | list[dict]) -> list[dict]:
+    if _SAFE_ROW_COPIES:
+        return [dict(row) for row in rows]
+    # Fast mode: copy the list wrapper only. Rows are treated as immutable by
+    # read paths; write paths invalidate caches immediately after persisting.
+    return list(rows)

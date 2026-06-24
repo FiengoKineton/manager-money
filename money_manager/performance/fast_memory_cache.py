@@ -6,15 +6,13 @@ import threading
 import time
 from collections import OrderedDict
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Callable, Iterable
 
-from money_manager.cache import runtime_epoch
+from money_manager.cache import request_cache
 from money_manager.cache.cache_invalidation import expand_tags
 from money_manager.cache.cache_keys import digest_payload
 from money_manager.config.user_paths import get_current_user_id, normalize_user_id
-from money_manager.storage.data_file_service import resolve_definition_path
-from money_manager.storage.data_registry import all_definitions
+from money_manager.performance import turbo_version_service
 
 try:  # pandas is a normal app dependency; keep imports safe for tooling/tests.
     import pandas as pd  # type: ignore
@@ -22,10 +20,11 @@ except Exception:  # pragma: no cover
     pd = None  # type: ignore
 
 _ENABLED = os.environ.get("MONEY_MANAGER_TURBO_MEMORY_CACHE", "1").strip() != "0"
-_MAX_ENTRIES = int(os.environ.get("MONEY_MANAGER_TURBO_MEMORY_CACHE_ENTRIES", "256") or 256)
-_DEFAULT_TTL_SECONDS = float(os.environ.get("MONEY_MANAGER_TURBO_MEMORY_CACHE_TTL_SECONDS", "3600") or 3600)
-_SIGNATURE_TTL_SECONDS = float(os.environ.get("MONEY_MANAGER_TURBO_SIGNATURE_TTL_SECONDS", "5") or 5)
-
+_MAX_ENTRIES = int(os.environ.get("MONEY_MANAGER_TURBO_MEMORY_CACHE_ENTRIES", "512") or 512)
+_DEFAULT_TTL_SECONDS = float(os.environ.get("MONEY_MANAGER_TURBO_MEMORY_CACHE_TTL_SECONDS", "7200") or 7200)
+_REQUEST_MEMO_ENABLED = os.environ.get("MONEY_MANAGER_TURBO_REQUEST_MEMO", "1").strip() != "0"
+_SINGLE_FLIGHT_ENABLED = os.environ.get("MONEY_MANAGER_TURBO_SINGLE_FLIGHT", "1").strip() != "0"
+_COPY_MODE = os.environ.get("MONEY_MANAGER_TURBO_COPY_MODE", "shallow").strip().lower()
 _LOCK = threading.RLock()
 
 
@@ -33,6 +32,8 @@ _LOCK = threading.RLock()
 class _Entry:
     key: str
     user_id: str
+    name: str
+    params_digest: str
     tags: tuple[str, ...]
     value: Any
     created_at: float
@@ -41,7 +42,8 @@ class _Entry:
 
 
 _ENTRIES: "OrderedDict[str, _Entry]" = OrderedDict()
-_SIGNATURES: dict[str, tuple[float, dict[str, Any]]] = {}
+_BUILD_LOCKS: dict[str, threading.Lock] = {}
+_STATS = {"hits": 0, "misses": 0, "builds": 0, "request_hits": 0, "singleflight_waits": 0, "sets": 0}
 
 
 def is_enabled() -> bool:
@@ -58,12 +60,12 @@ def get_or_compute(
     user_id: str | None = None,
     ttl_seconds: int | float | None = None,
 ) -> Any:
-    """Fast in-process materialized cache.
+    """Professional hot-path materialized cache.
 
-    This intentionally avoids encrypted disk cache reads/writes during normal
-    navigation. Correctness comes from a cheap file-stat signature plus the
-    runtime invalidation epoch. Any write updates file mtime/size and bumps the
-    epoch, so stale entries become unreachable immediately.
+    The cache key uses a runtime data-version signature instead of repeatedly
+    hashing or statting data files. Writes through the app bump the version
+    immediately; external file edits are detected by the throttled poller in
+    turbo_version_service.
     """
     if not _ENABLED:
         return builder()
@@ -72,85 +74,66 @@ def get_or_compute(
     if not safe_id:
         return builder()
 
+    params_payload = params or {}
+    extra_payload = extra or {}
     tags = tuple(sorted(expand_tags(dependencies)))
-    signature = data_signature(tags, user_id=safe_id, extra=extra or {})
+    signature = data_signature(tags, user_id=safe_id, extra=extra_payload)
+    params_digest = digest_payload(params_payload)
     key = digest_payload(
         {
-            "kind": "turbo_memory_cache",
+            "kind": "turbo_memory_cache_v3",
             "user_id": safe_id,
             "name": str(name),
-            "params": params or {},
+            "params_digest": params_digest,
             "signature": signature.get("digest"),
         }
     )
-    now = time.time()
-    with _LOCK:
-        entry = _ENTRIES.get(key)
-        if entry is not None:
-            if entry.expires_at is None or entry.expires_at >= now:
-                entry.hits += 1
-                _ENTRIES.move_to_end(key)
-                return _safe_copy(entry.value)
-            _ENTRIES.pop(key, None)
 
-    value = builder()
-    ttl = _DEFAULT_TTL_SECONDS if ttl_seconds is None else float(ttl_seconds or 0)
-    expires_at = None if ttl <= 0 else time.time() + ttl
-    with _LOCK:
-        _ENTRIES[key] = _Entry(
-            key=key,
-            user_id=safe_id,
-            tags=tags,
-            value=_safe_copy(value),
-            created_at=time.time(),
-            expires_at=expires_at,
-        )
-        _ENTRIES.move_to_end(key)
-        _evict_locked()
-    return _safe_copy(value)
+    request_key = "turbo_memory:" + key
+    if _REQUEST_MEMO_ENABLED:
+        sentinel = object()
+        request_value = request_cache.get(request_key, sentinel)
+        if request_value is not sentinel:
+            _record("request_hits")
+            return _safe_copy(request_value)
+
+    cached = _get_entry_value(key)
+    if cached is not None:
+        if _REQUEST_MEMO_ENABLED:
+            request_cache.set(request_key, _safe_copy(cached))
+        return cached
+
+    if not _SINGLE_FLIGHT_ENABLED:
+        return _build_and_store(key, name, params_digest, tags, builder, safe_id, ttl_seconds, request_key)
+
+    build_lock = _lock_for_key(key)
+    acquired = build_lock.acquire(blocking=False)
+    if not acquired:
+        _record("singleflight_waits")
+        with build_lock:
+            cached_after_wait = _get_entry_value(key)
+            if cached_after_wait is not None:
+                if _REQUEST_MEMO_ENABLED:
+                    request_cache.set(request_key, _safe_copy(cached_after_wait))
+                return cached_after_wait
+            return _build_and_store(key, name, params_digest, tags, builder, safe_id, ttl_seconds, request_key)
+    try:
+        cached_after_lock = _get_entry_value(key)
+        if cached_after_lock is not None:
+            if _REQUEST_MEMO_ENABLED:
+                request_cache.set(request_key, _safe_copy(cached_after_lock))
+            return cached_after_lock
+        return _build_and_store(key, name, params_digest, tags, builder, safe_id, ttl_seconds, request_key)
+    finally:
+        try:
+            build_lock.release()
+        except RuntimeError:
+            pass
+        _cleanup_build_locks()
 
 
 def data_signature(dependencies: Iterable[str], *, user_id: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
-    safe_id = normalize_user_id(user_id)
-    tags = tuple(sorted(expand_tags(dependencies)))
-    epoch_value = runtime_epoch.epoch(safe_id, tags)
-    base = {"user_id": safe_id, "tags": tags, "epoch": epoch_value, "extra": extra or {}}
-    memo_key = digest_payload({"turbo_signature": base})
-    now = time.time()
-    with _LOCK:
-        cached = _SIGNATURES.get(memo_key)
-        if cached is not None and now - cached[0] <= _SIGNATURE_TTL_SECONDS:
-            return dict(cached[1])
-
-    files: dict[str, dict[str, Any]] = {}
-    wanted = set(tags)
-    for definition in all_definitions("user"):
-        if definition.file_type not in {"csv", "json", "directory", "binary_folder"}:
-            continue
-        definition_tags = set(definition.invalidation_tags or ()) | {definition.name, definition.relative_path}
-        if wanted and not (definition_tags & wanted):
-            continue
-        try:
-            path = resolve_definition_path(definition, user_id=safe_id)
-        except Exception:
-            path = Path(definition.relative_path)
-        files[definition.name] = _fast_path_stat(path, schema_version=definition.schema_version)
-
-    payload = {
-        "schema_version": 1,
-        "user_id": safe_id,
-        "tags": tags,
-        "epoch": epoch_value,
-        "files": files,
-        "extra": extra or {},
-    }
-    payload["digest"] = digest_payload(payload)
-    with _LOCK:
-        _SIGNATURES[memo_key] = (now, dict(payload))
-        if len(_SIGNATURES) > 2048:
-            for old_key in list(_SIGNATURES.keys())[:256]:
-                _SIGNATURES.pop(old_key, None)
-    return payload
+    return turbo_version_service.signature(dependencies, user_id=user_id, extra=extra or {})
 
 
 def clear(*, user_id: str | None = None, tags: Iterable[str] | None = None) -> int:
@@ -165,10 +148,18 @@ def clear(*, user_id: str | None = None, tags: Iterable[str] | None = None) -> i
                 continue
             _ENTRIES.pop(key, None)
             removed += 1
-        if safe_id or wanted:
-            _SIGNATURES.clear()
+    try:
+        turbo_version_service.clear(user_id=safe_id or None, tags=wanted or None)
+    except Exception:
+        pass
+    try:
+        if wanted:
+            for tag in wanted:
+                request_cache.delete_prefix(f"turbo_memory:{safe_id}:{tag}")
         else:
-            _SIGNATURES.clear()
+            request_cache.delete_prefix("turbo_memory:")
+    except Exception:
+        pass
     return removed
 
 
@@ -179,9 +170,14 @@ def stats() -> dict[str, Any]:
             "enabled": _ENABLED,
             "entry_count": len(_ENTRIES),
             "max_entries": _MAX_ENTRIES,
-            "signature_count": len(_SIGNATURES),
+            "request_memo_enabled": _REQUEST_MEMO_ENABLED,
+            "single_flight_enabled": _SINGLE_FLIGHT_ENABLED,
+            "copy_mode": _COPY_MODE,
+            "stats": dict(_STATS),
+            "version_service": turbo_version_service.stats(),
             "entries": [
                 {
+                    "name": entry.name,
                     "user_id": entry.user_id,
                     "tags": list(entry.tags),
                     "age_seconds": round(now - entry.created_at, 3),
@@ -193,18 +189,74 @@ def stats() -> dict[str, Any]:
         }
 
 
-def _fast_path_stat(path: Path, *, schema_version: int = 1) -> dict[str, Any]:
-    try:
-        stat = path.stat()
-        return {
-            "exists": True,
-            "mtime_ns": int(stat.st_mtime_ns),
-            "size": int(stat.st_size),
-            "schema_version": int(schema_version or 1),
-            "is_dir": bool(path.is_dir()),
-        }
-    except Exception:
-        return {"exists": False, "mtime_ns": 0, "size": 0, "schema_version": int(schema_version or 1), "is_dir": False}
+def _get_entry_value(key: str) -> Any | None:
+    now = time.time()
+    with _LOCK:
+        entry = _ENTRIES.get(key)
+        if entry is None:
+            _record_locked("misses")
+            return None
+        if entry.expires_at is not None and entry.expires_at < now:
+            _ENTRIES.pop(key, None)
+            _record_locked("misses")
+            return None
+        entry.hits += 1
+        _record_locked("hits")
+        _ENTRIES.move_to_end(key)
+        return _safe_copy(entry.value)
+
+
+def _build_and_store(
+    key: str,
+    name: str,
+    params_digest: str,
+    tags: tuple[str, ...],
+    builder: Callable[[], Any],
+    safe_id: str,
+    ttl_seconds: int | float | None,
+    request_key: str,
+) -> Any:
+    _record("builds")
+    value = builder()
+    ttl = _DEFAULT_TTL_SECONDS if ttl_seconds is None else float(ttl_seconds or 0)
+    expires_at = None if ttl <= 0 else time.time() + ttl
+    cached_value = _safe_copy(value)
+    with _LOCK:
+        _ENTRIES[key] = _Entry(
+            key=key,
+            user_id=safe_id,
+            name=str(name),
+            params_digest=params_digest,
+            tags=tags,
+            value=cached_value,
+            created_at=time.time(),
+            expires_at=expires_at,
+        )
+        _ENTRIES.move_to_end(key)
+        _record_locked("sets")
+        _evict_locked()
+    if _REQUEST_MEMO_ENABLED:
+        request_cache.set(request_key, _safe_copy(cached_value))
+    return _safe_copy(value)
+
+
+def _lock_for_key(key: str) -> threading.Lock:
+    with _LOCK:
+        lock = _BUILD_LOCKS.get(key)
+        if lock is None:
+            lock = threading.Lock()
+            _BUILD_LOCKS[key] = lock
+        return lock
+
+
+def _cleanup_build_locks() -> None:
+    with _LOCK:
+        if len(_BUILD_LOCKS) <= 256:
+            return
+        for key in list(_BUILD_LOCKS.keys())[:64]:
+            lock = _BUILD_LOCKS.get(key)
+            if lock is not None and not lock.locked():
+                _BUILD_LOCKS.pop(key, None)
 
 
 def _evict_locked() -> None:
@@ -212,7 +264,18 @@ def _evict_locked() -> None:
         _ENTRIES.popitem(last=False)
 
 
+def _record(name: str) -> None:
+    with _LOCK:
+        _record_locked(name)
+
+
+def _record_locked(name: str) -> None:
+    _STATS[name] = int(_STATS.get(name, 0)) + 1
+
+
 def _safe_copy(value: Any) -> Any:
+    if _COPY_MODE in {"none", "off", "0"}:
+        return value
     if pd is not None and isinstance(value, pd.DataFrame):
         return value.copy(deep=False)
     if isinstance(value, dict):
@@ -223,6 +286,11 @@ def _safe_copy(value: Any) -> Any:
         return tuple(value)
     if isinstance(value, set):
         return set(value)
+    if _COPY_MODE in {"deep", "safe"}:
+        try:
+            return copy.deepcopy(value)
+        except Exception:
+            pass
     try:
         return copy.copy(value)
     except Exception:
