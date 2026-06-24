@@ -1,6 +1,0 @@
-id,name,creditor,original_amount,remaining_amount,category,account,start_date,due_date,description,status,created_at,closed_at,account_id,account_name_snapshot,preferred_payment_method_id,preferred_payment_method_name_snapshot
-1,CILA,Claudia,151.0,1.009999999999991,Debt,,2026-06-04,,,active,2026-06-08T09:49:24,2026-06-23T00:08:12,main_bank,Main bank account,main_bank_transfer,Main bank account
-2,Savings,Claudia,200.0,200.0,Debt,bank,2026-06-05,,Vinted balance,active,2026-06-08T09:50:17,,main_bank,Main,main_bank_debit_card,Debit Card
-3,S26 Ultra,Kineton,1100.0,1000.0,Debt,Bank,2026-06-10,,,active,2026-06-08T14:30:09,,main_bank,Main,main_bank_debit_card,Debit Card
-4,Verbale auto,Kineton,41.6,0.0,Debt,Bank,2026-06-08,,Pescocostanzo,paid,2026-06-08T14:34:40,2026-06-10T15:33:39,main_bank,Main,main_bank_debit_card,Debit Card
-5,CILA,Umberto Mautone,715.5,0.0,Debt,,2026-06-09,,procedura CILA,paid,2026-06-09T19:29:40,2026-06-09T20:21:37,main_bank,Main,main_bank_debit_card,Debit Card

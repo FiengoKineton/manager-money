@@ -138,16 +138,24 @@ def _read_json(path: Path) -> dict:
 
 def _write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    text = json.dumps(payload, indent=2, sort_keys=True)
+    try:
+        path.write_text(text, encoding="utf-8")
+    except PermissionError:
+        # The remembered launcher config is optional.
+        # Do not block startup if AppData is protected.
+        pass
 
 
 def _update_launcher_config(**values) -> dict:
     path = _config_path()
     payload = _read_json(path)
     payload.update({key: str(value) for key, value in values.items() if value is not None})
-    _write_json(path, payload)
+    try:
+        _write_json(path, payload)
+    except Exception:
+        pass
     return payload
-
 
 def _candidate_project_dirs(config_path: Path) -> list[Path]:
     candidates: list[Path] = []
@@ -270,7 +278,10 @@ def ensure_data_home(project_dir: Path, data_home: Path) -> None:
         data_home / "cache",
     ):
         folder.mkdir(parents=True, exist_ok=True)
-    _update_launcher_config(project_dir=project_dir, data_home=data_home)
+    try:
+        _update_launcher_config(project_dir=project_dir, data_home=data_home)
+    except Exception:
+        pass
 
     env = os.environ.copy()
     env[DATA_HOME_ENV] = str(data_home)

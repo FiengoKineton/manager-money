@@ -37,11 +37,26 @@ def read_json_file(path: Path, default: Any = None) -> Any:
     return default
 
 
-def write_json_atomic(path: Path, payload: Any) -> None:
+def write_json_atomic(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
-    tmp.replace(path)
+    text = json.dumps(payload, indent=2, ensure_ascii=False)
+
+    tmp = path.with_name(path.name + ".writing")
+    try:
+        tmp.write_text(text, encoding="utf-8")
+        tmp.replace(path)
+        return
+    except PermissionError:
+        try:
+            if tmp.exists():
+                tmp.unlink()
+        except Exception:
+            pass
+
+    # Fallback for Windows/antivirus cases where Python is blocked from
+    # creating temporary sidecar files. This is less atomic, but prevents
+    # launcher startup from failing.
+    path.write_text(text, encoding="utf-8")
 
 
 def launcher_config_path() -> Path | None:

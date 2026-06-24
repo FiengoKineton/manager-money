@@ -128,3 +128,11 @@ data_home=C:\Users\giuseppe.fiengo_kine\Desktop\MyDesktop\Repos\manager-money\Mo
 command=C:\Users\giuseppe.fiengo_kine\Desktop\MyDesktop\Repos\manager-money\.venv\Scripts\python.exe C:\Users\giuseppe.fiengo_kine\Desktop\MyDesktop\Repos\manager-money\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
 Money Manager is starting on http://127.0.0.1:5000
 Press Ctrl+C in this window to stop it.
+
+================================================================================
+2026-06-24 22:08:51 starting Money Manager
+project_dir=C:\Users\giuseppe.fiengo_kine\Desktop\MyDesktop\Repos\manager-money
+data_home=C:\Users\giuseppe.fiengo_kine\Desktop\MyDesktop\Repos\manager-money\MoneyManagerData
+command=C:\Users\giuseppe.fiengo_kine\Desktop\MyDesktop\Repos\manager-money\.venv\Scripts\python.exe C:\Users\giuseppe.fiengo_kine\Desktop\MyDesktop\Repos\manager-money\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.

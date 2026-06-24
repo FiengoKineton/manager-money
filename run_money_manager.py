@@ -33,6 +33,11 @@ def _prepare_import_path() -> None:
 def create_flask_app():
     """Import and create the Flask application from the package factory."""
     _prepare_import_path()
+    import os
+    from pathlib import Path
+
+    PROJECT_DIR = Path(__file__).resolve().parent
+    os.environ.setdefault("MONEY_MANAGER_DATA_HOME", str(PROJECT_DIR / "MoneyManagerData"))
     from money_manager.app import create_app
 
     return create_app()

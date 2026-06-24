@@ -5,6 +5,12 @@ You can run either:
 or:
     python run.py
 """
+import os
+from pathlib import Path
+
+PROJECT_DIR = Path(__file__).resolve().parent
+os.environ.setdefault("MONEY_MANAGER_DATA_HOME", str(PROJECT_DIR / "MoneyManagerData"))
+
 from money_manager.app import create_app
 
 app = create_app()

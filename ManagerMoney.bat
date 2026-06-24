@@ -20,6 +20,7 @@ if not defined PROJECT_DIR exit /b 1
 
 set "LAUNCHER_PY=%PROJECT_DIR%\launcher.py"
 set "DATA_HOME=%PROJECT_DIR%\MoneyManagerData"
+set "MONEY_MANAGER_PORT=5000"
 
 rem Default to minimized launcher behavior for normal double-click use.
 rem Use --foreground when you need to keep startup errors visible for debugging.
@@ -29,7 +30,7 @@ goto run_background
 
 :run_foreground
 pushd "%PROJECT_DIR%" >nul 2>nul
-%PY_CMD% "%LAUNCHER_PY%" --project-dir "%PROJECT_DIR%" --data-home "%DATA_HOME%" %*
+%PY_CMD% "%LAUNCHER_PY%" --project-dir "%PROJECT_DIR%" --data-home "%DATA_HOME%" --port "%MONEY_MANAGER_PORT%" %*
 set "RUN_EXIT=%errorlevel%"
 popd >nul 2>nul
 if not "%RUN_EXIT%"=="0" (
@@ -43,7 +44,7 @@ if not "%RUN_EXIT%"=="0" (
 exit /b %RUN_EXIT%
 
 :run_background
-start "Money Manager Launcher" /D "%PROJECT_DIR%" /min %PY_CMD% "%LAUNCHER_PY%" --project-dir "%PROJECT_DIR%" --data-home "%DATA_HOME%" %*
+start "Money Manager Launcher" /D "%PROJECT_DIR%" /min %PY_CMD% "%LAUNCHER_PY%" --project-dir "%PROJECT_DIR%" --data-home "%DATA_HOME%" --port "%MONEY_MANAGER_PORT%" %*
 exit /b 0
 
 :find_python
