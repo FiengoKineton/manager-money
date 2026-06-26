@@ -1,7 +1,7 @@
 /* Phone transaction feed enhancer.
    It only adds presentation classes and animation indexes; it does not change data or forms. */
 (function () {
-  const phoneMedia = window.matchMedia("(max-width: 1120px), (hover: none) and (pointer: coarse)");
+  const phoneMedia = window.matchMedia("(max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse)");
 
   function textFrom(node) {
     return String(node ? node.textContent || "" : "").replace(/\s+/g, " ").trim();

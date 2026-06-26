@@ -1085,7 +1085,7 @@
 (function () {
   let ticking = false;
   let lastEvent = null;
-  const coarsePointer = window.matchMedia("(hover: none), (pointer: coarse), (max-width: 1120px)");
+  const coarsePointer = window.matchMedia("(hover: none) and (pointer: coarse)");
   const glowTargetsSelector = ".page-heading, .panel-card, .card, .form-section, .transactions, .summary-card, .priority-card, .mini-priority-card, .quick-mode-card, .payment-card, .recurring-rule-card, .mobile-disclosure-row";
 
   function updateBodyPointer(event) {

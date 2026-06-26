@@ -1,5 +1,5 @@
 /* Phone-only vivid money-app theme. */
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   :root {
     --phone-bg-a: #150734;
     --phone-bg-b: #3a0ca3;

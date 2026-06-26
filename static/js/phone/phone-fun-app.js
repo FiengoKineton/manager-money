@@ -4,7 +4,7 @@
    gestures, richer colors/animations, and stronger overflow guards.
 -------------------------------------------------------------------------- */
 (function () {
-  const phoneMedia = window.matchMedia("(max-width: 1120px), (hover: none) and (pointer: coarse)");
+  const phoneMedia = window.matchMedia("(max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse)");
   const SUMMARY_URL = "/phone/api/summary";
   const MONEY_RE = /[-+]?\s*(?:€\s*)?([0-9]+(?:[.,][0-9]{1,2})?)/;
   const state = { summary: null, summaryStarted: false, summaryFailed: false };

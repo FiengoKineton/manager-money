@@ -630,3 +630,143 @@ WARNING:money_manager.app:Slow request 14924.3 ms GET /transaction/330?
 WARNING:money_manager.app:Slow request 6282.8 ms GET /api/topbar-summary?
 WARNING:money_manager.app:Slow request 4422.0 ms GET /transaction/330?
 WARNING:money_manager.app:Slow request 40758.5 ms GET /accounts?
+
+================================================================================
+2026-06-26 18:05:44 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+
+================================================================================
+2026-06-26 18:26:55 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 990.0 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 990.2 ms GET /security/unlock?next=/favicon.ico
+WARNING:money_manager.app:Slow request 38609.4 ms GET /accounts?
+WARNING:money_manager.app:Slow request 16183.1 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 46701.2 ms GET /accounts/main_bank?
+WARNING:money_manager.app:Slow request 44618.9 ms GET /accounts/main_bank?
+WARNING:money_manager.app:Slow request 2419.7 ms GET /transactions?account_id=main_bank
+WARNING:money_manager.app:Slow request 25414.3 ms GET /api/topbar-summary?account_id=main_bank
+WARNING:money_manager.app:Slow request 1294.1 ms GET /settings/categories?
+WARNING:money_manager.app:Slow request 2175.4 ms GET /settings/cache?
+WARNING:money_manager.app:Slow request 2461.5 ms GET /settings/data-registry?
+WARNING:money_manager.app:Slow request 11940.9 ms GET /profile?
+WARNING:money_manager.app:Slow request 1627.8 ms GET /settings/updates?
+WARNING:money_manager.app:Slow request 2833.3 ms GET /settings/security?
+WARNING:money_manager.app:Slow request 1743.4 ms GET /mortgages?
+WARNING:money_manager.app:Slow request 40555.7 ms GET /dashboard?account_id=main_bank
+WARNING:money_manager.app:Slow request 1877.7 ms GET /bollette?
+WARNING:money_manager.app:Slow request 2049.5 ms GET /work-income?
+WARNING:money_manager.app:Slow request 58195.4 ms GET /receivables?
+WARNING:money_manager.app:Slow request 81000.0 ms GET /payables?
+WARNING:money_manager.app:Slow request 110931.2 ms GET /overview/detailed?account_id=main_bank
+WARNING:money_manager.app:Slow request 114145.3 ms GET /home?account_id=main_bank
+WARNING:money_manager.app:Slow request 111684.1 ms GET /net-explanation?account_id=main_bank
+WARNING:money_manager.app:Slow request 19563.5 ms GET /investments?
+WARNING:money_manager.app:Slow request 116443.2 ms GET /settings/integrity?
+WARNING:money_manager.app:Slow request 43609.2 ms GET /accounts?
+WARNING:money_manager.app:Slow request 1228.1 ms GET /currencies?
+WARNING:money_manager.app:Slow request 7397.4 ms GET /transactions?
+WARNING:money_manager.app:Slow request 21312.7 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 10485.0 ms GET /internal-transfers?
+WARNING:money_manager.app:Slow request 2035.5 ms GET /bonifico?
+WARNING:money_manager.app:Slow request 27089.9 ms GET /accounts/other_account?
+WARNING:money_manager.app:Slow request 24178.1 ms GET /accounts/other_account?
+WARNING:money_manager.app:Slow request 12537.5 ms GET /api/topbar-summary?account_id=other_account
+ERROR:money_manager.app:Exception on /accounts/glovo [GET]
+Traceback (most recent call last):
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\routes\accounts\accounts.py", line 265, in account_detail
+    context["closure_precheck"] = account_closure_precheck(account_key)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\account_closure_service.py", line 61, in account_closure_precheck
+    sync_credit_settlements(sync_pending=True)
+  File "C:\Repos\money-manager\money_manager\services\credit_settlement_service.py", line 108, in sync_credit_settlements
+    settlement_id = upsert_by_uid(group["settlement_uid"], payload)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\credit_settlements.py", line 101, in upsert_by_uid
+    update_settlement(existing.get("id", ""), updates)
+  File "C:\Repos\money-manager\money_manager\repositories\credit_settlements.py", line 70, in update_settlement
+    write_rows(CREDIT_SETTLEMENTS_CSV, CREDIT_SETTLEMENT_FIELDS, rows)
+  File "C:\Repos\money-manager\money_manager\repositories\csv_files.py", line 93, in write_rows
+    write_csv_secure(path, fieldnames, rows)
+  File "C:\Repos\money-manager\money_manager\security\secure_storage.py", line 196, in write_csv_secure
+    _write_bytes(path, output.getvalue().encode("utf-8"), logical_name=logical_name, user_id=resolved_user_id, content_type="text/csv")
+  File "C:\Repos\money-manager\money_manager\security\secure_storage.py", line 322, in _write_bytes
+    _atomic_write_bytes(path, payload)
+  File "C:\Repos\money-manager\money_manager\security\secure_storage.py", line 410, in _atomic_write_bytes
+    Path(temp_name).replace(path)
+  File "C:\Users\g7fie\AppData\Local\Programs\Python\Python312\Lib\pathlib.py", line 1376, in replace
+    os.replace(self, target)
+PermissionError: [WinError 5] Access is denied: 'C:\\Repos\\money-manager\\MoneyManagerData\\data\\users\\fiengokineton\\.credit_settlements.debn8m3c.tmp' -> 'C:\\Repos\\money-manager\\MoneyManagerData\\data\\users\\fiengokineton\\credit_settlements.csv'
+WARNING:money_manager.app:Slow request 10319.3 ms GET /accounts/glovo?
+WARNING:money_manager.app:Slow request 32244.2 ms GET /accounts/glovo?
+
+================================================================================
+2026-06-26 18:37:25 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 1180.2 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 1162.6 ms GET /security/unlock?next=/favicon.ico
+WARNING:money_manager.app:Slow request 995.8 ms GET /security/unlock?next=/phone/api/summary
+WARNING:money_manager.app:Slow request 40468.6 ms GET /accounts?
+WARNING:money_manager.app:Slow request 969.6 ms GET /transactions?
+WARNING:money_manager.app:Slow request 22106.1 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 6671.9 ms GET /bonifico?
+WARNING:money_manager.app:Slow request 11229.6 ms GET /internal-transfers?
+WARNING:money_manager.app:Slow request 10741.2 ms GET /parents?
+WARNING:money_manager.app:Slow request 20621.0 ms GET /sparagnat?
+WARNING:money_manager.app:Slow request 10153.2 ms GET /parents?
+WARNING:money_manager.app:Slow request 9457.5 ms GET /sparagnat?
+WARNING:money_manager.app:Slow request 9597.9 ms GET /sparagnat?
+WARNING:money_manager.app:Slow request 5050.0 ms GET /parents?
+WARNING:money_manager.app:Slow request 10053.3 ms GET /sparagnat?
+WARNING:money_manager.app:Slow request 4713.8 ms GET /bonifico?
+WARNING:money_manager.app:Slow request 4740.1 ms GET /bonifico?
+WARNING:money_manager.app:Slow request 11843.1 ms GET /internal-transfers?
+WARNING:money_manager.app:Slow request 6625.8 ms GET /internal-transfers?
+WARNING:money_manager.app:Slow request 1135.9 ms GET /mortgages?
+WARNING:money_manager.app:Slow request 11668.1 ms GET /debts?
+WARNING:money_manager.app:Slow request 10739.4 ms GET /debts?
+WARNING:money_manager.app:Slow request 24710.4 ms GET /payables?
+WARNING:money_manager.app:Slow request 6198.1 ms GET /profile?
+WARNING:money_manager.app:Slow request 53486.6 ms GET /home?
+WARNING:money_manager.app:Slow request 53335.5 ms GET /home?
+WARNING:money_manager.app:Slow request 5859.4 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 2393.2 ms GET /transactions?
+WARNING:money_manager.app:Slow request 30751.4 ms GET /investments?
+WARNING:money_manager.app:Slow request 37867.0 ms GET /recurring?
+WARNING:money_manager.app:Slow request 21833.9 ms GET /investments?
+
+================================================================================
+2026-06-26 18:50:26 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 862.0 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 861.5 ms GET /security/unlock?next=/favicon.ico
+WARNING:money_manager.app:Slow request 39566.9 ms GET /accounts?
+WARNING:money_manager.app:Slow request 16262.0 ms GET /api/topbar-summary?

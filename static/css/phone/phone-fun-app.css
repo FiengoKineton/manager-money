@@ -3,7 +3,7 @@
    Phone-only experience layer. It does not affect desktop because it is loaded
    through static/css/phone/phone.css, which is media-gated in base.html.
 -------------------------------------------------------------------------- */
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   html.phone-shell-active.phone-fun-active {
     --fun-bg-a: #130f40;
     --fun-bg-b: #4b1fa2;
@@ -830,7 +830,7 @@
    Phone Fun App v2 polish: smoother swipe, stronger nav, richer color motion.
    Phone-only file; desktop/web CSS is not touched.
 -------------------------------------------------------------------------- */
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   html.phone-shell-active.phone-fun-active {
     --fun-bg-a: #10002b;
     --fun-bg-b: #3c096c;
@@ -1212,7 +1212,7 @@
    - no fixed mobile background attachment
    - lighter shadows/filters while scrolling/swiping
 -------------------------------------------------------------------------- */
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   html.phone-shell-active.phone-fun-active body.app-body {
     background-attachment: scroll !important;
   }

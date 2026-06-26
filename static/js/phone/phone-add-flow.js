@@ -1,7 +1,7 @@
 /* Phone add-flow enhancer.
    Keeps the same backend form fields, but groups the normal add form into phone-first steps. */
 (function () {
-  const phoneMedia = window.matchMedia("(max-width: 1120px), (hover: none) and (pointer: coarse)");
+  const phoneMedia = window.matchMedia("(max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse)");
 
   function labelText(node) {
     const label = node && node.querySelector("label");

@@ -359,13 +359,13 @@ def infer_default_payment_methods_from_accounts(accounts_payload: Mapping[str, A
     if "paypal" in keys and "main_bank" in keys:
         add({
             "id": "paypal_via_main_bank",
-            "name": "PayPal via Main Bank",
+            "name": "PayPal via Main Bank card",
             "method_type": "wallet_linked_card",
             "settlement_mode": "delegated",
             "linked_account_id": "paypal",
-            "delegates_to_payment_method_id": "main_bank_transfer",
+            "delegates_to_payment_method_id": "main_bank_debit_card",
             "display_order": 70,
-            "aliases": ["paypal main", "paypal debit", "paypal bank"],
+            "aliases": ["paypal main", "paypal debit", "paypal bank", "paypal card", "paypal linked card"],
             "legacy": {"migration_rule": "H.paypal_via_main_bank"},
         })
 
@@ -436,6 +436,19 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
                 return True
         return False
 
+    def _first_active_method_id_for_account(key: str, method_types: set[str]) -> str:
+        for method in methods:
+            if method.get("is_archived") or not method.get("is_active", True):
+                continue
+            method_type = clean_text(method.get("method_type") or "")
+            if method_type in method_types and _method_touches_account(method, key):
+                return str(method.get("id") or "")
+        return ""
+
+    def _merge_aliases(method: dict[str, Any], aliases: Iterable[str]) -> None:
+        merged = split_aliases([*method.get("aliases", []), *aliases])
+        method["aliases"] = merged
+
     def _unique_method_id(base: str) -> str:
         if base not in existing_ids:
             return base
@@ -493,7 +506,7 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
                 "aliases": account.get("aliases", []) or [key, label],
                 "legacy": {"migration_rule": "auto_cashflow_method"},
             })
-        elif kind in {"wallet_balance", "dependent_wallet", "prepaid_balance", "meal_voucher"}:
+        elif key != "paypal" and kind in {"wallet_balance", "dependent_wallet", "prepaid_balance", "meal_voucher"}:
             method_type = {"prepaid_balance": "prepaid_card", "meal_voucher": "meal_voucher"}.get(kind, "wallet_balance")
             _add({
                 "id": key,
@@ -507,6 +520,68 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
                 "aliases": account.get("aliases", []) or [key, label],
                 "legacy": {"migration_rule": "auto_wallet_balance_method"},
             })
+
+    account_keys = {str(account.get("key") or account.get("id") or "") for account in accounts}
+    if "paypal" in account_keys:
+        _add({
+            "id": "paypal_balance",
+            "name": "PayPal balance",
+            "method_type": "wallet_balance",
+            "settlement_mode": "stored_balance",
+            "linked_account_id": "paypal",
+            "funding_account_id": "paypal",
+            "settlement_account_id": "paypal",
+            "display_order": 40,
+            "aliases": ["paypal", "pay pal", "paypal balance", "paypal wallet"],
+            "legacy": {"migration_rule": "auto_paypal_balance_method"},
+            "metadata": {"auto_default": True, "visible_card": False},
+        })
+
+    if "paypal" in account_keys and "main_bank" in account_keys:
+        main_delegate = (
+            _first_active_method_id_for_account("main_bank", {"debit_card"})
+            or _first_active_method_id_for_account("main_bank", {"bank_transfer"})
+            or "main_bank_debit_card"
+        )
+        _add({
+            "id": "paypal_via_main_bank",
+            "name": "PayPal via Main Bank card",
+            "method_type": "wallet_linked_card",
+            "settlement_mode": "delegated",
+            "linked_account_id": "paypal",
+            "delegates_to_payment_method_id": main_delegate,
+            "display_order": 70,
+            "aliases": ["paypal main", "paypal debit", "paypal bank", "paypal card", "paypal linked card"],
+            "legacy": {"migration_rule": "auto_paypal_via_main_bank"},
+            "metadata": {"auto_default": True, "visible_card": True},
+        })
+
+        for method in methods:
+            if str(method.get("id") or "") != "paypal_via_main_bank":
+                continue
+            changed = False
+            if clean_text(method.get("name") or "") in {"paypal via main bank", "paypal via main bank card"}:
+                method["name"] = "PayPal via Main Bank card"
+            if method.get("method_type") != "wallet_linked_card":
+                method["method_type"] = "wallet_linked_card"
+                changed = True
+            if method.get("settlement_mode") != "delegated":
+                method["settlement_mode"] = "delegated"
+                changed = True
+            if method.get("linked_account_id") != "paypal":
+                method["linked_account_id"] = "paypal"
+                changed = True
+            current_delegate = str(method.get("delegates_to_payment_method_id") or "")
+            if current_delegate in {"", "main_bank_transfer"} and main_delegate:
+                method["delegates_to_payment_method_id"] = main_delegate
+                changed = True
+            before_aliases = list(method.get("aliases", []))
+            _merge_aliases(method, ["paypal main", "paypal debit", "paypal bank", "paypal card", "paypal linked card"])
+            if before_aliases != method.get("aliases", []):
+                changed = True
+            if changed:
+                method["updated_at"] = utc_now()
+            break
 
     result["payment_methods"] = methods
     result["updated_at"] = clean_label(result.get("updated_at") or "")

@@ -18,7 +18,8 @@
     })();
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=fast-phone-1">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=fast-phone-1" media="(max-width: 1120px), (hover: none) and (pointer: coarse)">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=phone-breakpoint-2" media="(max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse)">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/instant-nav.css') }}?v=instant-nav-1">
   {% set plotly_endpoints = [
     'dashboard.index',
     'analysis.analysis',
@@ -70,7 +71,8 @@
           {% set accounts_core_open = request.endpoint in ['accounts.accounts_page', 'transactions.transactions_page'] %}
           {% set accounts_transfer_open = request.endpoint in ['internal_transfers.internal_transfers_page', 'bonifico.bonifico_page'] %}
           {% set accounts_tools_open = (request.endpoint and request.endpoint.startswith('contacts.')) or request.endpoint in ['currencies.currencies_page', 'discount_balances.discount_balances_page'] %}
-          {% set accounts_group_open = accounts_core_open or accounts_transfer_open or accounts_tools_open %}
+          {% set accounts_records_open = request.endpoint in ['documents.documents', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
+          {% set accounts_group_open = accounts_core_open or accounts_transfer_open or accounts_tools_open or accounts_records_open %}
           <details class="nav-group app-nav-group {{ 'is-active' if accounts_group_open else '' }}" {{ 'open' if accounts_group_open else '' }}>
             <summary>Conti Correnti</summary>
             <div class="nav-items nav-items-with-subgroups">
@@ -96,6 +98,15 @@
                   {% if endpoint_exists('contacts.contacts_page') %}<a href="{{ url_for('contacts.contacts_page') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('contacts.') else '' }}">Contacts</a>{% endif %}
                   {% if endpoint_exists('currencies.currencies_page') %}<a href="{{ url_for('currencies.currencies_page') }}" class="{{ 'active' if request.endpoint == 'currencies.currencies_page' else '' }}">Currency exchange</a>{% endif %}
                   {% if endpoint_exists('discount_balances.discount_balances_page') %}<a href="{{ url_for('discount_balances.discount_balances_page') }}" class="{{ 'active' if request.endpoint == 'discount_balances.discount_balances_page' else '' }}">Gift cards & buoni</a>{% endif %}
+                </div>
+              </details>
+
+              <details class="nav-subgroup {{ 'is-active' if accounts_records_open else '' }}" {{ 'open' if accounts_records_open else '' }}>
+                <summary>Records & support</summary>
+                <div class="nav-subitems">
+                  {% if endpoint_exists('documents.documents') %}<a href="{{ url_for('documents.documents') }}" class="{{ 'active' if request.endpoint == 'documents.documents' else '' }}">Documents</a>{% endif %}
+                  {% if endpoint_exists('sparagnat.sparagnat_page') %}<a href="{{ url_for('sparagnat.sparagnat_page') }}" class="{{ 'active' if request.endpoint == 'sparagnat.sparagnat_page' else '' }}">Sparagnat e Fottut</a>{% endif %}
+                  {% if endpoint_exists('parent_support.parent_support_page') %}<a href="{{ url_for('parent_support.parent_support_page') }}" class="{{ 'active' if request.endpoint == 'parent_support.parent_support_page' else '' }}">Parent Support</a>{% endif %}
                 </div>
               </details>
             </div>
@@ -325,11 +336,12 @@
     </div>
   </div>
 
+  <script src="{{ url_for('static', filename='js/shared/instant-nav.js') }}?v=instant-nav-1" defer></script>
   <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=receipt-paper-items-fix-3"></script>
   <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-lazy-1"></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=wallet-shell-17e"></script>
-  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=fast-phone-1" defer></script>
+  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=phone-breakpoint-2" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

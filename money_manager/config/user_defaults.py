@@ -104,6 +104,8 @@ def _account(
     is_current_account: bool = False,
     is_financial_center: bool | None = None,
     liquidity_rollup_policy: str | None = None,
+    parent_account_id: str = "",
+    is_dependent_account: bool | None = None,
     is_liability: bool = False,
     is_container: bool = False,
     is_default: bool = True,
@@ -112,8 +114,11 @@ def _account(
 ) -> dict[str, Any]:
     if is_financial_center is None:
         is_financial_center = bool(is_current_account and not is_liability and not is_container)
+    parent_account_id = str(parent_account_id or "").strip()
+    if is_dependent_account is None:
+        is_dependent_account = bool(parent_account_id)
     if liquidity_rollup_policy is None:
-        liquidity_rollup_policy = "own_only"
+        liquidity_rollup_policy = "roll_up_to_parent" if parent_account_id else "own_only"
 
     return {
         "id": account_id,
@@ -130,9 +135,9 @@ def _account(
         "description": description,
         "is_current_account": is_current_account,
         "is_financial_center": bool(is_financial_center),
-        "is_dependent_account": False,
-        "parent_account_id": "",
-        "parent_key": "",
+        "is_dependent_account": bool(is_dependent_account),
+        "parent_account_id": parent_account_id,
+        "parent_key": parent_account_id,
         "liquidity_rollup_policy": liquidity_rollup_policy,
         "is_liability": is_liability,
         "is_container": is_container,
@@ -187,6 +192,20 @@ DEFAULT_ACCOUNTS: dict[str, Any] = {
             category_aliases=["cash", "cash flow", "contanti"],
             is_financial_center=False,
             liquidity_rollup_policy="own_only",
+        ),
+        _account(
+            account_id="paypal",
+            name="PayPal",
+            account_kind="dependent_wallet",
+            display_order=20,
+            description="PayPal wallet and checkout channel. The PayPal balance is separate, while linked-card payments are funded by the parent current account.",
+            aliases=["paypal", "pay pal", "paypal wallet"],
+            category_aliases=[],
+            main_net_policy="separate_when_explicit",
+            is_financial_center=False,
+            parent_account_id="main_bank",
+            is_dependent_account=True,
+            liquidity_rollup_policy="roll_up_to_parent",
         ),
         _account(
             account_id="other_account",

@@ -1,5 +1,5 @@
 /* Phone-only add transaction flow. The backend form is the same; only the phone layout changes. */
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   html.phone-shell-active .transaction-form[data-phone-add-flow="true"] {
     display: grid !important;
     gap: 0.86rem !important;

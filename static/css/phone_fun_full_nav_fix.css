@@ -13,7 +13,7 @@
   display: none;
 }
 
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   :root {
     --phone-topbar-height: 74px;
     --phone-tabbar-height: 72px;
@@ -706,7 +706,7 @@
 }
 
 /* Day phone palette: vivid, but not neon. */
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   body.app-body-clean {
     background:
       radial-gradient(circle at 2% 5%, rgba(37, 99, 235, 0.28), transparent 18rem),
@@ -807,7 +807,7 @@
 }
 
 /* Night phone palette: softer, darker, less eye stress than previous bright mode. */
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   html[data-theme="night"] {
     --bg: #040b13;
     --ink: #dce7f1;
@@ -1167,7 +1167,7 @@
   }
 }
 
-@media (max-height: 660px) and (max-width: 1120px) {
+@media (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   :root {
     --phone-topbar-height: 64px;
     --phone-tabbar-height: 62px;
@@ -1202,7 +1202,7 @@
    Phone Fun Shell v3 reliability patch
    These rules intentionally come last and override older mobile patch layers.
 -------------------------------------------------------------------------- */
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   .mobile-sheet[hidden],
   .mobile-add-menu[hidden],
   .mobile-plan-menu[hidden],
@@ -1440,7 +1440,7 @@
    shadows, continuous reveal animations, and permanent will-change layers.
    These overrides keep the phone UI fun but make it cheaper to paint.
 -------------------------------------------------------------------------- */
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   .app-topbar,
   .mobile-bottom-nav.mobile-tabbar,
   .mobile-sheet-panel,

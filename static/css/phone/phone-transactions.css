@@ -1,5 +1,5 @@
 /* Phone-only transaction/cards experience. */
-@media (max-width: 1120px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   html.phone-shell-active table.mobile-card-table {
     border-collapse: separate !important;
     border-spacing: 0 0.78rem !important;

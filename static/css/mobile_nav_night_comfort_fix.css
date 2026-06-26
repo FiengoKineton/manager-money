@@ -237,7 +237,7 @@ html[data-theme="night"] .nav-items a.active {
 }
 
 /* Phone app chrome: fixed bottom navigation and floating add that never covers it. */
-@media (max-width: 1120px) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
   .mobile-bottom-nav {
     position: fixed !important;
     display: grid !important;

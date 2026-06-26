@@ -1,5 +1,5 @@
 from money_manager.web import auth
-from money_manager.web.routes import backup, bonifico, contacts, integrity, net_explanation, notifications, onboarding, phone_api, profile, search, security, settings_updates, settings_cache, settings_categories
+from money_manager.web.routes import backup, bonifico, contacts, integrity, net_explanation, notifications, onboarding, phone, phone_api, profile, search, security, settings_updates, settings_cache, settings_categories
 from money_manager.web.routes.accounts import accounts, currencies, internal_transfers
 from money_manager.web.routes.assets import investments
 from money_manager.web.routes.core import analysis, dashboard, transactions, yearly_summary
@@ -10,6 +10,7 @@ from money_manager.web.routes.support import debts, discount_balances, documents
 def register_routes(app):
     app.register_blueprint(auth.bp)
     app.register_blueprint(notifications.bp)
+    app.register_blueprint(phone.bp)
     app.register_blueprint(phone_api.bp)
     app.register_blueprint(profile.bp)
     app.register_blueprint(integrity.bp)
