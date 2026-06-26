@@ -780,3 +780,197 @@ html[data-theme="night"].phone-native-active .phone-menu-list details {
   background: rgba(28, 45, 72, 0.82) !important;
   border-color: rgba(162, 196, 255, 0.15) !important;
 }
+
+/* --------------------------------------------------------------------------
+   Real phone hard override.
+   The app must not show a desktop sidebar/topbar squeezed into a phone.
+   This block is intentionally stronger than web.css and old mobile layers.
+-------------------------------------------------------------------------- */
+html.phone-native-active body.app-body-clean .app-layout::before,
+html.phone-native-active body.app-body-clean .app-layout::after,
+html.phone-native-active .app-layout::before,
+html.phone-native-active .app-layout::after {
+  display: none !important;
+  content: none !important;
+}
+
+html.phone-native-active .app-layout {
+  display: block !important;
+  grid-template-columns: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 100dvh !important;
+  overflow-x: hidden !important;
+  padding: 0 !important;
+}
+
+html.phone-native-active .app-sidebar,
+html.phone-native-active aside.app-sidebar,
+html.phone-native-active .desktop-sidebar,
+html.phone-native-active .sidebar,
+html.phone-native-active .app-sidebar-footer,
+html.phone-native-active .app-sidebar-nav,
+html.phone-native-active .mobile-bottom-nav,
+html.phone-native-active .mobile-tabbar,
+html.phone-native-active .mobile-sheet,
+html.phone-native-active .mobile-add-menu {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  transform: translateX(-200vw) !important;
+}
+
+html.phone-native-active .app-topbar {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+html.phone-native-active .phone-native-topbar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 5000 !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) 42px 42px !important;
+  align-items: center !important;
+  gap: 8px !important;
+  height: calc(var(--phone-top-height) + env(safe-area-inset-top, 0px)) !important;
+  padding: calc(env(safe-area-inset-top, 0px) + 7px) 10px 7px !important;
+  box-sizing: border-box !important;
+}
+
+html.phone-native-active .app-workspace,
+html.phone-native-active .app-main,
+html.phone-native-active .container,
+html.phone-native-active .app-content-stage {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+html.phone-native-active .app-main {
+  padding: calc(var(--phone-top-height) + env(safe-area-inset-top, 0px) + 10px) 10px calc(var(--phone-dock-height) + env(safe-area-inset-bottom, 0px) + 18px) !important;
+}
+
+html.phone-native-active .app-content-stage,
+html.phone-native-active .container {
+  padding: 0 !important;
+}
+
+html.phone-native-active .panel-card,
+html.phone-native-active .filters,
+html.phone-native-active .transactions,
+html.phone-native-active .summary-card,
+html.phone-native-active .card,
+html.phone-native-active .chart-card,
+html.phone-native-active .auth-card,
+html.phone-native-active form:not(.logout-form) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  border-radius: 20px !important;
+}
+
+html.phone-native-active .panel-card,
+html.phone-native-active .filters,
+html.phone-native-active .transactions,
+html.phone-native-active .auth-card {
+  padding: 14px !important;
+  margin: 0 0 12px !important;
+}
+
+html.phone-native-active h1 { font-size: 1.35rem !important; line-height: 1.08 !important; }
+html.phone-native-active h2 { font-size: 1.08rem !important; line-height: 1.12 !important; }
+html.phone-native-active p { font-size: 0.92rem !important; line-height: 1.38 !important; }
+
+html.phone-native-active input,
+html.phone-native-active select,
+html.phone-native-active textarea,
+html.phone-native-active button,
+html.phone-native-active .primary-btn,
+html.phone-native-active .secondary-btn,
+html.phone-native-active .compact-btn {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html.phone-native-active input,
+html.phone-native-active select,
+html.phone-native-active textarea {
+  min-height: 42px !important;
+  font-size: 16px !important;
+  border-radius: 13px !important;
+}
+
+html.phone-native-active .filters-form,
+html.phone-native-active .form-grid,
+html.phone-native-active .form-row,
+html.phone-native-active .filter-row,
+html.phone-native-active .transactions-filter-row,
+html.phone-native-active .dashboard-filter-row {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+html.phone-native-active .transactions-summary-grid,
+html.phone-native-active .dashboard-kpi-grid,
+html.phone-native-active .summary-grid,
+html.phone-native-active .cards-grid,
+html.phone-native-active .stat-grid {
+  display: flex !important;
+  gap: 10px !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-snap-type: x proximity !important;
+  padding: 0 0 8px !important;
+  margin: 0 0 12px !important;
+}
+
+html.phone-native-active .transactions-summary-grid > *,
+html.phone-native-active .dashboard-kpi-grid > *,
+html.phone-native-active .summary-grid > *,
+html.phone-native-active .cards-grid > *,
+html.phone-native-active .stat-grid > * {
+  flex: 0 0 min(76vw, 280px) !important;
+  scroll-snap-align: start !important;
+}
+
+html.phone-native-active .standard-table,
+html.phone-native-active .transactions-table,
+html.phone-native-active .inline-edit-table,
+html.phone-native-active table {
+  max-width: 100% !important;
+}
+
+html.phone-native-active .phone-table-card-list {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+html.phone-native-active .phone-hidden-table {
+  display: none !important;
+}

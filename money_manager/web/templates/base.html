@@ -19,18 +19,79 @@
   </script>
   <script>
     (function () {
-      try {
-        var phoneQuery = "(max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse)";
-        if (window.matchMedia && window.matchMedia(phoneQuery).matches) {
-          document.documentElement.classList.add("phone-shell-active", "phone-native-active");
+      function isForcedPhone() {
+        try {
+          var params = new URLSearchParams(window.location.search || "");
+          if (params.get("ui") === "phone" || params.get("phone") === "1" || params.get("mobile") === "1") {
+            window.localStorage.setItem("moneyManagerPhoneMode", "1");
+            return true;
+          }
+          if (params.get("ui") === "desktop" || params.get("phone") === "0" || params.get("mobile") === "0") {
+            window.localStorage.setItem("moneyManagerPhoneMode", "0");
+            return false;
+          }
+          return window.localStorage.getItem("moneyManagerPhoneMode") === "1";
+        } catch (error) {
+          return false;
         }
-      } catch (error) {}
+      }
+
+      function isRealPhoneViewport() {
+        try {
+          var ua = String(navigator.userAgent || "");
+          var isPhoneUA = /iPhone|iPod|Android.*Mobile|Windows Phone|Mobile Safari/i.test(ua);
+          var isAndroidPhone = /Android/i.test(ua) && /Mobile/i.test(ua);
+          var hasTouch = (navigator.maxTouchPoints || 0) > 0 || "ontouchstart" in window;
+          var vw = Math.min(
+            window.innerWidth || 9999,
+            document.documentElement ? document.documentElement.clientWidth || 9999 : 9999,
+            screen && screen.width ? screen.width : 9999
+          );
+          var vh = Math.min(
+            window.innerHeight || 9999,
+            document.documentElement ? document.documentElement.clientHeight || 9999 : 9999,
+            screen && screen.height ? screen.height : 9999
+          );
+
+          if (isForcedPhone()) return true;
+          if (!hasTouch && !isPhoneUA && !isAndroidPhone) return false;
+
+          // Portrait phones. This intentionally excludes tablets and resized PC windows.
+          if (vw <= 720 && (isPhoneUA || isAndroidPhone || hasTouch)) return true;
+
+          // Landscape phones.
+          if (vw <= 940 && vh <= 560 && (isPhoneUA || isAndroidPhone || hasTouch)) return true;
+
+          return false;
+        } catch (error) {
+          return false;
+        }
+      }
+
+      if (isRealPhoneViewport()) {
+        document.documentElement.classList.add("phone-shell-active", "phone-native-active");
+        window.MONEY_MANAGER_PHONE_MODE = true;
+      } else {
+        window.MONEY_MANAGER_PHONE_MODE = false;
+      }
     })();
   </script>
+  <style>
+    /* Critical mobile shell guard. Loaded inline so the phone never shows the desktop sidebar while CSS files are still downloading. */
+    html.phone-native-active,
+    html.phone-native-active body { width: 100% !important; max-width: 100% !important; overflow-x: hidden !important; }
+    html.phone-native-active .app-layout { display: block !important; grid-template-columns: none !important; width: 100% !important; max-width: 100% !important; overflow-x: hidden !important; }
+    html.phone-native-active .app-sidebar { display: none !important; visibility: hidden !important; width: 0 !important; min-width: 0 !important; max-width: 0 !important; pointer-events: none !important; }
+    html.phone-native-active .app-workspace,
+    html.phone-native-active .app-main,
+    html.phone-native-active .container,
+    html.phone-native-active .app-content-stage { width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0 !important; overflow-x: hidden !important; box-sizing: border-box !important; }
+    html.phone-native-active .app-topbar { display: none !important; }
+  </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=fast-phone-1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/instant-nav.css') }}?v=instant-nav-1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/ui-refinement.css') }}?v=ui-account-brand-3">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=phone-native-clean-1" media="(max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse)">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=real-phone-4">
   {% set plotly_endpoints = [
     'dashboard.index',
     'analysis.analysis',
@@ -352,7 +413,7 @@
   <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-lazy-1"></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=wallet-shell-17e"></script>
-  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=phone-native-clean-1" defer></script>
+  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=real-phone-4" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

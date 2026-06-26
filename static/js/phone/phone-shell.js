@@ -4,19 +4,55 @@
    top bar, bottom dock, and bottom sheets for menu/add/search/alerts/net.
 -------------------------------------------------------------------------- */
 (function () {
-  const phoneMedia = window.matchMedia(
-    "(max-width: 760px) and (hover: none) and (pointer: coarse), " +
-    "(max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse)"
-  );
-
   const SHELL_ID = "phone-native-shell";
   const TOPBAR_ID = "phone-native-topbar";
   const DOCK_ID = "phone-native-dock";
   const SHEET_ROOT_ID = "phone-native-sheets";
   let resizeTimer = null;
 
+  function isForcedPhone() {
+    try {
+      const params = new URLSearchParams(window.location.search || "");
+      if (params.get("ui") === "phone" || params.get("phone") === "1" || params.get("mobile") === "1") {
+        window.localStorage.setItem("moneyManagerPhoneMode", "1");
+        return true;
+      }
+      if (params.get("ui") === "desktop" || params.get("phone") === "0" || params.get("mobile") === "0") {
+        window.localStorage.setItem("moneyManagerPhoneMode", "0");
+        return false;
+      }
+      return window.localStorage.getItem("moneyManagerPhoneMode") === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
   function isPhone() {
-    return phoneMedia.matches;
+    try {
+      const ua = String(navigator.userAgent || "");
+      const isPhoneUA = /iPhone|iPod|Android.*Mobile|Windows Phone|Mobile Safari/i.test(ua);
+      const isAndroidPhone = /Android/i.test(ua) && /Mobile/i.test(ua);
+      const hasTouch = (navigator.maxTouchPoints || 0) > 0 || "ontouchstart" in window;
+      const root = document.documentElement;
+      const vw = Math.min(
+        window.innerWidth || 9999,
+        root ? root.clientWidth || 9999 : 9999,
+        screen && screen.width ? screen.width : 9999
+      );
+      const vh = Math.min(
+        window.innerHeight || 9999,
+        root ? root.clientHeight || 9999 : 9999,
+        screen && screen.height ? screen.height : 9999
+      );
+
+      if (isForcedPhone()) return true;
+      if (!hasTouch && !isPhoneUA && !isAndroidPhone) return false;
+      if (vw <= 720 && (isPhoneUA || isAndroidPhone || hasTouch)) return true;
+      if (vw <= 940 && vh <= 560 && (isPhoneUA || isAndroidPhone || hasTouch)) return true;
+      return false;
+    } catch (error) {
+      return false;
+    }
   }
 
   function text(node, fallback) {
@@ -326,5 +362,6 @@
   window.addEventListener("orientationchange", () => window.setTimeout(boot, 220), { passive: true });
   document.addEventListener("DOMContentLoaded", boot);
   window.addEventListener("pageshow", boot);
-  if (phoneMedia.addEventListener) phoneMedia.addEventListener("change", boot);
+  // Do not rely on matchMedia(pointer/hover). Several Android browsers report those
+  // inconsistently, which made the real phone keep the desktop sidebar.
 })();
