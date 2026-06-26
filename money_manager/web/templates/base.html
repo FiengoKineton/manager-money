@@ -18,7 +18,7 @@
     })();
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=fast-phone-1">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=phone-app-shell-1" media="(max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse)">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=phone-compact-tables-1" media="(max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse)">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/instant-nav.css') }}?v=instant-nav-1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/ui-refinement.css') }}?v=ui-account-brand-3">
   {% set plotly_endpoints = [
@@ -35,142 +35,6 @@
 <body class="app-body app-body-clean" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
   {% set ep = request.endpoint or '' %}
   {% set profile_open = ep.startswith('profile.') %}
-  {% set lazy_topbar_account_id = selected_account_id|default('', true) %}
-  {% set lazy_topbar_url = '' %}
-  {% if endpoint_exists('dashboard.topbar_summary_api') %}
-    {% set lazy_topbar_url = url_for('dashboard.topbar_summary_api', account_id=lazy_topbar_account_id) if lazy_topbar_account_id else url_for('dashboard.topbar_summary_api') %}
-  {% endif %}
-
-  <div class="phone-app-shell" aria-label="Phone navigation">
-    <header class="phone-app-header">
-      <button type="button" class="phone-icon-button" data-mobile-open-sheet="nav" aria-expanded="false" aria-label="Open navigation">☰</button>
-      <a class="phone-header-title" href="{{ url_for('dashboard.overview') if endpoint_exists('dashboard.overview') else url_for('accounts.accounts_page') }}">
-        <span>{{ t("app.personal_finance") }}</span>
-        <strong>{{ self.page_title()|striptags|trim if self.page_title is defined else t("app.name") }}</strong>
-      </a>
-      <div class="phone-header-actions">
-        {% if is_authenticated and endpoint_exists('search.search_page') %}
-          <button type="button" class="phone-icon-button" data-mobile-open-sheet="search" aria-expanded="false" aria-label="Search">⌕</button>
-        {% endif %}
-        <button type="button" class="phone-icon-button phone-alert-button {{ 'has-alerts' if topbar_notifications['has_unread_candidate'] else '' }}" data-mobile-open-sheet="alerts" aria-expanded="false" aria-label="Open alerts">
-          🔔{% if topbar_notifications['unread_count'] %}<span>{{ topbar_notifications['unread_count'] }}</span>{% endif %}
-        </button>
-      </div>
-    </header>
-
-    <nav class="phone-bottom-dock" aria-label="Phone bottom navigation">
-      <a class="phone-dock-item {{ 'active' if request.endpoint in ['dashboard.overview', 'accounts.accounts_page'] else '' }}" href="{{ url_for('dashboard.overview') if endpoint_exists('dashboard.overview') else url_for('accounts.accounts_page') }}">
-        <span aria-hidden="true">⌂</span><b>Home</b>
-      </a>
-      <button type="button" class="phone-dock-item" data-mobile-open-sheet="nav" aria-expanded="false">
-        <span aria-hidden="true">☰</span><b>Menu</b>
-      </button>
-      <button type="button" class="phone-dock-add" data-mobile-open-sheet="add" aria-expanded="false" aria-label="Add transaction">
-        <span aria-hidden="true">＋</span><b>Add</b>
-      </button>
-      <a class="phone-dock-net" href="{{ topbar_net_href or url_for('accounts.accounts_page') }}" data-phone-net-pill data-topbar-summary-url="{{ lazy_topbar_url }}" data-mask-sensitive="{{ '1' if mask_sensitive_data else '0' }}">
-        <span data-phone-net-label>{{ topbar_net_label or 'Net' }}</span>
-        <strong data-phone-net-value>{{ 'Loading…' if topbar_net_lazy and not mask_sensitive_data and lazy_topbar_url else topbar_display_net|money_masked }}</strong>
-      </a>
-      <a class="phone-dock-item {{ 'active' if profile_open else '' }}" href="{{ url_for('profile.profile_page') if endpoint_exists('profile.profile_page') else url_for('accounts.accounts_page') }}">
-        <span aria-hidden="true">{{ user_initials if is_authenticated else '👤' }}</span><b>Profile</b>
-      </a>
-    </nav>
-
-    <section class="mobile-sheet phone-app-sheet" data-mobile-sheet="nav" hidden aria-hidden="true" aria-label="Navigation menu">
-      <button type="button" class="mobile-sheet-backdrop" data-mobile-close-sheets aria-label="Close navigation"></button>
-      <div class="mobile-sheet-panel phone-nav-panel" role="dialog" aria-modal="true">
-        <header class="mobile-sheet-head">
-          <div><strong>Menu</strong><small>{{ user_display_name if is_authenticated else t("app.name") }}</small></div>
-          <button type="button" data-mobile-close-sheets aria-label="Close">×</button>
-        </header>
-        <div class="phone-sheet-scroll">
-          {% if has_active_account %}
-            <a class="phone-nav-account" href="{{ url_for('accounts.account_detail', account_key=active_account_id) if endpoint_exists('accounts.account_detail') else url_for('accounts.accounts_page') }}">
-              <span>{{ account_icon if account_icon is defined else '🏦' }}</span>
-              <strong>{{ account_label|text_masked }}</strong>
-              <small>Open account workspace</small>
-            </a>
-          {% endif %}
-          <div class="phone-nav-grid">
-            {% if endpoint_exists('accounts.accounts_page') %}<a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if request.endpoint == 'accounts.accounts_page' else '' }}"><span>🏦</span><b>Conti</b><small>Accounts & wallets</small></a>{% endif %}
-            {% if endpoint_exists('transactions.transactions_page') %}<a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if request.endpoint == 'transactions.transactions_page' else '' }}"><span>⇄</span><b>Transactions</b><small>Money history</small></a>{% endif %}
-            {% if endpoint_exists('dashboard.index') %}<a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if request.endpoint == 'dashboard.index' else '' }}"><span>▦</span><b>Dashboard</b><small>Charts & KPIs</small></a>{% endif %}
-            {% if endpoint_exists('pending.pending_page') %}<a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if request.endpoint == 'pending.pending_page' else '' }}"><span>⏳</span><b>Pending</b><small>Due and recurring</small></a>{% endif %}
-            {% if endpoint_exists('forecast.forecast') %}<a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if request.endpoint == 'forecast.forecast' else '' }}"><span>🔮</span><b>Forecast</b><small>Future balance</small></a>{% endif %}
-            {% if endpoint_exists('mortgages.mortgages_page') %}<a href="{{ url_for('mortgages.mortgages_page') }}" class="{{ 'active' if request.endpoint == 'mortgages.mortgages_page' else '' }}"><span>🏠</span><b>Mutui</b><small>Mortgage plan</small></a>{% endif %}
-            {% if endpoint_exists('investments.investments_page') %}<a href="{{ url_for('investments.investments_page') }}" class="{{ 'active' if request.endpoint == 'investments.investments_page' else '' }}"><span>📈</span><b>Investments</b><small>Assets</small></a>{% endif %}
-            {% if endpoint_exists('parent_support.parent_support_page') %}<a href="{{ url_for('parent_support.parent_support_page') }}" class="{{ 'active' if request.endpoint == 'parent_support.parent_support_page' else '' }}"><span>🤝</span><b>Parent Support</b><small>Family payments</small></a>{% endif %}
-            {% if endpoint_exists('sparagnat.sparagnat_page') %}<a href="{{ url_for('sparagnat.sparagnat_page') }}" class="{{ 'active' if request.endpoint == 'sparagnat.sparagnat_page' else '' }}"><span>💶</span><b>Sparagnat</b><small>Records</small></a>{% endif %}
-            {% if endpoint_exists('documents.documents') %}<a href="{{ url_for('documents.documents') }}" class="{{ 'active' if request.endpoint == 'documents.documents' else '' }}"><span>📄</span><b>Documents</b><small>Files</small></a>{% endif %}
-            {% if endpoint_exists('contacts.contacts_page') %}<a href="{{ url_for('contacts.contacts_page') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('contacts.') else '' }}"><span>👥</span><b>Contacts</b><small>People & companies</small></a>{% endif %}
-            {% if endpoint_exists('settings_categories.categories_page') %}<a href="{{ url_for('settings_categories.categories_page') }}" class="{{ 'active' if request.endpoint == 'settings_categories.categories_page' else '' }}"><span>✎</span><b>Categories</b><small>Custom labels</small></a>{% endif %}
-          </div>
-          <div class="phone-nav-list">
-            {% if endpoint_exists('internal_transfers.internal_transfers_page') %}<a href="{{ url_for('internal_transfers.internal_transfers_page') }}">Internal transfers <span>›</span></a>{% endif %}
-            {% if endpoint_exists('bonifico.bonifico_page') %}<a href="{{ url_for('bonifico.bonifico_page') }}">Bonifico <span>›</span></a>{% endif %}
-            {% if endpoint_exists('payables.payables_page') %}<a href="{{ url_for('payables.payables_page') }}">Credits to be paid <span>›</span></a>{% endif %}
-            {% if endpoint_exists('receivables.receivables_page') %}<a href="{{ url_for('receivables.receivables_page') }}">Credits to collect <span>›</span></a>{% endif %}
-            {% if endpoint_exists('debts.debts_page') %}<a href="{{ url_for('debts.debts_page') }}">Debts <span>›</span></a>{% endif %}
-            {% if endpoint_exists('settings_cache.cache_page') %}<a href="{{ url_for('settings_cache.cache_page') }}">Cache <span>›</span></a>{% endif %}
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="mobile-sheet phone-app-sheet" data-mobile-sheet="add" hidden aria-hidden="true" aria-label="Add money movement">
-      <button type="button" class="mobile-sheet-backdrop" data-mobile-close-sheets aria-label="Close add menu"></button>
-      <div class="mobile-sheet-panel phone-add-panel" role="dialog" aria-modal="true">
-        <header class="mobile-sheet-head">
-          <div><strong>Add movement</strong><small>Choose what you want to register</small></div>
-          <button type="button" data-mobile-close-sheets aria-label="Close">×</button>
-        </header>
-        <div class="phone-add-actions">
-          <a class="phone-add-card phone-add-expense" href="{{ url_for('transactions.add_transaction', type='expense') }}"><span>−</span><b>Expense</b><small>Money going out</small></a>
-          <a class="phone-add-card phone-add-income" href="{{ url_for('transactions.add_transaction', type='income') }}"><span>＋</span><b>Income</b><small>Salary, refunds, support</small></a>
-          <a class="phone-add-card phone-add-investment" href="{{ url_for('transactions.add_transaction', type='investment') }}"><span>↗</span><b>Investment</b><small>Assets and investing</small></a>
-          <a class="phone-add-card phone-add-special" href="{{ url_for('transactions.add_transaction', type='expense', special='1') }}"><span>◆</span><b>Special</b><small>Custom route</small></a>
-        </div>
-      </div>
-    </section>
-
-    {% if is_authenticated and endpoint_exists('search.search_page') %}
-    <section class="mobile-sheet phone-app-sheet" data-mobile-sheet="search" hidden aria-hidden="true" aria-label="Search">
-      <button type="button" class="mobile-sheet-backdrop" data-mobile-close-sheets aria-label="Close search"></button>
-      <div class="mobile-sheet-panel phone-search-panel" role="dialog" aria-modal="true">
-        <header class="mobile-sheet-head">
-          <div><strong>Search</strong><small>Find transactions, accounts and records</small></div>
-          <button type="button" data-mobile-close-sheets aria-label="Close">×</button>
-        </header>
-        <form class="phone-search-form" method="get" action="{{ url_for('search.search_page') }}">
-          <input type="search" name="q" value="{{ request.args.get('q', '') if request.endpoint == 'search.search_page' else '' }}" placeholder="Search..." aria-label="Search Money Manager">
-          <button type="submit">Search</button>
-        </form>
-      </div>
-    </section>
-    {% endif %}
-
-    <section class="mobile-sheet phone-app-sheet" data-mobile-sheet="alerts" hidden aria-hidden="true" aria-label="Alerts">
-      <button type="button" class="mobile-sheet-backdrop" data-mobile-close-sheets aria-label="Close alerts"></button>
-      <div class="mobile-sheet-panel phone-alerts-panel" role="dialog" aria-modal="true">
-        <header class="mobile-sheet-head">
-          <div><strong>Alerts</strong><small>{{ topbar_notifications['unread_count'] }} unread</small></div>
-          <button type="button" data-mobile-close-sheets aria-label="Close">×</button>
-        </header>
-        <div class="phone-alert-list">
-          {% for item in topbar_notifications['items'] %}
-            <a class="phone-alert-card {{ 'is-urgent' if item.is_urgent else '' }}" href="{{ url_for(item.href_endpoint) }}">
-              <span>{{ item.icon }}</span>
-              <b>{{ item.title }}</b>
-              <small>{{ item.summary }}</small>
-            </a>
-          {% else %}
-            <div class="phone-empty-card"><span>✓</span><b>No alerts</b><small>Nothing urgent right now.</small></div>
-          {% endfor %}
-        </div>
-      </div>
-    </section>
-  </div>
 
   <div class="app-layout">
     <aside class="app-sidebar" aria-label="{{ t('nav.overview') }}">
@@ -475,10 +339,10 @@
 
   <script src="{{ url_for('static', filename='js/shared/instant-nav.js') }}?v=instant-nav-1" defer></script>
   <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=receipt-paper-items-fix-3"></script>
-  <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=phone-net-lazy-2"></script>
+  <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-lazy-1"></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=wallet-shell-17e"></script>
-  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=phone-app-shell-1" defer></script>
+  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=phone-compact-tables-1" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

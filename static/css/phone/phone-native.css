@@ -1,0 +1,1125 @@
+/* --------------------------------------------------------------------------
+   Phone-native shell. Scoped by html.phone-shell-active so the desktop app is
+   not touched even if this file is cached or loaded accidentally.
+-------------------------------------------------------------------------- */
+.phone-native-shell,
+.phone-native-sheet {
+  display: none;
+}
+
+@media (max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse) {
+  :root {
+    --phone-top: calc(64px + env(safe-area-inset-top, 0px));
+    --phone-bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+    --phone-side: max(12px, env(safe-area-inset-left, 0px));
+    --phone-side-r: max(12px, env(safe-area-inset-right, 0px));
+    --phone-radius: 24px;
+  }
+
+  html.phone-shell-active,
+  html.phone-shell-active body {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  html.phone-shell-active body.app-body {
+    background:
+      radial-gradient(circle at 8% -3%, color-mix(in srgb, var(--brand-soft) 82%, transparent), transparent 230px),
+      radial-gradient(circle at 105% 0%, rgba(14, 165, 233, 0.16), transparent 260px),
+      var(--bg) !important;
+    color: var(--ink) !important;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  html.phone-shell-active .app-layout,
+  html.phone-shell-active .app-workspace,
+  html.phone-shell-active .app-main,
+  html.phone-shell-active .container,
+  html.phone-shell-active .app-content-stage {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  html.phone-shell-active .app-sidebar,
+  html.phone-shell-active .app-topbar {
+    display: none !important;
+  }
+
+  html.phone-shell-active .app-main {
+    padding: calc(var(--phone-top) + 12px) var(--phone-side-r) calc(var(--phone-bottom) + 20px) var(--phone-side) !important;
+    min-height: 100svh !important;
+  }
+
+  html.phone-shell-active .container,
+  html.phone-shell-active .app-content-stage {
+    padding: 0 !important;
+  }
+
+  html.phone-shell-active .app-content-stage > * {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  html.phone-shell-active .phone-native-shell {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 2147482000;
+    pointer-events: none;
+  }
+
+  .phone-native-topbar {
+    position: fixed;
+    top: max(8px, env(safe-area-inset-top, 0px));
+    left: var(--phone-side);
+    right: var(--phone-side-r);
+    min-height: 54px;
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) 46px 46px;
+    gap: 8px;
+    align-items: center;
+    pointer-events: auto;
+    border: 1px solid color-mix(in srgb, var(--line) 74%, transparent);
+    border-radius: 22px;
+    padding: 6px;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(20px) saturate(1.1);
+    -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  }
+
+  .phone-native-title {
+    min-width: 0;
+    color: var(--ink);
+    text-decoration: none;
+    line-height: 1.05;
+  }
+
+  .phone-native-title span {
+    display: block;
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .phone-native-title strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.98rem;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+  }
+
+  .phone-native-icon,
+  .phone-native-dock button,
+  .phone-native-dock a {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    font: inherit;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .phone-native-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 17px;
+    background: color-mix(in srgb, var(--brand-soft) 52%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+    font-size: 1.18rem;
+    font-weight: 950;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .phone-native-icon:active,
+  .phone-native-dock a:active,
+  .phone-native-dock button:active,
+  .phone-native-add-card:active {
+    transform: scale(0.975);
+  }
+
+  .phone-native-alert.has-alerts {
+    color: var(--warning);
+    background: var(--warning-soft);
+  }
+
+  .phone-native-dock {
+    position: fixed;
+    left: var(--phone-side);
+    right: var(--phone-side-r);
+    bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    min-height: 72px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 74px 1.35fr 1fr;
+    gap: 6px;
+    align-items: center;
+    pointer-events: auto;
+    border: 1px solid color-mix(in srgb, var(--line) 74%, transparent);
+    border-radius: 28px;
+    padding: 7px;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    box-shadow: 0 18px 46px rgba(15, 23, 42, 0.16);
+    backdrop-filter: blur(22px) saturate(1.08);
+    -webkit-backdrop-filter: blur(22px) saturate(1.08);
+  }
+
+  .phone-native-dock a,
+  .phone-native-dock button {
+    min-width: 0;
+    min-height: 58px;
+    display: grid;
+    place-items: center;
+    gap: 2px;
+    border-radius: 20px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: -0.025em;
+  }
+
+  .phone-native-dock span[aria-hidden="true"] {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 13px;
+    font-size: 1.02rem;
+  }
+
+  .phone-native-dock .is-active,
+  .phone-native-dock a[aria-current="page"] {
+    color: var(--brand);
+    background: color-mix(in srgb, var(--brand-soft) 70%, transparent);
+  }
+
+  .phone-native-dock .phone-native-add {
+    min-height: 64px;
+    width: 68px;
+    margin: -18px auto 0;
+    border-radius: 26px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--brand), #0891b2);
+    box-shadow: 0 16px 32px color-mix(in srgb, var(--brand) 30%, transparent);
+  }
+
+  .phone-native-add span[aria-hidden="true"] {
+    background: transparent;
+    color: #fff;
+    font-size: 1.58rem;
+    line-height: 1;
+  }
+
+  .phone-native-net {
+    padding-inline: 6px;
+    background: color-mix(in srgb, var(--brand-soft) 55%, var(--surface)) !important;
+    color: var(--ink) !important;
+    text-align: center;
+  }
+
+  .phone-native-net small,
+  .phone-native-net strong {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .phone-native-net small {
+    color: var(--muted);
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .phone-native-net strong {
+    font-size: 0.76rem;
+    color: var(--ink);
+  }
+
+  html.phone-shell-active .phone-native-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: block;
+    pointer-events: none;
+  }
+
+  html.phone-shell-active .phone-native-sheet[hidden] {
+    display: none !important;
+  }
+
+  .phone-native-backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(15, 23, 42, 0.28);
+    opacity: 0;
+    transition: opacity 160ms ease;
+    pointer-events: auto;
+  }
+
+  .phone-native-panel {
+    position: absolute;
+    left: var(--phone-side);
+    right: var(--phone-side-r);
+    bottom: calc(var(--phone-bottom) - 72px + 8px);
+    max-height: min(78svh, 640px);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+    border-radius: 28px;
+    border: 1px solid color-mix(in srgb, var(--line) 74%, transparent);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: var(--shadow-lg);
+    transform: translate3d(0, 18px, 0);
+    opacity: 0;
+    transition: transform 180ms ease, opacity 180ms ease;
+    pointer-events: auto;
+    backdrop-filter: blur(24px) saturate(1.08);
+    -webkit-backdrop-filter: blur(24px) saturate(1.08);
+  }
+
+  .phone-native-sheet.is-open .phone-native-backdrop {
+    opacity: 1;
+  }
+
+  .phone-native-sheet.is-open .phone-native-panel {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+
+  .phone-native-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 16px 10px;
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  }
+
+  .phone-native-sheet-head strong,
+  .phone-native-sheet-head small {
+    display: block;
+  }
+
+  .phone-native-sheet-head strong {
+    color: var(--ink);
+    font-size: 1.04rem;
+    letter-spacing: -0.04em;
+  }
+
+  .phone-native-sheet-head small {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 2px;
+  }
+
+  .phone-native-sheet-head button {
+    border: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 16px;
+    background: var(--surface-muted);
+    color: var(--ink);
+    font-size: 1.35rem;
+  }
+
+  .phone-native-sheet-body {
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 12px 14px 18px;
+  }
+
+  .phone-native-menu .app-sidebar-nav,
+  .phone-native-menu .app-sidebar-nav-clean,
+  .phone-native-menu .app-sidebar-footer {
+    display: grid !important;
+    gap: 10px !important;
+  }
+
+  .phone-native-menu details {
+    border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+    overflow: hidden;
+  }
+
+  .phone-native-menu summary {
+    padding: 14px 14px;
+    color: var(--ink);
+    font-weight: 950;
+    cursor: pointer;
+  }
+
+  .phone-native-menu .nav-items,
+  .phone-native-menu .nav-subitems,
+  .phone-native-menu .settings-drawer-links {
+    display: grid !important;
+    gap: 6px !important;
+    padding: 0 10px 10px !important;
+  }
+
+  .phone-native-menu a,
+  .phone-native-menu button,
+  .phone-native-menu .logout-action {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    border: 0;
+    border-radius: 14px;
+    padding: 10px 12px !important;
+    background: color-mix(in srgb, var(--surface) 86%, transparent) !important;
+    color: var(--ink) !important;
+    text-decoration: none !important;
+    font-weight: 800;
+  }
+
+  .phone-native-menu a.active,
+  .phone-native-menu .is-active > summary,
+  .phone-native-menu .profile-footer-card.is-active {
+    color: var(--brand) !important;
+    background: color-mix(in srgb, var(--brand-soft) 80%, var(--surface)) !important;
+  }
+
+  .phone-native-add-grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .phone-native-add-card {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+    min-height: 72px;
+    border-radius: 22px;
+    padding: 14px;
+    text-decoration: none;
+    color: var(--ink);
+    background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  }
+
+  .phone-native-add-card span {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 18px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--brand), #0891b2);
+    font-size: 1.28rem;
+    font-weight: 950;
+  }
+
+  .phone-native-add-card b,
+  .phone-native-add-card small {
+    display: block;
+  }
+
+  .phone-native-add-card b {
+    font-size: 1rem;
+    letter-spacing: -0.035em;
+  }
+
+  .phone-native-add-card small {
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .phone-native-search-form {
+    display: grid;
+    gap: 10px;
+  }
+
+  .phone-native-search-form input {
+    width: 100% !important;
+    min-height: 50px;
+    border-radius: 18px !important;
+  }
+
+  .phone-native-search-form button {
+    min-height: 48px;
+    border: 0;
+    border-radius: 18px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--brand), #0891b2);
+    font-weight: 950;
+  }
+
+  .phone-native-alerts .notification-panel,
+  .phone-native-alerts .notification-current-list,
+  .phone-native-alerts .notification-history-list {
+    position: static !important;
+    display: grid !important;
+    width: 100% !important;
+    max-width: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .phone-native-alerts .notification-panel-head {
+    display: none !important;
+  }
+
+  .phone-native-alerts .notification-card,
+  .phone-native-alerts .notification-empty {
+    border-radius: 20px !important;
+    background: color-mix(in srgb, var(--surface-soft) 88%, transparent) !important;
+  }
+
+  html.phone-shell-active .mobile-bottom-nav,
+  html.phone-shell-active .mobile-add-menu,
+  html.phone-shell-active .mobile-page-menu,
+  html.phone-shell-active .mobile-plan-menu {
+    display: none !important;
+  }
+
+  html.phone-shell-active .phone-transaction-list,
+  html.phone-shell-active .phone-extra-transactions {
+    display: grid !important;
+    gap: 10px !important;
+  }
+
+  html.phone-shell-active .phone-extra-transactions.is-hidden {
+    display: none !important;
+  }
+
+  html.phone-shell-active .transactions-with-phone-cards > table.transactions-table {
+    display: none !important;
+  }
+
+  html.phone-shell-active .phone-transaction-card {
+    display: grid !important;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    min-height: 76px;
+    border-radius: 22px;
+    padding: 13px;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    box-shadow: var(--shadow-sm);
+  }
+
+  html.phone-shell-active .phone-transaction-icon,
+  html.phone-shell-active .phone-card-emoji {
+    display: grid !important;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 17px;
+    background: color-mix(in srgb, var(--brand-soft) 72%, transparent);
+    font-size: 1.2rem;
+  }
+
+  html.phone-shell-active .phone-transaction-copy {
+    min-width: 0;
+  }
+
+  html.phone-shell-active .phone-transaction-copy strong,
+  html.phone-shell-active .phone-transaction-copy small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  html.phone-shell-active .phone-transaction-copy strong {
+    color: var(--ink);
+    font-size: 0.95rem;
+  }
+
+  html.phone-shell-active .phone-transaction-copy small {
+    color: var(--muted);
+    font-size: 0.76rem;
+  }
+
+  html.phone-shell-active .phone-transaction-amount {
+    font-size: 0.92rem;
+    white-space: nowrap;
+  }
+
+  html.phone-shell-active .row-expense .phone-transaction-amount,
+  html.phone-shell-active .amount-negative {
+    color: var(--bad) !important;
+  }
+
+  html.phone-shell-active .row-income .phone-transaction-amount,
+  html.phone-shell-active .amount-positive {
+    color: var(--good) !important;
+  }
+
+  html.phone-shell-active .panel-card,
+  html.phone-shell-active .card,
+  html.phone-shell-active .summary-card,
+  html.phone-shell-active .chart-card,
+  html.phone-shell-active .filters,
+  html.phone-shell-active .transactions,
+  html.phone-shell-active .accounts-hero,
+  html.phone-shell-active .dashboard-hero,
+  html.phone-shell-active .transactions-hero {
+    border-radius: 24px !important;
+    padding: 16px !important;
+    margin: 0 0 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  html.phone-shell-active .dashboard-kpi-grid,
+  html.phone-shell-active .transactions-summary-grid,
+  html.phone-shell-active .overview-metric-grid,
+  html.phone-shell-active .accounts-grid,
+  html.phone-shell-active .cards-grid,
+  html.phone-shell-active .dashboard-period-strip,
+  html.phone-shell-active .dashboard-charts-home,
+  html.phone-shell-active .form-grid,
+  html.phone-shell-active .two-col,
+  html.phone-shell-active .three-col,
+  html.phone-shell-active .filters-form,
+  html.phone-shell-active .filter-row,
+  html.phone-shell-active .transactions-filter-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  html.phone-shell-active .transactions-hero-actions,
+  html.phone-shell-active .filters-actions,
+  html.phone-shell-active .form-actions,
+  html.phone-shell-active .hero-actions,
+  html.phone-shell-active .page-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  html.phone-shell-active .primary-btn,
+  html.phone-shell-active .secondary-btn,
+  html.phone-shell-active .compact-btn,
+  html.phone-shell-active button[type="submit"] {
+    min-height: 46px;
+    border-radius: 16px !important;
+  }
+
+  html.phone-shell-active input,
+  html.phone-shell-active select,
+  html.phone-shell-active textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 44px;
+    border-radius: 14px !important;
+    font-size: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  html.phone-shell-active table.standard-table,
+  html.phone-shell-active table.inline-edit-table,
+  html.phone-shell-active table.mobile-card-table {
+    min-width: 720px;
+  }
+
+  html.phone-shell-active .table-scroll,
+  html.phone-shell-active .table-responsive,
+  html.phone-shell-active .transactions:not(.transactions-with-phone-cards) {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html.phone-shell-active h1,
+  html.phone-shell-active h2 {
+    letter-spacing: -0.055em;
+  }
+
+  html.phone-shell-active h1 {
+    font-size: clamp(1.55rem, 8vw, 2.15rem) !important;
+  }
+
+  html.phone-shell-active h2 {
+    font-size: clamp(1.25rem, 6vw, 1.65rem) !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Compact phone content layer: transaction cards, mobile tables and forms.
+   This stays under phone-shell-active, so desktop/tablet are untouched.
+-------------------------------------------------------------------------- */
+@media (max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse) {
+  html.phone-shell-active {
+    --phone-top: calc(56px + env(safe-area-inset-top, 0px));
+    --phone-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    --phone-radius: 18px;
+    font-size: 15px;
+  }
+
+  html.phone-shell-active .app-main {
+    padding: calc(var(--phone-top) + 8px) var(--phone-side-r) calc(var(--phone-bottom) + 14px) var(--phone-side) !important;
+  }
+
+  html.phone-shell-active .phone-native-topbar {
+    min-height: 48px;
+    grid-template-columns: 40px minmax(0, 1fr) 40px 40px;
+    gap: 6px;
+    border-radius: 18px;
+    padding: 5px;
+  }
+
+  html.phone-shell-active .phone-native-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    font-size: 1rem;
+  }
+
+  html.phone-shell-active .phone-native-title span {
+    font-size: 0.58rem;
+  }
+
+  html.phone-shell-active .phone-native-title strong {
+    font-size: 0.9rem;
+  }
+
+  html.phone-shell-active .phone-native-dock {
+    min-height: 66px;
+    grid-template-columns: 0.86fr 0.86fr 62px 1.22fr 0.86fr;
+    gap: 4px;
+    border-radius: 22px;
+    padding: 6px;
+  }
+
+  html.phone-shell-active .phone-native-dock a,
+  html.phone-shell-active .phone-native-dock button {
+    min-height: 52px;
+    border-radius: 16px;
+    font-size: 0.58rem;
+  }
+
+  html.phone-shell-active .phone-native-dock span[aria-hidden="true"] {
+    width: 24px;
+    height: 24px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+  }
+
+  html.phone-shell-active .phone-native-dock .phone-native-add {
+    width: 58px;
+    min-height: 58px;
+    margin-top: -13px;
+    border-radius: 21px;
+  }
+
+  html.phone-shell-active .phone-native-net strong {
+    font-size: 0.68rem;
+  }
+
+  html.phone-shell-active .phone-native-net small {
+    font-size: 0.5rem;
+  }
+
+  /* Generic page compaction */
+  html.phone-shell-active .panel-card,
+  html.phone-shell-active .card,
+  html.phone-shell-active .summary-card,
+  html.phone-shell-active .chart-card,
+  html.phone-shell-active .filters,
+  html.phone-shell-active .transactions,
+  html.phone-shell-active .accounts-hero,
+  html.phone-shell-active .dashboard-hero,
+  html.phone-shell-active .transactions-hero,
+  html.phone-shell-active .account-detail-hero,
+  html.phone-shell-active .settings-card,
+  html.phone-shell-active .form-card {
+    border-radius: 18px !important;
+    padding: 12px !important;
+    margin-bottom: 9px !important;
+  }
+
+  html.phone-shell-active .panel-header,
+  html.phone-shell-active .transactions-hero,
+  html.phone-shell-active .hero-actions,
+  html.phone-shell-active .page-actions {
+    gap: 8px !important;
+  }
+
+  html.phone-shell-active .panel-header {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+  }
+
+  html.phone-shell-active .panel-header h2,
+  html.phone-shell-active .transactions-hero h2,
+  html.phone-shell-active .dashboard-hero h2,
+  html.phone-shell-active .accounts-hero h2 {
+    font-size: 1.05rem !important;
+    line-height: 1.08 !important;
+    margin: 2px 0 0 !important;
+  }
+
+  html.phone-shell-active .transactions-hero p,
+  html.phone-shell-active .dashboard-hero p,
+  html.phone-shell-active .accounts-hero p,
+  html.phone-shell-active .panel-card > p,
+  html.phone-shell-active .hero-copy p {
+    font-size: 0.82rem !important;
+    line-height: 1.35 !important;
+    margin: 5px 0 0 !important;
+  }
+
+  html.phone-shell-active .eyebrow,
+  html.phone-shell-active .section-count,
+  html.phone-shell-active .small-label,
+  html.phone-shell-active .hint {
+    font-size: 0.66rem !important;
+  }
+
+  html.phone-shell-active .transactions-summary-grid,
+  html.phone-shell-active .dashboard-kpi-grid,
+  html.phone-shell-active .overview-metric-grid,
+  html.phone-shell-active .accounts-summary-grid {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: minmax(142px, 44vw) !important;
+    grid-template-columns: none !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    padding-bottom: 3px !important;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html.phone-shell-active .transactions-summary-grid > *,
+  html.phone-shell-active .dashboard-kpi-grid > *,
+  html.phone-shell-active .overview-metric-grid > *,
+  html.phone-shell-active .accounts-summary-grid > * {
+    scroll-snap-align: start;
+  }
+
+  html.phone-shell-active .summary-card {
+    min-height: 86px !important;
+  }
+
+  html.phone-shell-active .summary-card span,
+  html.phone-shell-active .summary-card small {
+    font-size: 0.67rem !important;
+    line-height: 1.22 !important;
+  }
+
+  html.phone-shell-active .summary-card strong {
+    font-size: 1.05rem !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Forms and filters: still finger friendly, but no huge rows. */
+  html.phone-shell-active .filters-form,
+  html.phone-shell-active .form-grid,
+  html.phone-shell-active .two-col,
+  html.phone-shell-active .three-col,
+  html.phone-shell-active .filter-row,
+  html.phone-shell-active .transactions-filter-row,
+  html.phone-shell-active .date-inputs,
+  html.phone-shell-active .amount-range-inputs {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  html.phone-shell-active .date-inputs,
+  html.phone-shell-active .amount-range-inputs {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  html.phone-shell-active .filter-field,
+  html.phone-shell-active .filter-date,
+  html.phone-shell-active .form-field,
+  html.phone-shell-active .field-card {
+    min-width: 0 !important;
+  }
+
+  html.phone-shell-active label,
+  html.phone-shell-active .block-label,
+  html.phone-shell-active .filter-field label {
+    font-size: 0.76rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 4px !important;
+  }
+
+  html.phone-shell-active input,
+  html.phone-shell-active select,
+  html.phone-shell-active textarea {
+    min-height: 38px !important;
+    height: auto !important;
+    border-radius: 12px !important;
+    padding: 8px 10px !important;
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+  }
+
+  html.phone-shell-active textarea {
+    min-height: 86px !important;
+  }
+
+  html.phone-shell-active select[multiple],
+  html.phone-shell-active select[size] {
+    min-height: 92px !important;
+  }
+
+  html.phone-shell-active .types-group,
+  html.phone-shell-active .checkbox-group,
+  html.phone-shell-active .pill-group {
+    display: flex !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    padding-bottom: 2px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html.phone-shell-active .checkbox-inline,
+  html.phone-shell-active .type-checkbox + span,
+  html.phone-shell-active .pill,
+  html.phone-shell-active .chip {
+    flex: 0 0 auto;
+    min-height: 34px !important;
+    border-radius: 999px !important;
+    padding: 7px 9px !important;
+    font-size: 0.76rem !important;
+  }
+
+  html.phone-shell-active .primary-btn,
+  html.phone-shell-active .secondary-btn,
+  html.phone-shell-active .compact-btn,
+  html.phone-shell-active button[type="submit"],
+  html.phone-shell-active .link-btn {
+    min-height: 40px !important;
+    border-radius: 13px !important;
+    padding: 8px 11px !important;
+    font-size: 0.82rem !important;
+  }
+
+  html.phone-shell-active .transactions-hero-actions,
+  html.phone-shell-active .filters-actions,
+  html.phone-shell-active .form-actions,
+  html.phone-shell-active .hero-actions,
+  html.phone-shell-active .page-actions {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    padding-bottom: 2px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html.phone-shell-active .transactions-hero-actions > *,
+  html.phone-shell-active .filters-actions > *,
+  html.phone-shell-active .form-actions > *,
+  html.phone-shell-active .hero-actions > *,
+  html.phone-shell-active .page-actions > * {
+    flex: 0 0 auto !important;
+  }
+
+  /* Transaction list: dense native cards instead of big desktop rows. */
+  html.phone-shell-active .phone-transaction-list,
+  html.phone-shell-active .phone-extra-transactions {
+    gap: 7px !important;
+  }
+
+  html.phone-shell-active .phone-transaction-card {
+    grid-template-columns: 34px minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+    min-height: 54px !important;
+    border-radius: 16px !important;
+    padding: 8px 9px !important;
+    box-shadow: none !important;
+  }
+
+  html.phone-shell-active .phone-transaction-icon,
+  html.phone-shell-active .phone-card-emoji {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 12px !important;
+    font-size: 1rem !important;
+  }
+
+  html.phone-shell-active .phone-transaction-copy b,
+  html.phone-shell-active .phone-transaction-copy strong {
+    display: block !important;
+    font-size: 0.84rem !important;
+    line-height: 1.08 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  html.phone-shell-active .phone-transaction-copy small {
+    display: block !important;
+    margin-top: 2px !important;
+    font-size: 0.66rem !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  html.phone-shell-active .phone-transaction-copy em {
+    display: none !important;
+  }
+
+  html.phone-shell-active .phone-transaction-amount {
+    align-self: center;
+    border-radius: 999px;
+    padding: 5px 7px;
+    background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+    font-size: 0.76rem !important;
+    line-height: 1 !important;
+    font-weight: 950 !important;
+    white-space: nowrap !important;
+  }
+
+  html.phone-shell-active #toggle-transactions-btn,
+  html.phone-shell-active [data-load-more-transactions] {
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+
+  /* Generic mobile table cards generated by phone-shell.js */
+  html.phone-shell-active table.phone-cardified-source {
+    display: none !important;
+  }
+
+  html.phone-shell-active .phone-table-card-list {
+    display: grid !important;
+    gap: 7px !important;
+    margin-top: 8px !important;
+  }
+
+  html.phone-shell-active .phone-table-card {
+    display: grid;
+    gap: 6px;
+    border-radius: 16px;
+    padding: 10px;
+    border: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+    background: color-mix(in srgb, var(--surface) 91%, transparent);
+    box-shadow: none;
+  }
+
+  html.phone-shell-active .phone-table-card-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: start;
+  }
+
+  html.phone-shell-active .phone-table-card-title {
+    min-width: 0;
+    color: var(--ink);
+    font-weight: 950;
+    font-size: 0.86rem;
+    line-height: 1.16;
+  }
+
+  html.phone-shell-active .phone-table-card-amount {
+    color: var(--ink);
+    font-weight: 950;
+    font-size: 0.78rem;
+    line-height: 1;
+    white-space: nowrap;
+    border-radius: 999px;
+    padding: 5px 7px;
+    background: color-mix(in srgb, var(--brand-soft) 64%, transparent);
+  }
+
+  html.phone-shell-active .phone-table-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  html.phone-shell-active .phone-table-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    min-height: 24px;
+    border-radius: 999px;
+    padding: 4px 7px;
+    background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+    color: var(--muted);
+    font-size: 0.64rem;
+    line-height: 1;
+  }
+
+  html.phone-shell-active .phone-table-meta-item b {
+    color: var(--muted);
+    font-weight: 900;
+  }
+
+  html.phone-shell-active .phone-table-meta-item span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  html.phone-shell-active .phone-table-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 2px;
+  }
+
+  html.phone-shell-active .phone-table-card-actions:empty {
+    display: none;
+  }
+
+  html.phone-shell-active .phone-table-card-actions button,
+  html.phone-shell-active .phone-table-card-actions a,
+  html.phone-shell-active .phone-table-card-actions input,
+  html.phone-shell-active .phone-table-card-actions select {
+    min-height: 32px !important;
+    font-size: 0.72rem !important;
+  }
+
+  html.phone-shell-active .table-scroll,
+  html.phone-shell-active .table-responsive,
+  html.phone-shell-active .transactions:not(.transactions-with-phone-cards) {
+    overflow-x: visible !important;
+  }
+
+  /* If a table was not cardified, use a compact scroll fallback. */
+  html.phone-shell-active table.standard-table:not(.phone-cardified-source),
+  html.phone-shell-active table.inline-edit-table:not(.phone-cardified-source),
+  html.phone-shell-active table.mobile-card-table:not(.phone-cardified-source) {
+    min-width: 540px !important;
+    font-size: 0.78rem !important;
+  }
+
+  html.phone-shell-active table.standard-table:not(.phone-cardified-source) th,
+  html.phone-shell-active table.standard-table:not(.phone-cardified-source) td {
+    padding: 7px 8px !important;
+  }
+}

@@ -1,182 +1,449 @@
 /* --------------------------------------------------------------------------
-   Phone Fun Shell v4 - performance and reliability controller.
-   Frontend-only. No backend route/data logic is touched.
-
-   What changed from v3:
-   - single click path instead of pointerup + click double handling
-   - no capture-phase global toggling
-   - no viewport-height recalculation on every mobile browser chrome resize
-   - backdrop handles outside close, so sheets do not fight with document clicks
+   Money Manager phone shell
+   Desktop is untouched. On real phone screens this script builds a separate
+   top header, bottom dock and bottom sheets from the existing desktop DOM.
 -------------------------------------------------------------------------- */
 (function () {
   const phoneMedia = window.matchMedia("(max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse)");
-  const sheetSelector = ".mobile-sheet[data-mobile-sheet], .mobile-add-menu[data-mobile-sheet], .mobile-plan-menu[data-mobile-sheet], .mobile-page-menu[data-mobile-sheet]";
-  const triggerSelector = "[data-mobile-open-sheet]";
-  const closeSelector = "[data-mobile-close-sheets]";
-  let initialViewportWidth = window.innerWidth;
-  let initialViewportHeight = window.innerHeight;
-  let resizeTimer = null;
+  const SHELL_ID = "phone-native-shell";
+  const SHEET_SELECTOR = ".phone-native-sheet[data-phone-sheet]";
+  let observer = null;
 
-  function isPhoneShell() {
+  function isPhone() {
     return phoneMedia.matches;
   }
 
-  function ensurePhoneFunAppLoaded() {
-    // The previous injected cockpit made the phone view feel detached from the
-    // web app. The redesigned phone shell is rendered in base.html and keeps
-    // the same features/styles, only repositioned for thumb use.
+  function $(selector, root) {
+    return (root || document).querySelector(selector);
   }
 
-  function allSheets() {
-    return Array.from(document.querySelectorAll(sheetSelector));
+  function $all(selector, root) {
+    return Array.from((root || document).querySelectorAll(selector));
   }
 
-  function allTriggers() {
-    return Array.from(document.querySelectorAll(triggerSelector));
+  function text(node, fallback) {
+    const value = String(node ? node.textContent || "" : "").replace(/\s+/g, " ").trim();
+    return value || fallback || "";
   }
 
-  function getSheetByName(name) {
-    return allSheets().find((sheet) => sheet.dataset.mobileSheet === name) || null;
+  function attr(node, name, fallback) {
+    return node && node.getAttribute(name) ? node.getAttribute(name) : fallback;
   }
 
-  function isOpen(sheet) {
-    return Boolean(sheet && sheet.classList.contains("is-open") && !sheet.hidden);
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
-  function setViewportHeightVariable(force) {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+  function currentTitle() {
+    return text($(".app-topbar-title h1"), document.title || "Money Manager");
+  }
 
-    // Mobile browsers fire resize while the URL bar hides/shows during scroll.
-    // Updating --phone-vh every time causes layout jumps and stuck-feeling sheets.
-    if (!force && Math.abs(width - initialViewportWidth) < 24 && Math.abs(height - initialViewportHeight) < 120) {
-      return;
+  function personalFinanceLabel() {
+    return text($(".app-topbar-title .eyebrow"), "Personal finance");
+  }
+
+  function homeHref() {
+    return attr($(".topbar-nav-btn[title='Home'], .topbar-nav-btn[aria-label='Home']"), "href", "/");
+  }
+
+  function profileHref() {
+    return attr($(".app-brand, .profile-footer-card"), "href", homeHref());
+  }
+
+  function profileInitials() {
+    return text($(".brand-mark, .brand-mark-fallback"), "👤");
+  }
+
+  function netLabel() {
+    return text($(".topbar-net-pill span[data-topbar-net-label], .topbar-net-pill span"), "Net");
+  }
+
+  function netValue() {
+    return text($(".topbar-net-pill strong[data-topbar-net-value], .topbar-net-pill strong"), "€ 0.00");
+  }
+
+  function netHref() {
+    return attr($(".topbar-net-pill"), "href", "/accounts");
+  }
+
+  function unreadCount() {
+    const value = text($(".notification-count"), "");
+    return value && value !== "0" ? value : "";
+  }
+
+  function isActiveHref(href) {
+    if (!href || href === "#") return false;
+    try {
+      const url = new URL(href, window.location.origin);
+      const here = window.location.pathname.replace(/\/$/, "") || "/";
+      const there = url.pathname.replace(/\/$/, "") || "/";
+      return here === there;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function button(label, icon, sheet) {
+    return `<button type="button" class="phone-native-icon" data-phone-open="${escapeHtml(sheet)}" aria-label="${escapeHtml(label)}">${icon}</button>`;
+  }
+
+  function sheet(name, title, subtitle, bodyClass, bodyHtml) {
+    return `<section class="phone-native-sheet" data-phone-sheet="${escapeHtml(name)}" hidden aria-hidden="true">
+      <button type="button" class="phone-native-backdrop" data-phone-close aria-label="Close"></button>
+      <div class="phone-native-panel" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+        <header class="phone-native-sheet-head">
+          <span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(subtitle || "")}</small></span>
+          <button type="button" data-phone-close aria-label="Close">×</button>
+        </header>
+        <div class="phone-native-sheet-body ${escapeHtml(bodyClass || "")}">${bodyHtml || ""}</div>
+      </div>
+    </section>`;
+  }
+
+  function cloneNavHtml() {
+    const wrap = document.createElement("div");
+    const nav = $(".app-sidebar-nav");
+    const footer = $(".app-sidebar-footer");
+
+    if (nav) {
+      const copy = nav.cloneNode(true);
+      copy.querySelectorAll("script").forEach((node) => node.remove());
+      wrap.appendChild(copy);
     }
 
-    initialViewportWidth = width;
-    initialViewportHeight = height;
-    document.documentElement.style.setProperty("--phone-vh", `${height * 0.01}px`);
+    if (footer) {
+      const copy = footer.cloneNode(true);
+      copy.querySelectorAll("script").forEach((node) => node.remove());
+      wrap.appendChild(copy);
+    }
+
+    if (!wrap.children.length) {
+      wrap.innerHTML = `<div class="phone-native-add-grid">
+        <a class="phone-native-add-card" href="${escapeHtml(homeHref())}"><span>⌂</span><b>Home</b><small>Open dashboard</small></a>
+        <a class="phone-native-add-card" href="/accounts"><span>🏦</span><b>Accounts</b><small>Open accounts</small></a>
+        <a class="phone-native-add-card" href="/transactions"><span>⇄</span><b>Transactions</b><small>Open transaction log</small></a>
+      </div>`;
+    }
+
+    return wrap.innerHTML;
   }
 
-  function syncShellClass() {
-    const enabled = isPhoneShell();
-    document.documentElement.classList.toggle("phone-shell-active", enabled);
-    if (document.body) document.body.classList.toggle("phone-shell-active", enabled);
-    if (!enabled) closeAllSheets();
+  function addHtml() {
+    const links = $all(".quick-add-panel a");
+    if (links.length) {
+      return `<div class="phone-native-add-grid">${links.map((link) => {
+        const icon = text($("span", link), "＋");
+        const label = text($("b", link), text(link, "Add"));
+        const hint = text($("small", link), "Create movement");
+        return `<a class="phone-native-add-card" href="${escapeHtml(attr(link, "href", "#"))}"><span>${escapeHtml(icon)}</span><b>${escapeHtml(label)}</b><small>${escapeHtml(hint)}</small></a>`;
+      }).join("")}</div>`;
+    }
+    return `<div class="phone-native-add-grid">
+      <a class="phone-native-add-card" href="/transactions/add?type=expense"><span>−</span><b>Expense</b><small>Money going out</small></a>
+      <a class="phone-native-add-card" href="/transactions/add?type=income"><span>＋</span><b>Income</b><small>Money coming in</small></a>
+      <a class="phone-native-add-card" href="/transactions/add?type=investment"><span>↗</span><b>Investment</b><small>Asset movement</small></a>
+    </div>`;
   }
 
-  function syncTriggers() {
-    const anyOpen = allSheets().some(isOpen);
-    document.documentElement.classList.toggle("mobile-sheet-open", anyOpen);
-    if (document.body) document.body.classList.toggle("mobile-sheet-open", anyOpen);
+  function searchHtml() {
+    const form = $(".topbar-global-search");
+    const action = attr(form, "action", "/search");
+    const value = attr($("input[name='q']", form), "value", "");
+    return `<form class="phone-native-search-form" method="get" action="${escapeHtml(action)}">
+      <input type="search" name="q" value="${escapeHtml(value)}" placeholder="Search..." aria-label="Search Money Manager">
+      <button type="submit">Search</button>
+    </form>`;
+  }
 
-    allTriggers().forEach((trigger) => {
-      const sheet = getSheetByName(trigger.getAttribute("data-mobile-open-sheet"));
-      const expanded = Boolean(sheet && isOpen(sheet) && isPhoneShell());
-      trigger.setAttribute("aria-expanded", expanded ? "true" : "false");
-      trigger.classList.toggle("sheet-open", expanded);
+  function alertsHtml() {
+    const panel = $(".notification-panel");
+    if (!panel) return `<div class="notification-empty"><span aria-hidden="true">✓</span><strong>No alerts</strong><small>Nothing urgent right now.</small></div>`;
+    const copy = panel.cloneNode(true);
+    copy.removeAttribute("hidden");
+    copy.setAttribute("aria-hidden", "false");
+    copy.querySelectorAll("script").forEach((node) => node.remove());
+    copy.querySelectorAll("[data-notification-close]").forEach((node) => node.remove());
+    return copy.outerHTML;
+  }
+
+  function buildShell() {
+    const unread = unreadCount();
+    const shell = document.createElement("div");
+    shell.id = SHELL_ID;
+    shell.className = "phone-native-shell";
+    shell.setAttribute("aria-label", "Phone app navigation");
+    shell.innerHTML = `
+      <header class="phone-native-topbar">
+        ${button("Open menu", "☰", "menu")}
+        <a class="phone-native-title" href="${escapeHtml(homeHref())}">
+          <span>${escapeHtml(personalFinanceLabel())}</span>
+          <strong>${escapeHtml(currentTitle())}</strong>
+        </a>
+        ${button("Search", "⌕", "search")}
+        <button type="button" class="phone-native-icon phone-native-alert ${unread ? "has-alerts" : ""}" data-phone-open="alerts" aria-label="Open alerts">🔔${unread ? `<small>${escapeHtml(unread)}</small>` : ""}</button>
+      </header>
+      <nav class="phone-native-dock" aria-label="Phone bottom navigation">
+        <a href="${escapeHtml(homeHref())}" class="${isActiveHref(homeHref()) ? "is-active" : ""}"><span aria-hidden="true">⌂</span><b>Home</b></a>
+        <button type="button" data-phone-open="menu"><span aria-hidden="true">☰</span><b>Menu</b></button>
+        <button type="button" class="phone-native-add" data-phone-open="add"><span aria-hidden="true">＋</span><b>Add</b></button>
+        <a href="${escapeHtml(netHref())}" class="phone-native-net"><small data-phone-net-label>${escapeHtml(netLabel())}</small><strong data-phone-net-value>${escapeHtml(netValue())}</strong></a>
+        <a href="${escapeHtml(profileHref())}" class="${isActiveHref(profileHref()) ? "is-active" : ""}"><span aria-hidden="true">${escapeHtml(profileInitials())}</span><b>Profile</b></a>
+      </nav>
+      ${sheet("menu", "Menu", "Navigate the app", "phone-native-menu", cloneNavHtml())}
+      ${sheet("add", "Add", "Create a new movement", "", addHtml())}
+      ${sheet("search", "Search", "Find transactions and records", "", searchHtml())}
+      ${sheet("alerts", "Alerts", unread ? `${unread} unread` : "No urgent alerts", "phone-native-alerts", alertsHtml())}`;
+    return shell;
+  }
+
+  function closeAllSheets() {
+    $all(SHEET_SELECTOR).forEach((sheet) => {
+      sheet.classList.remove("is-open");
+      sheet.hidden = true;
+      sheet.setAttribute("aria-hidden", "true");
     });
+    document.documentElement.classList.remove("phone-sheet-open");
   }
 
-  function closeSheet(sheet) {
-    if (!sheet) return;
-    sheet.classList.remove("is-open");
-    sheet.setAttribute("aria-hidden", "true");
-    sheet.hidden = true;
-  }
-
-  function closeAllSheets(except) {
-    allSheets().forEach((sheet) => {
-      if (sheet !== except) closeSheet(sheet);
-    });
-    syncTriggers();
-  }
-
-  function openSheet(sheet) {
-    if (!sheet || !isPhoneShell()) return;
-    closeAllSheets(sheet);
-    sheet.hidden = false;
-    sheet.setAttribute("aria-hidden", "false");
-
+  function openSheet(name) {
+    if (!isPhone()) return;
+    const target = $(`.phone-native-sheet[data-phone-sheet="${CSS.escape(name)}"]`);
+    if (!target) return;
+    closeAllSheets();
+    target.hidden = false;
+    target.setAttribute("aria-hidden", "false");
     window.requestAnimationFrame(() => {
-      sheet.classList.add("is-open");
-      syncTriggers();
+      target.classList.add("is-open");
+      document.documentElement.classList.add("phone-sheet-open");
     });
   }
 
-  function toggleSheet(name) {
-    const sheet = getSheetByName(name);
-    if (!sheet) return;
-    if (isOpen(sheet)) {
-      closeSheet(sheet);
-      syncTriggers();
-    } else {
-      openSheet(sheet);
+  function wireShell(shell) {
+    if (shell.dataset.wired === "true") return;
+    shell.dataset.wired = "true";
+
+    shell.addEventListener("click", (event) => {
+      const close = event.target.closest("[data-phone-close]");
+      if (close) {
+        event.preventDefault();
+        closeAllSheets();
+        return;
+      }
+
+      const opener = event.target.closest("[data-phone-open]");
+      if (opener) {
+        event.preventDefault();
+        openSheet(opener.getAttribute("data-phone-open"));
+        return;
+      }
+
+      const link = event.target.closest("a[href]");
+      if (link) closeAllSheets();
+    });
+  }
+
+  function syncTitleAndNet() {
+    const shell = document.getElementById(SHELL_ID);
+    if (!shell) return;
+    const title = $(".phone-native-title strong", shell);
+    if (title) title.textContent = currentTitle();
+    const netLabelNode = $("[data-phone-net-label]", shell);
+    const netValueNode = $("[data-phone-net-value]", shell);
+    if (netLabelNode) netLabelNode.textContent = netLabel();
+    if (netValueNode) netValueNode.textContent = netValue();
+  }
+
+
+
+  function normalized(value) {
+    return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+  }
+
+  function cellText(node) {
+    return String(node ? node.textContent || "" : "").replace(/\s+/g, " ").trim();
+  }
+
+  function cloneInteractive(cell) {
+    const wrap = document.createElement("div");
+    const interactive = Array.from(cell.querySelectorAll("a[href], button, form"));
+    const used = new Set();
+    interactive.forEach((node) => {
+      const top = node.closest("form") || node;
+      if (used.has(top)) return;
+      used.add(top);
+      const copy = top.cloneNode(true);
+      copy.querySelectorAll("script").forEach((script) => script.remove());
+      wrap.appendChild(copy);
+    });
+    return wrap.innerHTML;
+  }
+
+  function headerIndex(headers, preferred, fallback) {
+    const wanted = normalized(preferred);
+    if (wanted) {
+      const exact = headers.findIndex((header) => normalized(header) === wanted);
+      if (exact >= 0) return exact;
+      const partial = headers.findIndex((header) => normalized(header).includes(wanted) || wanted.includes(normalized(header)));
+      if (partial >= 0) return partial;
     }
+    return fallback;
   }
 
-  function handleTriggerClick(event) {
-    const trigger = event.target.closest(triggerSelector);
-    if (!trigger || !isPhoneShell()) return;
-    event.preventDefault();
-    toggleSheet(trigger.getAttribute("data-mobile-open-sheet"));
+  function inferAmountIndex(headers, row) {
+    const explicit = headerIndex(headers, row.closest("table")?.dataset.mobileAmount || "", -1);
+    if (explicit >= 0) return explicit;
+    const amountByHeader = headers.findIndex((header) => /amount|total|saldo|closing|spent|remaining|monthly|€|eur|value|paid|requested/i.test(header));
+    if (amountByHeader >= 0) return amountByHeader;
+    const cells = Array.from(row.children);
+    for (let index = cells.length - 1; index >= 0; index -= 1) {
+      if (/[-+]?\s*€?\s*\d+[\d.,]*/.test(cellText(cells[index]))) return index;
+    }
+    return Math.max(0, cells.length - 1);
   }
 
-  function wireSheetLinksAndBackdrop() {
-    allSheets().forEach((sheet) => {
-      if (sheet.dataset.phoneFunSheetWired === "true") return;
-      sheet.dataset.phoneFunSheetWired = "true";
+  function splitMetaPreference(table) {
+    return String(table.dataset.mobileMeta || "")
+      .split(",")
+      .map((item) => normalized(item))
+      .filter(Boolean);
+  }
 
-      sheet.querySelectorAll("a").forEach((link) => {
-        link.addEventListener("click", () => closeAllSheets());
+  function buildMobileTableCards(table) {
+    if (!isPhone()) return;
+    if (!table || table.dataset.noMobileCards === "true") return;
+    if (table.classList.contains("phone-cardified-source")) return;
+    if (!table.matches("table.standard-table, table.inline-edit-table, table.mobile-card-table")) return;
+    const body = table.tBodies && table.tBodies[0];
+    if (!body) return;
+    const rows = Array.from(body.rows).filter((row) => row.cells && row.cells.length);
+    if (!rows.length) return;
+
+    const headers = Array.from(table.querySelectorAll("thead th")).map(cellText);
+    const maxCards = 80;
+    const titleIndex = headerIndex(headers, table.dataset.mobileTitle || "", 0);
+    const list = document.createElement("div");
+    list.className = "phone-table-card-list";
+    list.dataset.phoneTableCards = "true";
+
+    rows.slice(0, maxCards).forEach((row) => {
+      const cells = Array.from(row.cells);
+      const amountIndex = inferAmountIndex(headers, row);
+      const metaPrefs = splitMetaPreference(table);
+      const card = document.createElement(row.dataset.href ? "a" : "article");
+      card.className = "phone-table-card";
+      if (row.dataset.href) {
+        card.href = row.dataset.href;
+        card.setAttribute("aria-label", `Open ${cellText(cells[titleIndex]) || "row"}`);
+      }
+
+      const title = cellText(cells[titleIndex]) || "Item";
+      const amount = amountIndex >= 0 ? cellText(cells[amountIndex]) : "";
+      const metaItems = [];
+      const actions = [];
+
+      cells.forEach((cell, index) => {
+        if (index === titleIndex || index === amountIndex) return;
+        const label = headers[index] || cell.dataset.label || "Info";
+        const value = cellText(cell);
+        const hasInteractive = cell.querySelector("a[href], button, form");
+        if (hasInteractive) {
+          actions.push(cloneInteractive(cell));
+          if (!value || value.length < 2) return;
+        }
+        const wanted = !metaPrefs.length || metaPrefs.some((pref) => normalized(label).includes(pref) || pref.includes(normalized(label)));
+        if (wanted && value) {
+          metaItems.push(`<span class="phone-table-meta-item"><b>${escapeHtml(label)}</b><span>${escapeHtml(value)}</span></span>`);
+        }
       });
 
-      sheet.querySelectorAll(closeSelector).forEach((button) => {
-        button.addEventListener("click", (event) => {
-          event.preventDefault();
-          closeAllSheets();
+      if (!metaItems.length) {
+        cells.forEach((cell, index) => {
+          if (index === titleIndex || index === amountIndex) return;
+          const value = cellText(cell);
+          if (value) metaItems.push(`<span class="phone-table-meta-item"><span>${escapeHtml(value)}</span></span>`);
         });
-      });
+      }
+
+      card.innerHTML = `<div class="phone-table-card-top"><div class="phone-table-card-title">${escapeHtml(title)}</div>${amount ? `<div class="phone-table-card-amount">${escapeHtml(amount)}</div>` : ""}</div><div class="phone-table-card-meta">${metaItems.slice(0, 6).join("")}</div>${actions.length ? `<div class="phone-table-card-actions">${actions.join("")}</div>` : ""}`;
+      list.appendChild(card);
     });
+
+    if (rows.length > maxCards) {
+      const note = document.createElement("div");
+      note.className = "phone-table-meta-item";
+      note.textContent = `${maxCards} of ${rows.length} rows shown on phone. Use filters to narrow this table.`;
+      list.appendChild(note);
+    }
+
+    table.classList.add("phone-cardified-source");
+    table.after(list);
   }
 
-  function wirePhoneShell() {
-    setViewportHeightVariable(true);
-    syncShellClass();
-    ensurePhoneFunAppLoaded();
-    wireSheetLinksAndBackdrop();
-    allSheets().forEach((sheet) => {
-      if (!sheet.classList.contains("is-open")) closeSheet(sheet);
-    });
-    syncTriggers();
+  function enhancePhoneContent() {
+    if (!isPhone()) return;
+    document.querySelectorAll("table.standard-table, table.inline-edit-table, table.mobile-card-table").forEach(buildMobileTableCards);
   }
 
-  document.addEventListener("click", handleTriggerClick);
+  function clearPhoneEnhancements() {
+    document.querySelectorAll(".phone-table-card-list[data-phone-table-cards]").forEach((node) => node.remove());
+    document.querySelectorAll("table.phone-cardified-source").forEach((table) => table.classList.remove("phone-cardified-source"));
+  }
+
+
+  function setupNetObserver() {
+    if (observer) observer.disconnect();
+    const target = $(".topbar-net-pill");
+    if (!target || !window.MutationObserver) return;
+    observer = new MutationObserver(syncTitleAndNet);
+    observer.observe(target, { childList: true, subtree: true, characterData: true, attributes: true });
+  }
+
+  function enablePhone() {
+    document.documentElement.classList.add("phone-shell-active");
+    if (document.body) document.body.classList.add("phone-shell-active");
+    let shell = document.getElementById(SHELL_ID);
+    if (!shell) {
+      shell = buildShell();
+      document.body.appendChild(shell);
+      wireShell(shell);
+    }
+    syncTitleAndNet();
+    setupNetObserver();
+    enhancePhoneContent();
+  }
+
+  function disablePhone() {
+    clearPhoneEnhancements();
+    closeAllSheets();
+    document.documentElement.classList.remove("phone-shell-active", "phone-sheet-open");
+    if (document.body) document.body.classList.remove("phone-shell-active");
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+    const shell = document.getElementById(SHELL_ID);
+    if (shell) shell.remove();
+  }
+
+  function boot() {
+    if (isPhone()) enablePhone();
+    else disablePhone();
+  }
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeAllSheets();
   });
 
-  window.addEventListener("orientationchange", () => {
-    window.setTimeout(() => {
-      setViewportHeightVariable(true);
-      syncShellClass();
-      syncTriggers();
-    }, 180);
-  }, { passive: true });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
 
-  window.addEventListener("resize", () => {
-    window.clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(() => {
-      setViewportHeightVariable(false);
-      syncShellClass();
-      syncTriggers();
-    }, 220);
-  }, { passive: true });
-
-  document.addEventListener("DOMContentLoaded", wirePhoneShell);
-  window.addEventListener("pageshow", wirePhoneShell);
-
-  if (phoneMedia.addEventListener) {
-    phoneMedia.addEventListener("change", wirePhoneShell);
-  }
+  window.addEventListener("pageshow", boot);
+  window.addEventListener("orientationchange", () => window.setTimeout(boot, 180), { passive: true });
+  window.addEventListener("resize", () => window.setTimeout(boot, 180), { passive: true });
+  if (phoneMedia.addEventListener) phoneMedia.addEventListener("change", boot);
 })();
