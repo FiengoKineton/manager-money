@@ -52,100 +52,6 @@
   </article>
 </section>
 
-<section class="transactions pending-card credit-settlements-card">
-  <div class="panel-header">
-    <div>
-      <span class="eyebrow">Credit settlement</span>
-      <h2>Credit card settlements</h2>
-      <p>Ledger-backed settlements grouped by payment method, statement period, due date, and settlement account. Executing one posts the cash-out and liability-decrease ledger movements once.</p>
-    </div>
-  </div>
-  {% if credit_settlements %}
-    <div class="payment-card-list">
-      {% for settlement in credit_settlements %}
-      <form method="post" class="payment-card payment-pending">
-        <input type="hidden" name="action" value="execute_credit_settlement">
-        <input type="hidden" name="settlement_id" value="{{ settlement.id }}">
-        <div class="payment-date-block">
-          <label>Due date</label>
-          <input type="date" name="execution_date" value="{{ settlement.due_date }}">
-          <small>{{ settlement.status }}</small>
-        </div>
-        <div class="payment-main payment-edit-grid">
-          <div><label>Payment method</label><strong>{{ settlement.payment_method_name_snapshot or settlement.payment_method_id or 'Credit method' }}</strong></div>
-          <div><label>Statement period</label><span>{{ settlement.statement_period }}</span></div>
-          <div><label>Settlement account</label><span>{{ settlement.settlement_account_name_snapshot }}</span></div>
-          <div class="payment-description-field"><label>Notes</label><small>{{ settlement.notes }}</small></div>
-        </div>
-        <div class="payment-side payment-edit-side">
-          <label>Amount</label>
-          <strong>{{ settlement.amount_str }}</strong>
-          <button type="submit" class="secondary-btn compact-btn" onclick="return confirm('Execute this credit settlement now?')">Settle now</button>
-        </div>
-      </form>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p class="empty">No open credit settlements.</p>
-  {% endif %}
-</section>
-
-<section class="transactions pending-card recurring-forecast-card">
-  <div class="panel-header">
-    <div>
-      <span class="eyebrow">Recurring forecast</span>
-      <h2>Expected recurring payments for {{ recurring_forecast.window_label }}</h2>
-      <p>These rows come from recurring rules. They are a forecast only and are not added to the pending totals above until the app actually queues them.</p>
-    </div>
-    <div class="forecast-total-pill">
-      <span>Expected outflow</span>
-      <strong>€ {{ '%.2f'|format(recurring_forecast.expected_outflow) }}</strong>
-    </div>
-  </div>
-
-  {% if recurring_forecast['items'] %}
-    <div class="forecast-summary-strip">
-      <div>
-        <span>Expenses</span>
-        <strong>€ {{ '%.2f'|format(recurring_forecast.expected_expenses) }}</strong>
-      </div>
-      <div>
-        <span>Investments</span>
-        <strong>€ {{ '%.2f'|format(recurring_forecast.expected_investments) }}</strong>
-      </div>
-      <div>
-        <span>Income</span>
-        <strong>€ {{ '%.2f'|format(recurring_forecast.expected_income) }}</strong>
-      </div>
-      <div>
-        <span>Net impact</span>
-        <strong>€ {{ '%.2f'|format(recurring_forecast.net_impact) }}</strong>
-      </div>
-    </div>
-
-    <div class="forecast-list compact-forecast-list">
-      {% for item in recurring_forecast['items'] %}
-      <article class="forecast-item row-{{ item.type|lower }} {% if item.is_auxiliary_account %}payment-auxiliary{% endif %}">
-        <div class="forecast-date">
-          <span>{{ item.payment_due_date }}</span>
-          <small>Due date</small>
-        </div>
-        <div class="forecast-main">
-          <strong>{{ item.name }}</strong>
-          <small>{{ item.category }} · {{ item.account_label }} · {{ item.status_label }}</small>
-        </div>
-        <div class="forecast-amount">
-          <span class="type-badge type-{{ item.type|lower }}">{{ item.type|capitalize }}</span>
-          <strong>{{ item.amount_str }}</strong>
-        </div>
-      </article>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p class="empty">No expected recurring payments for {{ recurring_forecast.window_label }}.</p>
-  {% endif %}
-</section>
-
 <section class="transactions pending-card pending-payments-card">
   <div class="panel-header">
     <div>
@@ -235,6 +141,102 @@
     </div>
   {% else %}
     <p class="empty">No open pending payments.</p>
+  {% endif %}
+</section>
+
+
+<section class="transactions pending-card credit-settlements-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Credit settlement</span>
+      <h2>Credit card settlements</h2>
+      <p>Ledger-backed settlements grouped by payment method, statement period, due date, and settlement account. Executing one posts the cash-out and liability-decrease ledger movements once.</p>
+    </div>
+  </div>
+  {% if credit_settlements %}
+    <div class="payment-card-list">
+      {% for settlement in credit_settlements %}
+      <form method="post" class="payment-card payment-pending">
+        <input type="hidden" name="settlement_id" value="{{ settlement.id }}">
+        <div class="payment-date-block">
+          <label>Due date</label>
+          <input type="date" name="execution_date" value="{{ settlement.due_date }}">
+          <small>{{ settlement.status }}</small>
+        </div>
+        <div class="payment-main payment-edit-grid">
+          <div><label>Payment method</label><strong>{{ settlement.payment_method_name_snapshot or settlement.payment_method_id or 'Credit method' }}</strong></div>
+          <div><label>Statement period</label><span>{{ settlement.statement_period }}</span></div>
+          <div><label>Settlement account</label><span>{{ settlement.settlement_account_name_snapshot }}</span></div>
+          <div class="payment-description-field"><label>Notes</label><small>{{ settlement.notes }}</small></div>
+        </div>
+        <div class="payment-side payment-edit-side">
+          <label>Amount</label>
+          <strong>{{ settlement.amount_str }}</strong>
+          <button type="submit" name="action" value="execute_credit_settlement" class="secondary-btn compact-btn" onclick="return confirm('Execute this credit settlement now?')">Settle now</button>
+          <button type="submit" name="action" value="discard_credit_settlement" class="secondary-btn compact-btn danger-soft-btn" onclick="return confirm('Discard this credit settlement without creating a transaction? The mirrored pending row will be saved as discarded.')">Discard</button>
+        </div>
+      </form>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">No open credit settlements.</p>
+  {% endif %}
+</section>
+
+
+<section class="transactions pending-card recurring-forecast-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Recurring forecast</span>
+      <h2>Expected recurring payments for {{ recurring_forecast.window_label }}</h2>
+      <p>These rows come from recurring rules. They are a forecast only and are not added to the pending totals above until the app actually queues them.</p>
+    </div>
+    <div class="forecast-total-pill">
+      <span>Expected outflow</span>
+      <strong>€ {{ '%.2f'|format(recurring_forecast.expected_outflow) }}</strong>
+    </div>
+  </div>
+
+  {% if recurring_forecast['items'] %}
+    <div class="forecast-summary-strip">
+      <div>
+        <span>Expenses</span>
+        <strong>€ {{ '%.2f'|format(recurring_forecast.expected_expenses) }}</strong>
+      </div>
+      <div>
+        <span>Investments</span>
+        <strong>€ {{ '%.2f'|format(recurring_forecast.expected_investments) }}</strong>
+      </div>
+      <div>
+        <span>Income</span>
+        <strong>€ {{ '%.2f'|format(recurring_forecast.expected_income) }}</strong>
+      </div>
+      <div>
+        <span>Net impact</span>
+        <strong>€ {{ '%.2f'|format(recurring_forecast.net_impact) }}</strong>
+      </div>
+    </div>
+
+    <div class="forecast-list compact-forecast-list">
+      {% for item in recurring_forecast['items'] %}
+      <article class="forecast-item row-{{ item.type|lower }} {% if item.is_auxiliary_account %}payment-auxiliary{% endif %}">
+        <div class="forecast-date">
+          <span>{{ item.payment_due_date }}</span>
+          <small>Due date</small>
+        </div>
+        <div class="forecast-main">
+          <strong>{{ item.name }}</strong>
+          <small>{{ item.category }} · {{ item.account_label }} · {{ item.status_label }}</small>
+        </div>
+        <div class="forecast-amount">
+          <span class="type-badge type-{{ item.type|lower }}">{{ item.type|capitalize }}</span>
+          <strong>{{ item.amount_str }}</strong>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">No expected recurring payments for {{ recurring_forecast.window_label }}.</p>
   {% endif %}
 </section>
 

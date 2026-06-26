@@ -6,7 +6,7 @@ from money_manager.repositories.pending import delay_pending, delete_pending, lo
 from money_manager.repositories.recurring import load_recurring
 from money_manager.services.debt_service import generate_debt_payments
 from money_manager.services.pending_service import execute_pending_by_id, prepare_pending_for_display, process_pending, sync_credit_account_statements, pending_context_for_scope
-from money_manager.services.credit_settlement_service import execute_credit_settlement, preview_credit_settlements, sync_credit_settlements
+from money_manager.services.credit_settlement_service import discard_credit_settlement, discard_credit_settlement_for_pending, execute_credit_settlement, preview_credit_settlements, sync_credit_settlements
 from money_manager.web.context import resolve_request_scope, scope_template_context
 from money_manager.services.recurring_service import (
     append_rule_from_form,
@@ -46,7 +46,11 @@ def pending_page():
         elif action == "delay_pending":
             delay_pending(row_id, request.form.get("delay_date", ""))
         elif action == "discard_pending":
-            mark_discarded(row_id)
+            result = discard_credit_settlement_for_pending(row_id)
+            if not result.get("handled"):
+                mark_discarded(row_id)
+        elif action == "discard_credit_settlement":
+            discard_credit_settlement(request.form.get("settlement_id", ""))
         elif action == "execute_pending":
             execute_pending_by_id(row_id, execution_date=request.form.get("date_due", ""))
         elif action == "execute_credit_settlement":

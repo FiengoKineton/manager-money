@@ -206,6 +206,70 @@ def cancel_or_adjust_settlement(settlement_id: str | int, *, status: str = "canc
     return {"ok": True, "status": status}
 
 
+def discard_credit_settlement(settlement_id: str | int, *, notes: str = "") -> dict[str, Any]:
+    """Skip one credit settlement without creating any ledger transaction.
+
+    This is used by the Pending page discard action. It closes the durable
+    credit_settlements.csv row so it disappears from the Credit settlement
+    section, while keeping the mirrored pending row as ``discarded`` history so
+    the same statement occurrence is not recreated on the next page load.
+    """
+    row = find_by_id(settlement_id)
+    if not row:
+        return {"ok": False, "error": "Credit settlement not found."}
+    current = str(row.get("status") or "open").lower()
+    if current == "executed":
+        return {"ok": False, "error": "Executed settlements cannot be discarded."}
+
+    existing_notes = str(row.get("notes") or "").strip()
+    discard_note = notes or "Skipped from Pending page without creating a transaction."
+    merged_notes = existing_notes
+    if discard_note and discard_note not in existing_notes:
+        merged_notes = f"{existing_notes} | {discard_note}" if existing_notes else discard_note
+
+    update_settlement(settlement_id, {
+        "status": "cancelled",
+        "notes": merged_notes,
+        "updated_at": utc_now(),
+    })
+    _mark_pending_discarded_for_settlement(settlement_id, pending_id=row.get("pending_id", ""))
+    return {"ok": True, "status": "cancelled"}
+
+
+def discard_credit_settlement_for_pending(pending_id: str | int) -> dict[str, Any]:
+    """Discard a mirrored credit-settlement pending row and close its settlement.
+
+    Returns ``handled=False`` when the pending row is not a credit-settlement
+    mirror, allowing callers to fall back to the normal pending discard logic.
+    """
+    wanted = str(pending_id or "").strip()
+    if not wanted:
+        return {"ok": False, "handled": False, "error": "Missing pending id."}
+    for pending in load_pending():
+        if str(pending.get("id") or "") != wanted:
+            continue
+        if pending.get("source") != CREDIT_SETTLEMENT_SOURCE or not pending.get("source_id"):
+            return {"ok": False, "handled": False}
+        result = discard_credit_settlement(pending.get("source_id", ""))
+        result["handled"] = True
+        return result
+    return {"ok": False, "handled": False, "error": "Pending row not found."}
+
+
+def _mark_pending_discarded_for_settlement(settlement_id: str | int, *, pending_id: str | int | None = None) -> None:
+    rows = load_pending()
+    changed = False
+    wanted_pending_id = str(pending_id or "").strip()
+    for pending in rows:
+        same_pending_id = wanted_pending_id and str(pending.get("id") or "") == wanted_pending_id
+        same_source = pending.get("source") == CREDIT_SETTLEMENT_SOURCE and str(pending.get("source_id") or "") == str(settlement_id)
+        if same_pending_id or same_source:
+            pending["status"] = "discarded"
+            changed = True
+    if changed:
+        write_pending(rows)
+
+
 def settlement_rows_for_payment_method(payment_method_id: str) -> list[dict[str, Any]]:
     wanted = str(payment_method_id or "").strip()
     return [row for row in load_rows() if str(row.get("payment_method_id") or "") == wanted]

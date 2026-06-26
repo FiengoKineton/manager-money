@@ -360,6 +360,24 @@
       "encrypted": true,
       "status": "valid",
       "size_bytes": 2446
+    },
+    "a6160e946facb02f4fc831ad846ec810eb6849cc": {
+      "key": "user:fiengokineton:transaction_initial_conditions:v1:7a07dc249dcfeb2ba34e89d5",
+      "name": "transaction_initial_conditions",
+      "version": "v1",
+      "path": "computed/a6160e946facb02f4fc831ad846ec810eb6849cc.mmcache",
+      "created_at": "2026-06-26T17:50:46+00:00",
+      "updated_at": "2026-06-26T17:50:46+00:00",
+      "expires_at": "",
+      "source_fingerprint": "6537ee915dd6c6896d06d4caec70fd74",
+      "tags": [
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 2446
     }
   }
 }

@@ -928,3 +928,15 @@
 .discarded-history-card .payment-card {
   border-style: dashed;
 }
+
+/* Soft destructive action used by credit-settlement discard controls. */
+.danger-soft-btn {
+  border-color: rgba(220, 38, 38, 0.22) !important;
+  color: #991b1b !important;
+  background: rgba(254, 226, 226, 0.72) !important;
+}
+
+.danger-soft-btn:hover {
+  border-color: rgba(220, 38, 38, 0.36) !important;
+  background: rgba(254, 202, 202, 0.86) !important;
+}
