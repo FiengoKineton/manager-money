@@ -9,7 +9,7 @@
    - backdrop handles outside close, so sheets do not fight with document clicks
 -------------------------------------------------------------------------- */
 (function () {
-  const phoneMedia = window.matchMedia("(max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse)");
+  const phoneMedia = window.matchMedia("(max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse)");
   const sheetSelector = ".mobile-sheet[data-mobile-sheet], .mobile-add-menu[data-mobile-sheet], .mobile-plan-menu[data-mobile-sheet], .mobile-page-menu[data-mobile-sheet]";
   const triggerSelector = "[data-mobile-open-sheet]";
   const closeSelector = "[data-mobile-close-sheets]";
@@ -22,13 +22,9 @@
   }
 
   function ensurePhoneFunAppLoaded() {
-    if (!isPhoneShell()) return;
-    if (document.querySelector('script[data-phone-fun-app="true"]')) return;
-    const script = document.createElement("script");
-    script.src = "/static/js/phone/phone-fun-app.js?v=phone-breakpoint-2";
-    script.defer = true;
-    script.dataset.phoneFunApp = "true";
-    document.head.appendChild(script);
+    // The previous injected cockpit made the phone view feel detached from the
+    // web app. The redesigned phone shell is rendered in base.html and keeps
+    // the same features/styles, only repositioned for thumb use.
   }
 
   function allSheets() {

@@ -1,0 +1,763 @@
+/* --------------------------------------------------------------------------
+   Money Manager phone app shell
+   Same brand/tokens as the PC app, but with a phone-native layout:
+   - top menu/search/alerts bar
+   - bottom floating dock with add + net
+   - navigation/add/search/alerts as bottom sheets
+   - desktop sidebar/topbar are hidden only on real phone breakpoints
+-------------------------------------------------------------------------- */
+
+.phone-app-shell {
+  display: none;
+}
+
+@media (max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse) {
+  :root {
+    --phone-header-height: 64px;
+    --phone-dock-height: 86px;
+    --phone-page-pad-x: max(0.92rem, env(safe-area-inset-left, 0px));
+    --phone-page-pad-r: max(0.92rem, env(safe-area-inset-right, 0px));
+    --phone-sheet-max-height: min(78svh, calc(100svh - 6.5rem));
+  }
+
+  html.phone-shell-active,
+  html.phone-shell-active body {
+    width: 100%;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  html.phone-shell-active body.app-body {
+    background:
+      radial-gradient(circle at 10% -5%, color-mix(in srgb, var(--brand) 15%, transparent), transparent 16rem),
+      radial-gradient(circle at 100% 8%, color-mix(in srgb, var(--brand-soft) 70%, transparent), transparent 18rem),
+      var(--bg) !important;
+    color: var(--ink) !important;
+  }
+
+  html[data-theme="night"].phone-shell-active body.app-body {
+    background:
+      radial-gradient(circle at 10% -5%, rgba(96, 165, 250, 0.18), transparent 17rem),
+      radial-gradient(circle at 100% 8%, rgba(29, 78, 216, 0.20), transparent 18rem),
+      var(--bg) !important;
+  }
+
+  html.phone-shell-active .phone-app-shell {
+    display: block;
+  }
+
+  html.phone-shell-active .app-layout {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 100svh !important;
+  }
+
+  html.phone-shell-active .app-sidebar,
+  html.phone-shell-active .app-topbar {
+    display: none !important;
+  }
+
+  html.phone-shell-active .app-workspace,
+  html.phone-shell-active .app-main {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  html.phone-shell-active .app-main {
+    padding-top: calc(var(--phone-header-height) + env(safe-area-inset-top, 0px) + 0.75rem) !important;
+    padding-bottom: calc(var(--phone-dock-height) + env(safe-area-inset-bottom, 0px) + 1.35rem) !important;
+  }
+
+  html.phone-shell-active .container,
+  html.phone-shell-active .app-content-stage {
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding-left: var(--phone-page-pad-x) !important;
+    padding-right: var(--phone-page-pad-r) !important;
+    box-sizing: border-box !important;
+  }
+
+  html.phone-shell-active .app-content-stage > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  html.phone-shell-active .phone-app-header {
+    position: fixed;
+    z-index: 1050;
+    top: max(0.55rem, env(safe-area-inset-top, 0px));
+    left: max(0.66rem, env(safe-area-inset-left, 0px));
+    right: max(0.66rem, env(safe-area-inset-right, 0px));
+    height: var(--phone-header-height);
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.56rem;
+    padding: 0.46rem;
+    border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    box-shadow: 0 18px 48px rgba(16, 24, 40, 0.13);
+    backdrop-filter: blur(22px) saturate(1.18);
+    -webkit-backdrop-filter: blur(22px) saturate(1.18);
+  }
+
+  html[data-theme="night"].phone-shell-active .phone-app-header,
+  html[data-theme="night"].phone-shell-active .phone-bottom-dock,
+  html[data-theme="night"].phone-shell-active .mobile-sheet-panel {
+    background: color-mix(in srgb, var(--surface) 82%, transparent) !important;
+    border-color: color-mix(in srgb, var(--line) 74%, transparent) !important;
+  }
+
+  html.phone-shell-active .phone-icon-button,
+  html.phone-shell-active .phone-dock-item,
+  html.phone-shell-active .phone-dock-add,
+  html.phone-shell-active .mobile-sheet-head button {
+    border: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  html.phone-shell-active .phone-icon-button {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 18px;
+    background: var(--surface-soft);
+    border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+    color: var(--ink);
+    font-size: 1.08rem;
+    font-weight: 900;
+  }
+
+  html.phone-shell-active .phone-icon-button span {
+    position: absolute;
+    top: 0.34rem;
+    right: 0.32rem;
+    min-width: 1rem;
+    height: 1rem;
+    display: grid;
+    place-items: center;
+    padding: 0 0.23rem;
+    border-radius: 999px;
+    background: var(--bad);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 950;
+    line-height: 1;
+  }
+
+  html.phone-shell-active .phone-alert-button.has-alerts::after {
+    content: "";
+    position: absolute;
+    top: 0.52rem;
+    right: 0.52rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--bad);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad-soft) 78%, transparent);
+  }
+
+  html.phone-shell-active .phone-header-title {
+    min-width: 0;
+    display: grid;
+    gap: 0.06rem;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  html.phone-shell-active .phone-header-title span {
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  html.phone-shell-active .phone-header-title strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink);
+    font-size: 1.02rem;
+    letter-spacing: -0.035em;
+  }
+
+  html.phone-shell-active .phone-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+  }
+
+  html.phone-shell-active .phone-bottom-dock {
+    position: fixed;
+    z-index: 1060;
+    left: max(0.62rem, env(safe-area-inset-left, 0px));
+    right: max(0.62rem, env(safe-area-inset-right, 0px));
+    bottom: max(0.62rem, env(safe-area-inset-bottom, 0px));
+    min-height: var(--phone-dock-height);
+    display: grid;
+    grid-template-columns: minmax(48px, 0.78fr) minmax(48px, 0.78fr) 68px minmax(74px, 1.15fr) minmax(48px, 0.78fr);
+    align-items: center;
+    gap: 0.38rem;
+    padding: 0.5rem;
+    border-radius: 28px;
+    border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    box-shadow: 0 24px 60px rgba(16, 24, 40, 0.18);
+    backdrop-filter: blur(24px) saturate(1.20);
+    -webkit-backdrop-filter: blur(24px) saturate(1.20);
+  }
+
+  html.phone-shell-active .phone-dock-item,
+  html.phone-shell-active .phone-dock-net,
+  html.phone-shell-active .phone-dock-add {
+    min-width: 0;
+    text-decoration: none;
+    border-radius: 21px;
+    color: var(--muted);
+  }
+
+  html.phone-shell-active .phone-dock-item {
+    height: 62px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 0.16rem;
+    background: transparent;
+  }
+
+  html.phone-shell-active .phone-dock-item span {
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    border-radius: 15px;
+    background: var(--surface-soft);
+    color: var(--ink);
+    font-weight: 950;
+    font-size: 0.96rem;
+  }
+
+  html.phone-shell-active .phone-dock-item b {
+    font-size: 0.62rem;
+    font-weight: 850;
+  }
+
+  html.phone-shell-active .phone-dock-item.active,
+  html.phone-shell-active .phone-dock-item.sheet-open,
+  html.phone-shell-active .phone-dock-item[aria-expanded="true"] {
+    color: var(--brand);
+    background: color-mix(in srgb, var(--brand-soft) 58%, transparent);
+  }
+
+  html.phone-shell-active .phone-dock-add {
+    position: relative;
+    height: 68px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 0.05rem;
+    transform: translateY(-0.82rem);
+    background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+    color: #fff;
+    box-shadow: 0 16px 32px color-mix(in srgb, var(--brand) 34%, transparent);
+  }
+
+  html.phone-shell-active .phone-dock-add span {
+    font-size: 1.55rem;
+    line-height: 1;
+    font-weight: 950;
+  }
+
+  html.phone-shell-active .phone-dock-add b {
+    font-size: 0.62rem;
+    font-weight: 900;
+  }
+
+  html.phone-shell-active .phone-dock-net {
+    height: 62px;
+    display: grid;
+    align-content: center;
+    gap: 0.1rem;
+    padding: 0.5rem 0.64rem;
+    background: color-mix(in srgb, var(--brand-soft) 62%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+  }
+
+  html.phone-shell-active .phone-dock-net span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: 0.6rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  html.phone-shell-active .phone-dock-net strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--brand-dark);
+    font-size: clamp(0.82rem, 3.7vw, 1.02rem);
+    letter-spacing: -0.055em;
+    line-height: 1;
+  }
+
+  html[data-theme="night"].phone-shell-active .phone-dock-net strong {
+    color: var(--ink);
+  }
+
+  html.phone-shell-active .mobile-sheet {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 1090 !important;
+    display: block !important;
+    pointer-events: none;
+  }
+
+  html.phone-shell-active .mobile-sheet[hidden] {
+    display: none !important;
+  }
+
+  html.phone-shell-active .mobile-sheet.is-open {
+    pointer-events: auto;
+  }
+
+  html.phone-shell-active .mobile-sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: rgba(15, 23, 42, 0.34);
+    opacity: 0;
+    transition: opacity 180ms ease;
+  }
+
+  html.phone-shell-active .mobile-sheet.is-open .mobile-sheet-backdrop {
+    opacity: 1;
+  }
+
+  html.phone-shell-active .mobile-sheet-panel {
+    position: absolute !important;
+    left: max(0.58rem, env(safe-area-inset-left, 0px)) !important;
+    right: max(0.58rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: max(0.58rem, env(safe-area-inset-bottom, 0px)) !important;
+    max-height: var(--phone-sheet-max-height) !important;
+    overflow: hidden !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr);
+    border-radius: 30px !important;
+    border: 1px solid color-mix(in srgb, var(--line) 80%, transparent) !important;
+    background: color-mix(in srgb, var(--surface) 95%, transparent) !important;
+    box-shadow: 0 28px 80px rgba(16, 24, 40, 0.26) !important;
+    transform: translateY(calc(100% + 1rem));
+    transition: transform 220ms cubic-bezier(.2,.8,.2,1);
+    backdrop-filter: blur(24px) saturate(1.20);
+    -webkit-backdrop-filter: blur(24px) saturate(1.20);
+  }
+
+  html.phone-shell-active .mobile-sheet.is-open .mobile-sheet-panel {
+    transform: translateY(0);
+  }
+
+  html.phone-shell-active .mobile-sheet-head {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.75rem !important;
+    padding: 1rem 1rem 0.72rem !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 82%, transparent) !important;
+  }
+
+  html.phone-shell-active .mobile-sheet-head strong {
+    display: block;
+    color: var(--ink);
+    font-size: 1rem;
+    letter-spacing: -0.04em;
+  }
+
+  html.phone-shell-active .mobile-sheet-head small {
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  html.phone-shell-active .mobile-sheet-head button {
+    width: 42px;
+    height: 42px;
+    border-radius: 16px;
+    background: var(--surface-soft);
+    color: var(--ink);
+    font-size: 1.38rem;
+    line-height: 1;
+  }
+
+  html.phone-shell-active .phone-sheet-scroll,
+  html.phone-shell-active .phone-alert-list {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.88rem;
+  }
+
+  html.phone-shell-active .phone-nav-account,
+  html.phone-shell-active .phone-empty-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.66rem;
+    align-items: center;
+    padding: 0.82rem;
+    margin-bottom: 0.72rem;
+    border-radius: 22px;
+    text-decoration: none;
+    color: inherit;
+    background: var(--surface-soft);
+    border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  }
+
+  html.phone-shell-active .phone-nav-account span,
+  html.phone-shell-active .phone-empty-card span {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: var(--surface);
+    font-size: 1.15rem;
+  }
+
+  html.phone-shell-active .phone-nav-account strong,
+  html.phone-shell-active .phone-empty-card b {
+    display: block;
+    color: var(--ink);
+    font-size: 0.92rem;
+  }
+
+  html.phone-shell-active .phone-nav-account small,
+  html.phone-shell-active .phone-empty-card small {
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+
+  html.phone-shell-active .phone-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.64rem;
+  }
+
+  html.phone-shell-active .phone-nav-grid a,
+  html.phone-shell-active .phone-alert-card,
+  html.phone-shell-active .phone-add-card {
+    min-width: 0;
+    display: grid;
+    gap: 0.28rem;
+    padding: 0.82rem;
+    border-radius: 22px;
+    text-decoration: none;
+    color: var(--ink);
+    background: var(--surface-soft);
+    border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+    box-shadow: 0 6px 18px rgba(16, 24, 40, 0.05);
+  }
+
+  html.phone-shell-active .phone-nav-grid a.active {
+    border-color: color-mix(in srgb, var(--brand) 38%, var(--line));
+    background: color-mix(in srgb, var(--brand-soft) 58%, var(--surface));
+  }
+
+  html.phone-shell-active .phone-nav-grid a span,
+  html.phone-shell-active .phone-alert-card span,
+  html.phone-shell-active .phone-add-card span {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: var(--surface);
+    font-size: 1.1rem;
+  }
+
+  html.phone-shell-active .phone-nav-grid a b,
+  html.phone-shell-active .phone-alert-card b,
+  html.phone-shell-active .phone-add-card b {
+    overflow: hidden;
+    color: var(--ink);
+    font-size: 0.88rem;
+    line-height: 1.08;
+    text-overflow: ellipsis;
+  }
+
+  html.phone-shell-active .phone-nav-grid a small,
+  html.phone-shell-active .phone-alert-card small,
+  html.phone-shell-active .phone-add-card small {
+    color: var(--muted);
+    font-size: 0.7rem;
+    line-height: 1.15;
+  }
+
+  html.phone-shell-active .phone-nav-list {
+    display: grid;
+    gap: 0.44rem;
+    margin-top: 0.86rem;
+  }
+
+  html.phone-shell-active .phone-nav-list a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    padding: 0.78rem 0.86rem;
+    border-radius: 18px;
+    text-decoration: none;
+    color: var(--ink);
+    background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+    font-weight: 800;
+  }
+
+  html.phone-shell-active .phone-add-actions {
+    display: grid;
+    gap: 0.64rem;
+    padding: 0.88rem;
+    overflow-y: auto;
+  }
+
+  html.phone-shell-active .phone-add-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+
+  html.phone-shell-active .phone-add-card small {
+    grid-column: 2;
+  }
+
+  html.phone-shell-active .phone-add-expense span { color: var(--bad); }
+  html.phone-shell-active .phone-add-income span { color: var(--good); }
+  html.phone-shell-active .phone-add-investment span { color: var(--brand); }
+
+  html.phone-shell-active .phone-search-panel {
+    max-height: min(42svh, 24rem) !important;
+  }
+
+  html.phone-shell-active .phone-search-form {
+    display: grid;
+    gap: 0.72rem;
+    padding: 0.88rem;
+  }
+
+  html.phone-shell-active .phone-search-form input {
+    width: 100%;
+    min-height: 52px;
+    padding: 0 1rem;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--surface-soft);
+    color: var(--ink);
+    font: inherit;
+  }
+
+  html.phone-shell-active .phone-search-form button {
+    min-height: 52px;
+    border: 0;
+    border-radius: 18px;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 900;
+  }
+
+  html.phone-shell-active .phone-alert-list {
+    display: grid;
+    gap: 0.62rem;
+  }
+
+  html.phone-shell-active .phone-alert-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+
+  html.phone-shell-active .phone-alert-card small {
+    grid-column: 2;
+  }
+
+  html.phone-shell-active .phone-alert-card.is-urgent {
+    border-color: color-mix(in srgb, var(--bad) 34%, var(--line));
+    background: color-mix(in srgb, var(--bad-soft) 58%, var(--surface));
+  }
+
+  /* Page content adaptation ------------------------------------------------ */
+  html.phone-shell-active .panel-card,
+  html.phone-shell-active .card,
+  html.phone-shell-active .summary-card,
+  html.phone-shell-active .form-section,
+  html.phone-shell-active .filters,
+  html.phone-shell-active .transactions,
+  html.phone-shell-active .dashboard-card,
+  html.phone-shell-active .chart-card,
+  html.phone-shell-active .account-card,
+  html.phone-shell-active .mortgage-card,
+  html.phone-shell-active .project-card {
+    border-radius: 24px !important;
+    box-shadow: 0 12px 34px rgba(16, 24, 40, 0.08) !important;
+  }
+
+  html.phone-shell-active h1,
+  html.phone-shell-active h2,
+  html.phone-shell-active h3 {
+    line-height: 1.04 !important;
+    letter-spacing: -0.055em !important;
+  }
+
+  html.phone-shell-active .dashboard-hero,
+  html.phone-shell-active .dashboard-kpi-grid,
+  html.phone-shell-active .transactions-summary-grid,
+  html.phone-shell-active .dashboard-period-strip,
+  html.phone-shell-active .period-summary,
+  html.phone-shell-active .dashboard-charts-home,
+  html.phone-shell-active .account-grid,
+  html.phone-shell-active .accounts-grid,
+  html.phone-shell-active .contacts-grid,
+  html.phone-shell-active .summary-grid,
+  html.phone-shell-active .filters-form,
+  html.phone-shell-active .filter-row,
+  html.phone-shell-active .transactions-filter-row,
+  html.phone-shell-active .form-grid,
+  html.phone-shell-active .two-column-grid,
+  html.phone-shell-active .three-column-grid,
+  html.phone-shell-active .mortgage-grid,
+  html.phone-shell-active .parent-support-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  html.phone-shell-active .transactions-hero,
+  html.phone-shell-active .panel-header,
+  html.phone-shell-active .page-header,
+  html.phone-shell-active .hero-card {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 0.72rem !important;
+  }
+
+  html.phone-shell-active .transactions-hero-actions,
+  html.phone-shell-active .filters-actions,
+  html.phone-shell-active .actions-row,
+  html.phone-shell-active .button-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  html.phone-shell-active .transactions-hero-actions a,
+  html.phone-shell-active .filters-actions button,
+  html.phone-shell-active .actions-row a,
+  html.phone-shell-active .actions-row button,
+  html.phone-shell-active .button-row a,
+  html.phone-shell-active .button-row button {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+  }
+
+  html.phone-shell-active input,
+  html.phone-shell-active select,
+  html.phone-shell-active textarea,
+  html.phone-shell-active button {
+    max-width: 100% !important;
+  }
+
+  html.phone-shell-active input,
+  html.phone-shell-active select,
+  html.phone-shell-active textarea {
+    min-height: 46px;
+    font-size: 16px !important; /* avoid iOS/Android zoom */
+  }
+
+  html.phone-shell-active .date-inputs,
+  html.phone-shell-active .amount-range-inputs,
+  html.phone-shell-active .types-group {
+    grid-template-columns: 1fr !important;
+  }
+
+  html.phone-shell-active .transactions-table {
+    display: none !important;
+  }
+
+  html.phone-shell-active .phone-transaction-list {
+    display: grid !important;
+    gap: 0.66rem !important;
+  }
+
+  html.phone-shell-active .phone-transaction-card,
+  html.phone-shell-active .mobile-disclosure-card,
+  html.phone-shell-active tr.mobile-disclosure-row {
+    border-radius: 22px !important;
+    background: var(--surface) !important;
+    border: 1px solid color-mix(in srgb, var(--line) 84%, transparent) !important;
+    box-shadow: 0 10px 28px rgba(16, 24, 40, 0.07) !important;
+  }
+
+  html.phone-shell-active .table-scroll,
+  html.phone-shell-active .panel-table-scroll,
+  html.phone-shell-active .table-responsive,
+  html.phone-shell-active .standard-table:not(.transactions-table),
+  html.phone-shell-active .inline-edit-table {
+    max-width: 100%;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html.phone-shell-active .standard-table:not(.transactions-table),
+  html.phone-shell-active .inline-edit-table {
+    min-width: 620px;
+  }
+
+  html.phone-shell-active .topbar-net-pill,
+  html.phone-shell-active .quick-add-menu,
+  html.phone-shell-active .topbar-global-search,
+  html.phone-shell-active .phone-today-cockpit {
+    display: none !important;
+  }
+
+  html.phone-shell-active .normal-add-submit-row {
+    bottom: calc(var(--phone-dock-height) + env(safe-area-inset-bottom, 0px) + 0.82rem) !important;
+  }
+
+  html.phone-shell-active .desktop-detail-drawer {
+    width: min(100vw - 1.1rem, 460px) !important;
+  }
+
+  @media (max-width: 380px) {
+    html.phone-shell-active .phone-bottom-dock {
+      grid-template-columns: 48px 48px 64px minmax(66px, 1fr) 48px;
+      gap: 0.25rem;
+      padding: 0.42rem;
+    }
+
+    html.phone-shell-active .phone-dock-item b {
+      display: none;
+    }
+
+    html.phone-shell-active .phone-dock-net strong {
+      font-size: 0.78rem;
+    }
+
+    html.phone-shell-active .phone-nav-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}
