@@ -34,6 +34,7 @@ from money_manager.config import (
 )
 from money_manager.domain.transaction import TransactionInput, make_transaction_uid
 from money_manager.services.currency_service import append_conversion_note, convert_amount_to_eur
+from money_manager.services.category_icon_service import icon_for_category, load_category_icons_config
 from money_manager.repositories.pending import append_pending
 from money_manager.repositories.transactions import (
     append_transaction,
@@ -417,9 +418,18 @@ def prepare_transactions_for_display(df: pd.DataFrame) -> pd.DataFrame:
         df["date_str"] = []
         df["amount_str"] = []
         df["row_index"] = []
+        df["category_icon"] = []
+        df["account_display"] = []
+        df["account_icon"] = []
         return df
 
     for column in [
+        "account",
+        "account_id",
+        "account_key",
+        "account_key_snapshot",
+        "account_label",
+        "account_name_snapshot",
         "payment_method",
         "payment_method_id",
         "ledger_status",
@@ -438,8 +448,91 @@ def prepare_transactions_for_display(df: pd.DataFrame) -> pd.DataFrame:
     df["date_str"] = df["date"].dt.strftime("%Y-%m-%d")
     df["amount_str"] = df["amount"].map(lambda amount: f"{amount:.2f}")
     df["row_index"] = df.index
+    icon_config = load_category_icons_config()
+    df["category_icon"] = df.apply(
+        lambda row: icon_for_category(row.get("category", ""), row.get("type", ""), config=icon_config),
+        axis=1,
+    )
+    account_icons = _account_icon_lookup_for_display()
+    account_views = df.apply(lambda row: _transaction_account_display_fields(row, account_icons), axis=1)
+    if not account_views.empty:
+        account_view_df = pd.DataFrame(account_views.tolist(), index=df.index)
+        for column in ["account_display", "account_icon", "account_key_display"]:
+            df[column] = account_view_df[column]
+    else:
+        df["account_display"] = ""
+        df["account_icon"] = "🏦"
+        df["account_key_display"] = MAIN_ACCOUNT_KEY
     df["delay_date_default"] = (date.today() + timedelta(days=1)).isoformat()
     return df
+
+
+def _account_icon_lookup_for_display() -> dict[str, str]:
+    lookup = {MAIN_ACCOUNT_KEY: "🏦"}
+    try:
+        from money_manager.services.account_config_service import all_accounts
+
+        for account in all_accounts(include_archived=True, include_main=True):
+            key = str(account.get("key") or account.get("id") or "").strip()
+            icon = str(account.get("icon") or "").strip()[:12]
+            if key and icon:
+                lookup[key] = icon
+    except Exception:
+        pass
+    return lookup
+
+
+def _fallback_account_icon_for_display(key: str, label: str) -> str:
+    text = f"{key} {label}".casefold()
+    if "paypal" in text:
+        return "🅿️"
+    if "revolut" in text or "revoulout" in text:
+        return "🇷"
+    if "edenred" in text or "ticket restaurant" in text:
+        return "🍽️"
+    if "cash" in text or "contanti" in text:
+        return "💶"
+    if "credit" in text or "card" in text or "carta" in text:
+        return "💳"
+    if "chatgpt" in text or "chatgbt" in text or "openai" in text:
+        return "🤖"
+    return "🏦"
+
+
+def _transaction_account_display_fields(row: Mapping[str, Any], icon_lookup: Mapping[str, str]) -> dict[str, str]:
+    raw_account = _clean_display(row.get("account", ""))
+    account_id = _clean_display(row.get("account_id", ""))
+    key_snapshot = _clean_display(row.get("account_key", "") or row.get("account_key_snapshot", ""))
+    snapshot_label = _clean_display(row.get("account_name_snapshot", "") or row.get("account_label", ""))
+    source_value = account_id or key_snapshot or raw_account
+
+    try:
+        key = normalize_account_key(source_value)
+    except Exception:
+        key = MAIN_ACCOUNT_KEY
+    key = key or MAIN_ACCOUNT_KEY
+
+    try:
+        configured_label = account_label_for_key(key)
+    except Exception:
+        configured_label = "Mediolanum" if key == MAIN_ACCOUNT_KEY else key.replace("_", " ").title()
+
+    label = snapshot_label or configured_label or raw_account
+    cleaned_label = str(label or "").strip()
+    if not cleaned_label or cleaned_label.casefold() in {"main_bank", "main bank", "primary current account", "bank account"}:
+        cleaned_label = configured_label or "Mediolanum"
+
+    # Keep truly custom text if the account cannot be mapped, but never show raw
+    # stable IDs like ``main_bank`` in the transaction table.
+    if raw_account and key == MAIN_ACCOUNT_KEY and raw_account.casefold() not in {"", "auto", "bank", "main", "main_bank", "main bank", "bank account", "conto", "conto corrente"}:
+        cleaned_label = configured_label or raw_account
+
+    icon = str(icon_lookup.get(key) or _fallback_account_icon_for_display(key, cleaned_label)).strip()[:12] or "🏦"
+    return {
+        "account_display": cleaned_label,
+        "account_icon": icon,
+        "account_key_display": key,
+    }
 
 
 def transaction_detail_context(row_index: int) -> tuple[dict, list[str]]:

@@ -1,8 +1,9 @@
 {% macro phone_card(tx) -%}
-<a class="phone-transaction-card row-{{ tx.type }}" href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
+<a class="phone-transaction-card row-{{ tx.type }}" href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}" data-category-icon="{{ tx.category_icon or '💸' }}">
+  <span class="phone-transaction-icon" aria-hidden="true">{{ tx.category_icon or '💸' }}</span>
   <span class="phone-transaction-copy">
     <b>{{ tx.description if tx.description and tx.description != 'nan' else tx.category }}</b>
-    <small>{{ tx.date_str }} · {{ tx.type.capitalize() }}{% if tx.account and tx.account != 'nan' %} · {{ tx.account }}{% endif %}</small>
+    <small>{{ tx.date_str }} · {{ tx.type.capitalize() }}{% if tx.account_display and tx.account_display != 'nan' %} · {{ tx.account_icon or '🏦' }} {{ tx.account_display }}{% elif tx.account and tx.account != 'nan' %} · {{ tx.account }}{% endif %}</small>
     {% if tx.sub_category and tx.sub_category != 'nan' %}<em>{{ tx.sub_category }}</em>{% endif %}
   </span>
   <strong class="phone-transaction-amount">{{ tx.amount_str }}</strong>
@@ -16,7 +17,7 @@
   <td>{{ tx.date_str }}</td>
   <td>{{ tx.type.capitalize() }}</td>
   <td>
-    {{ tx.category }}
+    <span class="transaction-category-pill"><span class="transaction-category-icon" aria-hidden="true">{{ tx.category_icon or '💸' }}</span><span>{{ tx.category }}</span></span>
     {% if tx.sub_category and tx.sub_category != 'nan' %}
       <br><small>{{ tx.sub_category }}</small>
     {% endif %}
@@ -66,7 +67,9 @@
     </div>
   </td>
   <td>
-    {% if tx.is_auxiliary_account %}
+    {% if tx.account_display and tx.account_display != 'nan' %}
+      <span class="account-table-badge transaction-account-pill"><span class="transaction-account-icon" aria-hidden="true">{{ tx.account_icon or '🏦' }}</span><span>{{ tx.account_display }}</span></span>
+    {% elif tx.is_auxiliary_account %}
       <span class="account-table-badge">{{ tx.account_label }}</span>
     {% elif tx.account and tx.account != 'nan' %}
       {{ tx.account }}

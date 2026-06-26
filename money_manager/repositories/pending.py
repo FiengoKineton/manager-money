@@ -50,6 +50,22 @@ def mark_executed(tx_id: int) -> None:
     write_rows(PENDING_CSV, PENDING_FIELDS, rows)
 
 
+def mark_discarded(tx_id: int | str) -> None:
+    """Close one pending row without creating a real transaction.
+
+    This is intentionally different from ``delete_pending``: the discarded row
+    remains in pending.csv as history, so recurring-rule generation knows that
+    this specific occurrence has already been handled and does not recreate it.
+    Future occurrences of the same rule can still be generated normally.
+    """
+    rows = load_pending()
+    for row in rows:
+        if str(row.get("id", "")) == str(tx_id):
+            row["status"] = "discarded"
+            break
+    write_rows(PENDING_CSV, PENDING_FIELDS, rows)
+
+
 def delete_pending(tx_id: int | str) -> None:
     """Remove one pending/executed payment row from the pending queue CSV."""
     rows = [row for row in load_pending() if str(row.get("id", "")) != str(tx_id)]

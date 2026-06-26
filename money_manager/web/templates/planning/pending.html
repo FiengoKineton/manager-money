@@ -226,6 +226,7 @@
         <div class="payment-action-rail payment-action-rail-wide" aria-label="Payment actions">
           <button type="submit" name="action" value="update_pending" class="icon-action-btn icon-action-save" title="Update pending payment" aria-label="Update pending payment">✎</button>
           <button type="submit" name="action" value="delay_pending" class="icon-action-btn icon-action-delay" title="Delay to selected date" aria-label="Delay pending payment">⏳</button>
+          <button type="submit" name="action" value="discard_pending" class="icon-action-btn icon-action-discard" title="Discard only this occurrence without creating a transaction" aria-label="Discard only this pending occurrence" onclick="return confirm('Discard only this pending occurrence without creating a transaction? Future recurring rows can still be generated.')">⊘</button>
           <button type="submit" name="action" value="execute_pending" class="icon-action-btn icon-action-execute" title="Execute this payment" aria-label="Execute this payment" onclick="return confirm('Create the real transaction for this payment?')">✓</button>
           <button type="submit" name="action" value="delete_pending" class="icon-action-btn icon-action-delete" title="Delete pending payment" aria-label="Delete pending payment" onclick="return confirm('Delete this pending payment?')">×</button>
         </div>
@@ -307,4 +308,45 @@
     <p class="empty">No executed pending rows yet.</p>
   {% endif %}
 </section>
+
+<section class="transactions pending-card pending-payments-card discarded-history-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Skipped rows</span>
+      <h2>Discarded pending rows</h2>
+      <p>These were closed without creating a transaction. They stay saved so the same recurring occurrence is not recreated.</p>
+    </div>
+    <span class="section-count">{{ pending_discarded|length }} discarded</span>
+  </div>
+
+  {% if pending_discarded %}
+    <div class="payment-card-list payment-card-list-muted">
+      {% for tx in pending_discarded %}
+      <form method="post" class="payment-card payment-{{ tx.status }} row-{{ tx.type|lower }} {% if tx.is_auxiliary_account %}payment-auxiliary{% endif %}">
+        <input type="hidden" name="id" value="{{ tx.id }}">
+        <div class="payment-date-block">
+          <label>Discarded date</label>
+          <input type="date" name="date_due" value="{{ tx.date_due_str }}" required>
+          <small>{{ tx.status_label }}</small>
+        </div>
+        <div class="payment-main payment-edit-grid">
+          <div><label>Type</label><strong>{{ tx.type|capitalize }}</strong></div>
+          <div><label>Category</label><strong>{{ tx.category }}</strong></div>
+          <div class="payment-description-field"><label>Description</label><span>{{ tx.description }}</span></div>
+        </div>
+        <div class="payment-side payment-edit-side">
+          <label>Amount</label>
+          <strong>{{ tx.amount_str }}</strong>
+        </div>
+        <div class="payment-action-rail" aria-label="Discarded row actions">
+          <button type="submit" name="action" value="delete_pending" class="icon-action-btn icon-action-delete" title="Delete discarded row" aria-label="Delete discarded row" onclick="return confirm('Delete this discarded row? If it came from a recurring rule, deleting it may allow this occurrence to be generated again.')">×</button>
+        </div>
+      </form>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">No discarded pending rows yet.</p>
+  {% endif %}
+</section>
+
 {% endblock %}

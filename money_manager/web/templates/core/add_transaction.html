@@ -285,13 +285,25 @@
             <input type="date" name="date" value="{{ form_values.date or today }}" required>
           </div>
 
-          <div>
+          <div class="category-create-block">
             <label>Category <a class="tiny-link" href="{{ url_for('settings_categories.categories_page') }}">manage</a></label>
             <select name="category" id="category-select" required>
-              {% for c in categories %}
-                <option value="{{ c }}" {% if (form_values.category or default_category) == c %}selected{% endif %}>{{ c }}</option>
+              <option value="__new_category__" {% if form_values.category == '__new_category__' %}selected{% endif %}>✎ Create new category...</option>
+              {% for row in category_rows %}
+                <option value="{{ row.name }}" data-icon="{{ row.icon }}" {% if (form_values.category or default_category) == row.name %}selected{% endif %}>{{ row.icon }} {{ row.name }}</option>
               {% endfor %}
             </select>
+            <div class="inline-new-category-fields" data-inline-category-fields {% if form_values.category != '__new_category__' %}hidden{% endif %}>
+              <label>
+                Icon
+                <input type="text" name="custom_category_icon" id="custom-category-icon" maxlength="12" value="{{ form_values.custom_category_icon or '' }}" placeholder="✎">
+              </label>
+              <label>
+                New category name
+                <input type="text" name="custom_category_name" id="custom-category-name" value="{{ form_values.custom_category_name or '' }}" placeholder="Example: Car maintenance">
+              </label>
+              <small class="hint">It is saved automatically under {{ ttype }} after this transaction is saved.</small>
+            </div>
           </div>
 
           <div>
@@ -469,5 +481,6 @@
   window.moneyManagerDiscountSources = {{ discount_source_options_json | safe }};
   window.moneyManagerSuggestedDiscountSource = {{ (suggested_discount_source or {}) | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/transactions.js') }}"></script>
+<script src="{{ url_for('static', filename='js/transactions.js') }}?v=category-create-1"></script>
+<script src="{{ url_for('static', filename='js/shared/category-customisation.js') }}?v=category-create-1" defer></script>
 {% endblock %}

@@ -308,6 +308,18 @@ DEFAULT_PAYMENT_METHODS: dict[str, Any] = {
         },
     ],
 }
+
+DEFAULT_CATEGORY_ICONS: dict[str, Any] = {
+    "schema_version": 1,
+    "icons": {},
+    "types": {
+        "expense": {},
+        "income": {},
+        "investment": {},
+    },
+    "updated_at": "",
+}
+
 DEFAULT_RECEIPTS: dict[str, Any] = {
     "schema_version": 1,
     "receipts": {},
@@ -325,6 +337,7 @@ USER_CONFIG_DEFAULTS: dict[str, dict[str, Any]] = {
     "profile.json": DEFAULT_PROFILE,
     "preferences.json": DEFAULT_PREFERENCES,
     "categories.json": DEFAULT_CATEGORIES,
+    "category_icons.json": DEFAULT_CATEGORY_ICONS,
     "accounts.json": DEFAULT_ACCOUNTS,
     "payment_methods.json": DEFAULT_PAYMENT_METHODS,
     "contacts.json": DEFAULT_CONTACTS,

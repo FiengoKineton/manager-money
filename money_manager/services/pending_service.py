@@ -65,7 +65,17 @@ def prepare_pending_for_display(rows: list[dict]) -> dict:
         key=lambda row: (row["date_due_sort"], row["category"], row["description"]),
     )
     executed_rows = sorted(
-        [row for row in prepared if row["status"] != "pending"],
+        [row for row in prepared if row["status"] == "executed"],
+        key=lambda row: (row["date_due_sort"], row["category"], row["description"]),
+        reverse=True,
+    )
+    discarded_rows = sorted(
+        [row for row in prepared if row["status"] == "discarded"],
+        key=lambda row: (row["date_due_sort"], row["category"], row["description"]),
+        reverse=True,
+    )
+    other_closed_rows = sorted(
+        [row for row in prepared if row["status"] not in {"pending", "executed", "discarded"}],
         key=lambda row: (row["date_due_sort"], row["category"], row["description"]),
         reverse=True,
     )
@@ -76,9 +86,11 @@ def prepare_pending_for_display(rows: list[dict]) -> dict:
     next_pending_date = pending_rows[0]["date_due_str"] if pending_rows else "—"
 
     return {
-        "all": [*pending_rows, *executed_rows],
+        "all": [*pending_rows, *executed_rows, *discarded_rows, *other_closed_rows],
         "pending": pending_rows,
         "executed": executed_rows,
+        "discarded": discarded_rows,
+        "closed_other": other_closed_rows,
         "pending_total": pending_total(rows, include_auxiliary=True),
         "main_pending_total": pending_total(rows, include_auxiliary=False),
         "pending_income": float(pending_income),
@@ -439,6 +451,12 @@ def _decorate_pending_row(row: dict) -> dict:
     decorated["amount_str"] = f"€ {amount:.2f}"
     decorated["direction_label"] = "Expected income" if decorated["type"] == "income" else "Expected outflow"
     decorated["impact_tone"] = "income" if decorated["type"] == "income" else "expense"
+    decorated["status_label"] = {
+        "pending": "Pending",
+        "executed": "Executed",
+        "discarded": "Discarded",
+        "cancelled": "Cancelled",
+    }.get(decorated["status"], decorated["status"].replace("_", " ").title())
 
     try:
         due = date.fromisoformat(decorated.get("date_due", ""))

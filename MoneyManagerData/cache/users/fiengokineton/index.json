@@ -292,7 +292,7 @@
       "version": "v1",
       "path": "computed/4c9266869abb3207d81a0df6ad2a206bb6a7e936.mmcache",
       "created_at": "2026-06-26T16:38:33+00:00",
-      "updated_at": "2026-06-26T17:01:07+00:00",
+      "updated_at": "2026-06-26T17:36:19+00:00",
       "expires_at": "",
       "source_fingerprint": "2ea2d9ad76e95336b88a7b235e46f4a9",
       "tags": [
@@ -301,8 +301,9 @@
       ],
       "sensitive": true,
       "encrypted": true,
-      "status": "valid",
-      "size_bytes": 1002
+      "status": "stale",
+      "size_bytes": 1002,
+      "stale_reason": "tag_invalidation"
     },
     "e0d1928ec1e801b2eed66742e7e473c8e02fc49e": {
       "key": "user:fiengokineton:transaction_initial_conditions:v1:1ab4b012e66a01f778f19026",
@@ -322,6 +323,43 @@
       "status": "stale",
       "size_bytes": 2446,
       "stale_reason": "tag_invalidation"
+    },
+    "5a793a19780ddfabffcb90aea8a1f339a98769a8": {
+      "key": "user:fiengokineton:transaction_initial_conditions:v1:edbda7610d25f202b7677527",
+      "name": "transaction_initial_conditions",
+      "version": "v1",
+      "path": "computed/5a793a19780ddfabffcb90aea8a1f339a98769a8.mmcache",
+      "created_at": "2026-06-26T17:12:02+00:00",
+      "updated_at": "2026-06-26T17:36:19+00:00",
+      "expires_at": "",
+      "source_fingerprint": "d9ee7835b7dc919d44b13890c2cc9dd0",
+      "tags": [
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "stale",
+      "size_bytes": 2446,
+      "stale_reason": "tag_invalidation"
+    },
+    "abbce187739062d41a3304e0d6334e813f5fe01c": {
+      "key": "user:fiengokineton:transaction_initial_conditions:v1:38890a6d199f552bcaf3e0fc",
+      "name": "transaction_initial_conditions",
+      "version": "v1",
+      "path": "computed/abbce187739062d41a3304e0d6334e813f5fe01c.mmcache",
+      "created_at": "2026-06-26T17:37:31+00:00",
+      "updated_at": "2026-06-26T17:37:31+00:00",
+      "expires_at": "",
+      "source_fingerprint": "e6d323f0d68cb6a5835c723a1e00dd47",
+      "tags": [
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 2446
     }
   }
 }

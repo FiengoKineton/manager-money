@@ -916,3 +916,15 @@
     flex-direction: column;
   }
 }
+
+.icon-action-discard {
+  background: #64748b;
+}
+
+.payment-discarded {
+  opacity: 0.76;
+}
+
+.discarded-history-card .payment-card {
+  border-style: dashed;
+}

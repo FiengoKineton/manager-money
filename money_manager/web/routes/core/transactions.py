@@ -9,6 +9,8 @@ from money_manager.services.analytics_service import apply_transaction_filters
 from money_manager.services.calculation_service import cached_context
 from money_manager.services.account_scope_service import transactions_for_scope
 from money_manager.services.category_service import category_context
+from money_manager.services.custom_category_service import add_custom_category
+from money_manager.services.category_icon_service import set_category_icon
 from money_manager.services.currency_service import currency_options_for_forms
 from money_manager.services.quick_log_service import handle_quick_log, quick_log_context
 from money_manager.services.payment_form_service import payment_form_context
@@ -51,6 +53,37 @@ bp = Blueprint("transactions", __name__)
 
 DEFAULT_TRANSACTION_PAGE_SIZE = 50
 MAX_TRANSACTION_PAGE_SIZE = 200
+NEW_CATEGORY_SENTINEL = "__new_category__"
+
+
+def _clean_form_text(value) -> str:
+    return " ".join(str(value or "").strip().split())
+
+
+def _apply_inline_custom_category(posted_form) -> str:
+    """Convert the inline “create category” option into a real saved category.
+
+    Returns an empty string on success, otherwise a UI-friendly error message.
+    """
+    transaction_type = posted_form.get("type", "expense")
+    selected_category = _clean_form_text(posted_form.get("category", ""))
+    custom_name = _clean_form_text(posted_form.get("custom_category_name", ""))
+    custom_icon = _clean_form_text(posted_form.get("custom_category_icon", ""))
+
+    if selected_category != NEW_CATEGORY_SENTINEL:
+        return ""
+    if not custom_name:
+        return "Write the new category name, or choose an existing category."
+
+    try:
+        add_custom_category(transaction_type, custom_name)
+        if custom_icon:
+            set_category_icon(custom_name, custom_icon, transaction_type)
+    except ValueError as exc:
+        return str(exc)
+
+    posted_form["category"] = custom_name
+    return ""
 
 
 def _positive_int_arg(name: str, default: int, *, minimum: int = 1, maximum: int | None = None) -> int:
@@ -79,7 +112,7 @@ def transactions_page():
     params.update({"page": 1, "page_size": page_size})
 
     context = cached_context(
-        "transaction_table_view_v2",
+        "transaction_table_view_v3",
         lambda: _build_transactions_page_context(scope_key, filter_state, page=1, page_size=page_size),
         params=params,
     )
@@ -269,56 +302,62 @@ def add_transaction():
         transaction_type = request.args.get("type", "expense")
     elif request.method == "POST":
         posted_form = request.form.copy()
-        provisional_tx = {
-            "type": posted_form.get("type", "expense"),
-            "date": posted_form.get("date", ""),
-            "category": posted_form.get("category", ""),
-            "sub_category": posted_form.get("sub_category", ""),
-            "description": posted_form.get("description", ""),
-            "account": posted_form.get("account", ""),
-            "account_id": posted_form.get("account_id", ""),
-            "payment_method_id": posted_form.get("payment_method_id", ""),
-            "amount": posted_form.get("amount", "0"),
-        }
-        source_validation = validate_discount_source_form(request.form) if receipt_form_has_items(request.form) else {"ok": True}
-        if not source_validation.get("ok"):
-            form_error = source_validation.get("error", "The selected gift card / buono sconto balance is not valid.")
+        inline_category_error = _apply_inline_custom_category(posted_form)
+        if inline_category_error:
+            form_error = inline_category_error
             form_values = request.form.to_dict()
             transaction_type = posted_form.get("type", "expense")
         else:
-            if receipt_form_has_items(request.form):
-                posted_form["amount"] = f"{receipt_total_from_form(provisional_tx, request.form):.2f}"
-                provisional_tx["amount"] = posted_form["amount"]
+            provisional_tx = {
+                "type": posted_form.get("type", "expense"),
+                "date": posted_form.get("date", ""),
+                "category": posted_form.get("category", ""),
+                "sub_category": posted_form.get("sub_category", ""),
+                "description": posted_form.get("description", ""),
+                "account": posted_form.get("account", ""),
+                "account_id": posted_form.get("account_id", ""),
+                "payment_method_id": posted_form.get("payment_method_id", ""),
+                "amount": posted_form.get("amount", "0"),
+            }
+            source_validation = validate_discount_source_form(request.form) if receipt_form_has_items(request.form) else {"ok": True}
+            if not source_validation.get("ok"):
+                form_error = source_validation.get("error", "The selected gift card / buono sconto balance is not valid.")
+                form_values = request.form.to_dict()
+                transaction_type = posted_form.get("type", "expense")
+            else:
+                if receipt_form_has_items(request.form):
+                    posted_form["amount"] = f"{receipt_total_from_form(provisional_tx, request.form):.2f}"
+                    provisional_tx["amount"] = posted_form["amount"]
 
-            tx_input = TransactionInput.from_form(posted_form)
-            result = save_new_transaction(tx_input)
-            if result.get("ok"):
-                tx_ids = result.get("transaction_ids") or []
-                if tx_ids and receipt_form_has_items(request.form):
-                    receipt_tx = tx_input.as_dict()
-                    receipt_tx.update({
-                        "amount": f"{float(tx_input.amount or 0):.2f}",
-                        "payment_method_id": tx_input.payment_method_id,
-                        "account_id": tx_input.account_id,
-                    })
-                    receipt_form = request.form.copy()
-                    try:
-                        tx_uid = make_transaction_uid(tx_input.type, tx_ids[0])
-                        source_result = apply_discount_source_from_form(receipt_form, receipt_tx, transaction_uid=tx_uid)
-                        if source_result.get("ok") and source_result.get("receipt_form_fields"):
-                            for field_name, field_value in source_result["receipt_form_fields"].items():
-                                receipt_form[field_name] = field_value
-                    except Exception:
-                        current_app.logger.exception("Failed to apply receipt discount balance for transaction %s:%s", tx_input.type, tx_ids[0])
-                    try:
-                        save_receipt_for_saved_transaction(tx_input.type, tx_ids[0], receipt_tx, receipt_form)
-                    except Exception:
-                        current_app.logger.exception("Failed to save receipt for newly-created transaction %s:%s", tx_input.type, tx_ids[0])
-                scoped_account_id = posted_form.get("account_id") or request.args.get("account_id") or ""
-                return redirect(url_for("transactions.transactions_page", account_id=scoped_account_id) if scoped_account_id else url_for("transactions.transactions_page"))
-            form_error = result.get("error", "The transaction was not saved.")
-            form_values = request.form.to_dict()
-            transaction_type = tx_input.type
+                tx_input = TransactionInput.from_form(posted_form)
+                result = save_new_transaction(tx_input)
+                if result.get("ok"):
+                    tx_ids = result.get("transaction_ids") or []
+                    if tx_ids and receipt_form_has_items(request.form):
+                        receipt_tx = tx_input.as_dict()
+                        receipt_tx.update({
+                            "amount": f"{float(tx_input.amount or 0):.2f}",
+                            "payment_method_id": tx_input.payment_method_id,
+                            "account_id": tx_input.account_id,
+                        })
+                        receipt_form = posted_form.copy()
+                        try:
+                            tx_uid = make_transaction_uid(tx_input.type, tx_ids[0])
+                            source_result = apply_discount_source_from_form(receipt_form, receipt_tx, transaction_uid=tx_uid)
+                            if source_result.get("ok") and source_result.get("receipt_form_fields"):
+                                for field_name, field_value in source_result["receipt_form_fields"].items():
+                                    receipt_form[field_name] = field_value
+                        except Exception:
+                            current_app.logger.exception("Failed to apply receipt discount balance for transaction %s:%s", tx_input.type, tx_ids[0])
+                        try:
+                            save_receipt_for_saved_transaction(tx_input.type, tx_ids[0], receipt_tx, receipt_form)
+                        except Exception:
+                            current_app.logger.exception("Failed to save receipt for newly-created transaction %s:%s", tx_input.type, tx_ids[0])
+                    scoped_account_id = posted_form.get("account_id") or request.args.get("account_id") or ""
+                    return redirect(url_for("transactions.transactions_page", account_id=scoped_account_id) if scoped_account_id else url_for("transactions.transactions_page"))
+                form_error = result.get("error", "The transaction was not saved.")
+                form_values = request.form.to_dict()
+                transaction_type = tx_input.type
     else:
         transaction_type = request.args.get("type", "expense")
 

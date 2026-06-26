@@ -1,0 +1,446 @@
+/* UI refinement layer: lightweight overrides on top of the existing web/phone skins. */
+:root {
+  --mm-soft-border: rgba(148, 163, 184, 0.22);
+  --mm-soft-surface: rgba(255, 255, 255, 0.78);
+  --mm-soft-surface-strong: rgba(255, 255, 255, 0.92);
+  --mm-soft-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme="night"] {
+  --mm-soft-border: rgba(255, 255, 255, 0.14);
+  --mm-soft-surface: rgba(15, 23, 42, 0.72);
+  --mm-soft-surface-strong: rgba(15, 23, 42, 0.88);
+  --mm-soft-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
+}
+
+.panel-card,
+.summary-card,
+.form-section,
+.chart-card,
+.transactions {
+  box-shadow: var(--mm-soft-shadow);
+}
+
+.transaction-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.44rem;
+  max-width: 100%;
+  padding: 0.28rem 0.52rem 0.28rem 0.32rem;
+  border-radius: 999px;
+  border: 1px solid var(--mm-soft-border);
+  background: rgba(148, 163, 184, 0.08);
+  font-weight: 800;
+}
+
+.transaction-category-icon,
+.phone-transaction-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.82rem;
+  height: 1.82rem;
+  min-width: 1.82rem;
+  border-radius: 999px;
+  background: var(--mm-soft-surface-strong);
+  box-shadow: inset 0 0 0 1px var(--mm-soft-border);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.inline-new-category-fields {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 5.2rem) minmax(12rem, 1fr);
+  gap: 0.68rem;
+  align-items: end;
+  margin-top: 0.62rem;
+  padding: 0.76rem;
+  border-radius: 1rem;
+  border: 1px dashed rgba(124, 58, 237, 0.36);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(14, 165, 233, 0.06));
+}
+
+.inline-new-category-fields[hidden] {
+  display: none !important;
+}
+
+.inline-new-category-fields input[name="custom_category_icon"] {
+  text-align: center;
+  font-size: 1.16rem;
+}
+
+.inline-new-category-fields .hint {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.category-create-block select option:first-child {
+  font-weight: 800;
+}
+
+.transactions-table .tx-col-category {
+  width: 17%;
+}
+
+.phone-transaction-card {
+  align-items: center;
+}
+
+.phone-transaction-card .phone-card-emoji {
+  display: none !important;
+}
+
+/* Cleaner phone mode: less neon, more app-like, while preserving existing routes. */
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
+  html.phone-shell-active.phone-fun-active body.app-body,
+  html.phone-shell-active body.app-body {
+    background:
+      radial-gradient(circle at 12% -8%, rgba(124, 58, 237, 0.18), transparent 16rem),
+      radial-gradient(circle at 96% 0%, rgba(14, 165, 233, 0.16), transparent 18rem),
+      linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%) !important;
+    color: #172033 !important;
+  }
+
+  html[data-theme="night"].phone-shell-active.phone-fun-active body.app-body,
+  html[data-theme="night"].phone-shell-active body.app-body {
+    background:
+      radial-gradient(circle at 10% -8%, rgba(124, 58, 237, 0.34), transparent 15rem),
+      radial-gradient(circle at 96% 0%, rgba(14, 165, 233, 0.22), transparent 18rem),
+      linear-gradient(180deg, #080d1d 0%, #101827 100%) !important;
+    color: #f8fafc !important;
+  }
+
+  html.phone-shell-active .app-content-stage,
+  html.phone-shell-active.phone-fun-active .app-content-stage {
+    padding-top: 5.5rem !important;
+    padding-bottom: 6.2rem !important;
+  }
+
+  html.phone-shell-active .app-topbar,
+  html.phone-shell-active.phone-fun-active .app-topbar {
+    border-radius: 22px !important;
+    background: rgba(255, 255, 255, 0.86) !important;
+    color: #172033 !important;
+    border: 1px solid rgba(148, 163, 184, 0.26) !important;
+    box-shadow: 0 14px 38px rgba(15, 23, 42, 0.12) !important;
+  }
+
+  html[data-theme="night"].phone-shell-active .app-topbar,
+  html[data-theme="night"].phone-shell-active.phone-fun-active .app-topbar {
+    background: rgba(15, 23, 42, 0.82) !important;
+    color: #f8fafc !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+  }
+
+  html.phone-shell-active .page-heading,
+  html.phone-shell-active .summary-card,
+  html.phone-shell-active .panel-card,
+  html.phone-shell-active .form-section,
+  html.phone-shell-active .transactions,
+  html.phone-shell-active .filters,
+  html.phone-shell-active .chart-card,
+  html.phone-shell-active .normal-add-polished,
+  html.phone-shell-active.phone-fun-active .page-heading,
+  html.phone-shell-active.phone-fun-active .summary-card,
+  html.phone-shell-active.phone-fun-active .panel-card,
+  html.phone-shell-active.phone-fun-active .form-section,
+  html.phone-shell-active.phone-fun-active .transactions,
+  html.phone-shell-active.phone-fun-active .filters,
+  html.phone-shell-active.phone-fun-active .chart-card,
+  html.phone-shell-active.phone-fun-active .normal-add-polished {
+    border-radius: 24px !important;
+    background: rgba(255, 255, 255, 0.82) !important;
+    border: 1px solid rgba(148, 163, 184, 0.22) !important;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.10) !important;
+    backdrop-filter: blur(18px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+  }
+
+  html[data-theme="night"].phone-shell-active .page-heading,
+  html[data-theme="night"].phone-shell-active .summary-card,
+  html[data-theme="night"].phone-shell-active .panel-card,
+  html[data-theme="night"].phone-shell-active .form-section,
+  html[data-theme="night"].phone-shell-active .transactions,
+  html[data-theme="night"].phone-shell-active .filters,
+  html[data-theme="night"].phone-shell-active .chart-card,
+  html[data-theme="night"].phone-shell-active .normal-add-polished,
+  html[data-theme="night"].phone-shell-active.phone-fun-active .page-heading,
+  html[data-theme="night"].phone-shell-active.phone-fun-active .summary-card,
+  html[data-theme="night"].phone-shell-active.phone-fun-active .panel-card,
+  html[data-theme="night"].phone-shell-active.phone-fun-active .form-section,
+  html[data-theme="night"].phone-shell-active.phone-fun-active .transactions,
+  html[data-theme="night"].phone-shell-active.phone-fun-active .filters,
+  html[data-theme="night"].phone-shell-active.phone-fun-active .chart-card,
+  html[data-theme="night"].phone-shell-active.phone-fun-active .normal-add-polished {
+    background: rgba(15, 23, 42, 0.78) !important;
+    border-color: rgba(255, 255, 255, 0.13) !important;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.30) !important;
+  }
+
+  html.phone-shell-active .primary-btn,
+  html.phone-shell-active .transaction-form button[type="submit"],
+  html.phone-shell-active .normal-add-submit-row button,
+  html.phone-shell-active.phone-fun-active .primary-btn,
+  html.phone-shell-active.phone-fun-active .transaction-form button[type="submit"],
+  html.phone-shell-active.phone-fun-active .normal-add-submit-row button {
+    background: linear-gradient(135deg, #2563eb, #7c3aed) !important;
+    box-shadow: 0 14px 30px rgba(37, 99, 235, 0.26) !important;
+  }
+
+  html.phone-shell-active .phone-transaction-card,
+  html.phone-shell-active.phone-fun-active .phone-transaction-card {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    gap: 0.72rem !important;
+    border-radius: 22px !important;
+    padding: 0.82rem !important;
+    background: rgba(255, 255, 255, 0.82) !important;
+    border: 1px solid rgba(148, 163, 184, 0.20) !important;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  html[data-theme="night"].phone-shell-active .phone-transaction-card,
+  html[data-theme="night"].phone-shell-active.phone-fun-active .phone-transaction-card {
+    background: rgba(15, 23, 42, 0.82) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+
+  html.phone-shell-active .phone-transaction-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 2.25rem;
+    background: rgba(37, 99, 235, 0.10);
+  }
+
+  html.phone-shell-active .inline-new-category-fields {
+    grid-template-columns: 4.6rem minmax(0, 1fr);
+    border-radius: 18px;
+  }
+}
+
+/* Account brand icons + account presets ---------------------------------- */
+.with-account-icon {
+  display: flex !important;
+  align-items: center;
+  gap: 0.78rem;
+  min-width: 0;
+}
+
+.account-title-block {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.account-brand-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  min-width: 2.65rem;
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, var(--brand-soft), rgba(255, 255, 255, 0.74));
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  color: var(--brand-dark);
+  font-size: 1.18rem;
+  line-height: 1;
+  font-weight: 900;
+}
+
+html[data-theme="night"] .account-brand-icon {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.24), rgba(15, 23, 42, 0.78));
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.account-brand-icon.small {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  border-radius: 14px;
+  font-size: 0.98rem;
+}
+
+.account-brand-icon.large {
+  width: 3.2rem;
+  height: 3.2rem;
+  min-width: 3.2rem;
+  border-radius: 22px;
+  font-size: 1.35rem;
+}
+
+.wallet-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+  min-width: 0;
+}
+
+.account-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 0.82rem;
+  flex-wrap: wrap;
+}
+
+.account-preset-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.85rem 0 1rem;
+  padding: 0.78rem;
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid var(--line);
+}
+
+html[data-theme="night"] .account-preset-strip {
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.account-preset-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.42rem 0.64rem;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.account-preset-chip:hover {
+  border-color: var(--brand);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.14);
+  transform: translateY(-1px);
+}
+
+/* Phone palette now inherits the PC/web app color system ------------------ */
+@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
+  html.phone-shell-active,
+  html.phone-shell-active.phone-fun-active {
+    --fun-bg-a: var(--bg) !important;
+    --fun-bg-b: var(--bg) !important;
+    --fun-bg-c: var(--bg) !important;
+    --fun-text: var(--ink) !important;
+    --fun-muted: var(--muted) !important;
+    --fun-card: var(--surface) !important;
+    --fun-card-strong: var(--glass-main-strong, var(--surface)) !important;
+    --fun-border: var(--line) !important;
+    --phone-ink: var(--ink) !important;
+    --phone-muted: var(--muted) !important;
+    --phone-card-border: var(--line) !important;
+  }
+
+  html.phone-shell-active.phone-fun-active body.app-body,
+  html.phone-shell-active body.app-body,
+  html.phone-shell-active body.app-body-clean {
+    background:
+      radial-gradient(circle at 8% 8%, var(--mode-accent-a, rgba(37, 99, 235, 0.30)), transparent 22rem),
+      radial-gradient(circle at 78% 0%, var(--mode-accent-b, rgba(34, 211, 238, 0.24)), transparent 22rem),
+      radial-gradient(circle at 100% 48%, var(--mode-accent-c, rgba(16, 185, 129, 0.20)), transparent 25rem),
+      var(--bg) !important;
+    color: var(--ink) !important;
+  }
+
+  html[data-theme="night"].phone-shell-active.phone-fun-active body.app-body,
+  html[data-theme="night"].phone-shell-active body.app-body,
+  html[data-theme="night"].phone-shell-active body.app-body-clean {
+    background:
+      radial-gradient(circle at 8% 7%, var(--mode-accent-a, rgba(59, 130, 246, 0.26)), transparent 23rem),
+      radial-gradient(circle at 78% 3%, var(--mode-accent-b, rgba(34, 211, 238, 0.22)), transparent 24rem),
+      radial-gradient(circle at 20% 88%, var(--mode-accent-d, rgba(124, 58, 237, 0.18)), transparent 24rem),
+      var(--bg) !important;
+    color: var(--ink) !important;
+  }
+
+  html.phone-shell-active .app-topbar,
+  html.phone-shell-active.phone-fun-active .app-topbar,
+  html.phone-shell-active .mobile-bottom-nav.mobile-tabbar,
+  html.phone-shell-active.phone-fun-active .mobile-bottom-nav.mobile-tabbar,
+  html.phone-shell-active .mobile-sheet-panel,
+  html.phone-shell-active.phone-fun-active .mobile-sheet-panel,
+  html.phone-shell-active .page-heading,
+  html.phone-shell-active .summary-card,
+  html.phone-shell-active .panel-card,
+  html.phone-shell-active .form-section,
+  html.phone-shell-active .transactions,
+  html.phone-shell-active .filters,
+  html.phone-shell-active .chart-card,
+  html.phone-shell-active .normal-add-polished,
+  html.phone-shell-active .phone-transaction-card,
+  html.phone-shell-active.phone-fun-active .page-heading,
+  html.phone-shell-active.phone-fun-active .summary-card,
+  html.phone-shell-active.phone-fun-active .panel-card,
+  html.phone-shell-active.phone-fun-active .form-section,
+  html.phone-shell-active.phone-fun-active .transactions,
+  html.phone-shell-active.phone-fun-active .filters,
+  html.phone-shell-active.phone-fun-active .chart-card,
+  html.phone-shell-active.phone-fun-active .normal-add-polished,
+  html.phone-shell-active.phone-fun-active .phone-transaction-card {
+    background:
+      linear-gradient(135deg, var(--glass-main-strong, var(--surface)), var(--glass-main, var(--surface-soft))) !important;
+    border-color: var(--glass-border, var(--line)) !important;
+    color: var(--ink) !important;
+    box-shadow: var(--glass-shadow, 0 18px 46px rgba(15, 23, 42, 0.10)) !important;
+  }
+
+  html.phone-shell-active .primary-btn,
+  html.phone-shell-active .transaction-form button[type="submit"],
+  html.phone-shell-active .normal-add-submit-row button,
+  html.phone-shell-active .form-actions button[type="submit"],
+  html.phone-shell-active .mobile-tabbar .mobile-tab-add span,
+  html.phone-shell-active.phone-fun-active .primary-btn,
+  html.phone-shell-active.phone-fun-active .transaction-form button[type="submit"],
+  html.phone-shell-active.phone-fun-active .normal-add-submit-row button,
+  html.phone-shell-active.phone-fun-active .form-actions button[type="submit"],
+  html.phone-shell-active.phone-fun-active .mobile-tabbar .mobile-tab-add span {
+    background: linear-gradient(135deg, var(--brand), var(--brand-dark)) !important;
+    color: #fff !important;
+    box-shadow: 0 14px 30px rgba(37, 99, 235, 0.24) !important;
+  }
+
+  html.phone-shell-active .phone-transaction-icon,
+  html.phone-shell-active .transaction-category-icon {
+    background: var(--brand-soft) !important;
+    color: var(--brand-dark) !important;
+    border: 1px solid var(--line) !important;
+  }
+
+  html.phone-shell-active .account-preset-strip {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Account identity repair: show readable account names/icons instead of raw ids such as main_bank. */
+.transaction-account-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.transaction-account-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  min-width: 1.55rem;
+  border-radius: 999px;
+  background: var(--mm-soft-surface-strong);
+  box-shadow: inset 0 0 0 1px var(--mm-soft-border);
+  font-size: 0.92rem;
+  line-height: 1;
+}
+
+.transactions-table .transaction-account-pill span:last-child,
+.phone-transaction-copy small {
+  overflow-wrap: anywhere;
+}

@@ -12,6 +12,7 @@ from money_manager.services.custom_category_service import (
     restore_category,
     set_default_category,
 )
+from money_manager.services.category_icon_service import icon_for_category, set_category_icon
 
 bp = Blueprint("settings_categories", __name__, url_prefix="/settings/categories")
 
@@ -38,6 +39,7 @@ def categories_page():
             base_rows.append(
                 {
                     "name": name,
+                    "icon": icon_for_category(name, transaction_type),
                     "kind": "default",
                     "active": str(name).casefold() not in hidden_lookup,
                     "is_default": name == default_category,
@@ -48,6 +50,7 @@ def categories_page():
             custom_rows.append(
                 {
                     "name": name,
+                    "icon": icon_for_category(name, transaction_type),
                     "kind": "custom",
                     "active": str(name).casefold() not in hidden_lookup,
                     "is_default": name == default_category,
@@ -75,11 +78,26 @@ def categories_page():
 def add_category_route():
     transaction_type = request.form.get("transaction_type", "expense")
     name = request.form.get("name", "")
+    icon = request.form.get("icon", "")
     try:
         add_custom_category(transaction_type, name)
+        if str(icon or "").strip():
+            set_category_icon(name, icon, transaction_type)
     except ValueError as exc:
         return _redirect(str(exc), "error")
     return _redirect(f"Added category: {name.strip()}")
+
+
+@bp.post("/icon")
+def category_icon_route():
+    transaction_type = request.form.get("transaction_type", "expense")
+    name = request.form.get("name", "")
+    icon = request.form.get("icon", "")
+    try:
+        set_category_icon(name, icon, transaction_type)
+    except ValueError as exc:
+        return _redirect(str(exc), "error")
+    return _redirect(f"Updated icon for: {name.strip()}")
 
 
 @bp.post("/hide")

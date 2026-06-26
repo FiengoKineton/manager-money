@@ -74,6 +74,53 @@ _TYPE_TO_KIND = {
 _RESERVED_FORM_KEYS = {"", "auto", "main", "bank", "credit", "card", "credit_card"}
 
 
+_GENERIC_MAIN_BANK_LABELS = {"primary current account", "primary account", "main_bank", "main bank", "main bank account", "bank account", "conto corrente", "conto", "bank", "auto"}
+
+DEFAULT_ACCOUNT_ICONS: dict[str, str] = {
+    "main_bank": "🏦",
+    "mediolanum": "🏦",
+    "banca mediolanum": "🏦",
+    "cash_flow": "💶",
+    "cash": "💶",
+    "paypal": "🅿️",
+    "pay pal": "🅿️",
+    "revolut": "🇷",
+    "revoulout": "🇷",
+    "edenred": "🍽️",
+    "eden red": "🍽️",
+    "ticket restaurant": "🍽️",
+    "satispay": "🟥",
+    "hype": "🟦",
+    "postepay": "📮",
+    "wise": "🌍",
+    "n26": "🔷",
+    "apple pay": "",
+    "google wallet": "G",
+    "google pay": "G",
+    "amazon": "📦",
+    "openai": "🤖",
+    "chatgpt": "🤖",
+    "chatgbt": "🤖",
+    "credit_card": "💳",
+    "other_account": "📦",
+}
+
+ACCOUNT_PRESET_OPTIONS: tuple[dict[str, str], ...] = (
+    {"label": "PayPal", "type": "dependent_wallet", "icon": "🅿️", "institution": "PayPal", "parent_hint": "main_bank", "aliases": "paypal, pay pal, paypal wallet"},
+    {"label": "Revolut", "type": "current_account", "icon": "🇷", "institution": "Revolut", "parent_hint": "", "aliases": "revolut, revoulout, revolut card"},
+    {"label": "Edenred", "type": "meal_voucher", "icon": "🍽️", "institution": "Edenred", "parent_hint": "", "aliases": "edenred, ticket restaurant, buoni pasto, meal voucher, grocery card"},
+    {"label": "Satispay", "type": "dependent_wallet", "icon": "🟥", "institution": "Satispay", "parent_hint": "main_bank", "aliases": "satispay"},
+    {"label": "HYPE", "type": "current_account", "icon": "🟦", "institution": "HYPE", "parent_hint": "", "aliases": "hype, hype card"},
+    {"label": "Postepay", "type": "prepaid_balance", "icon": "📮", "institution": "Poste Italiane", "parent_hint": "main_bank", "aliases": "postepay, poste pay, poste italiane"},
+    {"label": "Wise", "type": "current_account", "icon": "🌍", "institution": "Wise", "parent_hint": "", "aliases": "wise, transferwise"},
+    {"label": "N26", "type": "current_account", "icon": "🔷", "institution": "N26", "parent_hint": "", "aliases": "n26"},
+    {"label": "Apple Pay", "type": "dependent_wallet", "icon": "", "institution": "Apple", "parent_hint": "main_bank", "aliases": "apple pay, apple wallet"},
+    {"label": "Google Wallet", "type": "dependent_wallet", "icon": "G", "institution": "Google", "parent_hint": "main_bank", "aliases": "google wallet, google pay"},
+    {"label": "Amazon", "type": "dependent_wallet", "icon": "📦", "institution": "Amazon", "parent_hint": "main_bank", "aliases": "amazon, amazon account"},
+    {"label": "ChatGPT / OpenAI", "type": "dependent_wallet", "icon": "🤖", "institution": "OpenAI", "parent_hint": "main_bank", "aliases": "chatgpt, chatgbt, openai"},
+)
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -97,6 +144,36 @@ def clean_label(value: Any) -> str:
     if text.casefold() in {"nan", "none", "null"}:
         return ""
     return " ".join(text.split())
+
+
+def clean_icon(value: Any) -> str:
+    text = clean_label(value)
+    return text[:12]
+
+
+def guess_account_icon(*values: Any, account_kind: str = "") -> str:
+    parts = [clean_text(value) for value in values if clean_text(value)]
+    for part in parts:
+        if part in DEFAULT_ACCOUNT_ICONS:
+            return DEFAULT_ACCOUNT_ICONS[part]
+    blob = " ".join(parts)
+    for key, icon in DEFAULT_ACCOUNT_ICONS.items():
+        if key and key in blob:
+            return icon
+    kind = clean_text(account_kind)
+    if kind == "cash":
+        return "💶"
+    if kind == "meal_voucher":
+        return "🍽️"
+    if kind in {"credit_card_liability", "prepaid_balance"}:
+        return "💳"
+    if kind in {"dependent_wallet", "wallet_balance"}:
+        return "👛"
+    if kind == "investment_cash":
+        return "📈"
+    if kind == "container":
+        return "📦"
+    return "🏦"
 
 
 def split_aliases(value: str | Iterable[str] | None) -> list[str]:
@@ -205,6 +282,64 @@ def normalize_accounts_config(config: Mapping[str, Any] | list[Mapping[str, Any]
     return payload
 
 
+
+
+def _default_account_by_key(key: str) -> dict[str, Any]:
+    for account in DEFAULT_ACCOUNTS.get("accounts", []):
+        if str(account.get("key") or account.get("id") or "") == key:
+            return dict(account)
+    return {}
+
+
+def _default_account_field(key: str, field: str, fallback: Any = "") -> Any:
+    default = _default_account_by_key(key)
+    value = default.get(field)
+    return fallback if value in (None, "") else value
+
+
+def _looks_like_key_label(key: str, label: str) -> bool:
+    cleaned_label = clean_text(label)
+    cleaned_key = clean_text(key.replace("_", " "))
+    return cleaned_label in {clean_text(key), cleaned_key}
+
+
+def _should_use_default_label(key: str, label: str) -> bool:
+    if not _default_account_by_key(key):
+        return False
+    cleaned = clean_text(label)
+    return not cleaned or cleaned in _GENERIC_MAIN_BANK_LABELS or _looks_like_key_label(key, label)
+
+
+def _resolved_institution(raw: Mapping[str, Any], key: str) -> str:
+    value = clean_label(raw.get("institution") or raw.get("bank") or raw.get("bank_name") or "")
+    if value:
+        return value
+    return clean_label(_default_account_field(key, "institution", "Banca Mediolanum" if key == MAIN_ACCOUNT_KEY else ""))
+
+
+
+
+def _resolved_display_order(raw: Mapping[str, Any], key: str, index: int) -> int:
+    default_order = _default_account_field(key, "display_order", (index + 1) * 10)
+    raw_value = raw.get("display_order")
+    if raw_value in (None, ""):
+        return int(parse_money(default_order, (index + 1) * 10))
+    # Earlier account migrations often produced main_bank with order 10 because
+    # the old default was based on row index. Repair that so Mediolanum remains
+    # the first real Conto unless the user chose a clearly custom order.
+    if key == MAIN_ACCOUNT_KEY and str(raw_value).strip() in {"10", "10.0"}:
+        return int(parse_money(default_order, 0))
+    return int(parse_money(raw_value, default_order))
+
+def _resolved_icon(raw: Mapping[str, Any], key: str, label: str, account_kind: str) -> str:
+    value = clean_icon(raw.get("icon") or "")
+    if value:
+        return value
+    default_icon = clean_icon(_default_account_field(key, "icon", ""))
+    if default_icon:
+        return default_icon
+    return clean_icon(guess_account_icon(key, label, raw.get("institution"), raw.get("bank"), account_kind=account_kind))
+
 def normalize_account_record(raw: Mapping[str, Any], *, index: int = 0) -> dict[str, Any] | None:
     label = clean_label(raw.get("label") or raw.get("name") or raw.get("title"))
     key = slugify(raw.get("key") or raw.get("id") or label)
@@ -213,6 +348,8 @@ def normalize_account_record(raw: Mapping[str, Any], *, index: int = 0) -> dict[
 
     if not label:
         label = key.replace("_", " ").title()
+    if _should_use_default_label(key, label):
+        label = _default_account_field(key, "label", label)
 
     account_id = slugify(raw.get("id") or key)
     if account_id in _RESERVED_FORM_KEYS:
@@ -283,6 +420,11 @@ def normalize_account_record(raw: Mapping[str, Any], *, index: int = 0) -> dict[
 
     aliases = split_aliases(raw.get("aliases"))
     category_aliases = split_aliases(raw.get("category_aliases") or raw.get("categories"))
+    if key == MAIN_ACCOUNT_KEY:
+        for main_alias in ("mediolanum", "banca mediolanum"):
+            if main_alias not in aliases:
+                aliases.append(main_alias)
+
     for value in (key, label, account_id):
         alias = clean_text(value)
         if alias and alias not in aliases:
@@ -319,11 +461,12 @@ def normalize_account_record(raw: Mapping[str, Any], *, index: int = 0) -> dict[
         "name": label,
         "label": label,
         "account_kind": account_kind,
-        "account_level": 1 if (account_kind == "current_account" or key == MAIN_ACCOUNT_KEY) else 2 if (key in {"cash_flow", "cashflow", "cash"} or (account_kind in {"cash", "investment_cash"} and not parent)) else 3 if (is_dependent_account or parent) else 0,
+        "account_level": 1 if (account_kind == "current_account" or key == MAIN_ACCOUNT_KEY) else 2 if (key in {"cash_flow", "cashflow", "cash"} or (account_kind in {"cash", "investment_cash", "meal_voucher", "prepaid_balance", "wallet_balance"} and not parent and is_financial_center)) else 3 if (is_dependent_account or parent) else 1 if is_financial_center else 0,
         # Kept for compatibility, but normalized to the professional account kind.
         "type": account_kind,
         "currency": clean_label(raw.get("currency") or "EUR") or "EUR",
-        "institution": clean_label(raw.get("institution") or raw.get("bank") or raw.get("bank_name") or ""),
+        "institution": _resolved_institution(raw, key),
+        "icon": _resolved_icon(raw, key, label, account_kind),
         "iban": clean_label(raw.get("iban") or ""),
         "bic_swift": clean_label(raw.get("bic_swift") or raw.get("bic") or raw.get("swift") or ""),
         "initial_balance": parse_money(raw.get("initial_balance", 0.0)),
@@ -342,7 +485,7 @@ def normalize_account_record(raw: Mapping[str, Any], *, index: int = 0) -> dict[
         "is_closed": is_closed,
         "closed_at": closed_at,
         "replacement_account_id": clean_text(raw.get("replacement_account_id") or ""),
-        "display_order": int(parse_money(raw.get("display_order", (index + 1) * 10), (index + 1) * 10)),
+        "display_order": _resolved_display_order(raw, key, index),
         "aliases": aliases,
         "category_aliases": category_aliases,
         "category_match_enabled": True if is_credit else bool(raw.get("category_match_enabled", True)),
@@ -718,6 +861,7 @@ def create_account_from_form(form: Mapping[str, Any], user_id: str | None = None
         "bic_swift": form.get("bic_swift") or "",
         "initial_balance": form.get("initial_balance") or 0,
         "description": form.get("description") or "",
+        "icon": form.get("icon") or guess_account_icon(key, label, form.get("institution"), account_kind=form_type),
         "aliases": split_aliases(form.get("aliases")) or [label],
         "category_aliases": split_aliases(form.get("category_aliases")) or split_aliases(form.get("aliases")) or [label],
         "category_match_enabled": str(form.get("category_match_enabled", "1")).lower() not in {"0", "false", "off", "no"},
@@ -764,9 +908,9 @@ def update_account_from_form(account_key: str, form: Mapping[str, Any], user_id:
             mapped_kind = _TYPE_TO_KIND.get(requested_type, requested_type if requested_type in ACCOUNT_KINDS else account.get("account_kind", "other"))
             updated["account_kind"] = mapped_kind
             updated["type"] = mapped_kind
-        for field in ["label", "name", "currency", "institution", "iban", "bic_swift", "description", "category_match_mode"]:
+        for field in ["label", "name", "currency", "institution", "iban", "bic_swift", "description", "category_match_mode", "icon"]:
             if field in form:
-                updated[field] = clean_label(form.get(field))
+                updated[field] = clean_icon(form.get(field)) if field == "icon" else clean_label(form.get(field))
         if "label" in form and form.get("label"):
             updated["name"] = clean_label(form.get("label"))
         if "initial_balance" in form:

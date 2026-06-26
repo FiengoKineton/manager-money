@@ -61,14 +61,14 @@ CACHE_DEFINITIONS: dict[str, CacheDefinition] = {
     "transactions.load_all": _def("transactions.load_all", "v4", "Normalized enriched transaction dataframe.", ("transactions", "accounts", "payment_methods", "internal_transfers", "credit_settlements"), ttl=None),
     "transaction_initial_conditions": _def("transaction_initial_conditions", "v1", "Historical transaction totals before the rolling working window.", ("accounts", "payment_methods"), ttl=None),
     "net_explanation": _def("net_explanation", "v1", "Net-worth explanation context.", ("transactions", "ledger", "accounts", "payment_methods", "pending", "credit_settlements")),
-    "transaction_table_view": _def("transaction_table_view", "v2", "Prepared transaction table rows.", ("transactions", "accounts", "payment_methods"), ttl=SHORT_TTL_SECONDS),
+    "transaction_table_view": _def("transaction_table_view", "v3", "Prepared transaction table rows.", ("transactions", "accounts", "payment_methods"), ttl=SHORT_TTL_SECONDS),
     "transaction_filter_options": _def("transaction_filter_options", "v1", "Transaction filter category/type options.", ("transactions", "categories"), ttl=LONG_TTL_SECONDS),
     "analysis_metrics": _def("analysis_metrics", "v2", "Analysis cockpit metrics.", ("transactions", "ledger", "accounts", "payment_methods", "pending", "recurring", "debts", "payables", "receivables", "investments"), ttl=DEFAULT_TTL_SECONDS),
 
     "phone.experience.summary": _def("phone.experience.summary", "v2", "Fast phone home summary.", ("transactions", "pending", "recurring", "debts", "payables"), ttl=SHORT_TTL_SECONDS),
     # Accounts/payment
     "account_balances": _def("account_balances", "v2", "Account balance rows.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements"), rebuild="money_manager.services.account_calculation_service.get_account_balances_uncached"),
-    "account_dashboard_summary": _def("account_dashboard_summary", "v3", "Accounts page summary.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements"), rebuild="money_manager.services.account_calculation_service.get_account_dashboard_summary_uncached"),
+    "account_dashboard_summary": _def("account_dashboard_summary", "v4", "Accounts page summary.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements"), rebuild="money_manager.services.account_calculation_service.get_account_dashboard_summary_uncached"),
     "account_detail_summary": _def("account_detail_summary", "v4", "Account detail summary.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements")),
     "scope_balance_summary": _def("scope_balance_summary", "v4", "Scoped net/pending summary for topbar and account pills.", ("transactions", "ledger", "accounts", "payment_methods", "internal_transfers", "credit_settlements", "pending", "payables", "recurring"), ttl=SHORT_TTL_SECONDS),
     "payment_method_summary": _def("payment_method_summary", "v1", "Payment method usage summary.", ("transactions", "payment_methods", "accounts", "ledger"), rebuild="money_manager.services.account_calculation_service.get_payment_method_summary_uncached"),

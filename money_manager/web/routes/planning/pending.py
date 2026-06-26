@@ -2,7 +2,7 @@ from flask import Blueprint, redirect, render_template, request, url_for
 
 from money_manager.services.payment_form_service import account_options_for_payment_forms, payment_method_options_for_forms
 from money_manager.services.custom_category_service import effective_categories_by_type, default_category_for
-from money_manager.repositories.pending import delay_pending, delete_pending, load_pending, update_pending
+from money_manager.repositories.pending import delay_pending, delete_pending, load_pending, mark_discarded, update_pending
 from money_manager.repositories.recurring import load_recurring
 from money_manager.services.debt_service import generate_debt_payments
 from money_manager.services.pending_service import execute_pending_by_id, prepare_pending_for_display, process_pending, sync_credit_account_statements, pending_context_for_scope
@@ -45,6 +45,8 @@ def pending_page():
             delete_pending(row_id)
         elif action == "delay_pending":
             delay_pending(row_id, request.form.get("delay_date", ""))
+        elif action == "discard_pending":
+            mark_discarded(row_id)
         elif action == "execute_pending":
             execute_pending_by_id(row_id, execution_date=request.form.get("date_due", ""))
         elif action == "execute_credit_settlement":
@@ -81,6 +83,7 @@ def pending_page():
         pending=pending_rows["all"],
         pending_open=pending_rows["pending"],
         pending_executed=pending_rows["executed"],
+        pending_discarded=pending_rows.get("discarded", []),
         pending_total=pending_rows["pending_total"],
         main_pending_total=pending_rows["main_pending_total"],
         pending_income=pending_rows["pending_income"],

@@ -429,10 +429,10 @@
       card.style.setProperty("--chip-b", category.b);
 
       if (card.matches(".phone-transaction-card")) {
-        if (!card.querySelector(".phone-card-emoji")) {
+        if (!card.querySelector(".phone-card-emoji, .phone-transaction-icon")) {
           const icon = document.createElement("span");
           icon.className = "phone-card-emoji";
-          icon.textContent = category.emoji;
+          icon.textContent = card.dataset.categoryIcon || category.emoji;
           card.insertBefore(icon, card.firstElementChild);
         }
         const front = ensureSwipeFront(card);
@@ -627,8 +627,8 @@
     if (!select || form.querySelector(".phone-category-card-row")) return;
     const row = document.createElement("div");
     row.className = "phone-category-card-row";
-    Array.from(select.options).filter((option) => option.value).slice(0, 10).forEach((option) => {
-      const cat = categoryFor(option.textContent || option.value);
+    Array.from(select.options).filter((option) => option.value && option.value !== "__new_category__").slice(0, 10).forEach((option) => {
+      const cat = option.dataset.icon ? { emoji: option.dataset.icon, a: "#7c3aed", b: "#00d4ff" } : categoryFor(option.textContent || option.value);
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "phone-category-card";

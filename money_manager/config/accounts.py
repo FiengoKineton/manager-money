@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 MAIN_ACCOUNT_KEY = "main_bank"
-MAIN_ACCOUNT_LABEL = "Primary current account"
+MAIN_ACCOUNT_LABEL = "Mediolanum"
 CREDIT_OPTION_KEY = "credit_card"
 PAYPAL_ACCOUNT_KEY = "paypal"  # compatibility key only; PayPal must be configured per user.
 PAYPAL_CREDIT_ACCOUNT_VALUE = "paypal_credit"
@@ -89,7 +89,7 @@ def account_options_for_forms(include_credit: bool = True) -> list[dict[str, Any
             "id": MAIN_ACCOUNT_KEY,
             "label": MAIN_ACCOUNT_LABEL,
             "display_label": MAIN_ACCOUNT_LABEL,
-            "description": "Blank means this movement belongs to the selected/default current account.",
+            "description": "Blank means this movement belongs to Mediolanum / the selected default current account.",
             "value": "",
             "kind": "main",
             "main_net_policy": MAIN_NET_AFFECTS,
