@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import sys
 import json
 import mimetypes
 import os
@@ -17,6 +18,20 @@ from money_manager.security.key_manager import is_encryption_enabled
 from money_manager.security.session_vault import require_dek
 from money_manager.storage.data_registry import definition_by_name, definition_for_filename
 
+
+
+def _raise_csv_field_limit() -> None:
+    limit = sys.maxsize
+    while limit > 10_000_000:
+        try:
+            csv.field_size_limit(limit)
+            return
+        except OverflowError:
+            limit //= 10
+    csv.field_size_limit(10_000_000)
+
+
+_raise_csv_field_limit()
 
 def _file_read_cache():
     """Import the decrypted file cache lazily to avoid secure_storage <-> cache startup cycles."""

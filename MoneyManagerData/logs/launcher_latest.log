@@ -944,3 +944,225 @@ Money Manager is starting on http://127.0.0.1:5000
 Press Ctrl+C in this window to stop it.
 WARNING:money_manager.app:Slow request 897.1 ms GET /security/unlock?next=/favicon.ico
 WARNING:money_manager.app:Slow request 918.8 ms GET /security/unlock?next=/api/topbar-summary
+
+================================================================================
+2026-06-26 22:03:40 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 759.9 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 759.8 ms GET /security/unlock?next=/favicon.ico
+Exception in thread money-manager-credit-refresh-fiengokineton:
+Traceback (most recent call last):
+  File "C:\Users\g7fie\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "C:\Users\g7fie\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Repos\money-manager\money_manager\web\routes\accounts\accounts.py", line 78, in _run
+    _refresh_credit_statements_sync(user_id)
+  File "C:\Repos\money-manager\money_manager\web\routes\accounts\accounts.py", line 52, in _refresh_credit_statements_sync
+    sync_credit_account_statements()
+  File "C:\Repos\money-manager\money_manager\services\pending_service.py", line 226, in sync_credit_account_statements
+    df = load_transactions()
+         ^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\transaction_service.py", line 412, in load_transactions
+    return cached_calculation("transactions.load_all", load_all)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\cache_service.py", line 51, in cached_calculation
+    return get_or_compute(
+           ^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\cache\cache_manager.py", line 83, in get_or_compute
+    value = builder()
+            ^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\transactions.py", line 75, in load_all
+    df = load_by_type(transaction_type)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\transactions.py", line 64, in load_by_type
+    rows = read_rows(path, TRANSACTION_FIELDS)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\csv_files.py", line 85, in read_rows
+    rows = read_csv_secure(path, fieldnames)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\security\secure_storage.py", line 168, in read_csv_secure
+    rows = [dict(row) for row in reader]
+                                 ^^^^^^
+  File "C:\Users\g7fie\AppData\Local\Programs\Python\Python312\Lib\csv.py", line 116, in __next__
+    row = next(self.reader)
+          ^^^^^^^^^^^^^^^^^
+_csv.Error: field larger than field limit (131072)
+ERROR:money_manager.app:Exception on /accounts [GET]
+Traceback (most recent call last):
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\routes\accounts\accounts.py", line 123, in accounts_page
+    context = get_account_dashboard_summary_cached()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\account_calculation_service.py", line 53, in get_account_dashboard_summary_cached
+    return cached_context("account_dashboard_summary", lambda: get_account_dashboard_summary_uncached(month=month), params={"month": month})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\calculation_service.py", line 33, in cached_context
+    return get_or_compute(
+           ^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\cache\cache_manager.py", line 83, in get_or_compute
+    value = builder()
+            ^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\account_calculation_service.py", line 53, in <lambda>
+    return cached_context("account_dashboard_summary", lambda: get_account_dashboard_summary_uncached(month=month), params={"month": month})
+                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\account_calculation_service.py", line 30, in get_account_dashboard_summary_uncached
+    return accounts_page_context(load_transactions())
+                                 ^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\transaction_service.py", line 412, in load_transactions
+    return cached_calculation("transactions.load_all", load_all)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\cache_service.py", line 51, in cached_calculation
+    return get_or_compute(
+           ^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\cache\cache_manager.py", line 83, in get_or_compute
+    value = builder()
+            ^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\transactions.py", line 75, in load_all
+    df = load_by_type(transaction_type)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\transactions.py", line 64, in load_by_type
+    rows = read_rows(path, TRANSACTION_FIELDS)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\csv_files.py", line 85, in read_rows
+    rows = read_csv_secure(path, fieldnames)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\security\secure_storage.py", line 168, in read_csv_secure
+    rows = [dict(row) for row in reader]
+                                 ^^^^^^
+  File "C:\Users\g7fie\AppData\Local\Programs\Python\Python312\Lib\csv.py", line 116, in __next__
+    row = next(self.reader)
+          ^^^^^^^^^^^^^^^^^
+_csv.Error: field larger than field limit (131072)
+
+================================================================================
+2026-06-26 22:04:04 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 831.9 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 841.5 ms GET /security/unlock?next=/favicon.ico
+Exception in thread money-manager-credit-refresh-fiengokineton:
+Traceback (most recent call last):
+  File "C:\Users\g7fie\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "C:\Users\g7fie\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Repos\money-manager\money_manager\web\routes\accounts\accounts.py", line 78, in _run
+    _refresh_credit_statements_sync(user_id)
+  File "C:\Repos\money-manager\money_manager\web\routes\accounts\accounts.py", line 52, in _refresh_credit_statements_sync
+    sync_credit_account_statements()
+  File "C:\Repos\money-manager\money_manager\services\pending_service.py", line 226, in sync_credit_account_statements
+    df = load_transactions()
+         ^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\transaction_service.py", line 412, in load_transactions
+    return cached_calculation("transactions.load_all", load_all)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\cache_service.py", line 51, in cached_calculation
+    return get_or_compute(
+           ^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\cache\cache_manager.py", line 83, in get_or_compute
+    value = builder()
+            ^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\transactions.py", line 75, in load_all
+    df = load_by_type(transaction_type)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\transactions.py", line 64, in load_by_type
+    rows = read_rows(path, TRANSACTION_FIELDS)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\csv_files.py", line 85, in read_rows
+    rows = read_csv_secure(path, fieldnames)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\security\secure_storage.py", line 168, in read_csv_secure
+    rows = [dict(row) for row in reader]
+                                 ^^^^^^
+  File "C:\Users\g7fie\AppData\Local\Programs\Python\Python312\Lib\csv.py", line 116, in __next__
+    row = next(self.reader)
+          ^^^^^^^^^^^^^^^^^
+_csv.Error: field larger than field limit (131072)
+ERROR:money_manager.app:Exception on /accounts [GET]
+Traceback (most recent call last):
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\routes\accounts\accounts.py", line 123, in accounts_page
+    context = get_account_dashboard_summary_cached()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\account_calculation_service.py", line 53, in get_account_dashboard_summary_cached
+    return cached_context("account_dashboard_summary", lambda: get_account_dashboard_summary_uncached(month=month), params={"month": month})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\calculation_service.py", line 33, in cached_context
+    return get_or_compute(
+           ^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\cache\cache_manager.py", line 83, in get_or_compute
+    value = builder()
+            ^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\account_calculation_service.py", line 53, in <lambda>
+    return cached_context("account_dashboard_summary", lambda: get_account_dashboard_summary_uncached(month=month), params={"month": month})
+                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\account_calculation_service.py", line 30, in get_account_dashboard_summary_uncached
+    return accounts_page_context(load_transactions())
+                                 ^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\transaction_service.py", line 412, in load_transactions
+    return cached_calculation("transactions.load_all", load_all)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\cache_service.py", line 51, in cached_calculation
+    return get_or_compute(
+           ^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\cache\cache_manager.py", line 83, in get_or_compute
+    value = builder()
+            ^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\transactions.py", line 75, in load_all
+    df = load_by_type(transaction_type)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\transactions.py", line 64, in load_by_type
+    rows = read_rows(path, TRANSACTION_FIELDS)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\repositories\csv_files.py", line 85, in read_rows
+    rows = read_csv_secure(path, fieldnames)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\security\secure_storage.py", line 168, in read_csv_secure
+    rows = [dict(row) for row in reader]
+                                 ^^^^^^
+  File "C:\Users\g7fie\AppData\Local\Programs\Python\Python312\Lib\csv.py", line 116, in __next__
+    row = next(self.reader)
+          ^^^^^^^^^^^^^^^^^
+_csv.Error: field larger than field limit (131072)
+
+================================================================================
+2026-06-26 22:08:19 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 763.2 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 771.4 ms GET /security/unlock?next=/favicon.ico
+WARNING:money_manager.app:Slow request 11455.2 ms GET /accounts?
+WARNING:money_manager.app:Slow request 3946.9 ms GET /api/topbar-summary?
