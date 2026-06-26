@@ -17,10 +17,20 @@
       }
     })();
   </script>
+  <script>
+    (function () {
+      try {
+        var phoneQuery = "(max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse)";
+        if (window.matchMedia && window.matchMedia(phoneQuery).matches) {
+          document.documentElement.classList.add("phone-shell-active", "phone-native-active");
+        }
+      } catch (error) {}
+    })();
+  </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=fast-phone-1">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=phone-compact-tables-1" media="(max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse)">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/instant-nav.css') }}?v=instant-nav-1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/ui-refinement.css') }}?v=ui-account-brand-3">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=phone-native-clean-1" media="(max-width: 760px) and (hover: none) and (pointer: coarse), (max-height: 560px) and (max-width: 980px) and (hover: none) and (pointer: coarse)">
   {% set plotly_endpoints = [
     'dashboard.index',
     'analysis.analysis',
@@ -342,7 +352,7 @@
   <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-lazy-1"></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=wallet-shell-17e"></script>
-  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=phone-compact-tables-1" defer></script>
+  <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=phone-native-clean-1" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

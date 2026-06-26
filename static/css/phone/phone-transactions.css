@@ -1,105 +1,239 @@
-/* Phone-only transaction/cards experience. */
-@media (max-width: 600px) and (hover: none) and (pointer: coarse), (max-height: 520px) and (max-width: 940px) and (hover: none) and (pointer: coarse) {
-  html.phone-shell-active table.mobile-card-table {
-    border-collapse: separate !important;
-    border-spacing: 0 0.78rem !important;
-  }
+/* Compact, phone-first transaction feed. */
 
-  html.phone-shell-active table.mobile-card-table tbody {
-    display: block !important;
-  }
+html.phone-native-active .transactions-hero {
+  display: grid !important;
+  gap: 10px !important;
+}
 
-  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row {
-    position: relative !important;
-    display: grid !important;
-    overflow: hidden !important;
-    border-radius: 28px !important;
-    background:
-      linear-gradient(145deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.10)) !important;
-    border: 1px solid rgba(255, 255, 255, 0.18) !important;
-    box-shadow: 0 16px 38px rgba(4, 7, 24, 0.20) !important;
-    isolation: isolate !important;
-    animation: phone-card-pop 460ms cubic-bezier(.2,.9,.2,1) both;
-    animation-delay: calc(min(var(--phone-card-index, 0), 12) * 28ms);
-  }
+html.phone-native-active .transactions-hero p,
+html.phone-native-active .transactions-calculation-note,
+html.phone-native-active .transactions .panel-header .eyebrow,
+html.phone-native-active .transactions .panel-header h2 {
+  display: none !important;
+}
 
-  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row::before {
-    content: "";
-    position: absolute;
-    inset: -40% auto auto -20%;
-    width: 8.4rem;
-    height: 8.4rem;
-    border-radius: 999px;
-    background: radial-gradient(circle, rgba(76, 201, 240, 0.28), transparent 68%);
-    pointer-events: none;
-    z-index: -1;
-  }
+html.phone-native-active .transactions-filter-bar {
+  padding: 10px !important;
+}
 
-  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row.row-expense::before,
-  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row.phone-row-expense::before {
-    background: radial-gradient(circle, rgba(255, 93, 143, 0.34), transparent 68%);
-  }
+html.phone-native-active .transactions-filter-bar .block-label,
+html.phone-native-active .transactions-filter-bar .hint {
+  display: none !important;
+}
 
-  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row.row-income::before,
-  html.phone-shell-active table.mobile-card-table tr.mobile-disclosure-row.phone-row-income::before {
-    background: radial-gradient(circle, rgba(46, 229, 157, 0.32), transparent 68%);
-  }
+html.phone-native-active .date-inputs,
+html.phone-native-active .amount-range-inputs {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
 
-  html.phone-shell-active .mobile-row-title {
-    font-size: 0.98rem !important;
-    letter-spacing: -0.035em !important;
-  }
+html.phone-native-active .types-group {
+  display: flex !important;
+  gap: 7px !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding-bottom: 3px !important;
+}
 
-  html.phone-shell-active .mobile-row-amount {
-    border-radius: 999px !important;
-    padding: 0.38rem 0.6rem !important;
-    background: rgba(255, 255, 255, 0.14) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
-  }
+html.phone-native-active .checkbox-inline {
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid rgba(44, 96, 140, 0.12) !important;
+  font-size: 0.82rem !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
 
-  html.phone-shell-active .mobile-row-amount.phone-amount-expense {
-    color: var(--phone-bad) !important;
-    background: rgba(255, 93, 143, 0.14) !important;
-  }
+html.phone-native-active .checkbox-inline input {
+  width: auto !important;
+  min-height: auto !important;
+  padding: 0 !important;
+}
 
-  html.phone-shell-active .mobile-row-amount.phone-amount-income {
-    color: var(--phone-good) !important;
-    background: rgba(46, 229, 157, 0.14) !important;
-  }
+html.phone-native-active select[multiple] {
+  min-height: 96px !important;
+}
 
-  html.phone-shell-active tr.mobile-disclosure-row.is-expanded {
-    box-shadow: 0 24px 58px rgba(5, 8, 28, 0.27) !important;
-  }
+html.phone-native-active .transactions {
+  padding: 10px !important;
+}
 
-  html.phone-shell-active tr.mobile-disclosure-row.is-expanded > td:not(.mobile-row-summary) {
-    border-radius: 18px !important;
-    margin: 0.26rem 0.7rem !important;
-    background: rgba(255, 255, 255, 0.10) !important;
-  }
+html.phone-native-active .transactions .panel-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  margin: 0 0 10px !important;
+}
 
-  html.phone-shell-active .mobile-row-quick-actions {
-    gap: 0.48rem !important;
-  }
+html.phone-native-active .section-count {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 30px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  color: var(--phone-brand) !important;
+  font-size: 0.76rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
 
-  html.phone-shell-active .mobile-detail-action {
-    border-radius: 999px !important;
-  }
+html.phone-native-active .phone-transaction-list,
+html.phone-native-active .phone-extra-transactions {
+  display: grid !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
 
-  .phone-transaction-list {
-    display: grid !important;
-    gap: 0.68rem !important;
-  }
+html.phone-native-active .phone-extra-transactions.is-hidden {
+  display: none !important;
+}
 
-  .phone-extra-transactions {
-    display: grid !important;
-    gap: 0.68rem !important;
-  }
+html.phone-native-active .transactions-with-phone-cards > table.transactions-table,
+html.phone-native-active table.transactions-table,
+html.phone-native-active .transactions-table {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 
-  .phone-extra-transactions.is-hidden {
-    display: none !important;
-  }
+html.phone-native-active .phone-transaction-card {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  padding: 10px 11px !important;
+  border-radius: 18px !important;
+  text-decoration: none !important;
+  color: var(--phone-text) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  border: 1px solid rgba(44, 96, 140, 0.12) !important;
+  box-shadow: 0 8px 18px rgba(23, 48, 86, 0.08) !important;
+  overflow: hidden !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
 
-  .transactions-with-phone-cards > table.transactions-table {
-    display: none !important;
-  }
+html.phone-native-active .phone-transaction-card.row-expense {
+  border-left: 4px solid #ef5b78 !important;
+}
+
+html.phone-native-active .phone-transaction-card.row-income {
+  border-left: 4px solid #10a36f !important;
+}
+
+html.phone-native-active .phone-transaction-card.row-investment {
+  border-left: 4px solid #2563eb !important;
+}
+
+html.phone-native-active .phone-transaction-icon,
+html.phone-native-active .phone-card-emoji {
+  display: grid !important;
+  place-items: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 15px !important;
+  background: rgba(240, 247, 255, 0.95) !important;
+  border: 1px solid rgba(44, 96, 140, 0.10) !important;
+  font-size: 1.15rem !important;
+  flex: 0 0 auto !important;
+}
+
+html.phone-native-active .phone-transaction-copy {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 2px !important;
+}
+
+html.phone-native-active .phone-transaction-copy b {
+  display: block !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 0.92rem !important;
+  line-height: 1.14 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--phone-text) !important;
+}
+
+html.phone-native-active .phone-transaction-copy small,
+html.phone-native-active .phone-transaction-copy em {
+  display: block !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 0.72rem !important;
+  line-height: 1.18 !important;
+  color: var(--phone-muted) !important;
+  font-style: normal !important;
+}
+
+html.phone-native-active .phone-transaction-amount {
+  justify-self: end !important;
+  white-space: nowrap !important;
+  max-width: 104px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 0.9rem !important;
+  line-height: 1 !important;
+  letter-spacing: -0.03em !important;
+  color: var(--phone-text) !important;
+}
+
+html.phone-native-active .row-expense .phone-transaction-amount {
+  color: #9f1239 !important;
+}
+
+html.phone-native-active .row-income .phone-transaction-amount {
+  color: #047857 !important;
+}
+
+html.phone-native-active .row-investment .phone-transaction-amount {
+  color: #1d4ed8 !important;
+}
+
+html.phone-native-active .phone-transaction-card.is-expanded {
+  grid-template-columns: 42px minmax(0, 1fr) auto !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+}
+
+html.phone-native-active #toggle-transactions-btn,
+html.phone-native-active [data-load-more-transactions] {
+  width: 100% !important;
+  margin-top: 10px !important;
+}
+
+/* Defuse old swipe-wrapper CSS if it exists from a cached JS execution. */
+html.phone-native-active .phone-transaction-card .phone-swipe-front {
+  display: contents !important;
+  transform: none !important;
+}
+
+html.phone-native-active .phone-transaction-card .phone-swipe-action {
+  display: none !important;
+}
+
+html[data-theme="night"].phone-native-active .phone-transaction-card {
+  background: rgba(24, 39, 64, 0.88) !important;
+  border-color: rgba(162, 196, 255, 0.14) !important;
+}
+
+html[data-theme="night"].phone-native-active .phone-transaction-icon,
+html[data-theme="night"].phone-native-active .phone-card-emoji {
+  background: rgba(35, 55, 86, 0.92) !important;
+  border-color: rgba(162, 196, 255, 0.12) !important;
 }
