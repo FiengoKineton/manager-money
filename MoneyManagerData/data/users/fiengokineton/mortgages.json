@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "mortgages": [
+    {
+      "id": "mortgage_e410dcb0e7dc",
+      "name": "Prima casa",
+      "property_address": "Via Posillipo 290, 80123, NA",
+      "property_value": 750000.0,
+      "requested_amount": 500000.0,
+      "own_funds": 250000.0,
+      "rate_type": "fixed",
+      "annual_rate": 0.0,
+      "euribor_estimate": 0.0,
+      "spread": 0.0,
+      "years": 10,
+      "start_date": "2026-05-01",
+      "payment_day": 1,
+      "manual_monthly_payment": 4871.61,
+      "monthly_payment": 4871.61,
+      "bank_contact_id": "",
+      "account_id": "main_bank",
+      "payment_method_id": "",
+      "category": "Mutuo",
+      "payer_mode": "parent_support",
+      "parent_support_rule_id": "2",
+      "parent_support_parent": "Dad",
+      "parent_support_managed": false,
+      "recurring_rule_id": "",
+      "notes": "",
+      "is_active": true,
+      "created_at": "2026-06-26T18:10:55+00:00",
+      "updated_at": "2026-06-26T18:10:55+00:00",
+      "archived_at": ""
+    }
+  ],
+  "events": [
+    {
+      "id": "event_a421113ac9e6",
+      "mortgage_id": "mortgage_e410dcb0e7dc",
+      "event_type": "create",
+      "message": "Created Prima casa",
+      "created_at": "2026-06-26T18:10:55+00:00"
+    }
+  ],
+  "updated_at": "2026-06-26T18:10:55+00:00"
+}

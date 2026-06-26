@@ -58,10 +58,11 @@ def load_rules() -> list[dict]:
     return read_rows(PARENT_SUPPORT_RULES_CSV, PARENT_SUPPORT_RULE_FIELDS)
 
 
-def append_rule(rule: dict) -> None:
+def append_rule(rule: dict) -> int:
     rows = load_rules()
+    row_id = next_numeric_id(rows)
     row = {
-        "id": next_numeric_id(rows),
+        "id": row_id,
         "name": rule.get("name", ""),
         "kind": rule.get("kind", "covered_expense"),
         "parent": rule.get("parent", ""),
@@ -80,6 +81,7 @@ def append_rule(rule: dict) -> None:
         "created_at": datetime.now().isoformat(timespec="seconds"),
     }
     append_row(PARENT_SUPPORT_RULES_CSV, PARENT_SUPPORT_RULE_FIELDS, row)
+    return int(row_id)
 
 
 def update_rule(rule_id: int, updates: dict) -> None:
