@@ -143,6 +143,15 @@ def _contact_payload_from_form() -> dict:
         "bank_name": request.form.get("bank_name", ""),
         "email": request.form.get("email", ""),
         "phone": request.form.get("phone", ""),
+        "vat_number": request.form.get("vat_number", ""),
+        "fiscal_code": request.form.get("fiscal_code", ""),
+        "pec_email": request.form.get("pec_email", ""),
+        "sdi_code": request.form.get("sdi_code", ""),
+        "registered_address": request.form.get("registered_address", ""),
+        "city": request.form.get("city", ""),
+        "province": request.form.get("province", ""),
+        "postal_code": request.form.get("postal_code", ""),
+        "country": request.form.get("country", ""),
         "notes": request.form.get("notes", ""),
     }
 

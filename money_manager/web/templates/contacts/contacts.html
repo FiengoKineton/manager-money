@@ -64,6 +64,12 @@
         {% if contact.email %}
           <div><dt>{{ t("contacts.email") }}</dt><dd>{{ contact.email }}</dd></div>
         {% endif %}
+        {% if contact.vat_number %}
+          <div><dt>Partita IVA</dt><dd>{{ contact.vat_number }}</dd></div>
+        {% endif %}
+        {% if contact.pec_email %}
+          <div><dt>PEC</dt><dd>{{ contact.pec_email }}</dd></div>
+        {% endif %}
       </dl>
 
       <div class="contact-card-actions">

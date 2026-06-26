@@ -56,6 +56,49 @@
       <input id="phone" type="tel" name="phone" value="{{ contact.phone }}" autocomplete="tel">
     </div>
 
+    <div class="profile-section-title form-field-wide company-extra-section">
+      <span class="eyebrow">Company fiscal details</span>
+      <h3>Partita IVA / invoicing</h3>
+      <p class="muted">Useful for employers, suppliers, utilities, banks and companies used by Bollette, Cedolini and Mutui.</p>
+    </div>
+
+    <div>
+      <label for="vat_number">Partita IVA</label>
+      <input id="vat_number" type="text" name="vat_number" value="{{ contact.vat_number }}" placeholder="IT01234567890">
+    </div>
+    <div>
+      <label for="fiscal_code">Codice fiscale</label>
+      <input id="fiscal_code" type="text" name="fiscal_code" value="{{ contact.fiscal_code }}" placeholder="Optional">
+    </div>
+    <div>
+      <label for="pec_email">PEC email</label>
+      <input id="pec_email" type="email" name="pec_email" value="{{ contact.pec_email }}" placeholder="azienda@pec.it">
+    </div>
+    <div>
+      <label for="sdi_code">Codice SDI</label>
+      <input id="sdi_code" type="text" name="sdi_code" value="{{ contact.sdi_code }}" placeholder="7 chars / optional">
+    </div>
+    <div class="form-field-wide">
+      <label for="registered_address">Registered address</label>
+      <input id="registered_address" type="text" name="registered_address" value="{{ contact.registered_address }}" placeholder="Via, number, office">
+    </div>
+    <div>
+      <label for="city">City</label>
+      <input id="city" type="text" name="city" value="{{ contact.city }}">
+    </div>
+    <div>
+      <label for="province">Province</label>
+      <input id="province" type="text" name="province" value="{{ contact.province }}" maxlength="8">
+    </div>
+    <div>
+      <label for="postal_code">CAP / ZIP</label>
+      <input id="postal_code" type="text" name="postal_code" value="{{ contact.postal_code }}">
+    </div>
+    <div>
+      <label for="country">Country</label>
+      <input id="country" type="text" name="country" value="{{ contact.country }}">
+    </div>
+
     <div class="profile-section-title form-field-wide">
       <span class="eyebrow">{{ t("contacts.bank_section") }}</span>
       <h3>{{ t("contacts.bank_details") }}</h3>

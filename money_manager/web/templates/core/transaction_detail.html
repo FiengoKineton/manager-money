@@ -106,11 +106,24 @@
             <option value="none" {% if receipt.discount_type == 'none' or not receipt.discount_type %}selected{% endif %}>No discount</option>
             <option value="percent" {% if receipt.discount_type == 'percent' %}selected{% endif %}>Percent off</option>
             <option value="voucher" {% if receipt.discount_type == 'voucher' %}selected{% endif %}>Voucher €</option>
+            <option value="balance_source" {% if receipt.discount_type == 'balance_source' %}selected{% endif %}>Gift card / Buono sconto balance</option>
           </select>
           <input type="number" min="0" step="0.01" name="receipt_discount_value" id="receipt-discount-value" value="{{ receipt.discount_value or 0 }}" placeholder="10 or 50">
+          {% if receipt.discount_source %}
+            <input type="hidden" name="receipt_discount_source_id" value="{{ receipt.discount_source.id }}">
+            <input type="hidden" name="receipt_discount_source_name" value="{{ receipt.discount_source.name }}">
+            <input type="hidden" name="receipt_discount_source_kind" value="{{ receipt.discount_source.kind }}">
+            <input type="hidden" name="receipt_discount_source_kind_label" value="{{ receipt.discount_source.kind_label }}">
+            <input type="hidden" name="receipt_discount_source_applied_amount" value="{{ receipt.discount_source.applied_amount }}">
+            <input type="hidden" name="receipt_discount_source_requested_amount" value="{{ receipt.discount_source.requested_amount }}">
+            <input type="hidden" name="receipt_discount_source_balance_before" value="{{ receipt.discount_source.balance_before }}">
+            <input type="hidden" name="receipt_discount_source_balance_after" value="{{ receipt.discount_source.balance_after }}">
+            <input type="hidden" name="receipt_discount_source_event_id" value="{{ receipt.discount_source.event_id }}">
+          {% endif %}
         </div>
         <label class="inline-checkbox receipt-sync-checkbox"><input type="checkbox" name="receipt_sync_amount" value="1"> update transaction amount from receipt total</label>
         <div class="receipt-live-total"><span>Subtotal € <b id="receipt-subtotal">{{ receipt.subtotal_display or tx.amount }}</b></span><span>Discount € <b id="receipt-discount-amount">{{ '%.2f'|format(receipt.discount_amount or 0) }}</b></span><strong>Total € <b id="receipt-grand-total">{{ receipt.total_display or tx.amount }}</b></strong></div>
+        {% if receipt.discount_source_label %}<small class="hint receipt-source-line">{{ receipt.discount_source_label }}</small>{% endif %}
         <button class="primary-btn compact-btn" type="submit">Save receipt</button>
       </div>
 
@@ -240,7 +253,7 @@
     const value = money(document.getElementById("receipt-discount-value")?.value || 0);
     let discount = 0;
     if (type === "percent") discount = subtotal * Math.min(value, 100) / 100;
-    if (type === "voucher") discount = Math.min(subtotal, value);
+    if (type === "voucher" || type === "balance_source") discount = Math.min(subtotal, value);
     const total = Math.max(0, subtotal - discount);
     const subtotalEl = document.getElementById("receipt-subtotal");
     const discountEl = document.getElementById("receipt-discount-amount");

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block page_title %}Gift cards & Buoni sconto{% endblock %}
+
+{% block content %}
+<section class="discount-balance-hero">
+  <div>
+    <span class="eyebrow">Stored discount balances</span>
+    <h2>Gift cards & Buoni sconto</h2>
+    <p>Save gift cards and reimbursement/discount balances here. Add Expense can then suggest a match from category, sub-category or description, but you can still choose any saved balance manually.</p>
+  </div>
+  <div class="discount-balance-totals">
+    <div><span>Total active</span><strong>€ {{ totals.active_display }}</strong></div>
+    <div><span>Gift cards</span><strong>€ {{ totals.gift_card_display }}</strong></div>
+    <div><span>Buoni / reimbursements</span><strong>€ {{ totals.buono_sconto_display }}</strong></div>
+  </div>
+</section>
+
+{% if message %}
+  <div class="form-alert form-alert-success"><strong>Saved.</strong> {{ message }}</div>
+{% endif %}
+{% if error %}
+  <div class="form-alert form-alert-error"><strong>Not saved.</strong> {{ error }}</div>
+{% endif %}
+
+<section class="discount-balance-layout">
+  <div class="discount-balance-main">
+    <section class="discount-balance-card discount-balance-create-card">
+      <div class="section-heading-row">
+        <div>
+          <span class="eyebrow">Create balance</span>
+          <h3>Add gift card / buono sconto</h3>
+        </div>
+        <a class="secondary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Use in expense</a>
+      </div>
+
+      <form method="post" class="discount-balance-form">
+        <input type="hidden" name="action" value="create">
+        <div>
+          <label>Name</label>
+          <input type="text" name="name" placeholder="Amazon, Glovo, Decathlon, insurance reimbursement..." required>
+        </div>
+        <div>
+          <label>Type</label>
+          <select name="kind">
+            {% for kind in source_kind_options %}
+              <option value="{{ kind.value }}">{{ kind.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Starting balance (€)</label>
+          <input type="number" min="0.01" step="0.01" name="balance" placeholder="4.80" required>
+        </div>
+        <div>
+          <label>Aliases for auto-match</label>
+          <input type="text" name="aliases" placeholder="amazon.it, amzn, glovo rimborso">
+          <small class="hint">Separate aliases with commas. Add Expense matches these against category, sub-category and description.</small>
+        </div>
+        <div class="discount-balance-actions">
+          <button type="submit">Save balance</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="discount-balance-card">
+      <div class="section-heading-row">
+        <div>
+          <span class="eyebrow">Active balances</span>
+          <h3>{{ sources|length }} available</h3>
+        </div>
+      </div>
+
+      {% if sources %}
+        <div class="discount-source-card-grid">
+          {% for source in sources %}
+            <article class="discount-source-card">
+              <form method="post" class="discount-source-edit-form">
+                <input type="hidden" name="source_id" value="{{ source.id }}">
+                <input type="hidden" name="is_active" value="1">
+                <div class="discount-source-card-head">
+                  <div>
+                    <span class="discount-source-kind">{{ source.kind_label }}</span>
+                    <strong>€ {{ source.balance_display }}</strong>
+                  </div>
+                  <span class="status-pill status-active">{{ source.status_label }}</span>
+                </div>
+
+                <div class="discount-balance-form compact-form-grid">
+                  <div>
+                    <label>Name</label>
+                    <input type="text" name="name" value="{{ source.name }}" required>
+                  </div>
+                  <div>
+                    <label>Type</label>
+                    <select name="kind">
+                      {% for kind in source_kind_options %}
+                        <option value="{{ kind.value }}" {% if source.kind == kind.value %}selected{% endif %}>{{ kind.label }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div>
+                    <label>Current balance (€)</label>
+                    <input type="number" min="0" step="0.01" name="balance" value="{{ source.balance_display }}">
+                  </div>
+                  <div>
+                    <label>Aliases</label>
+                    <input type="text" name="aliases" value="{{ source.aliases_text }}" placeholder="alias 1, alias 2">
+                  </div>
+                </div>
+
+                <div class="discount-balance-actions split-actions">
+                  <button type="submit" name="action" value="update">Update</button>
+                  <button type="submit" name="action" value="archive" class="secondary-btn">Archive</button>
+                </div>
+              </form>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty">No active gift cards or buoni sconto yet. Add one above.</p>
+      {% endif %}
+    </section>
+
+    {% if archived_sources %}
+      <section class="discount-balance-card">
+        <div class="section-heading-row">
+          <div>
+            <span class="eyebrow">Archived</span>
+            <h3>Hidden balances</h3>
+          </div>
+        </div>
+        <div class="discount-source-card-grid archived-grid">
+          {% for source in archived_sources %}
+            <article class="discount-source-card is-archived">
+              <div class="discount-source-card-head">
+                <div>
+                  <span class="discount-source-kind">{{ source.kind_label }}</span>
+                  <strong>{{ source.name }}</strong>
+                  <small>Remaining € {{ source.balance_display }}</small>
+                </div>
+                <span class="status-pill">Archived</span>
+              </div>
+              <form method="post" class="discount-balance-actions">
+                <input type="hidden" name="source_id" value="{{ source.id }}">
+                <button type="submit" name="action" value="restore" class="secondary-btn">Restore</button>
+              </form>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </div>
+
+  <aside class="discount-balance-side">
+    <section class="discount-balance-card">
+      <span class="eyebrow">How it works</span>
+      <h3>Add Expense integration</h3>
+      <p>During Add Expense, choose <strong>Gift card / Buono sconto balance</strong> as discount type and insert the amount you want to use. The receipt saves the source, amount used, balance before and balance after.</p>
+      <p>Creating a balance inside Add Expense saves it only together with that expense. To save a buono without using it immediately, create it on this page.</p>
+    </section>
+
+    <section class="discount-balance-card">
+      <span class="eyebrow">Recent movements</span>
+      <h3>Balance history</h3>
+      {% if events %}
+        <div class="discount-event-list">
+          {% for event in events %}
+            <div class="discount-event-row">
+              <strong>{{ event.source_name or event.source_id }}</strong>
+              <span>{{ event.event_type }} · € {{ event.amount_display }}</span>
+              <small>€ {{ event.balance_before_display }} → € {{ event.balance_after_display }}</small>
+              {% if event.category or event.description %}
+                <small>{{ event.category }}{% if event.sub_category %} / {{ event.sub_category }}{% endif %}{% if event.description %} · {{ event.description }}{% endif %}</small>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty">No balance events yet.</p>
+      {% endif %}
+    </section>
+  </aside>
+</section>
+{% endblock %}

@@ -28,6 +28,11 @@ def append_pending(tx: dict, due_date: date) -> int | None:
         "account_label": tx.get("account_label", ""),
         "statement_month": tx.get("statement_month", ""),
         "date_charge": tx.get("date_charge", ""),
+        "account_id": tx.get("account_id", ""),
+        "account_name_snapshot": tx.get("account_name_snapshot", ""),
+        "payment_method_id": tx.get("payment_method_id", ""),
+        "payment_method_name_snapshot": tx.get("payment_method_name_snapshot", ""),
+        "payment_resolution_template_json": tx.get("payment_resolution_template_json", ""),
     }
     append_row(PENDING_CSV, PENDING_FIELDS, row)
     return int(row_id)
@@ -55,7 +60,7 @@ def update_pending(tx_id: int | str, updates: dict) -> None:
     for row in rows:
         if str(row.get("id", "")) != str(tx_id):
             continue
-        for key in ["type", "date_due", "amount", "category", "account", "description", "status", "source", "source_id", "pending_kind", "account_key", "account_label", "statement_month", "date_charge"]:
+        for key in ["type", "date_due", "amount", "category", "account", "description", "status", "source", "source_id", "pending_kind", "account_key", "account_label", "statement_month", "date_charge", "account_id", "account_name_snapshot", "payment_method_id", "payment_method_name_snapshot", "payment_resolution_template_json"]:
             if key in updates:
                 row[key] = updates[key]
         break

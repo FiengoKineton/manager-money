@@ -4,7 +4,7 @@ import json
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
 
 from money_manager.config import TRANSACTION_TYPES
-from money_manager.domain.transaction import TransactionInput
+from money_manager.domain.transaction import TransactionInput, make_transaction_uid
 from money_manager.services.analytics_service import apply_transaction_filters
 from money_manager.services.calculation_service import cached_context
 from money_manager.services.account_scope_service import transactions_for_scope
@@ -12,6 +12,12 @@ from money_manager.services.category_service import category_context
 from money_manager.services.currency_service import currency_options_for_forms
 from money_manager.services.quick_log_service import handle_quick_log, quick_log_context
 from money_manager.services.payment_form_service import payment_form_context
+from money_manager.services.discount_balance_service import (
+    apply_discount_source_from_form,
+    discount_source_options_for_forms,
+    find_matching_discount_source,
+    validate_discount_source_form,
+)
 from money_manager.utils.stats import summary_totals
 from money_manager.services.transaction_window_service import (
     split_transactions_at,
@@ -178,30 +184,45 @@ def add_transaction():
             "payment_method_id": posted_form.get("payment_method_id", ""),
             "amount": posted_form.get("amount", "0"),
         }
-        if receipt_form_has_items(request.form):
-            posted_form["amount"] = f"{receipt_total_from_form(provisional_tx, request.form):.2f}"
-            provisional_tx["amount"] = posted_form["amount"]
+        source_validation = validate_discount_source_form(request.form) if receipt_form_has_items(request.form) else {"ok": True}
+        if not source_validation.get("ok"):
+            form_error = source_validation.get("error", "The selected gift card / buono sconto balance is not valid.")
+            form_values = request.form.to_dict()
+            transaction_type = posted_form.get("type", "expense")
+        else:
+            if receipt_form_has_items(request.form):
+                posted_form["amount"] = f"{receipt_total_from_form(provisional_tx, request.form):.2f}"
+                provisional_tx["amount"] = posted_form["amount"]
 
-        tx_input = TransactionInput.from_form(posted_form)
-        result = save_new_transaction(tx_input)
-        if result.get("ok"):
-            tx_ids = result.get("transaction_ids") or []
-            if tx_ids and receipt_form_has_items(request.form):
-                receipt_tx = tx_input.as_dict()
-                receipt_tx.update({
-                    "amount": f"{float(tx_input.amount or 0):.2f}",
-                    "payment_method_id": tx_input.payment_method_id,
-                    "account_id": tx_input.account_id,
-                })
-                try:
-                    save_receipt_for_saved_transaction(tx_input.type, tx_ids[0], receipt_tx, request.form)
-                except Exception:
-                    current_app.logger.exception("Failed to save receipt for newly-created transaction %s:%s", tx_input.type, tx_ids[0])
-            scoped_account_id = posted_form.get("account_id") or request.args.get("account_id") or ""
-            return redirect(url_for("transactions.transactions_page", account_id=scoped_account_id) if scoped_account_id else url_for("transactions.transactions_page"))
-        form_error = result.get("error", "The transaction was not saved.")
-        form_values = request.form.to_dict()
-        transaction_type = tx_input.type
+            tx_input = TransactionInput.from_form(posted_form)
+            result = save_new_transaction(tx_input)
+            if result.get("ok"):
+                tx_ids = result.get("transaction_ids") or []
+                if tx_ids and receipt_form_has_items(request.form):
+                    receipt_tx = tx_input.as_dict()
+                    receipt_tx.update({
+                        "amount": f"{float(tx_input.amount or 0):.2f}",
+                        "payment_method_id": tx_input.payment_method_id,
+                        "account_id": tx_input.account_id,
+                    })
+                    receipt_form = request.form.copy()
+                    try:
+                        tx_uid = make_transaction_uid(tx_input.type, tx_ids[0])
+                        source_result = apply_discount_source_from_form(receipt_form, receipt_tx, transaction_uid=tx_uid)
+                        if source_result.get("ok") and source_result.get("receipt_form_fields"):
+                            for field_name, field_value in source_result["receipt_form_fields"].items():
+                                receipt_form[field_name] = field_value
+                    except Exception:
+                        current_app.logger.exception("Failed to apply receipt discount balance for transaction %s:%s", tx_input.type, tx_ids[0])
+                    try:
+                        save_receipt_for_saved_transaction(tx_input.type, tx_ids[0], receipt_tx, receipt_form)
+                    except Exception:
+                        current_app.logger.exception("Failed to save receipt for newly-created transaction %s:%s", tx_input.type, tx_ids[0])
+                scoped_account_id = posted_form.get("account_id") or request.args.get("account_id") or ""
+                return redirect(url_for("transactions.transactions_page", account_id=scoped_account_id) if scoped_account_id else url_for("transactions.transactions_page"))
+            form_error = result.get("error", "The transaction was not saved.")
+            form_values = request.form.to_dict()
+            transaction_type = tx_input.type
     else:
         transaction_type = request.args.get("type", "expense")
 
@@ -218,6 +239,12 @@ def add_transaction():
         selected_payment_method_id=form_values.get("payment_method_id") or request.args.get("payment_method_id"),
     )
     currency_options = currency_options_for_forms()
+    discount_source_options = discount_source_options_for_forms()
+    suggested_discount_source = find_matching_discount_source(
+        category=form_values.get("category", ""),
+        sub_category=form_values.get("sub_category", ""),
+        description=form_values.get("description", ""),
+    )
     return render_template(
         "core/add_transaction.html",
         **context,
@@ -225,6 +252,9 @@ def add_transaction():
         today=date.today().isoformat(),
         currency_options=currency_options,
         currency_options_json=json.dumps(currency_options),
+        discount_source_options=discount_source_options,
+        discount_source_options_json=json.dumps(discount_source_options),
+        suggested_discount_source=suggested_discount_source,
         paypal_balance=paypal_balance(),
         account_balances_json=json.dumps(account_balances_for_preview()),
         main_net_preview=main_net_for_preview(),

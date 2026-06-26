@@ -27,6 +27,58 @@
     return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
   }
 
+  function normalizeMatchText(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9àèéìòùç]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function discountSources() {
+    return Array.isArray(window.moneyManagerDiscountSources) ? window.moneyManagerDiscountSources : [];
+  }
+
+  function discountSourceById(sourceId) {
+    const wanted = String(sourceId || "");
+    return discountSources().find((source) => String(source.id || source.value || "") === wanted) || null;
+  }
+
+  function selectedDiscountSource() {
+    const select = document.getElementById("receipt-discount-source-id");
+    if (!select || !select.value || select.value === "__new__") return null;
+    return discountSourceById(select.value);
+  }
+
+  function currentDiscountSourceBalance() {
+    const select = document.getElementById("receipt-discount-source-id");
+    if (!select) return 0;
+    if (select.value === "__new__") {
+      const starting = parseMoney(document.getElementById("receipt-new-discount-source-balance")?.value || 0);
+      return starting || parseMoney(document.getElementById("receipt-discount-value")?.value || 0);
+    }
+    const source = selectedDiscountSource();
+    return source ? Number(source.balance || 0) : 0;
+  }
+
+  function findMatchingDiscountSource() {
+    const category = document.getElementById("category-select")?.value || "";
+    const subCategory = document.getElementById("sub-category-input")?.value || "";
+    const description = document.getElementById("description-input")?.value || "";
+    const haystack = normalizeMatchText(`${category} ${subCategory} ${description}`);
+    if (!haystack) {
+      const suggested = window.moneyManagerSuggestedDiscountSource || null;
+      return suggested && (suggested.id || suggested.value) ? suggested : null;
+    }
+    return discountSources().find((source) => {
+      const keys = Array.isArray(source.match_keys) ? source.match_keys : [source.name, source.id];
+      return keys.some((rawKey) => {
+        const key = normalizeMatchText(rawKey);
+        return key && (key === haystack || haystack.includes(key) || key.includes(haystack));
+      });
+    }) || null;
+  }
+
   function receiptRows() {
     return Array.from(document.querySelectorAll(".add-receipt-row"));
   }
@@ -55,9 +107,18 @@
 
   function receiptDiscountRaw(subtotal) {
     const type = document.getElementById("receipt-discount-type")?.value || "none";
-    const value = parseMoney(document.getElementById("receipt-discount-value")?.value || 0);
+    const valueInput = document.getElementById("receipt-discount-value");
+    const sourceAmountInput = document.getElementById("receipt-discount-source-amount");
+    const value = parseMoney(valueInput?.value || 0);
     if (type === "percent") return subtotal * Math.min(value, 100) / 100;
     if (type === "voucher") return Math.min(subtotal, value);
+    if (type === "balance_source") {
+      const balance = currentDiscountSourceBalance();
+      const discount = Math.min(subtotal, balance || value, value);
+      if (sourceAmountInput) sourceAmountInput.value = discount.toFixed(2);
+      return discount;
+    }
+    if (sourceAmountInput) sourceAmountInput.value = "0.00";
     return 0;
   }
 
@@ -153,9 +214,50 @@
     updateFuturePreview();
   }
 
+  function updateDiscountSourcePanel(subtotalRaw) {
+    const typeSelect = document.getElementById("receipt-discount-type");
+    const sourcePanel = document.getElementById("receipt-balance-discount-panel");
+    const sourceSelect = document.getElementById("receipt-discount-source-id");
+    const newFields = document.getElementById("new-discount-source-fields");
+    const hint = document.getElementById("discount-source-hint");
+    const suggestion = document.getElementById("discount-source-suggestion");
+    const suggestionCopy = document.getElementById("discount-source-suggestion-copy");
+    const valueInput = document.getElementById("receipt-discount-value");
+    if (!typeSelect || !sourcePanel) return;
+
+    const usesBalanceSource = typeSelect.value === "balance_source";
+    const match = findMatchingDiscountSource();
+    sourcePanel.hidden = !usesBalanceSource && !match;
+    if (newFields && sourceSelect) newFields.hidden = sourceSelect.value !== "__new__";
+
+    if (usesBalanceSource && sourceSelect && valueInput) {
+      const balance = currentDiscountSourceBalance();
+      const current = parseMoney(valueInput.value || 0);
+      if (sourceSelect.value && current <= 0 && balance > 0 && subtotalRaw > 0) {
+        valueInput.value = Math.min(subtotalRaw, balance).toFixed(2);
+      }
+      if (hint) {
+        const source = selectedDiscountSource();
+        if (source) hint.textContent = `${source.kind_label || "Stored balance"}: available € ${formatMoney(Number(source.balance || 0))}. Edit the discount value to use only part of it.`;
+        else if (sourceSelect.value === "__new__") hint.textContent = "Create a new balance for this expense. Starting balance can be bigger than the amount used now. Use Manage to save a balance without spending it.";
+        else hint.textContent = "Choose a saved balance, or create one below. Put the amount to use in the discount field above. Use Manage to save a balance without spending it.";
+      }
+    }
+
+    if (suggestion && suggestionCopy) {
+      const alreadyUsing = usesBalanceSource && sourceSelect && match && String(sourceSelect.value) === String(match.id || match.value || "");
+      suggestion.hidden = !match || alreadyUsing;
+      if (match && !alreadyUsing) {
+        suggestion.dataset.sourceId = match.id || match.value || "";
+        suggestionCopy.textContent = `${match.name || "Stored balance"} has € ${formatMoney(Number(match.balance || 0))} available. Use it for this expense?`;
+      }
+    }
+  }
+
   function updateTotal() {
     const currency = selectedCurrency();
     const subtotalRaw = receiptSubtotalRaw();
+    updateDiscountSourcePanel(subtotalRaw);
     const discountRaw = receiptDiscountRaw(subtotalRaw);
     const rawTotal = Math.max(0, subtotalRaw - discountRaw);
     const eurTotal = rawTotal * currency.effective_rate_to_eur;
@@ -318,7 +420,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(".amount-input, [data-add-receipt-qty], #receipt-discount-type, #receipt-discount-value").forEach((input) => {
+    document.querySelectorAll(".amount-input, [data-add-receipt-qty], #receipt-discount-type, #receipt-discount-value, #receipt-discount-source-id, #receipt-new-discount-source-balance, #receipt-new-discount-source-name, #category-select, #sub-category-input, #description-input").forEach((input) => {
       input.addEventListener("input", updateTotal);
       input.addEventListener("change", updateTotal);
     });
@@ -349,6 +451,36 @@
 
     const insufficientSelect = document.getElementById("account-insufficient-action") || document.getElementById("paypal-insufficient-action");
     if (insufficientSelect) insufficientSelect.addEventListener("change", updateFuturePreview);
+
+    const useSuggestedDiscountSource = document.getElementById("use-suggested-discount-source");
+    if (useSuggestedDiscountSource) {
+      useSuggestedDiscountSource.addEventListener("click", () => {
+        const suggestion = document.getElementById("discount-source-suggestion");
+        const sourceId = suggestion?.dataset.sourceId || "";
+        const source = discountSourceById(sourceId);
+        const typeSelect = document.getElementById("receipt-discount-type");
+        const sourceSelect = document.getElementById("receipt-discount-source-id");
+        const valueInput = document.getElementById("receipt-discount-value");
+        if (typeSelect) typeSelect.value = "balance_source";
+        if (sourceSelect && sourceId) sourceSelect.value = sourceId;
+        if (valueInput && source) valueInput.value = Math.min(receiptSubtotalRaw(), Number(source.balance || 0)).toFixed(2);
+        updateTotal();
+      });
+    }
+
+    const sourceSelect = document.getElementById("receipt-discount-source-id");
+    if (sourceSelect) {
+      sourceSelect.addEventListener("change", () => {
+        const typeSelect = document.getElementById("receipt-discount-type");
+        if (sourceSelect.value && typeSelect) typeSelect.value = "balance_source";
+        const valueInput = document.getElementById("receipt-discount-value");
+        if (valueInput && parseMoney(valueInput.value || 0) <= 0) {
+          const balance = currentDiscountSourceBalance();
+          if (balance > 0) valueInput.value = Math.min(receiptSubtotalRaw(), balance).toFixed(2);
+        }
+        updateTotal();
+      });
+    }
 
     updatePaymentMethodOptions();
     updateTotal();

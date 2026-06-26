@@ -11,7 +11,8 @@ RECEIPTS_FILENAME = "receipts.json"
 DISCOUNT_NONE = "none"
 DISCOUNT_PERCENT = "percent"
 DISCOUNT_VOUCHER = "voucher"
-VALID_DISCOUNT_TYPES = {DISCOUNT_NONE, DISCOUNT_PERCENT, DISCOUNT_VOUCHER}
+DISCOUNT_BALANCE_SOURCE = "balance_source"
+VALID_DISCOUNT_TYPES = {DISCOUNT_NONE, DISCOUNT_PERCENT, DISCOUNT_VOUCHER, DISCOUNT_BALANCE_SOURCE}
 
 
 def load_receipts(user_id: str | None = None) -> dict[str, Any]:
@@ -153,12 +154,32 @@ def receipt_from_form(tx: Mapping[str, Any], form: Mapping[str, Any]) -> dict[st
     if discount_type not in VALID_DISCOUNT_TYPES:
         discount_type = DISCOUNT_NONE
     discount_value = _money(form.get("receipt_discount_value"))
+    discount_source = {}
     if discount_type == DISCOUNT_PERCENT:
         discount_value = max(0.0, min(100.0, discount_value))
+    elif discount_type == DISCOUNT_BALANCE_SOURCE:
+        try:
+            from money_manager.services.discount_balance_service import discount_source_preview_from_form
+
+            source_preview = discount_source_preview_from_form(form)
+        except Exception:
+            source_preview = {"uses_source": True, "amount": discount_value}
+        discount_value = _money(source_preview.get("amount")) or discount_value
+        discount_source = {
+            "id": str(source_preview.get("source_id") or form.get("receipt_discount_source_id") or "").strip(),
+            "name": str(source_preview.get("source_name") or form.get("receipt_discount_source_name") or "").strip(),
+            "kind": str(source_preview.get("source_kind") or form.get("receipt_discount_source_kind") or "").strip(),
+            "kind_label": str(source_preview.get("source_kind_label") or form.get("receipt_discount_source_kind_label") or "").strip(),
+            "requested_amount": round(_money(source_preview.get("requested_amount") or form.get("receipt_discount_source_requested_amount") or discount_value), 2),
+            "applied_amount": round(discount_value, 2),
+            "balance_before": round(_money(source_preview.get("balance_before") or form.get("receipt_discount_source_balance_before")), 2),
+            "balance_after": round(_money(source_preview.get("balance_after") or form.get("receipt_discount_source_balance_after")), 2),
+            "event_id": str(form.get("receipt_discount_source_event_id") or "").strip(),
+        }
     elif discount_type == DISCOUNT_NONE:
         discount_value = 0.0
 
-    return {
+    receipt = {
         "transaction_uid": transaction_uid_from_tx(tx),
         "merchant": str(form.get("receipt_merchant") or base.get("merchant") or "").strip(),
         "purchased_at": str(form.get("receipt_purchased_at") or base.get("purchased_at") or "").strip(),
@@ -172,6 +193,9 @@ def receipt_from_form(tx: Mapping[str, Any], form: Mapping[str, Any]) -> dict[st
         "notes": str(form.get("receipt_notes") or "").strip(),
         "updated_at": _now(),
     }
+    if discount_source:
+        receipt["discount_source"] = discount_source
+    return receipt
 
 
 def finalize_receipt(receipt: Mapping[str, Any], tx: Mapping[str, Any] | None = None) -> dict[str, Any]:
@@ -204,6 +228,7 @@ def finalize_receipt(receipt: Mapping[str, Any], tx: Mapping[str, Any] | None = 
     if discount_type not in VALID_DISCOUNT_TYPES:
         discount_type = DISCOUNT_NONE
     discount_value = _money(result.get("discount_value"))
+    discount_source = result.get("discount_source") if isinstance(result.get("discount_source"), Mapping) else {}
     if discount_type == DISCOUNT_PERCENT:
         discount_value = max(0.0, min(100.0, discount_value))
         discount_amount = round(subtotal * discount_value / 100.0, 2)
@@ -211,10 +236,16 @@ def finalize_receipt(receipt: Mapping[str, Any], tx: Mapping[str, Any] | None = 
     elif discount_type == DISCOUNT_VOUCHER:
         discount_amount = min(subtotal, round(discount_value, 2))
         discount_label = f"Voucher € {discount_amount:.2f}"
+    elif discount_type == DISCOUNT_BALANCE_SOURCE:
+        discount_amount = min(subtotal, round(discount_value, 2))
+        source_name = str(discount_source.get("name") or "Stored balance").strip()
+        source_kind = str(discount_source.get("kind_label") or _discount_source_kind_label(discount_source.get("kind"))).strip()
+        discount_label = f"{source_kind}: {source_name} — € {discount_amount:.2f}"
     else:
         discount_value = 0.0
         discount_amount = 0.0
         discount_label = "No discount"
+        discount_source = {}
     total = round(max(0.0, subtotal - discount_amount), 2)
 
     result.update({
@@ -230,6 +261,8 @@ def finalize_receipt(receipt: Mapping[str, Any], tx: Mapping[str, Any] | None = 
         "discount_value": round(discount_value, 2),
         "discount_amount": discount_amount,
         "discount_label": discount_label,
+        "discount_source": _finalize_discount_source(discount_source, discount_amount) if discount_source else {},
+        "discount_source_label": _discount_source_label(discount_source, discount_amount) if discount_source else "",
         "subtotal": subtotal,
         "subtotal_display": f"{subtotal:.2f}",
         "total": total,
@@ -278,6 +311,7 @@ def _default_receipt_from_transaction(tx: Mapping[str, Any] | None) -> dict[str,
         }],
         "discount_type": DISCOUNT_NONE,
         "discount_value": 0.0,
+        "discount_source": {},
         "notes": "",
         "updated_at": "",
     }
@@ -308,6 +342,50 @@ def _payment_method_card_details(tx: Mapping[str, Any]) -> dict[str, str]:
         "network": str(card_meta.get("network") or method.get("card_network") or ""),
     }
 
+
+
+def _discount_source_kind_label(kind: Any) -> str:
+    text = str(kind or "").strip().lower()
+    if text == "buono_sconto":
+        return "Buono sconto / reimbursement"
+    if text == "gift_card":
+        return "Gift card"
+    return "Stored discount balance"
+
+
+def _finalize_discount_source(source: Mapping[str, Any], applied_amount: float) -> dict[str, Any]:
+    if not isinstance(source, Mapping):
+        return {}
+    kind = str(source.get("kind") or "").strip()
+    kind_label = str(source.get("kind_label") or _discount_source_kind_label(kind)).strip()
+    name = str(source.get("name") or source.get("id") or "Stored balance").strip()
+    return {
+        "id": str(source.get("id") or "").strip(),
+        "name": name,
+        "kind": kind,
+        "kind_label": kind_label,
+        "requested_amount": round(_money(source.get("requested_amount") or applied_amount), 2),
+        "applied_amount": round(_money(source.get("applied_amount") or applied_amount), 2),
+        "applied_amount_display": f"{_money(source.get('applied_amount') or applied_amount):.2f}",
+        "balance_before": round(_money(source.get("balance_before")), 2),
+        "balance_before_display": f"{_money(source.get('balance_before')):.2f}",
+        "balance_after": round(_money(source.get("balance_after")), 2),
+        "balance_after_display": f"{_money(source.get('balance_after')):.2f}",
+        "event_id": str(source.get("event_id") or "").strip(),
+        "label": _discount_source_label(source, applied_amount),
+    }
+
+
+def _discount_source_label(source: Mapping[str, Any], applied_amount: float) -> str:
+    if not isinstance(source, Mapping):
+        return ""
+    name = str(source.get("name") or source.get("id") or "Stored balance").strip()
+    kind_label = str(source.get("kind_label") or _discount_source_kind_label(source.get("kind"))).strip()
+    after = _money(source.get("balance_after"))
+    label = f"{kind_label}: {name} used € {applied_amount:.2f}"
+    if source.get("balance_after") not in (None, ""):
+        label += f" · remaining € {after:.2f}"
+    return label
 
 def _merge_receipt(default: Mapping[str, Any], stored: Mapping[str, Any]) -> dict[str, Any]:
     result = deepcopy(dict(default or {}))

@@ -495,6 +495,7 @@
         <div class="desktop-receipt-totals paper-receipt-totals">
           <span>Subtotal <b>€ ${escapeHtml(receipt.subtotal_display || "0.00")}</b></span>
           <span>Discount <b>${escapeHtml(receipt.discount_label || "No discount")}</b></span>
+          ${receipt.discount_source_label ? `<span class="receipt-source-line">Source <b>${escapeHtml(receipt.discount_source_label)}</b></span>` : ""}
           <strong>Total € ${escapeHtml(receipt.total_display || "0.00")}</strong>
         </div>
       </div>`;

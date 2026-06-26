@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% block page_title %}{{ meta.title }}{% endblock %}
+
+{% block content %}
+<section class="special-page-hero panel-card">
+  <div>
+    <span class="eyebrow">{{ meta.eyebrow }}</span>
+    <h2>{{ meta.title }}</h2>
+    <p>{{ meta.description }}</p>
+    <div class="hero-actions">
+      <a class="secondary-btn compact-btn" href="{{ url_for('pending.recurring_page') }}">Open recurring rules</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('pending.pending_page') }}">Open pending payments</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('contacts.new_contact', type='company') }}">Add company contact</a>
+    </div>
+  </div>
+  <div class="special-metric-grid">
+    <div><span>Active</span><strong>{{ totals.active_count }}</strong><small>Dedicated rules</small></div>
+    <div><span>Monthly estimate</span><strong>€ {{ totals.monthly_total_display }}</strong><small>Recurring equivalent</small></div>
+    <div><span>To check</span><strong>{{ totals.due_now_count }}</strong><small>Due/overdue pending rows</small></div>
+  </div>
+</section>
+
+{% if message %}<div class="form-alert form-alert-success"><strong>Saved.</strong> {{ message }}</div>{% endif %}
+{% if error %}<div class="form-alert form-alert-error"><strong>Not saved.</strong> {{ error }}</div>{% endif %}
+
+<section class="special-layout">
+  <div class="special-main">
+    <section class="special-card panel-card">
+      <div class="panel-header">
+        <div>
+          <span class="eyebrow">New dedicated rule</span>
+          <h3>{{ meta.new_title }}</h3>
+          <p>{{ meta.default_subtitle }}</p>
+        </div>
+      </div>
+
+      <form method="post" class="special-form-grid">
+        <input type="hidden" name="action" value="create">
+        <div class="form-field form-field-wide">
+          <label>Name</label>
+          <input type="text" name="title" placeholder="{% if kind == 'utility_bill' %}Enel luce, ABC acqua, Italgas...{% else %}Kineton salary, client retainer...{% endif %}" required>
+        </div>
+        <div>
+          <label>{{ meta.contact_label }}</label>
+          <select name="contact_id">
+            <option value="">No contact</option>
+            {% for contact in contacts %}
+              <option value="{{ contact.id }}">{{ contact.display_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Category</label>
+          <input type="text" name="category" value="{{ meta.default_category }}" required>
+        </div>
+        <div>
+          <label>Account / Conto</label>
+          <select name="account_id">
+            {% for account in account_options %}
+              <option value="{{ account.id or account.value }}">{{ account.label }}</option>
+            {% endfor %}
+          </select>
+          <input type="hidden" name="account" value="">
+        </div>
+        {% if kind == 'utility_bill' %}
+        <div>
+          <label>Payment method</label>
+          <select name="payment_method_id">
+            <option value="">Default for account</option>
+            {% for method in payment_method_options %}
+              <option value="{{ method.id }}">{{ method.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% else %}
+          <input type="hidden" name="payment_method_id" value="">
+        {% endif %}
+        <div>
+          <label>{{ meta.amount_label }}</label>
+          <input type="number" min="0.01" step="0.01" name="amount" required>
+          <small>{{ meta.amount_hint }}</small>
+        </div>
+        <div>
+          <label>Day of month</label>
+          <input type="number" name="day_of_month" min="1" max="31" value="1" required>
+        </div>
+        <div>
+          <label>Start date</label>
+          <input type="date" name="start_date">
+        </div>
+        <div>
+          <label>Repeat every</label>
+          <div class="frequency-input"><input type="number" name="frequency" min="1" max="120" value="1" required><span>month(s)</span></div>
+        </div>
+        <div>
+          <label>End date</label>
+          <input type="date" name="end_date">
+        </div>
+        <div>
+          <label>Stop after</label>
+          <input type="number" name="max_occurrences" min="1" max="999" placeholder="Forever">
+        </div>
+        <label class="inline-checkbox form-field-wide">
+          <input type="checkbox" name="manual_check_required" value="1" checked>
+          Require manual check when a generated pending row is due
+        </label>
+        <label class="inline-checkbox form-field-wide">
+          <input type="checkbox" name="variable_amount" value="1" {% if kind == 'utility_bill' %}checked{% endif %}>
+          Amount can change month by month
+        </label>
+        <div class="form-field-wide">
+          <label>Notes</label>
+          <textarea name="notes" rows="3" placeholder="POD/PDR, contract number, payslip note, tax/reimbursement logic..."></textarea>
+        </div>
+        <div class="form-actions-row form-field-wide">
+          <button type="submit" class="primary-btn">Save {{ meta.singular|lower }}</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="special-card panel-card">
+      <div class="panel-header">
+        <div>
+          <span class="eyebrow">Manual monthly check</span>
+          <h3>{{ totals.active_count }} active {{ meta.title|lower }}</h3>
+          <p>Open pending rows can be checked, corrected and executed here. The original automation remains visible in Recurring.</p>
+        </div>
+      </div>
+
+      {% if items %}
+        <div class="special-item-list">
+          {% for item in items %}
+          <article class="special-item-card {{ 'needs-check' if item.needs_check else '' }}">
+            <form method="post" class="special-item-form">
+              <input type="hidden" name="item_id" value="{{ item.id }}">
+              <div class="special-item-head">
+                <div>
+                  <span class="type-badge type-{{ item.type }}">{{ item.type|capitalize }}</span>
+                  {% if item.needs_check %}<span class="soft-badge warning-badge">Check due</span>{% endif %}
+                  {% if item.variable_amount %}<span class="soft-badge">Variable</span>{% endif %}
+                  <h3>{{ item.title }}</h3>
+                  <p>{% if item.contact_name %}{{ item.contact_name }} · {% endif %}Next: {{ item.next_due }} · Last check: {{ item.last_check_label }}</p>
+                </div>
+                <strong>€ {{ item.amount_display }}</strong>
+              </div>
+
+              <div class="special-form-grid compact-special-form">
+                <div class="form-field form-field-wide">
+                  <label>Name</label>
+                  <input type="text" name="title" value="{{ item.title }}" required>
+                </div>
+                <div>
+                  <label>{{ meta.contact_label }}</label>
+                  <select name="contact_id">
+                    <option value="">No contact</option>
+                    {% for contact in contacts %}
+                      <option value="{{ contact.id }}" {% if contact.id == item.contact_id %}selected{% endif %}>{{ contact.display_name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div>
+                  <label>Category</label>
+                  <input type="text" name="category" value="{{ item.category }}" required>
+                </div>
+                <div>
+                  <label>Amount</label>
+                  <input type="number" min="0.01" step="0.01" name="amount" value="{{ item.amount_display }}" required>
+                </div>
+                <div>
+                  <label>Day</label>
+                  <input type="number" name="day_of_month" min="1" max="31" value="{{ item.day_of_month }}" required>
+                </div>
+                <div>
+                  <label>Frequency</label>
+                  <input type="number" name="frequency" min="1" max="120" value="{{ item.frequency }}" required>
+                </div>
+                <div>
+                  <label>Start</label>
+                  <input type="date" name="start_date" value="{{ item.start_date }}">
+                </div>
+                <div>
+                  <label>End</label>
+                  <input type="date" name="end_date" value="{{ item.end_date }}">
+                </div>
+                <div>
+                  <label>Stop after</label>
+                  <input type="number" name="max_occurrences" min="1" max="999" value="{{ item.max_occurrences }}" placeholder="Forever">
+                </div>
+                <div>
+                  <label>Account</label>
+                  <select name="account_id">
+                    {% for account in account_options %}
+                      {% set account_value = account.id or account.value %}
+                      <option value="{{ account_value }}" {% if account_value == item.account_id %}selected{% endif %}>{{ account.label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                {% if kind == 'utility_bill' %}
+                <div>
+                  <label>Payment method</label>
+                  <select name="payment_method_id">
+                    <option value="">Default for account</option>
+                    {% for method in payment_method_options %}
+                      <option value="{{ method.id }}" {% if method.id == item.payment_method_id %}selected{% endif %}>{{ method.label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                {% else %}
+                  <input type="hidden" name="payment_method_id" value="">
+                {% endif %}
+                <label class="inline-checkbox form-field-wide"><input type="checkbox" name="manual_check_required" value="1" {% if item.manual_check_required %}checked{% endif %}> Require manual check</label>
+                <label class="inline-checkbox form-field-wide"><input type="checkbox" name="variable_amount" value="1" {% if item.variable_amount %}checked{% endif %}> Variable amount</label>
+                <div class="form-field-wide"><label>Notes</label><textarea name="notes" rows="2">{{ item.notes }}</textarea></div>
+              </div>
+
+              <div class="special-actions-row">
+                <button type="submit" name="action" value="update" class="primary-btn">Update rule</button>
+                <button type="submit" name="action" value="archive" class="secondary-btn">Archive</button>
+                <button type="submit" name="action" value="delete" class="secondary-btn danger-lite" onclick="return confirm('Delete this dedicated page item and its recurring rule?')">Delete</button>
+              </div>
+            </form>
+
+            {% if item.pending_open %}
+              <div class="pending-check-list">
+                <h4>Open generated rows to check</h4>
+                {% for pending in item.pending_open %}
+                  <form method="post" class="pending-check-row {{ 'is-due' if pending.is_due_today or pending.is_overdue else '' }}">
+                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                    <input type="hidden" name="pending_id" value="{{ pending.id }}">
+                    <div>
+                      <strong>{{ pending.description or item.title }}</strong>
+                      <small>{{ pending.date_due_str }} · {{ pending.category }} · {{ pending.direction_label }}</small>
+                    </div>
+                    <label>Checked amount<input type="number" step="0.01" min="0.01" name="checked_amount" value="{{ pending.amount_value }}"></label>
+                    <label>Due date<input type="date" name="checked_due_date" value="{{ pending.date_due_str }}"></label>
+                    <button type="submit" name="action" value="mark_checked" class="secondary-btn compact-btn">Save check</button>
+                    <button type="submit" name="action" value="execute_pending" class="primary-btn compact-btn">Execute</button>
+                  </form>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="empty subtle-empty">No open generated pending row right now.</p>
+            {% endif %}
+
+            {% if item.pending_executed %}
+              <details class="executed-mini-history">
+                <summary>Recent executed rows</summary>
+                {% for pending in item.pending_executed %}
+                  <div><span>{{ pending.date_due_str }}</span><strong>{{ pending.amount_str }}</strong><small>{{ pending.description }}</small></div>
+                {% endfor %}
+              </details>
+            {% endif %}
+          </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <article class="special-empty panel-card">
+          <h3>{{ meta.empty_title }}</h3>
+          <p>{{ meta.empty_description }}</p>
+        </article>
+      {% endif %}
+    </section>
+
+    {% if archived_items %}
+      <section class="special-card panel-card">
+        <div class="panel-header"><div><span class="eyebrow">Archived</span><h3>Hidden {{ meta.title|lower }}</h3></div></div>
+        <div class="archived-special-list">
+          {% for item in archived_items %}
+            <form method="post" class="archived-special-row">
+              <input type="hidden" name="item_id" value="{{ item.id }}">
+              <strong>{{ item.title }}</strong>
+              <span>{{ item.amount_display }} · {{ item.category }}</span>
+              <button type="submit" name="action" value="restore" class="secondary-btn compact-btn">Restore</button>
+            </form>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </div>
+
+  <aside class="special-side">
+    <section class="special-card panel-card">
+      <span class="eyebrow">Design note</span>
+      <h3>Still recurring rules</h3>
+      <p>These pages do not duplicate the money logic. They create and update normal recurring rules, then add contact, variable-amount and manual-check metadata on top.</p>
+    </section>
+    <section class="special-card panel-card">
+      <span class="eyebrow">Workflow</span>
+      <h3>How to use</h3>
+      <p>1. Save the rule here. 2. When the day arrives, the pending row is generated. 3. Check the actual amount. 4. Execute it from this page or Pending.</p>
+    </section>
+  </aside>
+</section>
+{% endblock %}

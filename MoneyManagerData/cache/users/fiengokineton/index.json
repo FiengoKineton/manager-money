@@ -19,6 +19,156 @@
       "status": "stale",
       "size_bytes": 2462,
       "stale_reason": "tag_invalidation"
+    },
+    "afbad1b1ce5bdb1fd42f33068f0fc4f848ed2c06": {
+      "key": "user:fiengokineton:transaction_initial_conditions:v1:875f7b475ba4d6031f4106eb",
+      "name": "transaction_initial_conditions",
+      "version": "v1",
+      "path": "computed/afbad1b1ce5bdb1fd42f33068f0fc4f848ed2c06.mmcache",
+      "created_at": "2026-06-26T09:56:58+00:00",
+      "updated_at": "2026-06-26T09:58:07+00:00",
+      "expires_at": "",
+      "source_fingerprint": "9b7e104d0fd4683c58f8590aafc6ccc4",
+      "tags": [
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "stale",
+      "size_bytes": 2462,
+      "stale_reason": "tag_invalidation"
+    },
+    "594f0fbc3a13533a40ccfb81aa2c3d41dc154e24": {
+      "key": "user:fiengokineton:transaction_initial_conditions:v1:c9c5fe0c905e2d8200ea7672",
+      "name": "transaction_initial_conditions",
+      "version": "v1",
+      "path": "computed/594f0fbc3a13533a40ccfb81aa2c3d41dc154e24.mmcache",
+      "created_at": "2026-06-26T09:58:18+00:00",
+      "updated_at": "2026-06-26T10:08:17+00:00",
+      "expires_at": "",
+      "source_fingerprint": "a42342773a1fad6c036dbb71fe0efb2e",
+      "tags": [
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "stale",
+      "size_bytes": 2462,
+      "stale_reason": "tag_invalidation"
+    },
+    "5d310ebb156a463502162bf222f6910aa0543016": {
+      "key": "user:fiengokineton:transaction_initial_conditions:v1:08a41ab15d396ec3a4775632",
+      "name": "transaction_initial_conditions",
+      "version": "v1",
+      "path": "computed/5d310ebb156a463502162bf222f6910aa0543016.mmcache",
+      "created_at": "2026-06-26T10:05:35+00:00",
+      "updated_at": "2026-06-26T10:08:17+00:00",
+      "expires_at": "",
+      "source_fingerprint": "4d8657262586da5804bb809af1cb950d",
+      "tags": [
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "stale",
+      "size_bytes": 1606,
+      "stale_reason": "tag_invalidation"
+    },
+    "14c44c4f86d7a8e06fe3f09b83d17e793b38b9e2": {
+      "key": "user:fiengokineton:transaction_initial_conditions:v1:eda9d4a98fcbb18f29c155f2",
+      "name": "transaction_initial_conditions",
+      "version": "v1",
+      "path": "computed/14c44c4f86d7a8e06fe3f09b83d17e793b38b9e2.mmcache",
+      "created_at": "2026-06-26T10:06:15+00:00",
+      "updated_at": "2026-06-26T10:08:17+00:00",
+      "expires_at": "",
+      "source_fingerprint": "4bd6bb9b7c6ae45d3ae6741a5fa11ae1",
+      "tags": [
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "stale",
+      "size_bytes": 2446,
+      "stale_reason": "tag_invalidation"
+    },
+    "382e4e97c94a1a778eefbdeee99d0245e0257197": {
+      "key": "user:fiengokineton:transaction_initial_conditions:v1:f5490616a284194b14d69e2e",
+      "name": "transaction_initial_conditions",
+      "version": "v1",
+      "path": "computed/382e4e97c94a1a778eefbdeee99d0245e0257197.mmcache",
+      "created_at": "2026-06-26T10:06:43+00:00",
+      "updated_at": "2026-06-26T10:08:17+00:00",
+      "expires_at": "",
+      "source_fingerprint": "d5f1857f6c7fb7fa7c8b0e9fccffd0c7",
+      "tags": [
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "stale",
+      "size_bytes": 1002,
+      "stale_reason": "tag_invalidation"
+    },
+    "fd7651f21bf582518db7f64fe11b4e259c4ddabc": {
+      "key": "user:fiengokineton:transaction_initial_conditions:v1:f0c0aa03ed2b2d4e89487645",
+      "name": "transaction_initial_conditions",
+      "version": "v1",
+      "path": "computed/fd7651f21bf582518db7f64fe11b4e259c4ddabc.mmcache",
+      "created_at": "2026-06-26T10:07:12+00:00",
+      "updated_at": "2026-06-26T10:08:17+00:00",
+      "expires_at": "",
+      "source_fingerprint": "f01d074c1bf00fc9dc40397cfa1295d2",
+      "tags": [
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "stale",
+      "size_bytes": 1018,
+      "stale_reason": "tag_invalidation"
+    },
+    "8c1c77a39a1415b058eec034746a69931d761b46": {
+      "key": "user:fiengokineton:transaction_initial_conditions:v1:3882c0199fee36065e37fa86",
+      "name": "transaction_initial_conditions",
+      "version": "v1",
+      "path": "computed/8c1c77a39a1415b058eec034746a69931d761b46.mmcache",
+      "created_at": "2026-06-26T10:08:28+00:00",
+      "updated_at": "2026-06-26T10:08:28+00:00",
+      "expires_at": "",
+      "source_fingerprint": "cdbca23d1f64c65f8705d631e4d327af",
+      "tags": [
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 1018
+    },
+    "e050743f3228e8c936e37e0f7a5aa19edd4e282e": {
+      "key": "user:fiengokineton:transaction_initial_conditions:v1:eaa2c2722c6d505b47bd51be",
+      "name": "transaction_initial_conditions",
+      "version": "v1",
+      "path": "computed/e050743f3228e8c936e37e0f7a5aa19edd4e282e.mmcache",
+      "created_at": "2026-06-26T10:18:29+00:00",
+      "updated_at": "2026-06-26T10:18:29+00:00",
+      "expires_at": "",
+      "source_fingerprint": "0f6d3c6096b68d2d80aae2cc8bc7d60e",
+      "tags": [
+        "accounts",
+        "payment_methods"
+      ],
+      "sensitive": true,
+      "encrypted": true,
+      "status": "valid",
+      "size_bytes": 1018
     }
   }
 }

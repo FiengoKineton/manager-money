@@ -14,7 +14,7 @@ def write_recurring(rows: list[dict]) -> None:
     write_rows(RECURRING_CSV, RECURRING_FIELDS, [_normalize_row(row) for row in rows])
 
 
-def append_recurring(rule: dict) -> None:
+def append_recurring(rule: dict) -> int | None:
     rows = load_recurring()
     row = {
         "id": str(next_numeric_id(rows)),
@@ -37,6 +37,10 @@ def append_recurring(rule: dict) -> None:
     }
     rows.append(row)
     write_recurring(rows)
+    try:
+        return int(row["id"])
+    except (TypeError, ValueError):
+        return None
 
 
 def update_recurring(rule_id, updates: dict) -> None:

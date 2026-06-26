@@ -2630,3 +2630,496 @@ body.chart-expanded-open .app-main { overflow: hidden !important; }
     grid-column: span 1;
   }
 }
+
+/* Receipt gift-card / buono-sconto balance discounts */
+.receipt-balance-discount-panel {
+  grid-column: 1 / -1;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.24));
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  display: grid;
+  gap: 12px;
+}
+
+.receipt-balance-discount-panel[hidden],
+.discount-source-suggestion[hidden],
+.new-discount-source-fields[hidden] {
+  display: none !important;
+}
+
+.discount-source-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+}
+
+.discount-source-suggestion span {
+  flex: 1 1 240px;
+}
+
+.discount-source-grid,
+.new-discount-source-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.discount-source-grid > div:first-child {
+  grid-column: 1 / -1;
+}
+
+.receipt-balance-discount-panel select,
+.receipt-balance-discount-panel input {
+  width: 100%;
+}
+
+.receipt-source-line b {
+  font-weight: 700;
+}
+
+/* Gift cards / Buoni sconto page */
+.discount-balance-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: stretch;
+  margin-bottom: 1.25rem;
+  padding: 1.35rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.86), rgba(236,253,245,0.56));
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+}
+.discount-balance-hero h2 { margin: 0.15rem 0 0.35rem; }
+.discount-balance-hero p { max-width: 780px; margin: 0; color: var(--muted, #52627a); }
+.discount-balance-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 0.75rem;
+  min-width: min(520px, 100%);
+}
+.discount-balance-totals div,
+.discount-balance-card {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 24px;
+  background: rgba(255,255,255,0.72);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.07);
+}
+.discount-balance-totals div { padding: 1rem; }
+.discount-balance-totals span,
+.discount-source-kind { display: block; color: var(--muted, #52627a); font-size: 0.82rem; font-weight: 800; }
+.discount-balance-totals strong { display: block; margin-top: 0.25rem; font-size: 1.25rem; }
+.discount-balance-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 1.2rem;
+  align-items: start;
+}
+.discount-balance-main,
+.discount-balance-side { display: grid; gap: 1rem; }
+.discount-balance-card { padding: 1.1rem; }
+.section-heading-row,
+.discount-source-card-head,
+.split-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+.section-heading-row h3 { margin: 0.15rem 0 0; }
+.discount-balance-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+.discount-balance-form label { display: block; margin-bottom: 0.35rem; font-weight: 850; }
+.discount-balance-form input,
+.discount-balance-form select {
+  width: 100%;
+  min-height: 46px;
+}
+.compact-form-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+.discount-balance-actions { display: flex; gap: 0.7rem; align-items: center; margin-top: 1rem; }
+.discount-source-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1rem; }
+.discount-source-card {
+  padding: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 22px;
+  background: rgba(248,250,252,0.68);
+}
+.discount-source-card-head strong { display: block; margin-top: 0.2rem; font-size: 1.15rem; }
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(148,163,184,0.16);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+.status-active { background: rgba(34,197,94,0.14); color: #166534; }
+.is-archived { opacity: 0.76; }
+.discount-event-list { display: grid; gap: 0.65rem; margin-top: 0.8rem; }
+.discount-event-row {
+  padding: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  background: rgba(248,250,252,0.6);
+}
+.discount-event-row strong,
+.discount-event-row span,
+.discount-event-row small { display: block; }
+.discount-event-row small { color: var(--muted, #52627a); }
+@media (max-width: 1000px) {
+  .discount-balance-hero,
+  .discount-balance-layout { grid-template-columns: 1fr; display: grid; }
+  .discount-balance-totals { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .discount-balance-form,
+  .compact-form-grid { grid-template-columns: 1fr; }
+  .section-heading-row,
+  .discount-source-card-head,
+  .split-actions { align-items: stretch; flex-direction: column; }
+}
+
+/* Dedicated recurring sections: Bollette, Stipendi/Cedolini, Mutui */
+.special-page-hero,
+.special-layout,
+.special-card,
+.special-item-card,
+.special-empty {
+  position: relative;
+}
+
+.special-page-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+  gap: 1.25rem;
+  align-items: stretch;
+  margin-bottom: 1rem;
+}
+
+.special-page-hero h2,
+.special-card h3,
+.special-item-card h3 {
+  margin: .25rem 0;
+}
+
+.special-page-hero p,
+.special-card p,
+.special-item-card p {
+  color: var(--muted-text, #53657d);
+}
+
+.special-metric-grid,
+.rule-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.special-metric-grid > div,
+.rule-metric-grid > div {
+  border: 1px solid rgba(120, 160, 220, .22);
+  border-radius: 18px;
+  padding: .9rem;
+  background: rgba(255,255,255,.46);
+  box-shadow: 0 12px 34px rgba(31, 45, 85, .06);
+}
+
+.special-metric-grid span,
+.rule-metric-grid span,
+.special-metric-grid small,
+.rule-metric-grid small {
+  display: block;
+  color: var(--muted-text, #53657d);
+  font-size: .82rem;
+}
+
+.special-metric-grid strong,
+.rule-metric-grid strong {
+  display: block;
+  color: var(--heading-color, #0f2846);
+  font-size: 1.15rem;
+  margin: .2rem 0;
+}
+
+.special-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 1rem;
+  align-items: start;
+}
+
+.special-main,
+.special-side,
+.special-item-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.special-card {
+  overflow: hidden;
+}
+
+.special-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .9rem;
+}
+
+.special-form-grid .form-field-wide,
+.mortgage-form-grid .form-field-wide {
+  grid-column: 1 / -1;
+}
+
+.special-form-grid label,
+.pending-check-row label {
+  display: grid;
+  gap: .35rem;
+  font-weight: 700;
+  color: var(--heading-color, #0f2846);
+}
+
+.special-form-grid input,
+.special-form-grid select,
+.special-form-grid textarea,
+.pending-check-row input {
+  width: 100%;
+}
+
+.compact-special-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: .85rem;
+}
+
+.special-item-card {
+  border: 1px solid rgba(120, 160, 220, .24);
+  border-radius: 24px;
+  padding: 1rem;
+  background: rgba(255,255,255,.54);
+  box-shadow: 0 18px 48px rgba(31, 45, 85, .08);
+}
+
+.special-item-card.needs-check {
+  border-color: rgba(217, 119, 6, .45);
+  box-shadow: 0 18px 48px rgba(217, 119, 6, .10);
+}
+
+.special-item-head {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: .8rem;
+}
+
+.special-item-head > strong {
+  font-size: 1.35rem;
+  color: var(--heading-color, #0f2846);
+  white-space: nowrap;
+}
+
+.warning-badge {
+  border-color: rgba(217, 119, 6, .35);
+  background: rgba(251, 191, 36, .18);
+  color: #92400e;
+}
+
+.special-actions-row,
+.archived-special-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  align-items: center;
+  margin-top: .9rem;
+}
+
+.pending-check-list {
+  margin-top: 1rem;
+  display: grid;
+  gap: .6rem;
+}
+
+.pending-check-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 150px 150px auto auto;
+  gap: .65rem;
+  align-items: end;
+  border: 1px solid rgba(120, 160, 220, .22);
+  border-radius: 18px;
+  padding: .75rem;
+  background: rgba(255,255,255,.56);
+}
+
+.pending-check-row.is-due {
+  border-color: rgba(217,119,6,.45);
+  background: rgba(255,247,237,.7);
+}
+
+.pending-check-row small,
+.executed-mini-history small {
+  display: block;
+  color: var(--muted-text, #53657d);
+}
+
+.executed-mini-history,
+.mortgage-projection-details,
+.mortgage-edit-details {
+  margin-top: .85rem;
+  border-top: 1px solid rgba(120, 160, 220, .18);
+  padding-top: .75rem;
+}
+
+.executed-mini-history > div {
+  display: grid;
+  grid-template-columns: 110px 100px 1fr;
+  gap: .6rem;
+  padding: .3rem 0;
+}
+
+.archived-special-list {
+  display: grid;
+  gap: .6rem;
+}
+
+.archived-special-row {
+  justify-content: space-between;
+  border: 1px solid rgba(120,160,220,.22);
+  border-radius: 16px;
+  padding: .7rem;
+  background: rgba(255,255,255,.45);
+}
+
+.subtle-empty {
+  margin-top: .75rem;
+}
+
+.mortgage-table-wrap {
+  overflow-x: auto;
+  margin-top: .65rem;
+}
+
+.compact-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+.compact-data-table th,
+.compact-data-table td {
+  padding: .6rem .7rem;
+  border-bottom: 1px solid rgba(120,160,220,.18);
+  text-align: left;
+}
+
+.compact-data-table th {
+  color: var(--heading-color, #0f2846);
+  font-size: .82rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.company-extra-section p {
+  margin: .25rem 0 0;
+}
+
+@media (max-width: 1180px) {
+  .special-page-hero,
+  .special-layout {
+    grid-template-columns: 1fr;
+  }
+  .pending-check-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .special-metric-grid,
+  .rule-metric-grid,
+  .special-form-grid,
+  .compact-special-form,
+  .pending-check-row {
+    grid-template-columns: 1fr;
+  }
+  .special-item-head {
+    display: grid;
+  }
+}
+
+
+/* Patch: planning sidebar subgroups */
+.nav-items-with-subgroups {
+  gap: .45rem;
+}
+.nav-subgroup {
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, .18);
+  background: rgba(255, 255, 255, .32);
+  overflow: hidden;
+}
+.nav-subgroup[open],
+.nav-subgroup.is-active {
+  background: rgba(255, 255, 255, .48);
+  border-color: rgba(59, 130, 246, .22);
+}
+.app-sidebar-nav-clean .nav-subgroup > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .65rem;
+  padding: .62rem .78rem;
+  color: rgba(15, 23, 42, .76);
+  font-size: .82rem;
+  font-weight: 900;
+  letter-spacing: .015em;
+}
+.app-sidebar-nav-clean .nav-subgroup > summary::-webkit-details-marker {
+  display: none;
+}
+.app-sidebar-nav-clean .nav-subgroup > summary::after {
+  content: "›";
+  opacity: .62;
+  font-size: .95rem;
+  transition: transform .16s ease;
+}
+.app-sidebar-nav-clean .nav-subgroup[open] > summary::after {
+  transform: rotate(90deg);
+}
+.nav-subitems {
+  display: grid;
+  gap: .18rem;
+  padding: 0 .42rem .52rem .42rem;
+}
+.nav-subgroup:not([open]) .nav-subitems {
+  display: none !important;
+}
+.nav-subitems a {
+  min-height: 2.35rem;
+  padding: .58rem .7rem .58rem 1.15rem !important;
+  border-radius: .8rem;
+  font-size: .9rem;
+}
+.nav-subitems a::before {
+  transform: scale(.76);
+  opacity: .55;
+}
+.nav-subitems a.active {
+  box-shadow: inset 3px 0 0 rgba(37, 99, 235, .78);
+}
+
+@media (max-width: 900px) {
+  .nav-subitems a {
+    padding-left: .85rem !important;
+  }
+}

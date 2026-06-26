@@ -21,10 +21,19 @@ CONTACT_FIELDS = {
     "bank_name",
     "email",
     "phone",
+    "vat_number",
+    "fiscal_code",
+    "pec_email",
+    "sdi_code",
+    "registered_address",
+    "city",
+    "province",
+    "postal_code",
+    "country",
     "notes",
     "is_archived",
 }
-SEARCH_FIELDS = ("display_name", "first_name", "last_name", "company_name", "relationship", "iban")
+SEARCH_FIELDS = ("display_name", "first_name", "last_name", "company_name", "relationship", "iban", "vat_number", "fiscal_code", "pec_email", "sdi_code")
 
 
 def load_contacts_config(user_id: str | None = None) -> dict[str, Any]:
@@ -237,6 +246,15 @@ def _normalize_contact(data: Mapping[str, Any] | None) -> dict[str, Any]:
         "bank_name": _clean_text(data.get("bank_name")),
         "email": _clean_email(data.get("email")),
         "phone": _clean_text(data.get("phone")),
+        "vat_number": _clean_vat(data.get("vat_number") or data.get("partita_iva") or data.get("piva")),
+        "fiscal_code": _clean_fiscal_code(data.get("fiscal_code") or data.get("codice_fiscale")),
+        "pec_email": _clean_email(data.get("pec_email") or data.get("pec")),
+        "sdi_code": _clean_sdi(data.get("sdi_code") or data.get("codice_destinatario") or data.get("sdi")),
+        "registered_address": _clean_text(data.get("registered_address") or data.get("address")),
+        "city": _clean_text(data.get("city")),
+        "province": _clean_text(data.get("province")).upper(),
+        "postal_code": _clean_text(data.get("postal_code") or data.get("zip_code") or data.get("cap")),
+        "country": _clean_text(data.get("country")) or ("Italy" if contact_type == "company" else ""),
         "notes": _clean_multiline(data.get("notes")),
         "is_archived": _as_bool(data.get("is_archived", False), default=False),
         "created_at": _clean_text(data.get("created_at")),

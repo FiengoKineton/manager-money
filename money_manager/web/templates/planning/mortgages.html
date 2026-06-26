@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block page_title %}Mutui / Mortgages{% endblock %}
+
+{% block content %}
+<section class="special-page-hero panel-card">
+  <div>
+    <span class="eyebrow">Property debt planning</span>
+    <h2>Mutui / Mortgages</h2>
+    <p>Store property value, requested amount, fixed or variable rate assumptions, duration, monthly payment and payment rule. The page calculates a forecast over time and can create the monthly recurring rule.</p>
+    <div class="hero-actions">
+      <a class="secondary-btn compact-btn" href="{{ url_for('pending.recurring_page') }}">Open recurring rules</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('contacts.new_contact', type='company') }}">Add bank contact</a>
+    </div>
+  </div>
+  <div class="special-metric-grid">
+    <div><span>Active mutui</span><strong>{{ totals.active_count }}</strong><small>Saved mortgages</small></div>
+    <div><span>Requested</span><strong>€ {{ totals.total_requested_display }}</strong><small>Total loan amount</small></div>
+    <div><span>Monthly</span><strong>€ {{ totals.total_monthly_display }}</strong><small>Expected payment</small></div>
+  </div>
+</section>
+
+{% if message %}<div class="form-alert form-alert-success"><strong>Saved.</strong> {{ message }}</div>{% endif %}
+{% if error %}<div class="form-alert form-alert-error"><strong>Not saved.</strong> {{ error }}</div>{% endif %}
+
+<section class="special-layout">
+  <div class="special-main">
+    <section class="special-card panel-card">
+      <div class="panel-header"><div><span class="eyebrow">New mortgage</span><h3>Add mutuo</h3><p>Use either the actual bank payment or let the page estimate it from rate, amount and duration.</p></div></div>
+      <form method="post" class="special-form-grid mortgage-form-grid">
+        <input type="hidden" name="action" value="create">
+        <div class="form-field form-field-wide"><label>Mortgage / property name</label><input type="text" name="name" placeholder="Casa Napoli, Prima casa, Mutuo Intesa..." required></div>
+        <div class="form-field form-field-wide"><label>Property address / notes</label><input type="text" name="property_address" placeholder="Optional"></div>
+        <div><label>Full property value (€)</label><input type="number" min="0" step="0.01" name="property_value"></div>
+        <div><label>Requested loan amount (€)</label><input type="number" min="0.01" step="0.01" name="requested_amount" required></div>
+        <div><label>Own funds / down payment (€)</label><input type="number" min="0" step="0.01" name="own_funds"></div>
+        <div><label>Rate type</label><select name="rate_type"><option value="fixed">Fixed</option><option value="variable">Variable</option></select></div>
+        <div><label>Annual rate / TAN estimate (%)</label><input type="number" step="0.001" name="annual_rate" placeholder="3.25"></div>
+        <div><label>Euribor estimate (%)</label><input type="number" step="0.001" name="euribor_estimate" placeholder="Variable only"></div>
+        <div><label>Spread (%)</label><input type="number" step="0.001" name="spread" placeholder="Variable only"></div>
+        <div><label>Years</label><input type="number" min="1" max="50" name="years" value="25" required></div>
+        <div><label>Start date</label><input type="date" name="start_date"></div>
+        <div><label>Monthly payment day</label><input type="number" name="payment_day" min="1" max="31" value="1"></div>
+        <div><label>Actual monthly payment (€)</label><input type="number" min="0" step="0.01" name="manual_monthly_payment" placeholder="Leave empty to estimate"><small>Use this if the bank already gave you a precise rata.</small></div>
+        <div><label>Bank / company contact</label><select name="bank_contact_id"><option value="">No contact</option>{% for contact in contacts %}<option value="{{ contact.id }}">{{ contact.display_name }}</option>{% endfor %}</select></div>
+        <div><label>Account / Conto</label><select name="account_id">{% for account in account_options %}<option value="{{ account.id or account.value }}">{{ account.label }}</option>{% endfor %}</select><input type="hidden" name="account" value=""></div>
+        <div><label>Payment method</label><select name="payment_method_id"><option value="">Default for account</option>{% for method in payment_method_options %}<option value="{{ method.id }}">{{ method.label }}</option>{% endfor %}</select></div>
+        <div><label>Category</label><input type="text" name="category" value="Mutuo"></div>
+        <label class="inline-checkbox form-field-wide"><input type="checkbox" name="create_recurring" value="1" checked> Create/update the monthly recurring payment rule</label>
+        <div class="form-field-wide"><label>Notes</label><textarea name="notes" rows="3" placeholder="Bank offer, insurance included, surroga notes, variable-rate assumptions..."></textarea></div>
+        <div class="form-actions-row form-field-wide"><button type="submit" class="primary-btn">Save mortgage</button></div>
+      </form>
+    </section>
+
+    <section class="special-card panel-card">
+      <div class="panel-header"><div><span class="eyebrow">Forecasts</span><h3>{{ mortgages|length }} active mortgages</h3><p>Projection is an estimate. For variable rates, it uses Euribor estimate + spread when provided, otherwise the annual rate field.</p></div></div>
+      {% if mortgages %}
+      <div class="special-item-list">
+        {% for mortgage in mortgages %}
+        <article class="special-item-card mortgage-card">
+          <form method="post" class="special-item-form">
+            <input type="hidden" name="mortgage_id" value="{{ mortgage.id }}">
+            <input type="hidden" name="is_active" value="1">
+            <div class="special-item-head">
+              <div>
+                <span class="type-badge">{{ mortgage.rate_type|capitalize }}</span>
+                {% if mortgage.recurring_rule_id %}<span class="soft-badge">Recurring rule linked</span>{% endif %}
+                <h3>{{ mortgage.name }}</h3>
+                <p>{% if mortgage.bank_contact %}{{ mortgage.bank_contact.display_name }} · {% endif %}{{ mortgage.property_address }}</p>
+              </div>
+              <strong>€ {{ mortgage.monthly_payment_display }}/mo</strong>
+            </div>
+
+            <div class="rule-metric-grid">
+              <div><span>Property value</span><strong>€ {{ '%.2f'|format(mortgage.property_value) }}</strong></div>
+              <div><span>Requested</span><strong>€ {{ '%.2f'|format(mortgage.requested_amount) }}</strong></div>
+              <div><span>Loan-to-value</span><strong>{{ mortgage.loan_to_value_display }}</strong></div>
+              <div><span>Effective rate</span><strong>{{ mortgage.projection.effective_annual_rate_display }}</strong></div>
+              <div><span>Total interest</span><strong>€ {{ mortgage.total_interest_display }}</strong></div>
+              <div><span>Total paid</span><strong>€ {{ mortgage.total_paid_display }}</strong></div>
+            </div>
+
+            <details class="mortgage-edit-details">
+              <summary>Edit mortgage inputs</summary>
+              <div class="special-form-grid compact-special-form mortgage-form-grid">
+                <div class="form-field form-field-wide"><label>Name</label><input type="text" name="name" value="{{ mortgage.name }}" required></div>
+                <div class="form-field form-field-wide"><label>Property address / notes</label><input type="text" name="property_address" value="{{ mortgage.property_address }}"></div>
+                <div><label>Property value</label><input type="number" min="0" step="0.01" name="property_value" value="{{ mortgage.property_value }}"></div>
+                <div><label>Requested amount</label><input type="number" min="0.01" step="0.01" name="requested_amount" value="{{ mortgage.requested_amount }}" required></div>
+                <div><label>Own funds</label><input type="number" min="0" step="0.01" name="own_funds" value="{{ mortgage.own_funds }}"></div>
+                <div><label>Rate type</label><select name="rate_type"><option value="fixed" {% if mortgage.rate_type == 'fixed' %}selected{% endif %}>Fixed</option><option value="variable" {% if mortgage.rate_type == 'variable' %}selected{% endif %}>Variable</option></select></div>
+                <div><label>Annual rate (%)</label><input type="number" step="0.001" name="annual_rate" value="{{ mortgage.annual_rate }}"></div>
+                <div><label>Euribor estimate (%)</label><input type="number" step="0.001" name="euribor_estimate" value="{{ mortgage.euribor_estimate }}"></div>
+                <div><label>Spread (%)</label><input type="number" step="0.001" name="spread" value="{{ mortgage.spread }}"></div>
+                <div><label>Years</label><input type="number" min="1" max="50" name="years" value="{{ mortgage.years }}" required></div>
+                <div><label>Start date</label><input type="date" name="start_date" value="{{ mortgage.start_date }}"></div>
+                <div><label>Payment day</label><input type="number" name="payment_day" min="1" max="31" value="{{ mortgage.payment_day }}"></div>
+                <div><label>Actual monthly payment</label><input type="number" min="0" step="0.01" name="manual_monthly_payment" value="{{ mortgage.manual_monthly_payment }}"></div>
+                <div><label>Bank contact</label><select name="bank_contact_id"><option value="">No contact</option>{% for contact in contacts %}<option value="{{ contact.id }}" {% if contact.id == mortgage.bank_contact_id %}selected{% endif %}>{{ contact.display_name }}</option>{% endfor %}</select></div>
+                <div><label>Account</label><select name="account_id">{% for account in account_options %}{% set account_value = account.id or account.value %}<option value="{{ account_value }}" {% if account_value == mortgage.account_id %}selected{% endif %}>{{ account.label }}</option>{% endfor %}</select></div>
+                <div><label>Payment method</label><select name="payment_method_id"><option value="">Default for account</option>{% for method in payment_method_options %}<option value="{{ method.id }}" {% if method.id == mortgage.payment_method_id %}selected{% endif %}>{{ method.label }}</option>{% endfor %}</select></div>
+                <div><label>Category</label><input type="text" name="category" value="{{ mortgage.category }}"></div>
+                <label class="inline-checkbox form-field-wide"><input type="checkbox" name="create_recurring" value="1" {% if mortgage.recurring_rule_id %}checked{% endif %}> Keep monthly recurring payment rule</label>
+                <div class="form-field-wide"><label>Notes</label><textarea name="notes" rows="2">{{ mortgage.notes }}</textarea></div>
+              </div>
+              <div class="special-actions-row">
+                <button type="submit" name="action" value="update" class="primary-btn">Update mortgage</button>
+                <button type="submit" name="action" value="archive" class="secondary-btn">Archive</button>
+                <button type="submit" name="action" value="delete" class="secondary-btn danger-lite" onclick="return confirm('Delete this mortgage and its linked recurring rule?')">Delete</button>
+              </div>
+            </details>
+          </form>
+
+          <details class="mortgage-projection-details" open>
+            <summary>Forecast over time</summary>
+            <div class="mortgage-table-wrap">
+              <table class="compact-data-table">
+                <thead><tr><th>Year</th><th>Principal paid</th><th>Interest paid</th><th>Remaining balance</th></tr></thead>
+                <tbody>
+                  {% for row in mortgage.projection.yearly_rows %}
+                  <tr><td>{{ row.year }}</td><td>€ {{ row.principal_paid_display }}</td><td>€ {{ row.interest_paid_display }}</td><td>€ {{ row.remaining_balance_display }}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <details class="mortgage-projection-details">
+            <summary>First 24 monthly payments</summary>
+            <div class="mortgage-table-wrap">
+              <table class="compact-data-table">
+                <thead><tr><th>Month</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th></tr></thead>
+                <tbody>
+                  {% for row in mortgage.projection.monthly_rows %}
+                  <tr><td>{{ row.month }}</td><td>€ {{ row.payment_display }}</td><td>€ {{ row.principal_display }}</td><td>€ {{ row.interest_display }}</td><td>€ {{ row.balance_display }}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+        <article class="special-empty panel-card"><h3>No mortgage saved yet.</h3><p>Add a mutuo above to see the forecast and the optional recurring payment rule.</p></article>
+      {% endif %}
+    </section>
+
+    {% if archived_mortgages %}
+    <section class="special-card panel-card">
+      <div class="panel-header"><div><span class="eyebrow">Archived</span><h3>Hidden mortgages</h3></div></div>
+      <div class="archived-special-list">
+        {% for mortgage in archived_mortgages %}
+        <form method="post" class="archived-special-row"><input type="hidden" name="mortgage_id" value="{{ mortgage.id }}"><strong>{{ mortgage.name }}</strong><span>€ {{ mortgage.monthly_payment_display }}/mo</span><button type="submit" name="action" value="restore" class="secondary-btn compact-btn">Restore</button></form>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="special-side">
+    <section class="special-card panel-card"><span class="eyebrow">Inputs to collect</span><h3>Useful questions</h3><p>Property value, requested amount, own funds, fixed/variable rate, annual rate or Euribor + spread, duration in years, start date, payment day, actual monthly rata, bank contact, account and payment method.</p></section>
+    <section class="special-card panel-card"><span class="eyebrow">Limit</span><h3>Forecast assumption</h3><p>The projection is deterministic. For a variable-rate mutuo it does not download Euribor; it uses your estimate plus spread until you update it.</p></section>
+  </aside>
+</section>
+{% endblock %}

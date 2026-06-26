@@ -295,6 +295,13 @@ DEFAULT_RECEIPTS: dict[str, Any] = {
     "updated_at": "",
 }
 
+DEFAULT_DISCOUNT_BALANCES: dict[str, Any] = {
+    "schema_version": 1,
+    "sources": [],
+    "events": [],
+    "updated_at": "",
+}
+
 USER_CONFIG_DEFAULTS: dict[str, dict[str, Any]] = {
     "profile.json": DEFAULT_PROFILE,
     "preferences.json": DEFAULT_PREFERENCES,
@@ -305,6 +312,7 @@ USER_CONFIG_DEFAULTS: dict[str, dict[str, Any]] = {
     "navigation.json": DEFAULT_NAVIGATION,
     "document_types.json": DEFAULT_DOCUMENT_TYPES,
     "receipts.json": DEFAULT_RECEIPTS,
+    "discount_balances.json": DEFAULT_DISCOUNT_BALANCES,
 }
 
 

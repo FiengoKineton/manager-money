@@ -175,6 +175,7 @@ USER_JSON_DEFINITIONS: tuple[DataFileDefinition, ...] = (
     _json("account_events", "account_events.json", {"schema_version": 1, "events": []}, description="Account lifecycle and closure/replacement event log.", sensitive="financial", encrypted_by_default=True),
     _json("documents_metadata", "documents/_metadata.json", {"schema_version": 1, "documents": []}, description="Document registry metadata.", sensitive="personal", encrypted_by_default=True),
     _json("receipts", "receipts.json", {"schema_version": 1, "receipts": {}, "updated_at": ""}, description="Transaction receipt/shopping-list metadata.", sensitive="financial", encrypted_by_default=True),
+    _json("discount_balances", "discount_balances.json", {"schema_version": 1, "sources": [], "events": [], "updated_at": ""}, description="Gift-card and buono-sconto balances used as receipt discounts.", sensitive="financial", encrypted_by_default=True),
 )
 
 USER_CSV_DEFINITIONS: tuple[DataFileDefinition, ...] = (
