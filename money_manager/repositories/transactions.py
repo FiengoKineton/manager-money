@@ -84,11 +84,30 @@ def load_all() -> pd.DataFrame:
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0.0)
-    df["signed_amount"] = df.apply(_signed_amount, axis=1)
+    df["signed_amount"] = _signed_amount_series(df)
     df = enrich_transactions_with_accounts(df)
     df = df.sort_values(by=["date", "created_at"], ascending=[False, False])
     return df
 
+
+
+def _signed_amount_series(df: pd.DataFrame) -> pd.Series:
+    """Vectorized equivalent of _signed_amount for the hot transaction loader."""
+    if df.empty:
+        return pd.Series(dtype=float, index=df.index)
+
+    amount = pd.to_numeric(df.get("amount", 0.0), errors="coerce").fillna(0.0)
+    transaction_type = df.get("type", pd.Series("", index=df.index)).fillna("").astype(str).str.casefold()
+    category = df.get("category", pd.Series("", index=df.index)).fillna("").astype(str).str.casefold()
+
+    signed = pd.Series(0.0, index=df.index, dtype=float)
+    signed.loc[transaction_type.eq("income")] = amount.loc[transaction_type.eq("income")]
+    signed.loc[transaction_type.eq("expense")] = -amount.loc[transaction_type.eq("expense")]
+    investment = transaction_type.eq("investment")
+    dividend = investment & category.eq("dividend")
+    signed.loc[dividend] = amount.loc[dividend]
+    signed.loc[investment & ~dividend] = -amount.loc[investment & ~dividend]
+    return signed
 
 def _credit_account_snapshot_for_row(row: dict) -> dict[str, str]:
     """Return stable credit-account metadata to store with newly-created rows.

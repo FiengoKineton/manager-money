@@ -1,5 +1,6 @@
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 from time import monotonic
+import threading
 
 from money_manager.services.account_service import (
     account_detail_context,
@@ -30,21 +31,59 @@ from money_manager.services.payment_method_service import (
 )
 from money_manager.services.profile_service import load_profile, update_profile
 from money_manager.web.context import scope_template_context
+from money_manager.web.auth import current_user
+from money_manager.config.user_paths import using_user
 
 bp = Blueprint("accounts", __name__, url_prefix="/accounts")
 
 _CREDIT_REFRESH_INTERVAL_SECONDS = 60
-_last_credit_refresh_at = 0.0
+_credit_refresh_lock = threading.RLock()
+_credit_refresh_running: set[str] = set()
+_last_credit_refresh_at_by_user: dict[str, float] = {}
 
 
-def _refresh_credit_statements(*, force: bool = False) -> None:
-    global _last_credit_refresh_at
-    now = monotonic()
-    if not force and now - _last_credit_refresh_at < _CREDIT_REFRESH_INTERVAL_SECONDS:
+def _current_user_id() -> str:
+    user = current_user() or {}
+    return str(user.get("id") or "").strip()
+
+
+def _refresh_credit_statements_sync(user_id: str) -> None:
+    with using_user(user_id):
+        sync_credit_account_statements()
+        process_pending(credit_only=True)
+
+
+def _schedule_credit_refresh(*, force: bool = False) -> None:
+    """Refresh credit statements after the page is already allowed to render.
+
+    The old route ran credit statement sync + pending processing directly inside
+    normal GET requests.  With encrypted CSVs and larger data folders this can
+    turn a simple navigation click into a long write-heavy request or a 504.
+    """
+    user_id = _current_user_id()
+    if not user_id:
         return
-    sync_credit_account_statements()
-    process_pending(credit_only=True)
-    _last_credit_refresh_at = now
+
+    now = monotonic()
+    with _credit_refresh_lock:
+        last_run = _last_credit_refresh_at_by_user.get(user_id, 0.0)
+        if not force and now - last_run < _CREDIT_REFRESH_INTERVAL_SECONDS:
+            return
+        if user_id in _credit_refresh_running:
+            return
+        _credit_refresh_running.add(user_id)
+
+    def _run() -> None:
+        try:
+            _refresh_credit_statements_sync(user_id)
+            with _credit_refresh_lock:
+                _last_credit_refresh_at_by_user[user_id] = monotonic()
+        finally:
+            with _credit_refresh_lock:
+                _credit_refresh_running.discard(user_id)
+
+    thread = threading.Thread(target=_run, name=f"money-manager-credit-refresh-{user_id}", daemon=True)
+    thread.start()
 
 
 @bp.route("", methods=["GET", "POST"])
@@ -80,26 +119,26 @@ def accounts_page():
             return redirect(url_for("accounts.accounts_page", _anchor="payment-methods"))
         return redirect(url_for("accounts.accounts_page"))
 
-    _refresh_credit_statements()
+    _schedule_credit_refresh()
     context = get_account_dashboard_summary_cached()
     context.update(_account_settings_context())
     return render_template("accounts/accounts.html", **context, **scope_template_context("global"))
 
 
 def _account_settings_context() -> dict:
-    integrity = full_integrity_report()
+    # Keep the normal All Conti page light.  The full integrity report touches
+    # many CSV/config files and is now exposed through a lazy endpoint instead of
+    # blocking every account navigation.
     profile = load_profile()
-    payment_methods = payment_method_options_for_forms(include_archived=True)
-    for method in payment_methods:
-        method["explanation"] = explain_payment_method(method.get("id"))
     return {
         "profile": profile,
-        "payment_methods": payment_methods,
-        "payment_account_options": account_options_for_payment_forms(include_archived=True, include_credit=True),
+        "payment_methods": [],
+        "payment_account_options": [],
         "parent_account_options": _parent_account_options_for_linking(),
-        "payment_method_options_all": payment_methods,
-        "integrity_warnings": integrity.get("warnings", [])[:12],
-        "integrity_errors": integrity.get("errors", [])[:12],
+        "payment_method_options_all": [],
+        "integrity_warnings": [],
+        "integrity_errors": [],
+        "integrity_lazy": True,
         "method_type_options": [
             "bank_transfer", "debit_card", "credit_card", "prepaid_card", "cash",
             "wallet_balance", "wallet_linked_card", "meal_voucher",
@@ -107,6 +146,16 @@ def _account_settings_context() -> dict:
         ],
         "settlement_mode_options": ["immediate", "stored_balance", "delayed", "delegated", "external_record_only"],
     }
+
+
+@bp.get("/integrity.json")
+def account_integrity_json():
+    integrity = full_integrity_report()
+    return jsonify({
+        "ok": True,
+        "warnings": integrity.get("warnings", [])[:12],
+        "errors": integrity.get("errors", [])[:12],
+    })
 
 
 def _parent_account_options_for_linking() -> list[dict]:
@@ -131,7 +180,8 @@ def _parent_account_options_for_linking() -> list[dict]:
 
 @bp.route("/<account_key>", methods=["GET", "POST"])
 def account_detail(account_key: str):
-    _refresh_credit_statements()
+    if request.method == "GET":
+        _schedule_credit_refresh()
     error = ""
     message = request.args.get("message", "")
 
@@ -220,7 +270,8 @@ def account_detail(account_key: str):
 
 @bp.route("/<account_key>/payment-methods/<method_id>", methods=["GET", "POST"])
 def account_payment_method_detail(account_key: str, method_id: str):
-    _refresh_credit_statements()
+    if request.method == "GET":
+        _schedule_credit_refresh()
     if request.method == "POST":
         action = request.form.get("action")
         if action == "update_payment_method":

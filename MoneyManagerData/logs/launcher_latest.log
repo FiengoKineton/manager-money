@@ -305,3 +305,328 @@ Traceback (most recent call last):
     "vat_number": _clean_vat(data.get("vat_number") or data.get("partita_iva") or data.get("piva")),
                   ^^^^^^^^^^
 NameError: name '_clean_vat' is not defined. Did you mean: '_clean_id'?
+
+================================================================================
+2026-06-26 12:45:44 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 1049.7 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 1045.8 ms GET /security/unlock?next=/favicon.ico
+WARNING:money_manager.app:Slow request 66027.9 ms GET /accounts?
+ERROR:money_manager.app:Exception on /bollette [GET]
+Traceback (most recent call last):
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\auth.py", line 104, in wrapped
+    return view(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\routes\planning\managed_recurring.py", line 24, in bills_page
+    return _managed_page(KIND_BILL)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\routes\planning\managed_recurring.py", line 61, in _managed_page
+    **page_context(
+      ^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\managed_recurring_service.py", line 81, in page_context
+    companies = [contact_view(contact, show_sensitive_data=True) for contact in list_contacts(include_archived=False) if contact.get("type") == "company"]
+                                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 55, in list_contacts
+    contacts = load_contacts_config(user_id=user_id).get("contacts", [])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 41, in load_contacts_config
+    normalized = _normalize_contacts_config(raw)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 198, in _normalize_contacts_config
+    item = _normalize_contact(contact)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 249, in _normalize_contact
+    "vat_number": _clean_vat(data.get("vat_number") or data.get("partita_iva") or data.get("piva")),
+                  ^^^^^^^^^^
+NameError: name '_clean_vat' is not defined. Did you mean: '_clean_id'?
+
+================================================================================
+2026-06-26 12:47:25 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 975.5 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 986.7 ms GET /security/unlock?next=/favicon.ico
+WARNING:money_manager.app:Slow request 866.1 ms GET /security/unlock?next=/phone/api/summary
+WARNING:money_manager.app:Slow request 52338.1 ms GET /accounts?
+WARNING:money_manager.app:Slow request 23837.7 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 26488.5 ms GET /accounts/main_bank?
+WARNING:money_manager.app:Slow request 3273.4 ms GET /transactions?account_id=main_bank
+WARNING:money_manager.app:Slow request 26064.1 ms GET /api/topbar-summary?account_id=main_bank
+WARNING:money_manager.app:Slow request 17331.5 ms GET /api/topbar-summary?account_id=main_bank
+WARNING:money_manager.app:Slow request 46766.7 ms GET /overview/detailed?account_id=main_bank
+WARNING:money_manager.app:Slow request 18279.1 ms GET /api/topbar-summary?account_id=main_bank
+WARNING:money_manager.app:Slow request 4982.7 ms GET /debts?
+WARNING:money_manager.app:Slow request 6696.8 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 6991.7 ms GET /recurring?
+ERROR:money_manager.app:Exception on /work-income [GET]
+Traceback (most recent call last):
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\auth.py", line 104, in wrapped
+    return view(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\routes\planning\managed_recurring.py", line 30, in work_income_page
+    return _managed_page(KIND_WORK_INCOME)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\routes\planning\managed_recurring.py", line 61, in _managed_page
+    **page_context(
+      ^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\managed_recurring_service.py", line 81, in page_context
+    companies = [contact_view(contact, show_sensitive_data=True) for contact in list_contacts(include_archived=False) if contact.get("type") == "company"]
+                                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 55, in list_contacts
+    contacts = load_contacts_config(user_id=user_id).get("contacts", [])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 41, in load_contacts_config
+    normalized = _normalize_contacts_config(raw)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 198, in _normalize_contacts_config
+    item = _normalize_contact(contact)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 249, in _normalize_contact
+    "vat_number": _clean_vat(data.get("vat_number") or data.get("partita_iva") or data.get("piva")),
+                  ^^^^^^^^^^
+NameError: name '_clean_vat' is not defined. Did you mean: '_clean_id'?
+
+================================================================================
+2026-06-26 12:52:28 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 1262.7 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 1258.1 ms GET /security/unlock?next=/favicon.ico
+WARNING:money_manager.app:Slow request 1073.7 ms GET /security/unlock?next=/phone/api/summary
+WARNING:money_manager.app:Slow request 70092.0 ms GET /accounts?
+WARNING:money_manager.app:Slow request 1149.1 ms GET /bollette?
+WARNING:money_manager.app:Slow request 1121.3 ms GET /work-income?
+WARNING:money_manager.app:Slow request 24841.5 ms GET /api/topbar-summary?
+ERROR:money_manager.app:Exception on /contacts [GET]
+Traceback (most recent call last):
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\auth.py", line 104, in wrapped
+    return view(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\routes\contacts.py", line 32, in contacts_page
+    contacts = search_contacts(query, include_archived=include_archived)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 62, in search_contacts
+    contacts = list_contacts(user_id=user_id, include_archived=include_archived)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 55, in list_contacts
+    contacts = load_contacts_config(user_id=user_id).get("contacts", [])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 41, in load_contacts_config
+    normalized = _normalize_contacts_config(raw)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 198, in _normalize_contacts_config
+    item = _normalize_contact(contact)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\services\contact_service.py", line 249, in _normalize_contact
+    "vat_number": _clean_vat(data.get("vat_number") or data.get("partita_iva") or data.get("piva")),
+                  ^^^^^^^^^^
+NameError: name '_clean_vat' is not defined. Did you mean: '_clean_id'?
+
+================================================================================
+2026-06-26 12:57:32 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 973.1 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 978.5 ms GET /security/unlock?next=/favicon.ico
+WARNING:money_manager.app:Slow request 62026.0 ms GET /accounts?
+WARNING:money_manager.app:Slow request 20937.1 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 1006.9 ms GET /work-income?
+WARNING:money_manager.app:Slow request 21611.4 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 20613.3 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 20992.0 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 8201.6 ms GET /recurring?
+WARNING:money_manager.app:Slow request 21016.4 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 21246.0 ms GET /recurring?
+WARNING:money_manager.app:Slow request 20054.8 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 24560.0 ms GET /pending?
+WARNING:money_manager.app:Slow request 907.8 ms GET /work-income?
+WARNING:money_manager.app:Slow request 21580.1 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 877.2 ms POST /work-income?message=Kineton+salary+updated.
+WARNING:money_manager.app:Slow request 1116.2 ms GET /work-income?message=Pending+payment+executed.
+WARNING:money_manager.app:Slow request 22068.5 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 20987.3 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 48790.9 ms GET /accounts?
+WARNING:money_manager.app:Slow request 28168.5 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 33885.9 ms GET /accounts/main_bank?
+WARNING:money_manager.app:Slow request 12186.8 ms GET /transactions?account_id=main_bank
+WARNING:money_manager.app:Slow request 24653.3 ms GET /api/topbar-summary?account_id=main_bank
+WARNING:money_manager.app:Slow request 8737.1 ms GET /api/topbar-summary?account_id=main_bank
+WARNING:money_manager.app:Slow request 9441.0 ms GET /api/topbar-summary?account_id=main_bank
+ERROR:money_manager.app:Exception on /transaction/325 [GET]
+Traceback (most recent call last):
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\routes\core\transactions.py", line 450, in transaction_detail
+    return render_template(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Repos\money-manager\money_manager\web\templates\core\transaction_detail.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "C:\Repos\money-manager\money_manager\web\templates\base.html", line 300, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\templates\core\transaction_detail.html", line 80, in block 'content'
+    {% for item in receipt.items or [] %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\jinja2\runtime.py", line 424, in __init__
+    self._iterator = self._to_iterator(iterable)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\jinja2\runtime.py", line 432, in _to_iterator
+    return iter(iterable)
+           ^^^^^^^^^^^^^^
+TypeError: 'builtin_function_or_method' object is not iterable
+WARNING:money_manager.app:Slow request 5380.7 ms GET /transaction/325?
+
+================================================================================
+2026-06-26 13:16:00 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 841.8 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 836.7 ms GET /security/unlock?next=/favicon.ico
+WARNING:money_manager.app:Slow request 51759.8 ms GET /accounts?
+WARNING:money_manager.app:Slow request 7604.0 ms GET /transactions?
+WARNING:money_manager.app:Slow request 18305.0 ms GET /api/topbar-summary?
+ERROR:money_manager.app:Exception on /transaction/325 [GET]
+Traceback (most recent call last):
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\routes\core\transactions.py", line 450, in transaction_detail
+    return render_template(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Repos\money-manager\money_manager\web\templates\core\transaction_detail.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "C:\Repos\money-manager\money_manager\web\templates\base.html", line 322, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\money_manager\web\templates\core\transaction_detail.html", line 80, in block 'content'
+    {% for item in receipt.items or [] %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\jinja2\runtime.py", line 424, in __init__
+    self._iterator = self._to_iterator(iterable)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Repos\money-manager\.venv\Lib\site-packages\jinja2\runtime.py", line 432, in _to_iterator
+    return iter(iterable)
+           ^^^^^^^^^^^^^^
+TypeError: 'builtin_function_or_method' object is not iterable
+WARNING:money_manager.app:Slow request 4408.2 ms GET /transaction/325?
+
+================================================================================
+2026-06-26 13:20:25 starting Money Manager
+project_dir=C:\Repos\money-manager
+data_home=C:\Repos\money-manager\MoneyManagerData
+command=C:\Repos\money-manager\.venv\Scripts\python.exe C:\Repos\money-manager\run_money_manager.py --host 127.0.0.1 --port 5000 --no-browser
+Money Manager is starting on http://127.0.0.1:5000
+Press Ctrl+C in this window to stop it.
+WARNING:money_manager.app:Slow request 1114.5 ms GET /security/unlock?next=/api/topbar-summary
+WARNING:money_manager.app:Slow request 1109.7 ms GET /security/unlock?next=/favicon.ico
+WARNING:money_manager.app:Slow request 924.8 ms GET /security/unlock?next=/phone/api/summary
+WARNING:money_manager.app:Slow request 51589.0 ms GET /accounts?
+WARNING:money_manager.app:Slow request 7839.8 ms GET /transactions?
+WARNING:money_manager.app:Slow request 17717.0 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 5924.9 ms GET /transaction/331?
+WARNING:money_manager.app:Slow request 5408.9 ms GET /transaction/331?
+WARNING:money_manager.app:Slow request 4325.7 ms GET /transaction/325?
+WARNING:money_manager.app:Slow request 11425.8 ms GET /transactions?account_id=main_bank
+WARNING:money_manager.app:Slow request 6879.7 ms GET /api/topbar-summary?account_id=main_bank
+WARNING:money_manager.app:Slow request 6514.4 ms GET /transaction/330?
+WARNING:money_manager.app:Slow request 6161.1 ms GET /transaction/330?
+WARNING:money_manager.app:Slow request 6100.6 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 14878.4 ms GET /transaction/330?
+WARNING:money_manager.app:Slow request 6408.8 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 6707.4 ms GET /transaction/330?
+WARNING:money_manager.app:Slow request 6438.3 ms GET /transaction/330?
+WARNING:money_manager.app:Slow request 14924.3 ms GET /transaction/330?
+WARNING:money_manager.app:Slow request 6282.8 ms GET /api/topbar-summary?
+WARNING:money_manager.app:Slow request 4422.0 ms GET /transaction/330?
+WARNING:money_manager.app:Slow request 40758.5 ms GET /accounts?

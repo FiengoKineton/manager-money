@@ -77,7 +77,7 @@
 
       <div class="receipt-items-table" id="receipt-items-table">
         <div class="receipt-items-header"><span>Item</span><span>Qty</span><span>Unit €</span><span>Total</span><span></span></div>
-        {% for item in receipt.items or [] %}
+        {% for item in receipt.get("items", []) %}
           <div class="receipt-item-row">
             <input type="text" name="receipt_item_name" value="{{ item.name or ('Item %03d'|format(loop.index)) }}" placeholder="Item {{ '%03d'|format(loop.index) }}">
             <input type="number" min="0" step="0.01" name="receipt_item_qty" value="{{ item.qty or 1 }}" data-receipt-qty>

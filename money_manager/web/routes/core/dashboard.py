@@ -1,5 +1,6 @@
-from flask import Blueprint, abort, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, abort, jsonify, redirect, render_template, request, send_file, url_for
 from time import monotonic
+import threading
 
 from money_manager.config import TRANSACTION_TYPES
 from money_manager.repositories.pending import load_pending
@@ -18,12 +19,22 @@ from money_manager.services.transaction_window_service import (
     transaction_initial_conditions_for_frame,
 )
 from money_manager.web.context import resolve_request_scope, scope_template_context
+from money_manager.web.auth import current_user
+from money_manager.config.user_paths import using_user
+from money_manager.utils.formatting import format_euro
 from money_manager.web.transaction_filter_state import resolve_transaction_filter_state
 
 bp = Blueprint("dashboard", __name__)
 
 _AUTO_REFRESH_INTERVAL_SECONDS = 60
-_last_auto_refresh_at = 0.0
+_auto_refresh_lock = threading.RLock()
+_auto_refresh_running: set[str] = set()
+_last_auto_refresh_at_by_user: dict[str, float] = {}
+
+
+def _current_user_id() -> str:
+    user = current_user() or {}
+    return str(user.get("id") or "").strip()
 
 
 @bp.route("/user-plots/<path:filename>")
@@ -41,18 +52,47 @@ def user_plot(filename):
     return send_file(path, conditional=True, max_age=300)
 
 
-def _refresh_automatic_items(*, force: bool = False) -> None:
-    global _last_auto_refresh_at
-    now = monotonic()
-    if not force and now - _last_auto_refresh_at < _AUTO_REFRESH_INTERVAL_SECONDS:
+def _refresh_automatic_items_sync(user_id: str) -> None:
+    with using_user(user_id):
+        # Generate queues, but do not mark pending items as paid automatically.
+        # Payments can now be executed or delayed explicitly from the Pending page.
+        generate_recurring()
+        generate_debt_payments()
+        sync_credit_account_statements()
+        process_pending(credit_only=True)
+
+
+def _schedule_automatic_items_refresh(*, force: bool = False) -> None:
+    """Run heavy recurring/pending/credit maintenance outside the page request.
+
+    Page navigation must be read-mostly and fast.  The old implementation did
+    this maintenance synchronously before rendering /home, /overview and
+    /dashboard, which could make a simple click wait on encrypted file IO.
+    """
+    user_id = _current_user_id()
+    if not user_id:
         return
-    # Generate queues, but do not mark pending items as paid automatically.
-    # Payments can now be executed or delayed explicitly from the Pending page.
-    generate_recurring()
-    generate_debt_payments()
-    sync_credit_account_statements()
-    process_pending(credit_only=True)
-    _last_auto_refresh_at = now
+
+    now = monotonic()
+    with _auto_refresh_lock:
+        last_run = _last_auto_refresh_at_by_user.get(user_id, 0.0)
+        if not force and now - last_run < _AUTO_REFRESH_INTERVAL_SECONDS:
+            return
+        if user_id in _auto_refresh_running:
+            return
+        _auto_refresh_running.add(user_id)
+
+    def _run() -> None:
+        try:
+            _refresh_automatic_items_sync(user_id)
+            with _auto_refresh_lock:
+                _last_auto_refresh_at_by_user[user_id] = monotonic()
+        finally:
+            with _auto_refresh_lock:
+                _auto_refresh_running.discard(user_id)
+
+    thread = threading.Thread(target=_run, name=f"money-manager-auto-refresh-{user_id}", daemon=True)
+    thread.start()
 
 
 @bp.route("/")
@@ -60,9 +100,31 @@ def home():
     return redirect(url_for("accounts.accounts_page"))
 
 
+
+
+@bp.get("/api/topbar-summary")
+def topbar_summary_api():
+    selected_scope = resolve_request_scope(request)
+    try:
+        if selected_scope.get("is_account") and selected_scope.get("account_id"):
+            from money_manager.services.account_scope_service import scope_balance_summary
+
+            summary = scope_balance_summary(selected_scope)
+            net = float(summary.get("net_balance", 0.0) or 0.0)
+            label = f"{selected_scope.get('label') or selected_scope.get('account_id')} net"
+        else:
+            from money_manager.services.dashboard_calculation_service import get_quick_overview_cached
+
+            net = float(get_quick_overview_cached().get("net_worth", 0.0) or 0.0)
+            label = "All Conti net"
+    except Exception:
+        net = 0.0
+        label = "All Conti net"
+    return jsonify({"ok": True, "net": net, "net_formatted": format_euro(net), "label": label})
+
 @bp.route("/home")
 def overview():
-    _refresh_automatic_items()
+    _schedule_automatic_items_refresh()
     selected_scope = resolve_request_scope(request)
     context = get_dashboard_overview_cached(scope=selected_scope["scope"])
     context.update(scope_template_context(selected_scope))
@@ -71,7 +133,7 @@ def overview():
 @bp.route("/overview")
 @bp.route("/overview/detailed")
 def overview_detailed():
-    _refresh_automatic_items()
+    _schedule_automatic_items_refresh()
     selected_scope = resolve_request_scope(request)
     context = get_dashboard_overview_cached(scope=selected_scope["scope"])
     context.update(scope_template_context(selected_scope))
@@ -79,7 +141,7 @@ def overview_detailed():
 
 @bp.route("/dashboard")
 def index():
-    _refresh_automatic_items()
+    _schedule_automatic_items_refresh()
 
     selected_scope = resolve_request_scope(request)
     from money_manager.services.account_scope_service import pending_total_for_scope, scope_balance_summary, transactions_for_scope

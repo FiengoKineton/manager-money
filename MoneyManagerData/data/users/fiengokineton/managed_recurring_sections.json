@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "items": [
+    {
+      "id": "managed_6b357fecd42d",
+      "kind": "work_income",
+      "title": "Kineton salary",
+      "contact_id": "contact_d99cb45464bc",
+      "recurring_rule_id": "11",
+      "variable_amount": true,
+      "manual_check_required": true,
+      "notes": "",
+      "is_active": true,
+      "last_checked_at": "",
+      "last_checked_amount": "",
+      "last_checked_pending_id": "",
+      "created_at": "2026-06-26T11:04:35+00:00",
+      "updated_at": "2026-06-26T11:07:37+00:00",
+      "archived_at": ""
+    }
+  ],
+  "events": [
+    {
+      "id": "event_10b69bd9a504",
+      "item_id": "managed_6b357fecd42d",
+      "kind": "work_income",
+      "event_type": "create",
+      "message": "Created Kineton salary",
+      "created_at": "2026-06-26T11:04:35+00:00"
+    },
+    {
+      "id": "event_9569b78530de",
+      "item_id": "managed_6b357fecd42d",
+      "kind": "work_income",
+      "event_type": "update",
+      "message": "Updated Kineton salary",
+      "created_at": "2026-06-26T11:04:59+00:00"
+    },
+    {
+      "id": "event_69655a0a3075",
+      "item_id": "managed_6b357fecd42d",
+      "kind": "work_income",
+      "event_type": "update",
+      "message": "Updated Kineton salary",
+      "created_at": "2026-06-26T11:07:37+00:00"
+    }
+  ],
+  "updated_at": "2026-06-26T11:07:37+00:00"
+}

@@ -49,6 +49,21 @@ from money_manager.services.transaction_service import (
 
 bp = Blueprint("transactions", __name__)
 
+DEFAULT_TRANSACTION_PAGE_SIZE = 50
+MAX_TRANSACTION_PAGE_SIZE = 200
+
+
+def _positive_int_arg(name: str, default: int, *, minimum: int = 1, maximum: int | None = None) -> int:
+    try:
+        value = int(request.args.get(name, default))
+    except (TypeError, ValueError):
+        value = default
+    value = max(minimum, value)
+    if maximum is not None:
+        value = min(maximum, value)
+    return value
+
+
 
 @bp.route("/transactions")
 def transactions_page():
@@ -58,7 +73,26 @@ def transactions_page():
     start_default, end_default = transaction_default_date_range()
     filter_state = resolve_transaction_filter_state(request.args, start_default, end_default, TRANSACTION_TYPES)
 
-    params = {
+    page_size = _positive_int_arg("page_size", DEFAULT_TRANSACTION_PAGE_SIZE, minimum=1, maximum=MAX_TRANSACTION_PAGE_SIZE)
+
+    params = _transaction_cache_params(scope_key, filter_state)
+    params.update({"page": 1, "page_size": page_size})
+
+    context = cached_context(
+        "transaction_table_view_v2",
+        lambda: _build_transactions_page_context(scope_key, filter_state, page=1, page_size=page_size),
+        params=params,
+    )
+
+    return render_template(
+        "core/transactions.html",
+        **context,
+        **scope_template_context(selected_scope),
+    )
+
+
+def _transaction_cache_params(scope_key: str, filter_state: dict) -> dict:
+    return {
         "scope": scope_key,
         "start": filter_state["start"],
         "end": filter_state["end"],
@@ -70,22 +104,35 @@ def transactions_page():
         "has_effective_filters": bool(filter_state.get("has_effective_filters")),
     }
 
-    context = cached_context(
-        "transaction_table_view",
-        lambda: _build_transactions_page_context(scope_key, filter_state),
-        params=params,
-    )
 
-    return render_template(
-        "core/transactions.html",
-        **context,
-        **scope_template_context(selected_scope),
-    )
-
-
-def _build_transactions_page_context(scope_key: str, filter_state: dict) -> dict:
+def _filtered_transactions_for_page(scope_key: str, filter_state: dict):
     df = load_transactions()
     main_df = transactions_for_scope(df, scope_key)
+
+    filtered = apply_transaction_filters(
+        main_df,
+        filter_state["start"],
+        filter_state["end"],
+        filter_state["types"],
+        filter_state["categories"],
+        filter_state["query"],
+        filter_state["amount_min"],
+        filter_state["amount_max"],
+    )
+    return main_df, filtered
+
+
+def _slice_transactions_for_display(filtered, *, page: int, page_size: int) -> tuple[list[dict], int, int, bool]:
+    total_rows = int(len(filtered))
+    start_index = max(page - 1, 0) * page_size
+    end_index = start_index + page_size
+    visible = filtered.iloc[start_index:end_index].copy()
+    visible = prepare_transactions_for_display(visible)
+    return visible.to_dict(orient="records"), total_rows, start_index, end_index < total_rows
+
+
+def _build_transactions_page_context(scope_key: str, filter_state: dict, *, page: int = 1, page_size: int = DEFAULT_TRANSACTION_PAGE_SIZE) -> dict:
+    main_df, filtered = _filtered_transactions_for_page(scope_key, filter_state)
 
     start = filter_state["start"]
     end = filter_state["end"]
@@ -96,26 +143,26 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict) -> dict
     amount_max = filter_state["amount_max"]
     has_effective_filters = bool(filter_state.get("has_effective_filters"))
 
-    scoped_df = main_df
-    filtered = apply_transaction_filters(scoped_df, start, end, types, categories, query, amount_min, amount_max)
-    display_rows = filtered.copy()
-
     historical_df, _recent_df = split_transactions_at(main_df, start)
     initial_conditions = transaction_initial_conditions_for_frame(
         historical_df,
         scope=scope_key,
         start=start,
     )
-    calculation_main = filtered if has_effective_filters else filtered
-    calculation_totals = summary_totals(calculation_main)
+    calculation_totals = summary_totals(filtered)
     if not has_effective_filters:
-        calculation_totals = totals_with_initial_conditions(calculation_main, initial_conditions)
+        calculation_totals = totals_with_initial_conditions(filtered, initial_conditions)
 
-    filtered = prepare_transactions_for_display(filtered)
+    rows, total_rows, _start_index, has_more = _slice_transactions_for_display(
+        filtered,
+        page=page,
+        page_size=page_size,
+    )
     all_categories = sorted(main_df["category"].dropna().unique().tolist()) if not main_df.empty and "category" in main_df.columns else []
 
     transaction_summary = {
-        "count": int(len(display_rows)),
+        "count": total_rows,
+        "shown_count": len(rows),
         "income": calculation_totals["income"],
         "expenses": calculation_totals["expenses"],
         "investments": calculation_totals["investments"],
@@ -130,9 +177,17 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict) -> dict
     }
 
     return {
-        "transactions": filtered.to_dict(orient="records"),
-        "transactions_initial": filtered.head(50).to_dict(orient="records"),
+        # Real lazy loading: only the first page is rendered into the initial HTML.
+        # Older versions also passed/rendered every hidden transaction, duplicated
+        # for desktop and mobile, which made navigation slow and could trigger 504s.
+        "transactions": rows,
+        "transactions_initial": rows,
         "transaction_summary": transaction_summary,
+        "transactions_total_count": total_rows,
+        "transactions_shown_count": len(rows),
+        "transactions_page": page,
+        "transactions_page_size": page_size,
+        "transactions_has_more": has_more,
         "start": start,
         "end": end,
         "active_types": types,
@@ -154,6 +209,47 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict) -> dict
             "historical_rows": int(initial_conditions.get("historical_rows", 0) or 0),
         },
     }
+
+
+@bp.get("/transactions/page")
+def transactions_page_slice():
+    selected_scope = resolve_request_scope(request)
+    scope_key = selected_scope["scope"]
+
+    start_default, end_default = transaction_default_date_range()
+    filter_state = resolve_transaction_filter_state(request.args, start_default, end_default, TRANSACTION_TYPES)
+    page = _positive_int_arg("page", 1, minimum=1)
+    page_size = _positive_int_arg("page_size", DEFAULT_TRANSACTION_PAGE_SIZE, minimum=1, maximum=MAX_TRANSACTION_PAGE_SIZE)
+
+    params = _transaction_cache_params(scope_key, filter_state)
+    params.update({"page": page, "page_size": page_size})
+
+    payload = cached_context(
+        "transaction_table_page_v2",
+        lambda: _build_transactions_page_slice(scope_key, filter_state, page=page, page_size=page_size),
+        params=params,
+    )
+    return jsonify(payload)
+
+
+def _build_transactions_page_slice(scope_key: str, filter_state: dict, *, page: int, page_size: int) -> dict:
+    _main_df, filtered = _filtered_transactions_for_page(scope_key, filter_state)
+    rows, total_rows, start_index, has_more = _slice_transactions_for_display(
+        filtered,
+        page=page,
+        page_size=page_size,
+    )
+    return {
+        "ok": True,
+        "page": page,
+        "page_size": page_size,
+        "shown_count": min(start_index + len(rows), total_rows),
+        "total_count": total_rows,
+        "has_more": has_more,
+        "desktop_html": render_template("core/_transaction_desktop_rows.html", transactions=rows),
+        "phone_html": render_template("core/_transaction_phone_cards.html", transactions=rows),
+    }
+
 
 @bp.route("/add", methods=["GET", "POST"])
 def add_transaction():

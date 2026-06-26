@@ -1,0 +1,2 @@
+{% import "core/_transaction_macros.html" as txm %}
+{% for tx in transactions %}{{ txm.desktop_row(tx) }}{% endfor %}

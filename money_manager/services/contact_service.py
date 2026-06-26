@@ -302,6 +302,21 @@ def _clean_email(value: Any) -> str:
     return _clean_text(value).lower()
 
 
+def _clean_vat(value: Any) -> str:
+    text = str(value or "").strip().upper()
+    return "".join(char for char in text if char.isalnum())[:32]
+
+
+def _clean_fiscal_code(value: Any) -> str:
+    text = str(value or "").strip().upper()
+    return "".join(char for char in text if char.isalnum())[:32]
+
+
+def _clean_sdi(value: Any) -> str:
+    text = str(value or "").strip().upper()
+    return "".join(char for char in text if char.isalnum())[:20]
+
+
 def _canonical_iban(value: Any) -> str:
     return "".join(str(value or "").split()).upper()
 

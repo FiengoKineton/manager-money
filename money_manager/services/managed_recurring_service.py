@@ -59,15 +59,43 @@ KIND_META = {
 
 def page_context(kind: str, *, message: str = "", error: str = "", user_id: str | None = None) -> dict[str, Any]:
     kind = _clean_kind(kind)
-    generate_recurring()
-    payload = load_managed_recurring(user_id=user_id)
-    recurring_by_id = {str(row.get("id") or ""): row for row in load_recurring()}
-    pending_rows = load_pending()
+    load_warnings: list[str] = []
+
+    # This page is a normal GET route, so it must render even when automatic
+    # recurring generation has a bad/old row or encrypted IO is temporarily busy.
+    # The user can still repair the data from the normal Recurring/Pending pages.
+    try:
+        generate_recurring()
+    except Exception as exc:
+        load_warnings.append(f"Automatic recurring refresh was skipped: {exc}")
+
+    try:
+        payload = load_managed_recurring(user_id=user_id)
+    except Exception as exc:
+        payload = _normalize_payload({})
+        load_warnings.append(f"Dedicated page metadata could not be loaded: {exc}")
+
+    try:
+        recurring_by_id = {str(row.get("id") or ""): row for row in load_recurring()}
+    except Exception as exc:
+        recurring_by_id = {}
+        load_warnings.append(f"Recurring rules could not be loaded: {exc}")
+
+    try:
+        pending_rows = load_pending()
+    except Exception as exc:
+        pending_rows = []
+        load_warnings.append(f"Pending rows could not be loaded: {exc}")
+
     items = []
     for item in payload.get("items", []):
         if item.get("kind") != kind:
             continue
-        decorated = _decorate_item(item, recurring_by_id, pending_rows, user_id=user_id)
+        try:
+            decorated = _decorate_item(item, recurring_by_id, pending_rows, user_id=user_id)
+        except Exception as exc:
+            decorated = None
+            load_warnings.append(f"A saved item could not be displayed: {exc}")
         if decorated:
             items.append(decorated)
 
@@ -76,20 +104,46 @@ def page_context(kind: str, *, message: str = "", error: str = "", user_id: str 
     archived_items = [row for row in items if not row.get("is_active")]
     pending_open_count = sum(len(row.get("pending_open", [])) for row in active_items)
     due_now_count = sum(1 for row in active_items if row.get("needs_check"))
-    monthly_total = sum(float(row.get("amount_value") or 0.0) / max(1, int(row.get("frequency") or 1)) for row in active_items)
+    monthly_total = 0.0
+    for row in active_items:
+        try:
+            monthly_total += float(row.get("amount_value") or 0.0) / max(1, int(row.get("frequency") or 1))
+        except Exception:
+            continue
 
-    companies = [contact_view(contact, show_sensitive_data=True) for contact in list_contacts(include_archived=False) if contact.get("type") == "company"]
+    try:
+        companies = [contact_view(contact, show_sensitive_data=True) for contact in list_contacts(include_archived=False) if contact.get("type") == "company"]
+    except Exception as exc:
+        companies = []
+        load_warnings.append(f"Company contacts could not be loaded: {exc}")
+
+    try:
+        account_options = account_options_for_payment_forms()
+    except Exception as exc:
+        account_options = []
+        load_warnings.append(f"Account options could not be loaded: {exc}")
+
+    try:
+        payment_method_options = payment_method_options_for_forms()
+    except Exception as exc:
+        payment_method_options = []
+        load_warnings.append(f"Payment methods could not be loaded: {exc}")
+
+    combined_error = error
+    if load_warnings:
+        warning_text = " | ".join(str(item) for item in load_warnings[:4])
+        combined_error = f"{combined_error} | {warning_text}" if combined_error else warning_text
 
     return {
         "meta": KIND_META[kind],
         "kind": kind,
         "message": message,
-        "error": error,
+        "error": combined_error,
         "items": active_items,
         "archived_items": archived_items,
         "contacts": companies,
-        "account_options": account_options_for_payment_forms(),
-        "payment_method_options": payment_method_options_for_forms(),
+        "account_options": account_options,
+        "payment_method_options": payment_method_options,
         "totals": {
             "active_count": len(active_items),
             "archived_count": len(archived_items),
@@ -205,17 +259,13 @@ def mark_checked_from_form(item_id: str, form: Mapping[str, Any], user_id: str |
     index, item = _find_item(payload, item_id)
     if item is None:
         return {"ok": False, "error": "Item not found."}
-    pending_id = str(form.get("pending_id") or "").strip()
-    checked_amount = _money(form.get("checked_amount"))
-    checked_due_date = _clean_date(form.get("checked_due_date"))
-    if pending_id:
-        updates: dict[str, Any] = {}
-        if checked_amount > 0:
-            updates["amount"] = checked_amount
-        if checked_due_date:
-            updates["date_due"] = checked_due_date
-        if updates:
-            update_pending(pending_id, updates)
+
+    check_result = _apply_pending_check_from_form(form)
+    if not check_result.get("ok"):
+        return check_result
+
+    pending_id = str(check_result.get("pending_id") or "")
+    checked_amount = float(check_result.get("checked_amount") or 0.0)
     item.update({
         "last_checked_at": _now(),
         "last_checked_amount": f"{checked_amount:.2f}" if checked_amount > 0 else "",
@@ -225,15 +275,83 @@ def mark_checked_from_form(item_id: str, form: Mapping[str, Any], user_id: str |
     payload["items"][index] = _normalize_item(item)
     payload["events"] = [*payload.get("events", []), _event(item, "check", f"Checked pending {pending_id}")][-500:]
     save_managed_recurring(payload, user_id=user_id)
-    return {"ok": True, "message": f"{item.get('title', 'Item')} checked."}
+    return {"ok": True, "message": f"{item.get('title', 'Item')} checked at € {checked_amount:.2f}."}
 
 
-def execute_pending_from_form(form: Mapping[str, Any]) -> dict[str, Any]:
+def execute_pending_from_form(form: Mapping[str, Any], user_id: str | None = None) -> dict[str, Any]:
     pending_id = str(form.get("pending_id") or "").strip()
     if not pending_id:
         return {"ok": False, "error": "Missing pending id."}
+
+    # The execute button is in the same row as the checked amount. Users expect
+    # the edited value to be used immediately, even if they did not first press
+    # "Save check". Persist the corrected pending amount/date before execution.
+    check_result = _apply_pending_check_from_form(form)
+    if not check_result.get("ok"):
+        return check_result
+
+    item_id = str(form.get("item_id") or "").strip()
+    if item_id:
+        _record_item_check_metadata(
+            item_id,
+            pending_id=pending_id,
+            checked_amount=float(check_result.get("checked_amount") or 0.0),
+            user_id=user_id,
+            event_action="execute_check",
+        )
+
     ok = execute_pending_by_id(pending_id, execution_date=form.get("execution_date") or form.get("checked_due_date"))
-    return {"ok": ok, "message": "Pending payment executed." if ok else "Pending payment was not executed."}
+    return {"ok": ok, "message": "Pending payment executed with the checked amount." if ok else "Pending payment was not executed."}
+
+
+def _apply_pending_check_from_form(form: Mapping[str, Any]) -> dict[str, Any]:
+    pending_id = str(form.get("pending_id") or "").strip()
+    if not pending_id:
+        return {"ok": False, "error": "Missing pending id."}
+
+    # The browser sends this value both for Save check and Execute. Keep comma
+    # decimals supported, but reject empty/zero values so an accidental blank
+    # cannot silently keep the old generated amount.
+    checked_amount = _money(form.get("checked_amount"))
+    if checked_amount <= 0:
+        return {"ok": False, "error": "Insert a checked amount greater than zero."}
+
+    updates: dict[str, Any] = {"amount": f"{checked_amount:.2f}"}
+    checked_due_date = _clean_date(form.get("checked_due_date"))
+    if checked_due_date:
+        updates["date_due"] = checked_due_date
+
+    update_pending(pending_id, updates)
+    return {
+        "ok": True,
+        "pending_id": pending_id,
+        "checked_amount": checked_amount,
+        "checked_due_date": checked_due_date,
+    }
+
+
+def _record_item_check_metadata(
+    item_id: str,
+    *,
+    pending_id: str,
+    checked_amount: float,
+    user_id: str | None = None,
+    event_action: str = "check",
+) -> None:
+    payload = load_managed_recurring(user_id=user_id)
+    index, item = _find_item(payload, item_id)
+    if item is None:
+        return
+
+    item.update({
+        "last_checked_at": _now(),
+        "last_checked_amount": f"{checked_amount:.2f}" if checked_amount > 0 else "",
+        "last_checked_pending_id": pending_id,
+        "updated_at": _now(),
+    })
+    payload["items"][index] = _normalize_item(item)
+    payload["events"] = [*payload.get("events", []), _event(item, event_action, f"Checked pending {pending_id} at € {checked_amount:.2f}")][-500:]
+    save_managed_recurring(payload, user_id=user_id)
 
 
 def load_managed_recurring(user_id: str | None = None) -> dict[str, Any]:
@@ -252,20 +370,39 @@ def _decorate_item(item: Mapping[str, Any], recurring_by_id: dict[str, dict], pe
     rule = recurring_by_id.get(str(item.get("recurring_rule_id") or ""))
     if not rule:
         return None
-    contact = get_contact(item.get("contact_id") or "", user_id=user_id) if item.get("contact_id") else None
+
+    try:
+        contact = get_contact(item.get("contact_id") or "", user_id=user_id) if item.get("contact_id") else None
+    except Exception:
+        contact = None
+
     row_pending = [row for row in pending_rows if row.get("source") == "recurring" and str(row.get("source_id")) == str(rule.get("id"))]
-    pending_prepared = prepare_pending_for_display(row_pending)
+    try:
+        pending_prepared = prepare_pending_for_display(row_pending)
+    except Exception:
+        pending_prepared = {"pending": [], "executed": []}
     pending_open = pending_prepared.get("pending", [])
     pending_executed = pending_prepared.get("executed", [])[:5]
-    next_due = next_due_date_for_rule(rule)
+
+    try:
+        next_due = next_due_date_for_rule(rule)
+        next_due_display = next_due.isoformat()
+    except Exception:
+        next_due_display = ""
+
     amount = normalize_amount(rule.get("amount"))
     due_open = [row for row in pending_open if row.get("is_due_today") or row.get("is_overdue")]
     last_check_label = _short_datetime(item.get("last_checked_at")) or "Never"
+    try:
+        contact_payload = contact_view(contact, show_sensitive_data=True) if contact else None
+    except Exception:
+        contact_payload = None
+
     return {
         **item,
         "rule": rule,
         "rule_id": rule.get("id", ""),
-        "contact": contact_view(contact, show_sensitive_data=True) if contact else None,
+        "contact": contact_payload,
         "contact_name": (contact or {}).get("display_name", ""),
         "type": rule.get("type", ""),
         "category": rule.get("category", ""),
@@ -278,8 +415,8 @@ def _decorate_item(item: Mapping[str, Any], recurring_by_id: dict[str, dict], pe
         "max_occurrences": rule.get("max_occurrences", ""),
         "account_id": rule.get("account_id", ""),
         "payment_method_id": rule.get("payment_method_id", ""),
-        "next_due": next_due.isoformat(),
-        "next_due_sort": next_due.isoformat(),
+        "next_due": next_due_display or "Not scheduled",
+        "next_due_sort": next_due_display or "9999-99-99",
         "pending_open": pending_open,
         "pending_executed": pending_executed,
         "needs_check": bool(item.get("manual_check_required") and due_open),

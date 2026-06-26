@@ -67,15 +67,37 @@
             </div>
           </details>
         {% else %}
-          <details class="nav-group app-nav-group {{ 'is-active' if request.endpoint and request.endpoint.startswith('accounts.') else '' }}" >
+          {% set accounts_core_open = request.endpoint in ['accounts.accounts_page', 'transactions.transactions_page'] %}
+          {% set accounts_transfer_open = request.endpoint in ['internal_transfers.internal_transfers_page', 'bonifico.bonifico_page'] %}
+          {% set accounts_tools_open = (request.endpoint and request.endpoint.startswith('contacts.')) or request.endpoint in ['currencies.currencies_page', 'discount_balances.discount_balances_page'] %}
+          {% set accounts_group_open = accounts_core_open or accounts_transfer_open or accounts_tools_open %}
+          <details class="nav-group app-nav-group {{ 'is-active' if accounts_group_open else '' }}" {{ 'open' if accounts_group_open else '' }}>
             <summary>Conti Correnti</summary>
-            <div class="nav-items">
-              {% if endpoint_exists('accounts.accounts_page') %}<a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if request.endpoint == 'accounts.accounts_page' else '' }}">All Conti</a>{% endif %}
-              {% if endpoint_exists('internal_transfers.internal_transfers_page') %}<a href="{{ url_for('internal_transfers.internal_transfers_page') }}" class="{{ 'active' if request.endpoint == 'internal_transfers.internal_transfers_page' else '' }}">Internal transfers</a>{% endif %}
-              {% if endpoint_exists('bonifico.bonifico_page') %}<a href="{{ url_for('bonifico.bonifico_page') }}" class="{{ 'active' if request.endpoint == 'bonifico.bonifico_page' else '' }}">Bonifico</a>{% endif %}
-              {% if endpoint_exists('contacts.contacts_page') %}<a href="{{ url_for('contacts.contacts_page') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('contacts.') else '' }}">Contacts</a>{% endif %}
-              {% if endpoint_exists('currencies.currencies_page') %}<a href="{{ url_for('currencies.currencies_page') }}" class="{{ 'active' if request.endpoint == 'currencies.currencies_page' else '' }}">Currency exchange</a>{% endif %}
-              {% if endpoint_exists('discount_balances.discount_balances_page') %}<a href="{{ url_for('discount_balances.discount_balances_page') }}" class="{{ 'active' if request.endpoint == 'discount_balances.discount_balances_page' else '' }}">Gift cards & buoni</a>{% endif %}
+            <div class="nav-items nav-items-with-subgroups">
+              <details class="nav-subgroup {{ 'is-active' if accounts_core_open else '' }}" {{ 'open' if accounts_core_open else '' }}>
+                <summary>All Conti</summary>
+                <div class="nav-subitems">
+                  {% if endpoint_exists('accounts.accounts_page') %}<a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if request.endpoint == 'accounts.accounts_page' else '' }}">All Conti</a>{% endif %}
+                  {% if endpoint_exists('transactions.transactions_page') %}<a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if request.endpoint == 'transactions.transactions_page' else '' }}">Transactions</a>{% endif %}
+                </div>
+              </details>
+
+              <details class="nav-subgroup {{ 'is-active' if accounts_transfer_open else '' }}" {{ 'open' if accounts_transfer_open else '' }}>
+                <summary>Transfers</summary>
+                <div class="nav-subitems">
+                  {% if endpoint_exists('internal_transfers.internal_transfers_page') %}<a href="{{ url_for('internal_transfers.internal_transfers_page') }}" class="{{ 'active' if request.endpoint == 'internal_transfers.internal_transfers_page' else '' }}">Internal transfers</a>{% endif %}
+                  {% if endpoint_exists('bonifico.bonifico_page') %}<a href="{{ url_for('bonifico.bonifico_page') }}" class="{{ 'active' if request.endpoint == 'bonifico.bonifico_page' else '' }}">Bonifico</a>{% endif %}
+                </div>
+              </details>
+
+              <details class="nav-subgroup {{ 'is-active' if accounts_tools_open else '' }}" {{ 'open' if accounts_tools_open else '' }}>
+                <summary>Contacts & tools</summary>
+                <div class="nav-subitems">
+                  {% if endpoint_exists('contacts.contacts_page') %}<a href="{{ url_for('contacts.contacts_page') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('contacts.') else '' }}">Contacts</a>{% endif %}
+                  {% if endpoint_exists('currencies.currencies_page') %}<a href="{{ url_for('currencies.currencies_page') }}" class="{{ 'active' if request.endpoint == 'currencies.currencies_page' else '' }}">Currency exchange</a>{% endif %}
+                  {% if endpoint_exists('discount_balances.discount_balances_page') %}<a href="{{ url_for('discount_balances.discount_balances_page') }}" class="{{ 'active' if request.endpoint == 'discount_balances.discount_balances_page' else '' }}">Gift cards & buoni</a>{% endif %}
+                </div>
+              </details>
             </div>
           </details>
         {% endif %}
@@ -83,7 +105,7 @@
         {% set planning_monthly_open = request.endpoint in ['pending.pending_page', 'pending.recurring_page'] %}
         {% set planning_common_open = request.endpoint in ['managed_recurring.bills_page', 'managed_recurring.work_income_page'] %}
         {% set planning_loans_open = request.endpoint in ['mortgages.mortgages_page', 'payables.payables_page', 'debts.debts_page', 'receivables.receivables_page'] %}
-        {% set planning_projects_open = request.endpoint == 'forecast.forecast' or (request.endpoint and request.endpoint.startswith('expense_projects.')) %}        {% set planning_common_open = request.endpoint in ['managed_recurring.bills_page', 'managed_recurring.work_income_page'] %}
+        {% set planning_projects_open = request.endpoint == 'forecast.forecast' or (request.endpoint and request.endpoint.startswith('expense_projects.')) %}
         <details class="nav-group app-nav-group {{ 'is-active' if planning_monthly_open or planning_common_open or planning_loans_open or planning_projects_open else '' }}" >
           <summary>Planning</summary>
           <div class="nav-items nav-items-with-subgroups">
@@ -181,9 +203,18 @@
             <button type="submit">⌕</button>
           </form>
           {% endif %}
-          <a class="net-pill topbar-net-pill {{ 'is-account-scope' if has_active_account else '' }}" href="{{ topbar_net_href or url_for('accounts.accounts_page') }}">
-            <span>{{ topbar_net_label or 'All Conti net' }}</span>
-            <strong>{{ topbar_display_net|money_masked }}</strong>
+          {% set lazy_topbar_account_id = selected_account_id|default('', true) %}
+          {% set lazy_topbar_url = '' %}
+          {% if endpoint_exists('dashboard.topbar_summary_api') %}
+            {% set lazy_topbar_url = url_for('dashboard.topbar_summary_api', account_id=lazy_topbar_account_id) if lazy_topbar_account_id else url_for('dashboard.topbar_summary_api') %}
+          {% endif %}
+          <a class="net-pill topbar-net-pill {{ 'is-account-scope' if has_active_account else '' }}"
+             href="{{ topbar_net_href or url_for('accounts.accounts_page') }}"
+             data-topbar-net-pill
+             data-topbar-summary-url="{{ lazy_topbar_url }}"
+             data-mask-sensitive="{{ '1' if mask_sensitive_data else '0' }}">
+            <span data-topbar-net-label>{{ topbar_net_label or 'All Conti net' }}</span>
+            <strong data-topbar-net-value>{{ 'Loading…' if topbar_net_lazy and not mask_sensitive_data and lazy_topbar_url else topbar_display_net|money_masked }}</strong>
           </a>
 
           <div class="notification-menu" data-notification-menu>
@@ -295,6 +326,7 @@
   </div>
 
   <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=receipt-paper-items-fix-3"></script>
+  <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-lazy-1"></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=wallet-shell-17e"></script>
   <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=fast-phone-1" defer></script>

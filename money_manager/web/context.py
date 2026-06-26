@@ -41,14 +41,11 @@ def _cached_scope_summary(scope: str) -> dict:
 
 
 def _topbar_main_bank_net() -> float:
-    if not is_authenticated():
-        return 0.0
-    try:
-        from money_manager.services.dashboard_calculation_service import get_quick_overview_cached
-
-        return float(get_quick_overview_cached().get("net_worth", 0.0) or 0.0)
-    except Exception:
-        return 0.0
+    # Do not compute the dashboard/overview net inside the global context
+    # processor.  Context processors run for every template, so this made even
+    # unrelated pages pay for encrypted transaction reads and summary math.  The
+    # topbar value is loaded after first paint through /api/topbar-summary.
+    return 0.0
 
 
 def _topbar_scope_net_context(active_account: dict | None = None) -> dict:
@@ -307,6 +304,7 @@ def register_context_processors(app):
             "endpoint_exists": endpoint_exists,
             "sidebar_navigation": sidebar_navigation,
             "topbar_main_bank_net": topbar_context.get("topbar_global_net", 0.0),
+            "topbar_net_lazy": True,
             "topbar_notifications": _topbar_notifications(),
             "current_user": user,
             "current_user_id": user.get("id") if user else None,

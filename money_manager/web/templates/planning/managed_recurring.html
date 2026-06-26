@@ -139,7 +139,7 @@
                   {% if item.needs_check %}<span class="soft-badge warning-badge">Check due</span>{% endif %}
                   {% if item.variable_amount %}<span class="soft-badge">Variable</span>{% endif %}
                   <h3>{{ item.title }}</h3>
-                  <p>{% if item.contact_name %}{{ item.contact_name }} · {% endif %}Next: {{ item.next_due }} · Last check: {{ item.last_check_label }}</p>
+                  <p>{% if item.contact_name %}{{ item.contact_name }} · {% endif %}Next: {{ item.next_due }} · Last check: {{ item.last_check_label }}{% if item.last_checked_amount %} · Checked: € {{ item.last_checked_amount }}{% endif %}</p>
                 </div>
                 <strong>€ {{ item.amount_display }}</strong>
               </div>
@@ -231,10 +231,10 @@
                       <strong>{{ pending.description or item.title }}</strong>
                       <small>{{ pending.date_due_str }} · {{ pending.category }} · {{ pending.direction_label }}</small>
                     </div>
-                    <label>Checked amount<input type="number" step="0.01" min="0.01" name="checked_amount" value="{{ pending.amount_value }}"></label>
+                    <label>Checked amount<input type="number" step="0.01" min="0.01" name="checked_amount" value="{{ '%.2f'|format(pending.amount_value) }}"></label>
                     <label>Due date<input type="date" name="checked_due_date" value="{{ pending.date_due_str }}"></label>
-                    <button type="submit" name="action" value="mark_checked" class="secondary-btn compact-btn">Save check</button>
-                    <button type="submit" name="action" value="execute_pending" class="primary-btn compact-btn">Execute</button>
+                    <button type="submit" name="action" value="mark_checked" class="secondary-btn compact-btn">Save checked amount</button>
+                    <button type="submit" name="action" value="execute_pending" class="primary-btn compact-btn">Execute checked amount</button>
                   </form>
                 {% endfor %}
               </div>

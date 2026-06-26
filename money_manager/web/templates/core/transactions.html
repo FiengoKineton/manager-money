@@ -2,6 +2,7 @@
 {% block page_title %}{{ t("page.transactions") }}{% endblock %}
 
 {% block content %}
+{% import "core/_transaction_macros.html" as txm %}
 {% include "components/scope_switcher.html" %}
 <section class="transactions-hero panel-card">
   <div>
@@ -18,9 +19,9 @@
 
 <section class="transactions-summary-grid">
   <article class="summary-card transaction-stat-card tone-net">
-    <span>Shown rows</span>
-    <strong>{{ transaction_summary.count if transaction_summary is defined else transactions|length }}</strong>
-    <small>Rows shown by the visual filters.</small>
+    <span>Filtered rows</span>
+    <strong>{{ transaction_summary.count if transaction_summary is defined else transactions_total_count }}</strong>
+    <small><span data-transactions-shown-count>{{ transactions_shown_count }}</span> loaded now; more rows load only when requested.</small>
   </article>
   <article class="summary-card transaction-stat-card tone-income">
     <span>Income</span>
@@ -112,38 +113,22 @@
   </form>
 </section>
 
-<section class="transactions transactions-with-phone-cards">
+<section class="transactions transactions-with-phone-cards"
+         data-transactions-lazy-root
+         data-next-page="{{ transactions_page + 1 }}"
+         data-page-size="{{ transactions_page_size }}"
+         data-total-count="{{ transactions_total_count }}"
+         data-page-url="{{ url_for('transactions.transactions_page_slice') }}">
   <div class="panel-header">
     <div>
       <span class="eyebrow">Saved rows</span>
       <h2>Transactions — {{ scope_label if scope_is_account else 'All accounts' }}</h2>
     </div>
-    <span class="section-count">{{ transactions|length }} shown</span>
+    <span class="section-count"><span data-transactions-shown-count>{{ transactions_shown_count }}</span> / <span data-transactions-total-count>{{ transactions_total_count }}</span> loaded</span>
   </div>
 
-  <div class="phone-transaction-list" aria-label="Phone transaction cards">
-    {% for tx in transactions_initial %}
-      <a class="phone-transaction-card row-{{ tx.type }}" href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
-        <span class="phone-transaction-copy">
-          <b>{{ tx.description if tx.description and tx.description != 'nan' else tx.category }}</b>
-          <small>{{ tx.date_str }} · {{ tx.type.capitalize() }}{% if tx.account and tx.account != 'nan' %} · {{ tx.account }}{% endif %}</small>
-          {% if tx.sub_category and tx.sub_category != 'nan' %}<em>{{ tx.sub_category }}</em>{% endif %}
-        </span>
-        <strong class="phone-transaction-amount">{{ tx.amount_str }}</strong>
-      </a>
-    {% endfor %}
-    <div id="phone-full-transactions" class="phone-extra-transactions is-hidden">
-      {% for tx in transactions[50:] %}
-        <a class="phone-transaction-card row-{{ tx.type }}" href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
-          <span class="phone-transaction-copy">
-            <b>{{ tx.description if tx.description and tx.description != 'nan' else tx.category }}</b>
-            <small>{{ tx.date_str }} · {{ tx.type.capitalize() }}{% if tx.account and tx.account != 'nan' %} · {{ tx.account }}{% endif %}</small>
-            {% if tx.sub_category and tx.sub_category != 'nan' %}<em>{{ tx.sub_category }}</em>{% endif %}
-          </span>
-          <strong class="phone-transaction-amount">{{ tx.amount_str }}</strong>
-        </a>
-      {% endfor %}
-    </div>
+  <div class="phone-transaction-list" aria-label="Phone transaction cards" data-phone-transactions-list>
+    {% for tx in transactions_initial %}{{ txm.phone_card(tx) }}{% endfor %}
   </div>
 
   <table class="standard-table transactions-table transactions-actionless-table transactions-fit-table" data-no-mobile-cards="true" data-mobile-title="Description" data-mobile-amount="Amount" data-mobile-meta="Date, Type, Account">
@@ -166,150 +151,17 @@
         <th>Amount (€)</th>
       </tr>
     </thead>
-    <tbody>
-    {% for tx in transactions_initial %}
-      <tr class="row-{{ tx.type }} clickable-row"
-          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-          data-receipt-url="{{ url_for('transactions.transaction_receipt_snippet', row_index=tx.row_index) }}">
-        <td>{{ tx.date_str }}</td>
-        <td>{{ tx.type.capitalize() }}</td>
-        <td>
-          {{ tx.category }}
-          {% if tx.sub_category and tx.sub_category != 'nan' %}
-            <br><small>{{ tx.sub_category }}</small>
-          {% endif %}
-        </td>
-        <td class="transaction-description-cell">
-          {% if tx.description and tx.description != 'nan' %}
-            <span class="transaction-description-text">{{ tx.description }}</span>
-          {% endif %}
-          {% if tx.payment_method and tx.payment_method != 'nan' %}
-            <br><small class="transaction-meta-pill">{{ tx.payment_method|capitalize }}{% if tx.contact_name and tx.contact_name != 'nan' %} · {{ tx.contact_name }}{% endif %}</small>
-          {% elif tx.contact_name and tx.contact_name != 'nan' %}
-            <br><small class="transaction-meta-pill">{{ tx.contact_name }}</small>
-          {% endif %}
-
-          <div class="transaction-row-actions transaction-row-actions-source" aria-hidden="true">
-            <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-              class="icon-link-btn icon-link-edit"
-              title="Edit transaction"
-              aria-label="Edit transaction">✎</a>
-
-            <form method="post"
-                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-                  class="row-action-form delay-row-form">
-              <input type="date"
-                    name="delay_date"
-                    value="{{ tx.delay_date_default }}"
-                    class="transaction-delay-date">
-              <button type="submit"
-                      name="action"
-                      value="delay"
-                      class="icon-action-btn icon-action-delay"
-                      title="Delay transaction to selected date"
-                      aria-label="Delay transaction to selected date">⏳</button>
-            </form>
-
-            <form method="post"
-                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-                  class="row-action-form">
-              <button type="submit"
-                      name="action"
-                      value="delete"
-                      class="icon-action-btn icon-action-delete"
-                      title="Delete transaction"
-                      aria-label="Delete transaction"
-                      onclick="return confirm('Delete this transaction?')">×</button>
-            </form>
-          </div>
-        </td>
-        <td>
-          {% if tx.is_auxiliary_account %}
-            <span class="account-table-badge">{{ tx.account_label }}</span>
-          {% elif tx.account and tx.account != 'nan' %}
-            {{ tx.account }}
-          {% endif %}
-        </td>
-        <td class="transaction-amount-cell">{{ tx.amount_str }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-
-    <tbody id="full-transactions" class="is-hidden">
-      {% for tx in transactions[50:] %}
-      <tr class="row-{{ tx.type }} clickable-row"
-          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-          data-receipt-url="{{ url_for('transactions.transaction_receipt_snippet', row_index=tx.row_index) }}">
-        <td>{{ tx.date_str }}</td>
-        <td>{{ tx.type.capitalize() }}</td>
-        <td>
-          {{ tx.category }}
-          {% if tx.sub_category and tx.sub_category != 'nan' %}
-            <br><small>{{ tx.sub_category }}</small>
-          {% endif %}
-        </td>
-        <td class="transaction-description-cell">
-          {% if tx.description and tx.description != 'nan' %}
-            <span class="transaction-description-text">{{ tx.description }}</span>
-          {% endif %}
-          {% if tx.payment_method and tx.payment_method != 'nan' %}
-            <br><small class="transaction-meta-pill">{{ tx.payment_method|capitalize }}{% if tx.contact_name and tx.contact_name != 'nan' %} · {{ tx.contact_name }}{% endif %}</small>
-          {% elif tx.contact_name and tx.contact_name != 'nan' %}
-            <br><small class="transaction-meta-pill">{{ tx.contact_name }}</small>
-          {% endif %}
-
-          <div class="transaction-row-actions transaction-row-actions-source" aria-hidden="true">
-            <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-              class="icon-link-btn icon-link-edit"
-              title="Edit transaction"
-              aria-label="Edit transaction">✎</a>
-
-            <form method="post"
-                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-                  class="row-action-form delay-row-form">
-              <input type="date"
-                    name="delay_date"
-                    value="{{ tx.delay_date_default }}"
-                    class="transaction-delay-date">
-              <button type="submit"
-                      name="action"
-                      value="delay"
-                      class="icon-action-btn icon-action-delay"
-                      title="Delay transaction to selected date"
-                      aria-label="Delay transaction to selected date">⏳</button>
-            </form>
-
-            <form method="post"
-                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-                  class="row-action-form">
-              <button type="submit"
-                      name="action"
-                      value="delete"
-                      class="icon-action-btn icon-action-delete"
-                      title="Delete transaction"
-                      aria-label="Delete transaction"
-                      onclick="return confirm('Delete this transaction?')">×</button>
-            </form>
-          </div>
-        </td>
-        <td>
-          {% if tx.is_auxiliary_account %}
-            <span class="account-table-badge">{{ tx.account_label }}</span>
-          {% elif tx.account and tx.account != 'nan' %}
-            {{ tx.account }}
-          {% endif %}
-        </td>
-        <td class="transaction-amount-cell">{{ tx.amount_str }}</td>
-      </tr>
-      {% endfor %}
+    <tbody data-desktop-transactions-body>
+      {% for tx in transactions_initial %}{{ txm.desktop_row(tx) }}{% endfor %}
     </tbody>
   </table>
-  {% if transactions|length > 50 %}
-    <button id="toggle-transactions-btn" class="secondary-btn">Show more</button>
+
+  {% if transactions_has_more %}
+    <button id="toggle-transactions-btn" class="secondary-btn" type="button" data-load-more-transactions>Show more</button>
   {% endif %}
 </section>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=transactions-lazy-2"></script>
 {% endblock %}

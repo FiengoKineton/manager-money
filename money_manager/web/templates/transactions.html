@@ -1,20 +1,55 @@
 {% extends "base.html" %}
-{% block page_title %}Transactions{% endblock %}
+{% block page_title %}{{ t("page.transactions") }}{% endblock %}
 
 {% block content %}
-<section class="page-heading">
+{% import "core/_transaction_macros.html" as txm %}
+{% include "components/scope_switcher.html" %}
+<section class="transactions-hero panel-card">
   <div>
     <span class="eyebrow">Transaction log</span>
-    <h2>Transactions</h2>
-    <p>Only the transaction list lives here now. The dashboard keeps the charts and totals separate.</p>
+    <h2>Transactions — {{ scope_label if scope_is_account else 'All accounts' }}</h2>
+    <p>Clean table, action drawer on row click, and filters kept compact so the log gets more room.</p>
   </div>
-  <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">+ Add transaction</a>
+  <div class="transactions-hero-actions">
+    <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense', account_id=selected_account_id) if selected_account_id else url_for('transactions.add_transaction', type='expense') }}">+ Expense</a>
+    <a class="secondary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='income', account_id=selected_account_id) if selected_account_id else url_for('transactions.add_transaction', type='income') }}">+ Income</a>
+    <a class="secondary-btn compact-btn" href="{{ url_for('dashboard.index', account_id=selected_account_id) if selected_account_id else url_for('dashboard.index') }}">Dashboard</a>
+  </div>
 </section>
 
-<section class="filters">
+<section class="transactions-summary-grid">
+  <article class="summary-card transaction-stat-card tone-net">
+    <span>Filtered rows</span>
+    <strong>{{ transaction_summary.count if transaction_summary is defined else transactions_total_count }}</strong>
+    <small><span data-transactions-shown-count>{{ transactions_shown_count }}</span> loaded now; more rows load only when requested.</small>
+  </article>
+  <article class="summary-card transaction-stat-card tone-income">
+    <span>Income</span>
+    <strong>€ {{ '%.2f'|format(transaction_summary.income if transaction_summary is defined else 0) }}</strong>
+    <small>Calculated from {{ transaction_summary.scope_label if transaction_summary is defined else 'full history' }}.</small>
+  </article>
+  <article class="summary-card transaction-stat-card tone-expense">
+    <span>Expenses</span>
+    <strong>€ {{ '%.2f'|format(transaction_summary.expenses if transaction_summary is defined else 0) }}</strong>
+    <small>Calculated from {{ transaction_summary.scope_label if transaction_summary is defined else 'full history' }}.</small>
+  </article>
+  <article class="summary-card transaction-stat-card tone-investment">
+    <span>Tracked net movement</span>
+    <strong>€ {{ '%.2f'|format(transaction_summary.net if transaction_summary is defined else 0) }}</strong>
+    <small>Calculated from {{ transaction_summary.scope_label if transaction_summary is defined else 'full history' }}.</small>
+  </article>
+</section>
+
+<section class="panel-card transactions-calculation-note">
+  <span class="eyebrow">Calculation scope</span>
+  <p>The transaction list shows {{ start }} → {{ end }}. Money totals use {{ transaction_summary.scope_label if transaction_summary is defined else 'full history' }} so the default yearly view does not hide older opening rows.</p>
+</section>
+
+<section class="filters app-filter-bar transactions-filter-bar">
   <form method="get" action="{{ url_for('transactions.transactions_page') }}" class="filters-form">
+    {% if selected_account_id %}<input type="hidden" name="account_id" value="{{ selected_account_id }}">{% endif %}
     <div class="filter-date">
-      <label class="block-label">Date</label>
+      <label class="block-label">Date window</label>
       <div class="date-inputs">
         <div>
           <span class="small-label">From</span>
@@ -28,7 +63,7 @@
     </div>
 
     <div class="filter-main">
-      <div class="filter-row">
+      <div class="filter-row transactions-filter-row">
         <div class="filter-field">
           <label>Types</label>
           <div class="types-group">
@@ -73,22 +108,30 @@
       <div class="filters-actions">
         <button type="submit" class="primary-btn">Apply</button>
         <button type="submit" name="reset_filters" value="1" class="secondary-btn">Current year</button>
-        <a class="secondary-btn" href="{{ url_for('dashboard.index') }}">Open dashboard</a>
       </div>
     </div>
   </form>
 </section>
 
-<section class="transactions">
+<section class="transactions transactions-with-phone-cards"
+         data-transactions-lazy-root
+         data-next-page="{{ transactions_page + 1 }}"
+         data-page-size="{{ transactions_page_size }}"
+         data-total-count="{{ transactions_total_count }}"
+         data-page-url="{{ url_for('transactions.transactions_page_slice') }}">
   <div class="panel-header">
     <div>
       <span class="eyebrow">Saved rows</span>
-      <h2>Transactions</h2>
+      <h2>Transactions — {{ scope_label if scope_is_account else 'All accounts' }}</h2>
     </div>
-    <span class="section-count">{{ transactions|length }} shown</span>
+    <span class="section-count"><span data-transactions-shown-count>{{ transactions_shown_count }}</span> / <span data-transactions-total-count>{{ transactions_total_count }}</span> loaded</span>
   </div>
 
-  <table class="transactions-table transactions-actionless-table transactions-fit-table" data-no-mobile-cards="true">
+  <div class="phone-transaction-list" aria-label="Phone transaction cards" data-phone-transactions-list>
+    {% for tx in transactions_initial %}{{ txm.phone_card(tx) }}{% endfor %}
+  </div>
+
+  <table class="standard-table transactions-table transactions-actionless-table transactions-fit-table" data-no-mobile-cards="true" data-mobile-title="Description" data-mobile-amount="Amount" data-mobile-meta="Date, Type, Account">
     <colgroup>
       <col class="tx-col-date">
       <col class="tx-col-type">
@@ -108,138 +151,17 @@
         <th>Amount (€)</th>
       </tr>
     </thead>
-    <tbody>
-    {% for tx in transactions_initial %}
-      <tr class="row-{{ tx.type }} clickable-row"
-          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
-        <td>{{ tx.date_str }}</td>
-        <td>{{ tx.type.capitalize() }}</td>
-        <td>
-          {{ tx.category }}
-          {% if tx.sub_category and tx.sub_category != 'nan' %}
-            <br><small>{{ tx.sub_category }}</small>
-          {% endif %}
-        </td>
-        <td class="transaction-description-cell">
-          {% if tx.description and tx.description != 'nan' %}
-            <span class="transaction-description-text">{{ tx.description }}</span>
-          {% endif %}
-
-          <div class="transaction-row-actions transaction-row-actions-source" aria-hidden="true">
-            <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-              class="icon-link-btn icon-link-edit"
-              title="Edit transaction"
-              aria-label="Edit transaction">✎</a>
-
-            <form method="post"
-                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-                  class="row-action-form delay-row-form">
-              <input type="date"
-                    name="delay_date"
-                    value="{{ tx.delay_date_default }}"
-                    class="transaction-delay-date">
-              <button type="submit"
-                      name="action"
-                      value="delay"
-                      class="icon-action-btn icon-action-delay"
-                      title="Delay transaction to selected date"
-                      aria-label="Delay transaction to selected date">⏳</button>
-            </form>
-
-            <form method="post"
-                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-                  class="row-action-form">
-              <button type="submit"
-                      name="action"
-                      value="delete"
-                      class="icon-action-btn icon-action-delete"
-                      title="Delete transaction"
-                      aria-label="Delete transaction"
-                      onclick="return confirm('Delete this transaction?')">×</button>
-            </form>
-          </div>
-        </td>
-        <td>
-          {% if tx.is_auxiliary_account %}
-            <span class="account-table-badge">{{ tx.account_label }}</span>
-          {% elif tx.account and tx.account != 'nan' %}
-            {{ tx.account }}
-          {% endif %}
-        </td>
-        <td class="transaction-amount-cell">{{ tx.amount_str }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-
-    <tbody id="full-transactions" class="is-hidden">
-      {% for tx in transactions[50:] %}
-      <tr class="row-{{ tx.type }} clickable-row"
-          data-href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
-        <td>{{ tx.date_str }}</td>
-        <td>{{ tx.type.capitalize() }}</td>
-        <td>
-          {{ tx.category }}
-          {% if tx.sub_category and tx.sub_category != 'nan' %}
-            <br><small>{{ tx.sub_category }}</small>
-          {% endif %}
-        </td>
-        <td class="transaction-description-cell">
-          {% if tx.description and tx.description != 'nan' %}
-            <span class="transaction-description-text">{{ tx.description }}</span>
-          {% endif %}
-
-          <div class="transaction-row-actions transaction-row-actions-source" aria-hidden="true">
-            <a href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-              class="icon-link-btn icon-link-edit"
-              title="Edit transaction"
-              aria-label="Edit transaction">✎</a>
-
-            <form method="post"
-                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-                  class="row-action-form delay-row-form">
-              <input type="date"
-                    name="delay_date"
-                    value="{{ tx.delay_date_default }}"
-                    class="transaction-delay-date">
-              <button type="submit"
-                      name="action"
-                      value="delay"
-                      class="icon-action-btn icon-action-delay"
-                      title="Delay transaction to selected date"
-                      aria-label="Delay transaction to selected date">⏳</button>
-            </form>
-
-            <form method="post"
-                  action="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"
-                  class="row-action-form">
-              <button type="submit"
-                      name="action"
-                      value="delete"
-                      class="icon-action-btn icon-action-delete"
-                      title="Delete transaction"
-                      aria-label="Delete transaction"
-                      onclick="return confirm('Delete this transaction?')">×</button>
-            </form>
-          </div>
-        </td>
-        <td>
-          {% if tx.is_auxiliary_account %}
-            <span class="account-table-badge">{{ tx.account_label }}</span>
-          {% elif tx.account and tx.account != 'nan' %}
-            {{ tx.account }}
-          {% endif %}
-        </td>
-        <td class="transaction-amount-cell">{{ tx.amount_str }}</td>
-      </tr>
-      {% endfor %}
+    <tbody data-desktop-transactions-body>
+      {% for tx in transactions_initial %}{{ txm.desktop_row(tx) }}{% endfor %}
     </tbody>
   </table>
-  {% if transactions|length > 50 %}
-    <button id="toggle-transactions-btn" class="secondary-btn">Show more</button>
+
+  {% if transactions_has_more %}
+    <button id="toggle-transactions-btn" class="secondary-btn" type="button" data-load-more-transactions>Show more</button>
   {% endif %}
 </section>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=transactions-lazy-2"></script>
 {% endblock %}
