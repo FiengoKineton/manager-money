@@ -7,6 +7,9 @@ ENV/
 # Python cache
 **/__pycache__/
 *.py[cod]
+*.pyc
+*.pyo
+*.pyd
 
 # Distribution / packages
 dist/
@@ -26,3 +29,28 @@ _OLD/**
 .launcher_browser_profile/
 
 .money_manager_project_path.txt
+
+
+# Local logs/cache
+MoneyManagerData/cache/
+MoneyManagerData/logs/
+MoneyManagerData/tmp/
+MoneyManagerData/backups/
+
+# Device-specific config
+MoneyManagerData/app_config/local_app.json
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+
+# Secrets / local environment
+.env
+*.key
+*.pem
+*.sqlite-journal
+*.db-journal
+
