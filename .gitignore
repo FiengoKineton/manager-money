@@ -54,3 +54,7 @@ Thumbs.db
 *.sqlite-journal
 *.db-journal
 
+MoneyManagerData/app_config/install_state.json
+MoneyManagerData/data/users/*/plots/
+*.mmcache
+__pycache__/
