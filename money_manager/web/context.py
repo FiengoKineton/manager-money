@@ -126,37 +126,92 @@ def scope_url_args(scope) -> dict:
     return {}
 
 
-def _scope_switch_links(options: list[dict], selected_scope: dict) -> list[dict]:
+def _scope_switch_url(account_id: str | None = None) -> str:
+    """Build a scope-switch URL for the current page.
+
+    Dashboard/transactions/analysis keep their current path and swap the
+    account_id query string. Conto detail pages are different: switching account
+    should navigate to /accounts/<account>, while All Conti should go back to
+    /accounts.
+    """
+    endpoint = str(request.endpoint or "")
+    if endpoint in {"accounts.account_detail", "accounts.account_payment_method_detail"}:
+        if account_id:
+            return url_for("accounts.account_detail", account_key=account_id)
+        return url_for("accounts.accounts_page")
+
     base_args = request.args.to_dict(flat=True)
     base_args.pop("scope", None)
     base_args.pop("account_id", None)
+    if account_id:
+        base_args["account_id"] = account_id
+    query = urlencode(base_args)
+    return f"{request.path}?{query}" if query else request.path
 
-    def _build(account_id: str | None = None) -> str:
-        args = dict(base_args)
-        if account_id:
-            args["account_id"] = account_id
-        query = urlencode(args)
-        return f"{request.path}?{query}" if query else request.path
 
+def _scope_link_from_option(option: dict, selected_scope: dict) -> dict:
+    account_id = str(option.get("account_id") or "")
+    label = option.get("label") or account_id
+    return {
+        "label": label,
+        "url": _scope_switch_url(account_id or None),
+        "active": bool(account_id and selected_scope.get("account_id") == account_id),
+        "account_id": account_id,
+        "scope": option.get("scope") or (f"account:{account_id}" if account_id else "global"),
+        "account_level": int(option.get("account_level") or 0),
+        "account_kind": option.get("account_kind") or "",
+    }
+
+
+def _scope_switch_links(options: list[dict], selected_scope: dict) -> list[dict]:
     links = [{
-        "label": "All accounts",
-        "url": _build(None),
+        "label": "All Conti",
+        "url": _scope_switch_url(None),
         "active": bool(selected_scope.get("is_global")),
         "account_id": "",
         "scope": "global",
+        "account_level": 0,
     }]
+    for option in options:
+        account_id = str(option.get("account_id") or "")
+        if account_id:
+            links.append(_scope_link_from_option(option, selected_scope))
+    return links
+
+
+def _scope_group_sections(options: list[dict], selected_scope: dict) -> list[dict]:
+    labels = {
+        1: "1st level accounts",
+        2: "2nd level",
+        3: "3rd level",
+    }
+    descriptions = {
+        1: "Independent banks",
+        2: "Standalone cash / meal vouchers",
+        3: "Dependent wallets",
+    }
+    grouped: dict[int, list[dict]] = {1: [], 2: [], 3: []}
     for option in options:
         account_id = str(option.get("account_id") or "")
         if not account_id:
             continue
-        links.append({
-            "label": option.get("label") or account_id,
-            "url": _build(account_id),
-            "active": selected_scope.get("account_id") == account_id,
-            "account_id": account_id,
-            "scope": option.get("scope") or f"account:{account_id}",
+        level = int(option.get("account_level") or 0)
+        if level not in grouped:
+            continue
+        grouped[level].append(_scope_link_from_option(option, selected_scope))
+
+    sections: list[dict] = []
+    for level in (1, 2, 3):
+        items = grouped[level]
+        sections.append({
+            "level": level,
+            "label": labels[level],
+            "description": descriptions[level],
+            "count": len(items),
+            "active": any(item.get("active") for item in items),
+            "items": items,
         })
-    return links
+    return sections
 
 
 def scope_template_context(selected_scope: dict | str | None = None) -> dict:
@@ -181,6 +236,7 @@ def scope_template_context(selected_scope: dict | str | None = None) -> dict:
         "financial_centers": centers,
         "scope_options": options,
         "scope_links": _scope_switch_links(options, selected_scope),
+        "scope_group_sections": _scope_group_sections(options, selected_scope),
         "scope_query_args": query_args,
     }
 

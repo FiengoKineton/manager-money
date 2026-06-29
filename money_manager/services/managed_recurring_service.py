@@ -173,6 +173,7 @@ def create_item_from_form(kind: str, form: Mapping[str, Any], user_id: str | Non
         "recurring_rule_id": str(rule_id or ""),
         "variable_amount": _truthy(form.get("variable_amount"), default=kind == KIND_BILL),
         "manual_check_required": _truthy(form.get("manual_check_required"), default=True),
+        "next_due_amount": _money_text_or_empty(form.get("next_due_amount")),
         "notes": _clean_multiline(form.get("notes")),
         "is_active": True,
         "last_checked_at": "",
@@ -216,6 +217,7 @@ def update_item_from_form(item_id: str, form: Mapping[str, Any], user_id: str | 
         "recurring_rule_id": rule_id,
         "variable_amount": _truthy(form.get("variable_amount"), default=False),
         "manual_check_required": _truthy(form.get("manual_check_required"), default=True),
+        "next_due_amount": _money_text_or_empty(form.get("next_due_amount")),
         "notes": _clean_multiline(form.get("notes")),
         "updated_at": _now(),
     })
@@ -270,6 +272,7 @@ def mark_checked_from_form(item_id: str, form: Mapping[str, Any], user_id: str |
         "last_checked_at": _now(),
         "last_checked_amount": f"{checked_amount:.2f}" if checked_amount > 0 else "",
         "last_checked_pending_id": pending_id,
+        "next_due_amount": "",
         "updated_at": _now(),
     })
     payload["items"][index] = _normalize_item(item)
@@ -301,6 +304,8 @@ def execute_pending_from_form(form: Mapping[str, Any], user_id: str | None = Non
         )
 
     ok = execute_pending_by_id(pending_id, execution_date=form.get("execution_date") or form.get("checked_due_date"))
+    if ok and item_id:
+        _clear_next_due_amount(item_id, user_id=user_id)
     return {"ok": ok, "message": "Pending payment executed with the checked amount." if ok else "Pending payment was not executed."}
 
 
@@ -354,6 +359,38 @@ def _record_item_check_metadata(
     save_managed_recurring(payload, user_id=user_id)
 
 
+def _clear_next_due_amount(item_id: str, user_id: str | None = None) -> None:
+    payload = load_managed_recurring(user_id=user_id)
+    index, item = _find_item(payload, item_id)
+    if item is None:
+        return
+    item["next_due_amount"] = ""
+    item["updated_at"] = _now()
+    payload["items"][index] = _normalize_item(item)
+    save_managed_recurring(payload, user_id=user_id)
+
+
+def _pending_rows_with_next_due_amount(rows: list[dict], next_due_amount: float) -> list[dict]:
+    decorated: list[dict] = []
+    override_used = False
+    for row in rows:
+        item = dict(row)
+        amount_value = float(item.get("amount_value") or 0.0)
+        display_value = amount_value
+        if next_due_amount > 0 and not override_used:
+            display_value = next_due_amount
+            override_used = True
+            item["managed_has_next_due_amount"] = True
+            item["managed_next_due_amount_label"] = f"Next due override: € {next_due_amount:.2f}"
+        else:
+            item["managed_has_next_due_amount"] = False
+            item["managed_next_due_amount_label"] = ""
+        item["managed_checked_amount_value"] = display_value
+        item["managed_checked_amount_display"] = f"{display_value:.2f}"
+        decorated.append(item)
+    return decorated
+
+
 def load_managed_recurring(user_id: str | None = None) -> dict[str, Any]:
     return _normalize_payload(read_json_secure(_path(user_id), default=None, user_id=user_id))
 
@@ -398,6 +435,9 @@ def _decorate_item(item: Mapping[str, Any], recurring_by_id: dict[str, dict], pe
     except Exception:
         contact_payload = None
 
+    next_due_amount_value = _optional_money(item.get("next_due_amount"))
+    pending_open = _pending_rows_with_next_due_amount(pending_open, next_due_amount_value)
+
     return {
         **item,
         "rule": rule,
@@ -408,6 +448,9 @@ def _decorate_item(item: Mapping[str, Any], recurring_by_id: dict[str, dict], pe
         "category": rule.get("category", ""),
         "amount_value": amount,
         "amount_display": f"{amount:.2f}",
+        "next_due_amount_value": next_due_amount_value,
+        "next_due_amount_display": f"{next_due_amount_value:.2f}" if next_due_amount_value > 0 else "",
+        "has_next_due_amount": next_due_amount_value > 0,
         "frequency": rule.get("frequency", "1"),
         "day_of_month": rule.get("day_of_month", "1"),
         "start_date": rule.get("start_date", ""),
@@ -475,6 +518,7 @@ def _normalize_item(data: Mapping[str, Any]) -> dict[str, Any]:
         "recurring_rule_id": _clean_id(data.get("recurring_rule_id")),
         "variable_amount": _truthy(data.get("variable_amount"), default=kind == KIND_BILL),
         "manual_check_required": _truthy(data.get("manual_check_required"), default=True),
+        "next_due_amount": _money_text_or_empty(data.get("next_due_amount")),
         "notes": _clean_multiline(data.get("notes")),
         "is_active": _truthy(data.get("is_active"), default=True),
         "last_checked_at": _clean_text(data.get("last_checked_at")),
@@ -549,6 +593,20 @@ def _money(value: Any) -> float:
         return round(max(0.0, float(str(value or 0).replace(",", "."))), 2)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _optional_money(value: Any) -> float:
+    if value is None:
+        return 0.0
+    text = str(value).strip()
+    if not text:
+        return 0.0
+    return _money(text)
+
+
+def _money_text_or_empty(value: Any) -> str:
+    parsed = _optional_money(value)
+    return f"{parsed:.2f}" if parsed > 0 else ""
 
 
 def _positive_int(value: Any, default: int = 1) -> int:

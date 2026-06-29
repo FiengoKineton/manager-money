@@ -32,6 +32,7 @@ from money_manager.services.account_config_service import (
     update_account_from_form,
     all_accounts,
     slugify,
+    normalize_account_key as normalize_config_account_key,
 )
 
 
@@ -551,6 +552,18 @@ def _account_identity_view(account: dict, summary: dict | None = None) -> dict:
     return row
 
 
+def _is_internal_card_balance_account(account: dict) -> bool:
+    """Hidden implementation balance for a card stored under a parent Conto.
+
+    A prepaid card needs its own balance account to avoid double-counting top-ups
+    and spending.  That account should not be presented as a normal level-3 bank
+    wallet; it is managed through the parent account card list.
+    """
+    kind = str(account.get("account_kind") or account.get("type") or "")
+    parent = str(account.get("parent_account_id") or account.get("parent_key") or "")
+    return bool(parent) and kind == "prepaid_balance"
+
+
 def _lightweight_account_summary_by_key(df: pd.DataFrame, accounts_by_key: dict[str, dict] | None = None) -> dict[str, dict]:
     """Cheap balance/count index for rows that do not need pending/projected totals.
 
@@ -633,7 +646,7 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
             global_balance_summary,
             payment_methods_for_account,
             scope_balance_summary,
-            scope_selectable_accounts
+            scope_selectable_accounts,
         )
     except Exception:
         rows = account_balance_rows(df)
@@ -667,6 +680,8 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
         row["is_cashflow_account"] = row["account_level"] == 2
         dependents = []
         for dep in dependent_accounts_for(center_id, include_archived=False):
+            if _is_internal_card_balance_account(dict(dep)):
+                continue
             dep_id = str(dep.get("key") or dep.get("id") or "")
             dep_summary = lightweight_summary_by_key.get(dep_id, {}) if dep_id else {}
             dependents.append(_account_identity_view(dict(dep), dep_summary))
@@ -709,29 +724,31 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
     current_accounts = [row for row in centers if int(row.get("account_level") or 0) == 1]
     cashflow_accounts = [row for row in centers if int(row.get("account_level") or 0) == 2]
     all_dependents_by_key: dict[str, dict] = {}
-
     for group in dependent_groups:
         parent = group.get("parent") or {}
         for child in group.get("accounts", []):
             child = dict(child)
+            child_key = str(child.get("key") or child.get("id") or "")
+            if not child_key:
+                continue
             child["parent_label"] = parent.get("label", "")
             child["parent_key"] = parent.get("key", "")
-            child_key = str(child.get("key") or child.get("id") or "")
-            if child_key:
-                all_dependents_by_key[child_key] = child
+            all_dependents_by_key[child_key] = child
 
-    # Also show selectable balance accounts that are not financial centers.
-    # These are the level-3/tracked wallets that users still need to open on
-    # their own: PayPal, Edenred, Glovo, EasyPark, orphaned old wallet records,
-    # and similar account buckets.
+    # Also show selectable dependent wallets whose parent is a hidden/container
+    # account (for example Other Accounts / Glovo or EasyPark).  They must remain
+    # openable as level-3 scopes even when their parent is not a financial center.
     for account in scope_selectable_accounts(include_archived=False):
         key = str(account.get("key") or account.get("id") or "")
         if not key or key in seen_center_ids or key in all_dependents_by_key:
             continue
+        if _is_internal_card_balance_account(dict(account)):
+            continue
+        if int(account_level(account) or 0) != 3:
+            continue
 
         summary = lightweight_summary_by_key.get(key, {})
         row = _account_identity_view(dict(account), summary)
-
         if row.get("is_archived") or row.get("is_closed") or row.get("is_technical"):
             continue
 
@@ -740,12 +757,12 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
         row["parent_label"] = account_label_for_key(parent_key) if parent_key else "Standalone tracked account"
         row["account_level"] = account_level(account)
         row["account_level_label"] = account_level_label(account)
-
         all_dependents_by_key[key] = row
 
     all_dependents = sorted(
         all_dependents_by_key.values(),
         key=lambda item: (
+            str(item.get("parent_label") or ""),
             int(float(item.get("display_order") or 1000)),
             str(item.get("label") or ""),
         ),
@@ -986,13 +1003,13 @@ def update_account_settings_from_form(account_key: str, form) -> dict | None:
 
 
 def ensure_prepaid_card_balance_account(parent_account_key: str, card_name: str = "", user_id: str | None = None) -> str:
-    """Return/create the dependent stored-balance account used by one prepaid card.
+    """Return/create the hidden stored-balance account used by one prepaid card.
 
-    Prepaid-card expenses should reduce the prepaid balance, not the parent bank
-    account again.  Reloads/top-ups are recorded separately as Internal Transfer /
-    Money Transfer movements from the bank to this dependent account.
+    The payment method/card is managed from the parent current account.  This
+    hidden balance account exists only so top-ups and card spending do not reduce
+    the parent bank account twice.
     """
-    parent_key = normalize_account_key(parent_account_key, user_id=user_id)
+    parent_key = normalize_config_account_key(parent_account_key, user_id=user_id)
     base_name = str(card_name or "Prepaid card").strip() or "Prepaid card"
     account_key = f"{parent_key}_{slugify(base_name)}_balance"
 
@@ -1009,12 +1026,41 @@ def ensure_prepaid_card_balance_account(parent_account_key: str, card_name: str 
         "iban": "",
         "bic_swift": "",
         "initial_balance": "0",
-        "description": "Stored balance for a prepaid card. Reload it with Internal Transfer / Money Transfer; payments spend this balance only.",
+        "description": "Hidden stored balance for a prepaid card. Reload it with Internal Transfer / Money Transfer; payments spend this balance only.",
         "aliases": f"{base_name}, {base_name} balance",
         "category_aliases": "",
         "category_match_enabled": "0",
         "parent_account_id": parent_key,
         "main_net_policy": MAIN_NET_SEPARATE,
+    }, user_id=user_id)
+    return account_key
+
+
+def ensure_credit_card_liability_account(parent_account_key: str, card_name: str = "", user_id: str | None = None) -> str:
+    """Return/create the hidden liability bucket used by one credit card."""
+    parent_key = normalize_config_account_key(parent_account_key, user_id=user_id)
+    base_name = str(card_name or "Credit card").strip() or "Credit card"
+    account_key = f"{parent_key}_{slugify(base_name)}_liability"
+
+    existing = account_by_key(account_key, user_id=user_id, include_archived=True)
+    if existing:
+        return account_key
+
+    create_config_account_from_form({
+        "key": account_key,
+        "label": f"{base_name} liability",
+        "type": "credit_card_liability",
+        "currency": "EUR",
+        "institution": "",
+        "iban": "",
+        "bic_swift": "",
+        "initial_balance": "0",
+        "description": "Hidden credit-card liability bucket. Card purchases increase this balance until statement settlement from the parent current account.",
+        "aliases": f"{base_name}, {base_name} liability",
+        "category_aliases": "",
+        "category_match_enabled": "0",
+        "parent_account_id": parent_key,
+        "main_net_policy": MAIN_NET_CREDIT_PENDING,
     }, user_id=user_id)
     return account_key
 

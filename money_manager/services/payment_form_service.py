@@ -272,13 +272,24 @@ def _method_is_compatible_with_account(method: Mapping[str, Any], account_id: st
     if account_id in refs:
         return True
 
+    method_type = str(method.get("method_type") or "")
+
+    # Prepaid cards usually spend a hidden child balance account.  They should
+    # still be selectable from the parent current account that owns/reloads that
+    # card.  Normal wallets do not get this roll-up.
+    if method_type == "prepaid_card":
+        for ref in refs:
+            if not ref:
+                continue
+            account = account_by_key(ref, user_id=user_id, include_archived=True) or {}
+            parent = str(account.get("parent_account_id") or account.get("parent_key") or "")
+            if parent == account_id:
+                return True
+
     if method.get("settlement_mode") == "delegated":
-        delegate_id = str(method.get("delegates_to_payment_method_id") or "")
-        delegate = payment_method_by_id(delegate_id, include_archived=True, user_id=user_id) if delegate_id else None
-        if delegate and account_id in _refs(delegate):
-            return True
-        # A delegated wallet without a real delegate should only appear on its own
-        # linked/funding account, not under every bank in the app.
+        # Delegated wrappers belong to their visible linked account.  Example:
+        # "PayPal via Main card" should appear under PayPal, not under Main, even
+        # though its delegate ultimately charges a Main debit/credit card.
         return False
 
     return False

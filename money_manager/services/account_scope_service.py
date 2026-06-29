@@ -84,8 +84,19 @@ def account_level(account: Mapping[str, Any]) -> int:
         return 1
     if _is_cashflow_center(account):
         return 2
-    if bool(account.get("is_dependent_account")) or str(account.get("parent_account_id") or account.get("parent_key") or ""):
+
+    kind = str(account.get("account_kind") or account.get("type") or "")
+    parent = str(account.get("parent_account_id") or account.get("parent_key") or "").strip()
+
+    if bool(account.get("is_dependent_account")) or parent:
         return 3
+
+    # Wallet accounts such as PayPal may exist without a saved parent after older
+    # migrations or manual edits. They are still user-facing level-3 accounts,
+    # not technical buckets, so keep them visible in selectors and All Conti.
+    if kind in {"dependent_wallet", "wallet_balance"}:
+        return 3
+
     if _is_financial_center(account):
         return 1
     return 0
@@ -134,17 +145,31 @@ def financial_centers(user_id: str | None = None, include_archived: bool = False
             centers.append(dict(account))
     return sorted(centers, key=lambda item: (int(float(item.get("display_order") or 1000)), str(item.get("label") or item.get("name") or "")))
 
-def scope_selectable_accounts(user_id: str | None = None, include_archived: bool = False) -> list[dict[str, Any]]:
-    """Accounts that can be opened as their own Dashboard/Transactions/Analysis scope.
 
-    Financial centers are used for global net math so dependent wallets are not
-    double-counted. Page scope selection is different: a dependent wallet such
-    as PayPal, Edenred, Glovo or EasyPark must still be selectable so the user
-    can inspect only that account's transactions and analysis.
+def current_account_centers(user_id: str | None = None, include_archived: bool = False) -> list[dict[str, Any]]:
+    return [account for account in financial_centers(user_id=user_id, include_archived=include_archived) if account.get("is_current_account") or account.get("account_kind") == "current_account"]
+
+
+def independent_liquid_centers(user_id: str | None = None, include_archived: bool = False) -> list[dict[str, Any]]:
+    return [
+        account
+        for account in financial_centers(user_id=user_id, include_archived=include_archived)
+        if _is_liquid_account(account) and not (account.get("is_current_account") or account.get("account_kind") == "current_account")
+    ]
+
+
+def scope_selectable_accounts(user_id: str | None = None, include_archived: bool = False) -> list[dict[str, Any]]:
+    """Accounts that can be selected/opened as their own UI scope.
+
+    Financial centers are intentionally limited to avoid global double-counting.
+    Scope selectors are different: the user must still be able to open dependent
+    wallets such as PayPal, Glovo or EasyPark and inspect only their rows.
+
+    Hidden card implementation balances are excluded here because prepaid-card
+    balances are managed from the parent Conto card list, not as normal wallets.
     """
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
-
     for account in all_accounts(user_id=user_id, include_archived=True, include_main=True):
         key = _account_id(account)
         if not key or key in seen:
@@ -152,6 +177,12 @@ def scope_selectable_accounts(user_id: str | None = None, include_archived: bool
         if not _is_active(account, include_archived=include_archived):
             continue
         if _is_technical_account(account) or not _is_liquid_account(account):
+            continue
+
+        kind = str(account.get("account_kind") or account.get("type") or "")
+        parent = str(account.get("parent_account_id") or account.get("parent_key") or "").strip()
+        if parent and kind == "prepaid_balance":
+            # Hidden implementation account for one prepaid card.
             continue
 
         rows.append(dict(account))
@@ -165,17 +196,6 @@ def scope_selectable_accounts(user_id: str | None = None, include_archived: bool
             str(item.get("label") or item.get("name") or ""),
         ),
     )
-
-def current_account_centers(user_id: str | None = None, include_archived: bool = False) -> list[dict[str, Any]]:
-    return [account for account in financial_centers(user_id=user_id, include_archived=include_archived) if account.get("is_current_account") or account.get("account_kind") == "current_account"]
-
-
-def independent_liquid_centers(user_id: str | None = None, include_archived: bool = False) -> list[dict[str, Any]]:
-    return [
-        account
-        for account in financial_centers(user_id=user_id, include_archived=include_archived)
-        if _is_liquid_account(account) and not (account.get("is_current_account") or account.get("account_kind") == "current_account")
-    ]
 
 
 def dependent_accounts_for(parent_account_id: str, user_id: str | None = None, include_archived: bool = False) -> list[dict[str, Any]]:
@@ -194,6 +214,8 @@ def _method_account_ids(
     by_method: dict[str, Mapping[str, Any]],
     *,
     user_id: str | None = None,
+    include_delegated_routes: bool = False,
+    include_parent_card_owner: bool = True,
     _seen: set[str] | None = None,
 ) -> set[str]:
     ids = {
@@ -205,36 +227,105 @@ def _method_account_ids(
     }
     ids.discard("")
 
-    # A prepaid card usually points to its own stored-balance child account.  Add
-    # the parent account too so the card is visible under the bank/Conto wallet,
-    # while balance math still happens on the stored-balance account.
-    for account_id in list(ids):
-        try:
-            account = account_by_key(account_id, user_id=user_id, include_archived=True) or {}
-        except Exception:
-            account = {}
-        parent = str(account.get("parent_account_id") or account.get("parent_key") or "").strip()
-        if parent:
-            ids.add(parent)
+    # A prepaid card can own a hidden stored-balance child account but still be
+    # managed from the parent current account card list.  Do not apply this
+    # parent roll-up to normal wallets such as PayPal; those must stay visible
+    # only on their own wallet account.
+    method_type = str(method.get("method_type") or "")
+    if include_parent_card_owner and method_type == "prepaid_card":
+        for account_id in list(ids):
+            try:
+                account = account_by_key(account_id, user_id=user_id, include_archived=True) or {}
+            except Exception:
+                account = {}
+            parent = str(account.get("parent_account_id") or account.get("parent_key") or "").strip()
+            if parent:
+                ids.add(parent)
 
-    if str(method.get("settlement_mode") or "") == "delegated":
+    if include_delegated_routes and str(method.get("settlement_mode") or "") == "delegated":
         seen = set(_seen or set())
         method_id = str(method.get("id") or "")
         delegate_id = str(method.get("delegates_to_payment_method_id") or "")
         if delegate_id and delegate_id not in seen and delegate_id in by_method:
             seen.add(method_id)
-            ids.update(_method_account_ids(by_method[delegate_id], by_method, user_id=user_id, _seen=seen))
+            ids.update(_method_account_ids(
+                by_method[delegate_id],
+                by_method,
+                user_id=user_id,
+                include_delegated_routes=True,
+                include_parent_card_owner=include_parent_card_owner,
+                _seen=seen,
+            ))
     return ids
 
 
-def payment_methods_for_account(account_id: str, user_id: str | None = None, include_archived: bool = False) -> list[dict[str, Any]]:
+def _method_owner_account_ids(
+    method: Mapping[str, Any],
+    *,
+    user_id: str | None = None,
+) -> set[str]:
+    """Accounts that should list/manage this payment method in the UI.
+
+    This is intentionally stricter than route matching. A PayPal wrapper funded
+    by a Main-bank debit card belongs to PayPal in the wallet UI, even though
+    the underlying money route eventually touches Main.
+    """
+    method_type = str(method.get("method_type") or "")
+    linked = str(method.get("linked_account_id") or "").strip()
+    parent = str(method.get("parent_account_id") or "").strip()
+
+    if method_type == "wallet_linked_card":
+        return {value for value in {linked or parent} if value}
+
+    if method_type == "prepaid_card":
+        ids = {value for value in {linked, parent} if value}
+        for account_id in list(ids):
+            try:
+                account = account_by_key(account_id, user_id=user_id, include_archived=True) or {}
+            except Exception:
+                account = {}
+            account_parent = str(account.get("parent_account_id") or account.get("parent_key") or "").strip()
+            if account_parent:
+                ids.add(account_parent)
+        return ids
+
+    if method_type == "credit_card":
+        ids = {value for value in {linked, parent, str(method.get("funding_account_id") or "").strip(), str(method.get("settlement_account_id") or "").strip()} if value}
+        # Never make the hidden liability bucket the visible owner of the card.
+        return {account_id for account_id in ids if account_id != str(method.get("liability_account_id") or "").strip()}
+
+    return {
+        value
+        for value in {
+            linked,
+            parent,
+            str(method.get("funding_account_id") or "").strip(),
+            str(method.get("settlement_account_id") or "").strip(),
+        }
+        if value
+    }
+
+
+def payment_methods_for_account(
+    account_id: str,
+    user_id: str | None = None,
+    include_archived: bool = False,
+    *,
+    include_delegated_routes: bool = False,
+    ownership_only: bool = True,
+) -> list[dict[str, Any]]:
     key = normalize_account_key(account_id, user_id=user_id)
     by_method = _method_by_id(user_id=user_id, include_archived=include_archived)
     result: list[dict[str, Any]] = []
     for method in by_method.values():
         if not include_archived and (method.get("is_archived") or not method.get("is_active", True)):
             continue
-        if key in _method_account_ids(method, by_method, user_id=user_id):
+        account_ids = (
+            _method_owner_account_ids(method, user_id=user_id)
+            if ownership_only
+            else _method_account_ids(method, by_method, user_id=user_id, include_delegated_routes=include_delegated_routes)
+        )
+        if key in account_ids:
             result.append(dict(method))
     return sorted(result, key=lambda item: (int(float(item.get("display_order") or 1000)), str(item.get("name") or "")))
 
@@ -840,7 +931,6 @@ def analysis_context_for_scope(df: pd.DataFrame, scope: str | Mapping[str, Any] 
     return dashboard_context_for_scope(df, scope, user_id=user_id)
 
 
-
 def scope_options(user_id: str | None = None) -> list[dict[str, Any]]:
     options = [
         {
@@ -858,7 +948,6 @@ def scope_options(user_id: str | None = None) -> list[dict[str, Any]]:
 
         label = str(account.get("label") or account.get("name") or key)
         parent_key = str(account.get("parent_account_id") or account.get("parent_key") or "").strip()
-
         if parent_key:
             parent_label = account_label_for_key(parent_key, user_id=user_id)
             if parent_label:

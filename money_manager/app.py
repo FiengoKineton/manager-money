@@ -14,6 +14,12 @@ def create_app() -> Flask:
 
     ensure_runtime_directories()
     try:
+        from money_manager.cache.startup_cache import clear_cache_on_startup
+
+        clear_cache_on_startup()
+    except Exception:
+        pass
+    try:
         from money_manager.security.decrypted_export_service import cleanup_expired_decrypted_exports_throttled
 
         cleanup_expired_decrypted_exports_throttled(force=True)

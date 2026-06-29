@@ -10,6 +10,7 @@ from money_manager.services.account_service import (
     archive_card_from_form,
     create_custom_account_from_form,
     ensure_prepaid_card_balance_account,
+    ensure_credit_card_liability_account,
     reconcile_account_balance,
     restore_account_from_form,
     update_account_settings_from_form,
@@ -234,21 +235,39 @@ def account_detail(account_key: str):
             }.get(card_type, "immediate")
             card_form = dict(request.form)
             card_account_key = account_key
+            liability_account_key = str(card_form.get("liability_account_id") or "").strip()
             if card_type == "prepaid_card":
                 card_account_key = ensure_prepaid_card_balance_account(
                     account_key,
                     card_form.get("name") or card_form.get("label") or "Prepaid card",
                 )
+            elif card_type == "credit_card":
+                liability_account_key = liability_account_key or ensure_credit_card_liability_account(
+                    account_key,
+                    card_form.get("name") or card_form.get("label") or "Credit card",
+                )
+
+            if card_type == "credit_card":
+                linked_account_id = account_key
+                funding_account_id = account_key
+                settlement_account_id = account_key
+            else:
+                linked_account_id = card_account_key
+                funding_account_id = card_account_key
+                settlement_account_id = card_account_key
+
             card_form.update({
                 "method_type": card_type,
                 "settlement_mode": settlement_mode,
-                "linked_account_id": card_account_key,
-                "funding_account_id": card_account_key,
-                "settlement_account_id": card_account_key,
+                "linked_account_id": linked_account_id,
+                "funding_account_id": funding_account_id,
+                "settlement_account_id": settlement_account_id,
                 "parent_account_id": account_key,
                 "is_active": "1",
             })
-            if card_type != "credit_card":
+            if card_type == "credit_card":
+                card_form["liability_account_id"] = liability_account_key
+            else:
                 card_form["liability_account_id"] = ""
             method = create_payment_method_from_form(card_form)
             if method.get("id"):

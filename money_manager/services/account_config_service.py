@@ -370,6 +370,11 @@ def normalize_account_record(raw: Mapping[str, Any], *, index: int = 0) -> dict[
 
     raw_type = clean_text(raw.get("type") or raw.get("account_type") or "")
     account_kind = _infer_account_kind(raw, key=key, raw_type=raw_type, main_net_policy=main_net_policy, parent=parent, is_container=is_container_raw)
+    # Meal-voucher networks such as EdenRed are independent stored-balance rails,
+    # not cards delegated to the main bank account.  Even if an older form saved a
+    # parent, normalize them back to a standalone level-2 account.
+    if account_kind == "meal_voucher":
+        parent = ""
     is_credit = account_kind == "credit_card_liability" or main_net_policy == MAIN_NET_CREDIT_PENDING
     if is_credit:
         main_net_policy = MAIN_NET_CREDIT_PENDING
@@ -381,6 +386,8 @@ def normalize_account_record(raw: Mapping[str, Any], *, index: int = 0) -> dict[
     if liquidity_rollup_policy not in LIQUIDITY_ROLLUP_POLICIES:
         if account_kind == "current_account" or key == MAIN_ACCOUNT_KEY:
             liquidity_rollup_policy = "own_only"
+        elif account_kind == "meal_voucher":
+            liquidity_rollup_policy = "standalone"
         elif parent:
             liquidity_rollup_policy = "roll_up_to_parent"
         elif key in {"cash_flow", "cashflow", "cash"} or account_kind in {"cash", "investment_cash"}:
@@ -401,7 +408,7 @@ def normalize_account_record(raw: Mapping[str, Any], *, index: int = 0) -> dict[
         is_financial_center = True
     elif is_credit or is_container:
         is_financial_center = False
-    elif liquidity_rollup_policy == "standalone" or key in {"cash_flow", "cashflow", "cash"} or (account_kind in {"cash", "investment_cash"} and not parent) or (explicit_financial_center and bool(raw.get("is_financial_center"))):
+    elif liquidity_rollup_policy == "standalone" or key in {"cash_flow", "cashflow", "cash"} or (account_kind in {"cash", "investment_cash", "meal_voucher"} and not parent) or (explicit_financial_center and bool(raw.get("is_financial_center"))):
         is_financial_center = True
         if liquidity_rollup_policy == "standalone" or not parent:
             is_dependent_account = False
@@ -461,7 +468,7 @@ def normalize_account_record(raw: Mapping[str, Any], *, index: int = 0) -> dict[
         "name": label,
         "label": label,
         "account_kind": account_kind,
-        "account_level": 1 if (account_kind == "current_account" or key == MAIN_ACCOUNT_KEY) else 2 if (key in {"cash_flow", "cashflow", "cash"} or (account_kind in {"cash", "investment_cash", "meal_voucher", "prepaid_balance", "wallet_balance"} and not parent and is_financial_center)) else 3 if (is_dependent_account or parent) else 1 if is_financial_center else 0,
+        "account_level": 1 if (account_kind == "current_account" or key == MAIN_ACCOUNT_KEY) else 2 if (key in {"cash_flow", "cashflow", "cash"} or (account_kind in {"cash", "investment_cash", "meal_voucher", "prepaid_balance"} and not parent and is_financial_center)) else 3 if (is_dependent_account or parent or account_kind in {"dependent_wallet", "wallet_balance"}) else 1 if is_financial_center else 0,
         # Kept for compatibility, but normalized to the professional account kind.
         "type": account_kind,
         "currency": clean_label(raw.get("currency") or "EUR") or "EUR",

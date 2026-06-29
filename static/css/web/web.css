@@ -3268,3 +3268,93 @@ body.chart-expanded-open .app-main { overflow: hidden !important; }
 .mortgage-parent-fields[hidden] {
   display: none !important;
 }
+
+/* Grouped scope switcher: All Conti + level dropdowns */
+.grouped-scope-switcher {
+  overflow: visible !important;
+  z-index: 8;
+}
+.grouped-scope-switcher .scope-switcher-grouped-links {
+  overflow: visible !important;
+  align-items: center;
+}
+.grouped-scope-switcher .scope-switcher-group {
+  position: relative;
+  flex: 0 0 auto;
+}
+.grouped-scope-switcher .scope-switcher-group summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  min-height: 2.35rem;
+  padding: .48rem .78rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,.42);
+  border: 1px solid rgba(148,163,184,.18);
+  box-shadow: 0 10px 30px rgba(15,23,42,.045);
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+}
+.grouped-scope-switcher .scope-switcher-group summary::-webkit-details-marker { display: none; }
+.grouped-scope-switcher .scope-switcher-group summary::after {
+  content: "▾";
+  font-size: .75rem;
+  opacity: .75;
+}
+.grouped-scope-switcher .scope-switcher-group summary.active {
+  outline: 2px solid rgba(15,23,42,.86);
+  outline-offset: 2px;
+  background: rgba(255,255,255,.72);
+}
+.grouped-scope-switcher .scope-switcher-group summary small {
+  min-width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(15,23,42,.08);
+  font-weight: 800;
+}
+.grouped-scope-switcher .scope-switcher-group-menu {
+  position: absolute;
+  top: calc(100% + .45rem);
+  right: 0;
+  min-width: 220px;
+  max-width: min(320px, 78vw);
+  max-height: 52vh;
+  overflow: auto;
+  padding: .45rem;
+  border-radius: 1rem;
+  background: rgba(255,255,255,.94);
+  border: 1px solid rgba(148,163,184,.24);
+  box-shadow: 0 24px 70px rgba(15,23,42,.18);
+  backdrop-filter: blur(18px);
+  z-index: 50;
+  display: grid;
+  gap: .25rem;
+}
+.grouped-scope-switcher .scope-switcher-group-menu a,
+.grouped-scope-switcher .scope-switcher-empty {
+  display: block !important;
+  border-radius: .75rem !important;
+  padding: .58rem .7rem !important;
+  min-height: auto !important;
+  text-align: left;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.grouped-scope-switcher .scope-switcher-group-menu a:hover,
+.grouped-scope-switcher .scope-switcher-group-menu a.active {
+  background: rgba(14,165,233,.12) !important;
+}
+.grouped-scope-switcher .scope-switcher-empty {
+  color: rgba(71,85,105,.82);
+}
+@media (max-width: 760px) {
+  .grouped-scope-switcher .scope-switcher-group-menu {
+    left: 0;
+    right: auto;
+  }
+}

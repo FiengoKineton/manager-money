@@ -1,12 +1,34 @@
-<section class="scope-switcher panel-card compact-scope-switcher" aria-label="Page scope selector">
+<section class="scope-switcher panel-card compact-scope-switcher grouped-scope-switcher" aria-label="Page scope selector">
   <div class="scope-switcher-copy">
     <span class="eyebrow">Scope</span>
-    <strong>{{ scope_label if scope_label else 'All accounts' }}</strong>
+    <strong>{{ scope_label if scope_label else 'All Conti' }}</strong>
     <small>{{ 'One Conto/account' if scope_is_account else 'All accounts together' }}</small>
   </div>
-  <nav class="scope-switcher-links" aria-label="Switch account scope">
-    {% for link in scope_links %}
-      <a class="{{ 'active' if link.active else '' }}" href="{{ link.url }}">{{ link.label }}</a>
+  <nav class="scope-switcher-links scope-switcher-grouped-links" aria-label="Switch account scope">
+    {% set all_link = scope_links[0] if scope_links else none %}
+    {% if all_link %}
+      <a class="scope-group-direct {{ 'active' if all_link.active else '' }}" href="{{ all_link.url }}">ALL CONTI</a>
+    {% else %}
+      <a class="scope-group-direct {{ 'active' if scope_is_global else '' }}" href="{{ url_for('accounts.accounts_page') if request.endpoint in ['accounts.account_detail', 'accounts.account_payment_method_detail'] else request.path }}">ALL CONTI</a>
+    {% endif %}
+
+    {% for group in scope_group_sections|default([]) %}
+      <details class="scope-switcher-group level-{{ group.level }}" {% if group.active %}open{% endif %}>
+        <summary class="{{ 'active' if group.active else '' }}">
+          <span>{{ group.label }}</span>
+          <small>{{ group.count }}</small>
+        </summary>
+        <div class="scope-switcher-group-menu">
+          {% set group_items = group['items'] if group['items'] is defined else [] %}
+          {% if group_items %}
+            {% for item in group_items %}
+              <a class="{{ 'active' if item.active else '' }}" href="{{ item.url }}">{{ item.label|text_masked }}</a>
+            {% endfor %}
+          {% else %}
+            <span class="scope-switcher-empty">No saved accounts</span>
+          {% endif %}
+        </div>
+      </details>
     {% endfor %}
   </nav>
 </section>
