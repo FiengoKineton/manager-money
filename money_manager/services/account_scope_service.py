@@ -134,6 +134,37 @@ def financial_centers(user_id: str | None = None, include_archived: bool = False
             centers.append(dict(account))
     return sorted(centers, key=lambda item: (int(float(item.get("display_order") or 1000)), str(item.get("label") or item.get("name") or "")))
 
+def scope_selectable_accounts(user_id: str | None = None, include_archived: bool = False) -> list[dict[str, Any]]:
+    """Accounts that can be opened as their own Dashboard/Transactions/Analysis scope.
+
+    Financial centers are used for global net math so dependent wallets are not
+    double-counted. Page scope selection is different: a dependent wallet such
+    as PayPal, Edenred, Glovo or EasyPark must still be selectable so the user
+    can inspect only that account's transactions and analysis.
+    """
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for account in all_accounts(user_id=user_id, include_archived=True, include_main=True):
+        key = _account_id(account)
+        if not key or key in seen:
+            continue
+        if not _is_active(account, include_archived=include_archived):
+            continue
+        if _is_technical_account(account) or not _is_liquid_account(account):
+            continue
+
+        rows.append(dict(account))
+        seen.add(key)
+
+    return sorted(
+        rows,
+        key=lambda item: (
+            account_level(item) if account_level(item) > 0 else 99,
+            int(float(item.get("display_order") or 1000)),
+            str(item.get("label") or item.get("name") or ""),
+        ),
+    )
 
 def current_account_centers(user_id: str | None = None, include_archived: bool = False) -> list[dict[str, Any]]:
     return [account for account in financial_centers(user_id=user_id, include_archived=include_archived) if account.get("is_current_account") or account.get("account_kind") == "current_account"]
@@ -809,9 +840,40 @@ def analysis_context_for_scope(df: pd.DataFrame, scope: str | Mapping[str, Any] 
     return dashboard_context_for_scope(df, scope, user_id=user_id)
 
 
+
 def scope_options(user_id: str | None = None) -> list[dict[str, Any]]:
-    options = [{"value": SCOPE_GLOBAL, "label": "All Conti", "scope": SCOPE_GLOBAL, "is_global": True}]
-    for center in financial_centers(user_id=user_id, include_archived=False):
-        key = _account_id(center)
-        options.append({"value": f"account:{key}", "label": str(center.get("label") or center.get("name") or key), "scope": f"account:{key}", "account_id": key, "is_global": False})
+    options = [
+        {
+            "value": SCOPE_GLOBAL,
+            "label": "All Conti",
+            "scope": SCOPE_GLOBAL,
+            "is_global": True,
+        }
+    ]
+
+    for account in scope_selectable_accounts(user_id=user_id, include_archived=False):
+        key = _account_id(account)
+        if not key:
+            continue
+
+        label = str(account.get("label") or account.get("name") or key)
+        parent_key = str(account.get("parent_account_id") or account.get("parent_key") or "").strip()
+
+        if parent_key:
+            parent_label = account_label_for_key(parent_key, user_id=user_id)
+            if parent_label:
+                label = f"{parent_label} / {label}"
+
+        options.append(
+            {
+                "value": f"account:{key}",
+                "label": label,
+                "scope": f"account:{key}",
+                "account_id": key,
+                "is_global": False,
+                "account_level": account_level(account),
+                "account_kind": str(account.get("account_kind") or account.get("type") or ""),
+            }
+        )
+
     return options

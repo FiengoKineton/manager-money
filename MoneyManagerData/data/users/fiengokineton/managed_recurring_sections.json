@@ -17,6 +17,23 @@
       "created_at": "2026-06-26T11:04:35+00:00",
       "updated_at": "2026-06-26T11:07:37+00:00",
       "archived_at": ""
+    },
+    {
+      "id": "managed_3b7213f28649",
+      "kind": "utility_bill",
+      "title": "NWG",
+      "contact_id": "",
+      "recurring_rule_id": "12",
+      "variable_amount": true,
+      "manual_check_required": true,
+      "notes": "bolletta luce",
+      "is_active": true,
+      "last_checked_at": "",
+      "last_checked_amount": "",
+      "last_checked_pending_id": "",
+      "created_at": "2026-06-29T16:43:42+00:00",
+      "updated_at": "2026-06-29T16:44:59+00:00",
+      "archived_at": ""
     }
   ],
   "events": [
@@ -43,7 +60,31 @@
       "event_type": "update",
       "message": "Updated Kineton salary",
       "created_at": "2026-06-26T11:07:37+00:00"
+    },
+    {
+      "id": "event_3a97336c2eca",
+      "item_id": "managed_3b7213f28649",
+      "kind": "utility_bill",
+      "event_type": "create",
+      "message": "Created NWG",
+      "created_at": "2026-06-29T16:43:42+00:00"
+    },
+    {
+      "id": "event_001f1a7bfea3",
+      "item_id": "managed_3b7213f28649",
+      "kind": "utility_bill",
+      "event_type": "update",
+      "message": "Updated NWG",
+      "created_at": "2026-06-29T16:44:17+00:00"
+    },
+    {
+      "id": "event_b93e6546f016",
+      "item_id": "managed_3b7213f28649",
+      "kind": "utility_bill",
+      "event_type": "update",
+      "message": "Updated NWG",
+      "created_at": "2026-06-29T16:44:59+00:00"
     }
   ],
-  "updated_at": "2026-06-26T11:07:37+00:00"
+  "updated_at": "2026-06-29T16:44:59+00:00"
 }

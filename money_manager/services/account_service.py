@@ -633,6 +633,7 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
             global_balance_summary,
             payment_methods_for_account,
             scope_balance_summary,
+            scope_selectable_accounts
         )
     except Exception:
         rows = account_balance_rows(df)
@@ -707,14 +708,48 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
     total_out = sum(float(row.get("outgoing", 0.0) or 0.0) for row in centers)
     current_accounts = [row for row in centers if int(row.get("account_level") or 0) == 1]
     cashflow_accounts = [row for row in centers if int(row.get("account_level") or 0) == 2]
-    all_dependents = []
+    all_dependents_by_key: dict[str, dict] = {}
+
     for group in dependent_groups:
         parent = group.get("parent") or {}
         for child in group.get("accounts", []):
             child = dict(child)
             child["parent_label"] = parent.get("label", "")
             child["parent_key"] = parent.get("key", "")
-            all_dependents.append(child)
+            child_key = str(child.get("key") or child.get("id") or "")
+            if child_key:
+                all_dependents_by_key[child_key] = child
+
+    # Also show selectable balance accounts that are not financial centers.
+    # These are the level-3/tracked wallets that users still need to open on
+    # their own: PayPal, Edenred, Glovo, EasyPark, orphaned old wallet records,
+    # and similar account buckets.
+    for account in scope_selectable_accounts(include_archived=False):
+        key = str(account.get("key") or account.get("id") or "")
+        if not key or key in seen_center_ids or key in all_dependents_by_key:
+            continue
+
+        summary = lightweight_summary_by_key.get(key, {})
+        row = _account_identity_view(dict(account), summary)
+
+        if row.get("is_archived") or row.get("is_closed") or row.get("is_technical"):
+            continue
+
+        parent_key = str(row.get("parent_account_id") or row.get("parent_key") or "")
+        row["parent_key"] = parent_key
+        row["parent_label"] = account_label_for_key(parent_key) if parent_key else "Standalone tracked account"
+        row["account_level"] = account_level(account)
+        row["account_level_label"] = account_level_label(account)
+
+        all_dependents_by_key[key] = row
+
+    all_dependents = sorted(
+        all_dependents_by_key.values(),
+        key=lambda item: (
+            int(float(item.get("display_order") or 1000)),
+            str(item.get("label") or ""),
+        ),
+    )
 
     return {
         "accounts": centers,
