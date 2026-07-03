@@ -974,3 +974,104 @@ html.phone-native-active .phone-table-card-list {
 html.phone-native-active .phone-hidden-table {
   display: none !important;
 }
+
+/* Phone menu utilities: make Profile, Bill scanner and Settings reachable in the phone shell. */
+html.phone-native-active .phone-utility-actions {
+  display: grid !important;
+  gap: 8px !important;
+  margin-top: 12px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid rgba(44, 96, 140, 0.12) !important;
+}
+
+html.phone-native-active .phone-utility-actions h4 {
+  margin: 0 0 2px !important;
+  color: var(--phone-muted) !important;
+  font-size: 0.72rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  font-weight: 900 !important;
+}
+
+html.phone-native-active .phone-utility-link,
+html.phone-native-active .phone-settings-group,
+html.phone-native-active .phone-settings-link {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html.phone-native-active .phone-utility-link span,
+html.phone-native-active .phone-settings-group summary span {
+  display: grid !important;
+  place-items: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 14px !important;
+  background: rgba(13, 110, 253, 0.10) !important;
+  flex: 0 0 auto !important;
+}
+
+html.phone-native-active .phone-utility-link {
+  display: grid !important;
+  grid-template-columns: 36px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+html.phone-native-active .phone-utility-link b,
+html.phone-native-active .phone-utility-link small {
+  display: block !important;
+  min-width: 0 !important;
+}
+
+html.phone-native-active .phone-utility-link small {
+  color: var(--phone-muted) !important;
+  font-weight: 650 !important;
+  font-size: 0.75rem !important;
+}
+
+html.phone-native-active .phone-settings-group {
+  border: 1px solid rgba(44, 96, 140, 0.12) !important;
+  border-radius: 18px !important;
+  padding: 6px !important;
+  background: rgba(255, 255, 255, 0.70) !important;
+}
+
+html.phone-native-active .phone-settings-group summary {
+  display: grid !important;
+  grid-template-columns: 36px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 44px !important;
+  padding: 6px !important;
+  list-style: none !important;
+  cursor: pointer !important;
+  font-weight: 900 !important;
+}
+
+html.phone-native-active .phone-settings-group summary::-webkit-details-marker {
+  display: none !important;
+}
+
+html.phone-native-active .phone-settings-group > div {
+  display: grid !important;
+  gap: 7px !important;
+  padding-top: 6px !important;
+}
+
+html.phone-native-active .phone-settings-link {
+  min-height: 40px !important;
+  border-radius: 14px !important;
+  padding: 9px 11px !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  border: 1px solid rgba(44, 96, 140, 0.10) !important;
+  color: var(--phone-text) !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+}
+
+html[data-theme="night"].phone-native-active .phone-settings-group,
+html[data-theme="night"].phone-native-active .phone-settings-link {
+  background: rgba(28, 45, 72, 0.82) !important;
+  border-color: rgba(162, 196, 255, 0.15) !important;
+}

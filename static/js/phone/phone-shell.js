@@ -99,9 +99,31 @@
   }
 
   function profileHref() {
-    return document.querySelector('.profile-footer-card')?.getAttribute('href') ||
-      document.querySelector('.app-brand')?.getAttribute('href') ||
-      "/profile";
+    return document.querySelector('.app-brand')?.getAttribute('href') || "/profile";
+  }
+
+  function footerActionLinksHtml() {
+    const parts = [];
+    const profileUrl = profileHref();
+    if (profileUrl) {
+      parts.push(`<a class="phone-utility-link" href="${htmlEscape(profileUrl)}"><span>⚙</span><b>Profile</b><small>Photo, name, language and theme</small></a>`);
+    }
+
+    const billScanner = Array.from(document.querySelectorAll('.profile-footer-card')).find((link) => /bill|scanner|receipt|scontr/i.test(text(link)));
+    const billUrl = billScanner?.getAttribute('href');
+    if (billUrl) {
+      parts.push(`<a class="phone-utility-link" href="${htmlEscape(billUrl)}"><span>▤</span><b>Bill scanner</b><small>Import PDF receipts as expenses</small></a>`);
+    }
+
+    const settingsLinks = Array.from(document.querySelectorAll('.settings-drawer-links a'))
+      .filter((link) => link.getAttribute('href'))
+      .map((link) => `<a class="phone-settings-link ${link.classList.contains('active') ? 'active' : ''}" href="${htmlEscape(link.getAttribute('href'))}">${htmlEscape(text(link, 'Settings'))}</a>`)
+      .join('');
+    if (settingsLinks) {
+      parts.push(`<details class="phone-settings-group"><summary><span>⋯</span><b>Settings</b></summary><div>${settingsLinks}</div></details>`);
+    }
+
+    return parts.length ? `<section class="phone-utility-actions"><h4>Profile & settings</h4>${parts.join('')}</section>` : '';
   }
 
   function addHref(type) {
@@ -156,11 +178,17 @@
 
   function navCloneHtml() {
     const nav = document.querySelector(".app-sidebar-nav");
-    if (!nav) return `<a href="${htmlEscape(homeHref())}">Home</a>`;
-    const clone = nav.cloneNode(true);
-    clone.querySelectorAll("details").forEach((details) => details.setAttribute("open", ""));
-    clone.querySelectorAll("script, style").forEach((node) => node.remove());
-    return clone.innerHTML;
+    let html = `<a href="${htmlEscape(homeHref())}">Home</a>`;
+    if (nav) {
+      const clone = nav.cloneNode(true);
+      clone.querySelectorAll("details").forEach((details) => {
+        if (details.classList.contains("is-active")) details.setAttribute("open", "");
+        else details.removeAttribute("open");
+      });
+      clone.querySelectorAll("script, style").forEach((node) => node.remove());
+      html = clone.innerHTML;
+    }
+    return html + footerActionLinksHtml();
   }
 
   function addPanelHtml() {

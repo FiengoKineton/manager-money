@@ -142,13 +142,14 @@
           </div>
 
           {% if candidate.warning %}<p class="bill-warning">{{ candidate.warning }}</p>{% endif %}
-          <input type="hidden" name="items_{{ candidate_index }}" value='{{ candidate.items|tojson|forceescape }}'>
+          {% set bill_items = candidate.get('items') or [] %}
+          <input type="hidden" name="items_{{ candidate_index }}" value='{{ bill_items|tojson|forceescape }}'>
           <input type="hidden" name="notes_{{ candidate_index }}" value="{{ candidate.notes }}">
 
           <details class="bill-items-details">
-            <summary>Detected items · {{ candidate.items|length }}</summary>
+            <summary>Detected items · {{ bill_items|length }}</summary>
             <div class="bill-items-list">
-              {% for item in candidate.items %}
+              {% for item in bill_items %}
                 <div><span>{{ item.name }}</span><small>{{ item.qty }} × € {{ '%.2f'|format(item.unit_price or 0) }}</small><strong>€ {{ '%.2f'|format(item.line_total or 0) }}</strong></div>
               {% endfor %}
             </div>

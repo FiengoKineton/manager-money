@@ -50,3 +50,20 @@
     pointer-events: auto !important;
   }
 }
+
+
+/* Smart floating save proxy: keep source button in normal document flow. */
+html.phone-shell-active .add-mode-stack.is-normal-mode .normal-add-submit-row {
+  position: static !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: auto !important;
+  width: 100% !important;
+  pointer-events: auto !important;
+}
+html.phone-shell-active .smart-floating-submit-proxy {
+  right: max(.85rem, env(safe-area-inset-right, 0px)) !important;
+  bottom: calc(var(--phone-bottom-nav-height, 68px) + 1rem + env(safe-area-inset-bottom, 0px)) !important;
+  min-width: 9.5rem !important;
+  min-height: 3rem !important;
+}

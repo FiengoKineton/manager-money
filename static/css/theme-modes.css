@@ -40,37 +40,55 @@ html[data-theme="day"] {
 
 html[data-theme="night"] {
   color-scheme: dark;
-  --bg: #07111f;
-  --surface: rgba(13, 28, 49, 0.70);
-  --surface-soft: rgba(17, 36, 62, 0.66);
-  --surface-muted: rgba(21, 49, 77, 0.60);
-  --ink: #eef7ff;
-  --ink-soft: #d5e5f4;
-  --muted: #9fb4c9;
-  --line: rgba(125, 211, 252, 0.20);
-  --line-strong: rgba(34, 211, 238, 0.34);
-  --brand: #60a5fa;
-  --brand-dark: #38bdf8;
-  --brand-soft: rgba(30, 64, 175, 0.36);
-  --good: #34d399;
-  --good-soft: rgba(6, 95, 70, 0.40);
-  --bad: #fb7185;
-  --bad-soft: rgba(127, 29, 29, 0.34);
-  --warning: #fbbf24;
-  --warning-soft: rgba(146, 64, 14, 0.38);
-  --color-income: #34d399;
-  --color-expense: #fb7185;
-  --color-investment: #c4b5fd;
-  --color-net: #60a5fa;
-  --glass-main: rgba(13, 29, 51, 0.64);
-  --glass-main-strong: rgba(16, 36, 64, 0.78);
-  --glass-border: rgba(125, 211, 252, 0.25);
-  --glass-line: rgba(34, 211, 238, 0.22);
-  --glass-shadow: 0 28px 90px rgba(0, 0, 0, 0.36), 0 10px 36px rgba(14, 165, 233, 0.15);
-  --mode-accent-a: rgba(59, 130, 246, 0.34);
-  --mode-accent-b: rgba(34, 211, 238, 0.30);
-  --mode-accent-c: rgba(52, 211, 153, 0.24);
-  --mode-accent-d: rgba(168, 85, 247, 0.22);
+
+  /* Core dark palette */
+  --bg: #121212;
+  --surface: rgba(30, 30, 30, 0.88);
+  --surface-soft: rgba(36, 36, 36, 0.84);
+  --surface-muted: rgba(44, 44, 44, 0.78);
+
+  /* Text */
+  --ink: #e0e0e0;
+  --ink-soft: #c7c7c7;
+  --muted: #a8a8a8;
+
+  /* Lines */
+  --line: rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.18);
+
+  /* Main brand */
+  --brand: #3b82f6;
+  --brand-dark: #2563eb;
+  --brand-soft: rgba(59, 130, 246, 0.18);
+
+  /* Status colors */
+  --good: #10b981;
+  --good-soft: rgba(16, 185, 129, 0.16);
+
+  --bad: #ef4444;
+  --bad-soft: rgba(239, 68, 68, 0.16);
+
+  --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.16);
+
+  /* Finance semantic colors */
+  --color-income: #10b981;
+  --color-expense: #ef4444;
+  --color-investment: #8b5cf6;
+  --color-net: #3b82f6;
+
+  /* Glass system, darker and calmer */
+  --glass-main: rgba(30, 30, 30, 0.74);
+  --glass-main-strong: rgba(36, 36, 36, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-line: rgba(255, 255, 255, 0.10);
+  --glass-shadow: 0 28px 80px rgba(0, 0, 0, 0.46), 0 8px 28px rgba(0, 0, 0, 0.22);
+
+  /* Background accent glows, very subtle */
+  --mode-accent-a: rgba(59, 130, 246, 0.16);
+  --mode-accent-b: rgba(139, 92, 246, 0.11);
+  --mode-accent-c: rgba(16, 185, 129, 0.08);
+  --mode-accent-d: rgba(6, 182, 212, 0.07);
 }
 
 html[data-theme="day"] body.app-body-clean {
@@ -85,11 +103,10 @@ html[data-theme="day"] body.app-body-clean {
 
 html[data-theme="night"] body.app-body-clean {
   background:
-    radial-gradient(circle at 8% 7%, rgba(37, 99, 235, 0.38), transparent 25rem),
-    radial-gradient(circle at 78% 3%, rgba(6, 182, 212, 0.28), transparent 27rem),
-    radial-gradient(circle at 92% 55%, rgba(16, 185, 129, 0.22), transparent 28rem),
-    radial-gradient(circle at 20% 88%, rgba(124, 58, 237, 0.26), transparent 26rem),
-    linear-gradient(135deg, #06111f 0%, #071a2a 36%, #0d1328 69%, #140c22 100%);
+    radial-gradient(circle at 12% 8%, rgba(59, 130, 246, 0.14), transparent 24rem),
+    radial-gradient(circle at 82% 12%, rgba(139, 92, 246, 0.10), transparent 25rem),
+    radial-gradient(circle at 88% 78%, rgba(16, 185, 129, 0.07), transparent 27rem),
+    linear-gradient(135deg, #101010 0%, #121212 42%, #16181c 100%);
 }
 
 body.app-body-clean::before {
@@ -103,14 +120,12 @@ body.app-body-clean::before {
 }
 
 html[data-theme="night"] body.app-body-clean::before {
-  opacity: 0.80;
+  opacity: 0.38;
   background:
-    radial-gradient(ellipse at 18% 18%, rgba(59, 130, 246, 0.20), transparent 30rem),
-    radial-gradient(ellipse at 82% 22%, rgba(34, 211, 238, 0.22), transparent 28rem),
-    radial-gradient(ellipse at 64% 90%, rgba(52, 211, 153, 0.16), transparent 29rem),
-    linear-gradient(110deg, transparent 0 13%, rgba(125, 211, 252, 0.12) 13.2% 13.62%, transparent 13.9% 100%),
-    linear-gradient(30deg, transparent 0 62%, rgba(168, 85, 247, 0.11) 62.2% 62.9%, transparent 63.1% 100%),
-    radial-gradient(circle at var(--pointer-x, 55%) var(--pointer-y, 30%), rgba(34, 211, 238, 0.18), transparent 15rem);
+    radial-gradient(ellipse at 18% 18%, rgba(59, 130, 246, 0.10), transparent 30rem),
+    radial-gradient(ellipse at 82% 22%, rgba(139, 92, 246, 0.08), transparent 28rem),
+    radial-gradient(ellipse at 64% 90%, rgba(16, 185, 129, 0.05), transparent 29rem),
+    radial-gradient(circle at var(--pointer-x, 55%) var(--pointer-y, 30%), rgba(59, 130, 246, 0.08), transparent 15rem);
 }
 
 .app-sidebar,
@@ -165,9 +180,9 @@ html[data-theme="night"] body.app-body-clean::before {
 
 html[data-theme="night"] .app-topbar {
   background:
-    linear-gradient(100deg, rgba(10, 24, 45, 0.84), rgba(10, 44, 68, 0.70) 48%, rgba(7, 56, 48, 0.56)),
-    radial-gradient(circle at 12% 0%, rgba(59, 130, 246, 0.28), transparent 16rem),
-    radial-gradient(circle at 86% 80%, rgba(52, 211, 153, 0.18), transparent 16rem) !important;
+    linear-gradient(100deg, rgba(24, 24, 24, 0.92), rgba(30, 30, 30, 0.86)),
+    radial-gradient(circle at 12% 0%, rgba(59, 130, 246, 0.08), transparent 16rem) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.10) !important;
 }
 
 html[data-theme="night"] .app-sidebar,
@@ -187,9 +202,10 @@ html[data-theme="night"] .priority-card,
 html[data-theme="night"] .mini-priority-card,
 html[data-theme="night"] .standard-table {
   background:
-    linear-gradient(135deg, rgba(13, 29, 51, 0.78), rgba(10, 24, 44, 0.58)),
-    radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.14), transparent 18rem),
-    radial-gradient(circle at 100% 100%, rgba(52, 211, 153, 0.10), transparent 20rem) !important;
+    linear-gradient(135deg, rgba(30, 30, 30, 0.88), rgba(36, 36, 36, 0.76)),
+    radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.055), transparent 18rem) !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.34) !important;
 }
 
 /* Final fix: drawer must be fixed above the blurred backdrop. The previous
@@ -399,11 +415,15 @@ html[data-theme="night"] input[type="number"],
 html[data-theme="night"] input[type="email"],
 html[data-theme="night"] textarea,
 html[data-theme="night"] select {
-  background: rgba(7, 20, 35, 0.56) !important;
-  color: #eef7ff !important;
-  border-color: rgba(125, 211, 252, 0.22) !important;
+  background: rgba(24, 24, 24, 0.92) !important;
+  color: #e0e0e0 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
 }
-html[data-theme="night"] option { color: #0f172a; }
+html[data-theme="night"] option {
+  color: #e0e0e0;
+  background: #1e1e1e;
+}
 html[data-theme="night"] small,
 html[data-theme="night"] .hint,
 html[data-theme="night"] .muted { color: var(--muted) !important; }
