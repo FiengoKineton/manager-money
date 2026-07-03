@@ -356,12 +356,23 @@ def register_context_processors(app):
         active_account_context = active_sidebar_account_context() if user and is_authenticated() else {"has_active_account": False, "account_id": "", "account_label": ""}
         topbar_context = _topbar_scope_net_context(active_account_context)
 
+        try:
+            from money_manager.services.account_config_service import MAIN_ACCOUNT_KEY, account_label_for_key
+
+            main_account_key = MAIN_ACCOUNT_KEY
+            main_account_label = account_label_for_key(MAIN_ACCOUNT_KEY)
+        except Exception:
+            main_account_key = "main_bank"
+            main_account_label = "Main"
+
         context = {
             "endpoint_exists": endpoint_exists,
             "sidebar_navigation": sidebar_navigation,
             "topbar_main_bank_net": topbar_context.get("topbar_global_net", 0.0),
             "topbar_net_lazy": True,
             "topbar_notifications": _topbar_notifications(),
+            "topbar_main_account_key": main_account_key,
+            "topbar_main_account_label": main_account_label,
             "current_user": user,
             "current_user_id": user.get("id") if user else None,
             "is_authenticated": is_authenticated(),

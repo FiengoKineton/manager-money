@@ -18,19 +18,32 @@ def save_categories_config(config: Mapping[str, Any], user_id: str | None = None
     return save_user_config(CATEGORIES_FILE, payload, user_id=user_id)
 
 
+def sort_categories(values: Any) -> list[str]:
+    cleaned = [_clean_category(value) for value in values or []]
+    cleaned = [value for value in cleaned if value]
+    return sorted(cleaned, key=lambda value: (value.casefold(), value))
+
+
 def effective_categories_for(transaction_type: str, user_id: str | None = None) -> list[str]:
     transaction_type = _normalize_transaction_type(transaction_type)
     config = load_categories_config(user_id=user_id)
     section = config[transaction_type]
     hidden = {_case_key(item) for item in section.get("hidden", [])}
+
     result: list[str] = []
+    seen: set[str] = set()
+
     for category in [*app_categories.CATEGORY_OPTIONS.get(transaction_type, []), *section.get("custom", [])]:
         clean = _clean_category(category)
-        if not clean or _case_key(clean) in hidden:
+        key = _case_key(clean)
+
+        if not clean or key in hidden or key in seen:
             continue
-        if _case_key(clean) not in {_case_key(existing) for existing in result}:
-            result.append(clean)
-    return result
+
+        result.append(clean)
+        seen.add(key)
+
+    return sort_categories(result)
 
 
 def effective_categories_by_type(user_id: str | None = None) -> dict[str, list[str]]:
@@ -60,6 +73,7 @@ def add_custom_category(transaction_type: str, name: str, user_id: str | None = 
     existing = {_case_key(item) for item in [*app_categories.CATEGORY_OPTIONS.get(transaction_type, []), *section.get("custom", [])]}
     if _case_key(category) not in existing:
         section["custom"].append(category)
+        section["custom"] = sort_categories(section.get("custom", []))
     section["hidden"] = [item for item in section.get("hidden", []) if _case_key(item) != _case_key(category)]
     return save_categories_config(config, user_id=user_id)
 
@@ -107,8 +121,8 @@ def _normalize_categories(config: Mapping[str, Any]) -> dict[str, Any]:
         section = incoming.get(transaction_type, {}) if isinstance(incoming.get(transaction_type, {}), dict) else {}
         default_section = DEFAULT_CATEGORIES[transaction_type]
         clean[transaction_type] = {
-            "custom": _unique_categories(section.get("custom", default_section["custom"])),
-            "hidden": _unique_categories(section.get("hidden", default_section["hidden"])),
+            "custom": sort_categories(_unique_categories(section.get("custom", default_section["custom"]))),
+            "hidden": sort_categories(_unique_categories(section.get("hidden", default_section["hidden"]))),
             "default": _clean_category(section.get("default", default_section["default"])),
         }
     for key, value in incoming.items():

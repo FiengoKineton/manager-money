@@ -11,6 +11,7 @@ from money_manager.services.custom_category_service import (
     load_categories_config,
     restore_category,
     set_default_category,
+    sort_categories,
 )
 from money_manager.services.category_icon_service import icon_for_category, set_category_icon
 
@@ -35,7 +36,7 @@ def categories_page():
         hidden_lookup = {str(item).casefold() for item in section.get("hidden", [])}
         default_category = default_category_for(transaction_type)
         base_rows = []
-        for name in CATEGORY_OPTIONS.get(transaction_type, []):
+        for name in sort_categories(CATEGORY_OPTIONS.get(transaction_type, [])):
             base_rows.append(
                 {
                     "name": name,
@@ -46,7 +47,7 @@ def categories_page():
                 }
             )
         custom_rows = []
-        for name in section.get("custom", []):
+        for name in sort_categories(section.get("custom", [])):
             custom_rows.append(
                 {
                     "name": name,

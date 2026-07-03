@@ -6,3 +6,47 @@
 @import url("phone-native-app.css");
 @import url("phone-transactions.css");
 @import url("phone-add-flow.css");
+
+/* Patch 58C: keep account scope selector usable in phone shell. */
+@media (max-width: 900px) {
+  .compact-scope-switcher.grouped-scope-switcher {
+    position: sticky !important;
+    top: .55rem !important;
+    z-index: 2147482000 !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    overflow: visible !important;
+    margin: .25rem 0 .8rem !important;
+    padding: .55rem !important;
+  }
+  .compact-scope-switcher .scope-switcher-copy {
+    display: none !important;
+  }
+  .grouped-scope-switcher .scope-switcher-grouped-links {
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    max-width: 100% !important;
+  }
+  .grouped-scope-switcher .scope-switcher-group-menu {
+    position: fixed !important;
+    left: .75rem !important;
+    right: .75rem !important;
+    top: 5.1rem !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: min(52vh, 24rem) !important;
+    z-index: 2147483001 !important;
+  }
+  .add-mode-stack.is-normal-mode .normal-add-submit-row {
+    position: fixed !important;
+    right: max(.85rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: calc(var(--phone-bottom-nav-height, 68px) + 1rem + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 2147482500 !important;
+    width: auto !important;
+    pointer-events: none !important;
+  }
+  .add-mode-stack.is-normal-mode .normal-add-submit-row button {
+    pointer-events: auto !important;
+  }
+}

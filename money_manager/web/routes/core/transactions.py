@@ -36,6 +36,7 @@ from money_manager.services.receipt_service import (
     save_receipt_for_saved_transaction,
     update_receipt_from_form,
 )
+from money_manager.services.bill_scan_service import scan_bill_files
 from money_manager.services.transaction_service import (
     delete_existing_transaction,
     load_transactions,
@@ -401,6 +402,161 @@ def add_transaction():
         show_special_log=show_special_log,
         **special_context,
     )
+
+
+@bp.route("/receipt-scanner", methods=["GET", "POST"])
+def receipt_scanner():
+    """Upload PDF bills and convert them into editable expense drafts."""
+    scan_result: dict = {"candidates": [], "errors": [], "ok": False}
+    save_message = ""
+    save_errors: list[str] = []
+    selected_account_id = request.form.get("account_id") or request.args.get("account_id") or ""
+    selected_payment_method_id = request.form.get("payment_method_id") or request.args.get("payment_method_id") or ""
+
+    if request.method == "POST" and request.form.get("action") == "scan_bills":
+        uploaded_files = request.files.getlist("bill_files")
+        scan_result = scan_bill_files(uploaded_files, default_date=date.today().isoformat())
+    elif request.method == "POST" and request.form.get("action") == "save_detected_bills":
+        selected_account_id = request.form.get("account_id", "")
+        selected_payment_method_id = request.form.get("payment_method_id", "")
+        saved_count = 0
+        candidate_count = _positive_int_form("candidate_count", 0, minimum=0, maximum=50)
+        for index in range(candidate_count):
+            if request.form.get(f"save_{index}") != "1":
+                continue
+            tx_form = {
+                "type": "expense",
+                "date": request.form.get(f"date_{index}", date.today().isoformat()),
+                "category": request.form.get(f"category_{index}", ""),
+                "sub_category": request.form.get(f"sub_category_{index}", ""),
+                "amount": f"{_positive_money(request.form.get(f'amount_{index}')):.2f}",
+                "account": "",
+                "account_id": selected_account_id,
+                "payment_method_id": selected_payment_method_id,
+                "description": request.form.get(f"description_{index}", "PDF bill"),
+                "currency": "EUR",
+            }
+            tx_input = TransactionInput.from_form(tx_form)
+            if not tx_input.date:
+                save_errors.append(f"Row {index + 1}: missing date.")
+                continue
+            if not tx_input.category:
+                save_errors.append(f"Row {index + 1}: missing category.")
+                continue
+            if tx_input.amount <= 0:
+                save_errors.append(f"Row {index + 1}: missing or invalid amount.")
+                continue
+
+            result = save_new_transaction(tx_input)
+            if not result.get("ok"):
+                save_errors.append(f"Row {index + 1}: {result.get('error') or 'not saved'}")
+                continue
+
+            saved_count += 1
+            tx_ids = result.get("transaction_ids") or []
+            if tx_ids:
+                receipt_form = _receipt_scanner_form_for_index(index, request.form)
+                receipt_tx = tx_input.as_dict()
+                receipt_tx["amount"] = f"{float(tx_input.amount or 0):.2f}"
+                try:
+                    save_receipt_for_saved_transaction("expense", tx_ids[0], receipt_tx, receipt_form)
+                except Exception:
+                    current_app.logger.exception("Failed to save scanned receipt for expense %s", tx_ids[0])
+                    save_errors.append(f"Row {index + 1}: expense saved, but receipt details were not attached.")
+            else:
+                save_errors.append(f"Row {index + 1}: expense was routed outside the transaction log, so receipt items were not attached.")
+
+        if saved_count:
+            save_message = f"Saved {saved_count} scanned expense{'s' if saved_count != 1 else ''}."
+        if not saved_count and not save_errors:
+            save_errors.append("Select at least one detected bill to save.")
+
+    context = category_context("expense")
+    payment_context = payment_form_context(
+        transaction_type="expense",
+        selected_account_id=selected_account_id,
+        selected_payment_method_id=selected_payment_method_id,
+    )
+    return render_template(
+        "core/receipt_scanner.html",
+        **context,
+        **payment_context,
+        today=date.today().isoformat(),
+        scan_result=scan_result,
+        save_message=save_message,
+        save_errors=save_errors,
+        selected_account_id=selected_account_id,
+        selected_payment_method_id=selected_payment_method_id,
+        payment_form_json=json.dumps(payment_context.get("payment_form", {})),
+    )
+
+
+def _positive_int_form(name: str, default: int, *, minimum: int = 0, maximum: int | None = None) -> int:
+    try:
+        value = int(request.form.get(name, default))
+    except (TypeError, ValueError):
+        value = default
+    value = max(minimum, value)
+    if maximum is not None:
+        value = min(maximum, value)
+    return value
+
+
+def _positive_money(value) -> float:
+    try:
+        return round(max(0.0, float(str(value or 0).replace(",", "."))), 2)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _receipt_scanner_form_for_index(index: int, form) -> dict:
+    try:
+        items = json.loads(form.get(f"items_{index}") or "[]")
+    except Exception:
+        items = []
+    if not isinstance(items, list):
+        items = []
+
+    names: list[str] = []
+    qtys: list[str] = []
+    unit_prices: list[str] = []
+    notes: list[str] = []
+    for row in items:
+        if not isinstance(row, dict):
+            continue
+        name = str(row.get("name") or "").strip()
+        if not name:
+            continue
+        qty = _positive_money(row.get("qty")) or 1.0
+        unit = _positive_money(row.get("unit_price"))
+        if unit <= 0:
+            unit = _positive_money(row.get("line_total"))
+        names.append(name)
+        qtys.append(str(qty))
+        unit_prices.append(f"{unit:.2f}")
+        notes.append(str(row.get("note") or ""))
+
+    if not names:
+        names = [form.get(f"description_{index}", "PDF bill")]
+        qtys = ["1"]
+        unit_prices = [f"{_positive_money(form.get(f'amount_{index}')):.2f}"]
+        notes = [""]
+
+    return {
+        "receipt_merchant": form.get(f"merchant_{index}", ""),
+        "receipt_purchased_at": form.get(f"date_{index}", ""),
+        "receipt_card_label": "",
+        "receipt_card_last4": "",
+        "receipt_card_network": "",
+        "receipt_account_label": "",
+        "receipt_item_name": names,
+        "receipt_item_qty": qtys,
+        "receipt_item_unit_price": unit_prices,
+        "receipt_item_note": notes,
+        "receipt_discount_type": form.get(f"discount_type_{index}", "none"),
+        "receipt_discount_value": form.get(f"discount_value_{index}", "0"),
+        "receipt_notes": form.get(f"notes_{index}", "Imported from PDF bill scanner"),
+    }
 
 
 @bp.route("/transaction/<int:row_index>/receipt")

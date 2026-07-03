@@ -5,7 +5,28 @@
     if (document.body) document.body.classList.add("web-shell-active");
   }
 
-  document.addEventListener("DOMContentLoaded", syncWebShell);
-  window.addEventListener("pageshow", syncWebShell);
+  function setupScopeAccordion() {
+    document.querySelectorAll("[data-scope-accordion]").forEach((nav) => {
+      const groups = Array.from(nav.querySelectorAll("details[data-scope-group]"));
+      groups.forEach((group) => {
+        group.removeAttribute("open");
+        group.addEventListener("toggle", () => {
+          if (!group.open) return;
+          groups.forEach((other) => {
+            if (other !== group) other.removeAttribute("open");
+          });
+        });
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    syncWebShell();
+    setupScopeAccordion();
+  });
+  window.addEventListener("pageshow", () => {
+    syncWebShell();
+    setupScopeAccordion();
+  });
   syncWebShell();
 })();

@@ -245,10 +245,10 @@
       </nav>
 
       <div class="app-sidebar-footer app-sidebar-footer-clean">
-        {% if endpoint_exists('profile.profile_page') %}
-          <a class="profile-footer-card {{ 'is-active' if request.endpoint == 'profile.profile_page' else '' }}" href="{{ url_for('profile.profile_page') }}">
-            <span class="profile-footer-icon" aria-hidden="true">⚙</span>
-            <strong>Profile</strong>
+        {% if endpoint_exists('transactions.receipt_scanner') %}
+          <a class="profile-footer-card {{ 'is-active' if request.endpoint == 'transactions.receipt_scanner' else '' }}" href="{{ url_for('transactions.receipt_scanner') }}">
+            <span class="profile-footer-icon" aria-hidden="true">▤</span>
+            <strong>Bill scanner</strong>
           </a>
         {% endif %}
         <details class="settings-drawer {{ 'is-active' if request.endpoint in ['integrity.integrity_page', 'security.security_page', 'settings_updates.updates_page', 'settings_updates.data_registry_page', 'settings_cache.cache_page', 'settings_categories.categories_page'] else '' }}">
@@ -299,6 +299,9 @@
             <span data-topbar-net-label>{{ topbar_net_label or 'All Conti net' }}</span>
             <strong data-topbar-net-value>{{ 'Loading…' if topbar_net_lazy and not mask_sensitive_data and lazy_topbar_url else topbar_display_net|money_masked }}</strong>
           </a>
+          {% if endpoint_exists('accounts.account_detail') %}
+            <a class="main-account-shortcut" href="{{ url_for('accounts.account_detail', account_key=topbar_main_account_key or 'main_bank') }}" title="Open {{ topbar_main_account_label or 'Main' }} account">Main Account</a>
+          {% endif %}
 
           <div class="notification-menu" data-notification-menu>
             <button
@@ -408,11 +411,11 @@
     </div>
   </div>
 
-  <script src="{{ url_for('static', filename='js/shared/instant-nav.js') }}?v=instant-nav-2" defer></script>
-  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=receipt-paper-items-fix-3"></script>
+  <script src="{{ url_for('static', filename='js/shared/instant-nav.js') }}?v=instant-nav-3" defer></script>
+  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=ui-bill-scan-1"></script>
   <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-lazy-2"></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
-  <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=wallet-shell-17e"></script>
+  <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=wallet-shell-18"></script>
   <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=real-phone-4" defer></script>
   {% block scripts %}{% endblock %}
 </body>

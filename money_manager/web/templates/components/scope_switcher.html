@@ -4,7 +4,7 @@
     <strong>{{ scope_label if scope_label else 'All Conti' }}</strong>
     <small>{{ 'One Conto/account' if scope_is_account else 'All accounts together' }}</small>
   </div>
-  <nav class="scope-switcher-links scope-switcher-grouped-links" aria-label="Switch account scope">
+  <nav class="scope-switcher-links scope-switcher-grouped-links" aria-label="Switch account scope" data-scope-accordion>
     {% set all_link = scope_links[0] if scope_links else none %}
     {% if all_link %}
       <a class="scope-group-direct {{ 'active' if all_link.active else '' }}" href="{{ all_link.url }}">ALL CONTI</a>
@@ -13,7 +13,7 @@
     {% endif %}
 
     {% for group in scope_group_sections|default([]) %}
-      <details class="scope-switcher-group level-{{ group.level }}" {% if group.active %}open{% endif %}>
+      <details class="scope-switcher-group level-{{ group.level }}" data-scope-group>
         <summary class="{{ 'active' if group.active else '' }}">
           <span>{{ group.label }}</span>
           <small>{{ group.count }}</small>

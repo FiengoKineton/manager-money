@@ -3358,3 +3358,410 @@ body.chart-expanded-open .app-main { overflow: hidden !important; }
     right: auto;
   }
 }
+
+/* Patch 58C: floating save, account selector behavior, calmer night mode, bill scanner. */
+.main-account-shortcut {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  padding: .65rem .9rem;
+  border-radius: 1rem;
+  font-weight: 850;
+  text-decoration: none;
+  color: var(--ink, #0f172a);
+  background: rgba(255, 255, 255, .64);
+  border: 1px solid rgba(148, 163, 184, .22);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255, 255, 255, .5);
+  white-space: nowrap;
+}
+.main-account-shortcut:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, .12), inset 0 1px 0 rgba(255, 255, 255, .58);
+}
+
+.add-mode-stack.is-normal-mode .normal-add-submit-row {
+  position: fixed !important;
+  right: max(1.35rem, env(safe-area-inset-right, 0px));
+  bottom: max(1.35rem, env(safe-area-inset-bottom, 0px));
+  z-index: 2200;
+  width: auto !important;
+  margin: 0 !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  pointer-events: none;
+}
+.add-mode-stack.is-normal-mode .normal-add-submit-row button {
+  pointer-events: auto;
+  min-width: clamp(9.5rem, 15vw, 13rem);
+  min-height: 3.15rem;
+  border-radius: 1rem;
+  box-shadow: 0 20px 54px rgba(37, 99, 235, .24), 0 10px 30px rgba(20, 184, 166, .18), inset 0 1px 0 rgba(255,255,255,.22) !important;
+}
+body:has(.add-mode-stack.is-normal-mode) .app-content-stage {
+  padding-bottom: clamp(6rem, 11vh, 8rem);
+}
+
+.grouped-scope-switcher .scope-switcher-group:not([open]) .scope-switcher-group-menu {
+  display: none !important;
+}
+.grouped-scope-switcher .scope-switcher-group[open] summary {
+  outline: 2px solid rgba(15, 23, 42, .86);
+  outline-offset: 2px;
+}
+.grouped-scope-switcher .scope-switcher-group summary.active {
+  outline: none;
+  background: rgba(255,255,255,.58);
+}
+.grouped-scope-switcher .scope-switcher-group[open] summary.active {
+  outline: 2px solid rgba(15, 23, 42, .86);
+}
+
+.scanner-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.scanner-hero h2 {
+  margin: .25rem 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  letter-spacing: -.06em;
+}
+.bill-upload-panel,
+.bill-preview-panel {
+  display: grid;
+  gap: 1rem;
+}
+.bill-upload-form {
+  display: grid;
+  gap: .85rem;
+}
+.bill-upload-dropzone {
+  display: grid;
+  gap: .45rem;
+  align-items: center;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border-radius: 1.25rem;
+  border: 1.5px dashed rgba(59, 130, 246, .30);
+  background: rgba(255, 255, 255, .38);
+}
+.bill-upload-dropzone input[type="file"] {
+  padding: .8rem;
+  border-radius: .9rem;
+  background: rgba(255, 255, 255, .7);
+}
+.bill-upload-assumption {
+  display: grid;
+  gap: .2rem;
+}
+.bill-preview-actions,
+.bill-discount-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  flex-wrap: wrap;
+}
+.bill-save-routing-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.1fr) repeat(2, minmax(210px, 1fr));
+  gap: .85rem;
+  align-items: end;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, .45);
+  border: 1px solid rgba(148, 163, 184, .22);
+}
+.bill-expense-confirm {
+  align-self: center;
+  font-weight: 800;
+}
+.bill-candidate-stack {
+  display: grid;
+  gap: .9rem;
+}
+.bill-candidate-card {
+  display: grid;
+  gap: .85rem;
+  padding: 1rem;
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, .50);
+  border: 1px solid rgba(148, 163, 184, .22);
+  box-shadow: 0 18px 46px rgba(15, 23, 42, .08);
+}
+.bill-candidate-card.is-low-confidence {
+  border-color: rgba(245, 158, 11, .34);
+}
+.bill-candidate-head {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  align-items: center;
+}
+.bill-candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: .75rem;
+}
+.bill-candidate-grid > div,
+.bill-save-routing-card > div {
+  display: grid;
+  gap: .35rem;
+}
+.bill-warning {
+  margin: 0;
+  padding: .65rem .75rem;
+  border-radius: .85rem;
+  background: rgba(245, 158, 11, .12);
+  color: #92400e;
+}
+.bill-items-details,
+.bill-text-details {
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, .38);
+  border: 1px solid rgba(148, 163, 184, .18);
+  overflow: hidden;
+}
+.bill-items-details summary,
+.bill-text-details summary {
+  cursor: pointer;
+  padding: .8rem .95rem;
+  font-weight: 850;
+}
+.bill-items-list {
+  display: grid;
+  gap: .3rem;
+  padding: 0 .95rem .95rem;
+}
+.bill-items-list div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: .75rem;
+  align-items: center;
+  padding: .55rem .65rem;
+  border-radius: .75rem;
+  background: rgba(148, 163, 184, .10);
+}
+.bill-items-list span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bill-text-details pre {
+  margin: 0;
+  padding: .95rem;
+  white-space: pre-wrap;
+  max-height: 16rem;
+  overflow: auto;
+  font-size: .86rem;
+}
+.bill-save-floating-actions {
+  position: sticky;
+  bottom: .9rem;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 40;
+  pointer-events: none;
+}
+.bill-save-floating-actions button {
+  pointer-events: auto;
+  min-height: 3rem;
+  box-shadow: 0 18px 48px rgba(37, 99, 235, .24), 0 8px 22px rgba(20,184,166,.16) !important;
+}
+
+html[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #0d141d;
+  --ink: #d9e5ee;
+  --ink-soft: #c3d1dc;
+  --muted: #8fa2b4;
+  --surface: rgba(18, 28, 40, .82);
+  --surface-soft: rgba(22, 35, 49, .68);
+  --surface-muted: rgba(27, 42, 57, .54);
+  --line: rgba(132, 157, 181, .16);
+  --line-strong: rgba(132, 157, 181, .26);
+  --brand: #7aa7d9;
+  --brand-dark: #5aa6a0;
+  --brand-soft: rgba(73, 113, 156, .22);
+}
+html[data-theme="night"] body.app-body-clean {
+  background:
+    radial-gradient(circle at 14% 8%, rgba(74, 101, 141, .13), transparent 24rem),
+    radial-gradient(circle at 86% 18%, rgba(44, 105, 108, .10), transparent 26rem),
+    linear-gradient(135deg, #0b1118 0%, #111a24 48%, #0c141e 100%) !important;
+  color: var(--ink) !important;
+}
+html[data-theme="night"] body.app-body-clean::before,
+html[data-theme="night"] body.app-body-clean::after,
+html[data-theme="night"] body.app-body-clean .app-layout::before,
+html[data-theme="night"] body.app-body-clean .app-layout::after,
+html[data-theme="night"] .desktop-pointer-glow {
+  opacity: .08 !important;
+  filter: blur(36px) saturate(.82) !important;
+}
+html[data-theme="night"] .app-sidebar,
+html[data-theme="night"] .app-topbar,
+html[data-theme="night"] .panel-card,
+html[data-theme="night"] .form-section,
+html[data-theme="night"] .transactions,
+html[data-theme="night"] .chart-card,
+html[data-theme="night"] .summary-card,
+html[data-theme="night"] .card,
+html[data-theme="night"] .filters,
+html[data-theme="night"] .table-panel,
+html[data-theme="night"] .normal-add-polished,
+html[data-theme="night"] .quick-add-panel,
+html[data-theme="night"] .bill-candidate-card,
+html[data-theme="night"] .bill-save-routing-card,
+html[data-theme="night"] .bill-upload-dropzone,
+html[data-theme="night"] .bill-items-details,
+html[data-theme="night"] .bill-text-details {
+  background: linear-gradient(135deg, rgba(20, 31, 43, .88), rgba(13, 22, 33, .78)) !important;
+  border-color: rgba(135, 158, 180, .15) !important;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, .30), inset 0 1px 0 rgba(255, 255, 255, .035) !important;
+}
+html[data-theme="night"] .app-topbar::before {
+  background: linear-gradient(90deg, rgba(15, 25, 36, .95), rgba(19, 33, 46, .88), rgba(15, 31, 38, .82)) !important;
+  border-bottom-color: rgba(135, 158, 180, .14) !important;
+}
+html[data-theme="night"] h1,
+html[data-theme="night"] h2,
+html[data-theme="night"] h3,
+html[data-theme="night"] h4,
+html[data-theme="night"] strong,
+html[data-theme="night"] b,
+html[data-theme="night"] label {
+  color: #dce7f0 !important;
+  text-shadow: none !important;
+}
+html[data-theme="night"] p,
+html[data-theme="night"] small,
+html[data-theme="night"] .hint,
+html[data-theme="night"] .muted {
+  color: #91a2b1 !important;
+}
+html[data-theme="night"] .eyebrow,
+html[data-theme="night"] .status-pill {
+  color: #a6c8c2 !important;
+  background: rgba(91, 126, 139, .16) !important;
+  border-color: rgba(139, 171, 180, .16) !important;
+}
+html[data-theme="night"] input,
+html[data-theme="night"] select,
+html[data-theme="night"] textarea,
+html[data-theme="night"] .bill-upload-dropzone input[type="file"] {
+  color: #dbe6ef !important;
+  background: rgba(10, 17, 26, .72) !important;
+  border-color: rgba(135, 158, 180, .18) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+html[data-theme="night"] .primary-btn,
+html[data-theme="night"] .transaction-form button[type="submit"],
+html[data-theme="night"] .quick-add-menu summary.primary-btn {
+  background: linear-gradient(135deg, #385f93 0%, #287d84 55%, #2f7461 100%) !important;
+  color: #edf5fb !important;
+  box-shadow: 0 14px 30px rgba(28, 74, 121, .18), 0 8px 18px rgba(21, 99, 93, .12), inset 0 1px 0 rgba(255,255,255,.12) !important;
+}
+html[data-theme="night"] .secondary-btn,
+html[data-theme="night"] .main-account-shortcut,
+html[data-theme="night"] .topbar-net-pill,
+html[data-theme="night"] .notification-trigger,
+html[data-theme="night"] .scope-group-direct,
+html[data-theme="night"] .grouped-scope-switcher .scope-switcher-group summary {
+  background: rgba(28, 42, 55, .78) !important;
+  border-color: rgba(135, 158, 180, .16) !important;
+  color: #d7e3ec !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+html[data-theme="night"] .grouped-scope-switcher .scope-switcher-group-menu {
+  background: rgba(18, 27, 38, .96) !important;
+  border-color: rgba(135, 158, 180, .18) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .42) !important;
+}
+html[data-theme="night"] .grouped-scope-switcher .scope-switcher-group-menu a:hover,
+html[data-theme="night"] .grouped-scope-switcher .scope-switcher-group-menu a.active,
+html[data-theme="night"] .nav-items a.active {
+  background: rgba(57, 93, 128, .34) !important;
+  color: #edf5fb !important;
+}
+html[data-theme="night"] .bill-warning {
+  background: rgba(146, 96, 33, .18) !important;
+  color: #d9b273 !important;
+}
+html[data-theme="night"] .bill-items-list div {
+  background: rgba(135, 158, 180, .10) !important;
+}
+
+@media (max-width: 1120px) {
+  .main-account-shortcut {
+    padding-inline: .7rem;
+    font-size: .9rem;
+  }
+}
+@media (max-width: 900px) {
+  .main-account-shortcut {
+    min-height: 39px;
+    border-radius: 15px;
+    padding: .42rem .58rem;
+    font-size: .78rem;
+  }
+  .add-mode-stack.is-normal-mode .normal-add-submit-row {
+    right: max(.85rem, env(safe-area-inset-right, 0px));
+    bottom: calc(var(--phone-bottom-nav-height, 68px) + 1rem + env(safe-area-inset-bottom, 0px));
+  }
+  .add-mode-stack.is-normal-mode .normal-add-submit-row button {
+    min-width: 9.5rem;
+    min-height: 3rem;
+  }
+  .compact-scope-switcher.grouped-scope-switcher {
+    position: sticky !important;
+    top: calc(var(--phone-topbar-height, 74px) + .55rem) !important;
+    z-index: 1800 !important;
+    grid-template-columns: 1fr !important;
+    padding: .55rem !important;
+    margin-bottom: .75rem !important;
+    overflow: visible !important;
+  }
+  html.phone-native-active .compact-scope-switcher.grouped-scope-switcher {
+    top: .55rem !important;
+  }
+  .compact-scope-switcher .scope-switcher-copy {
+    display: none !important;
+  }
+  .grouped-scope-switcher .scope-switcher-grouped-links {
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    padding: .25rem .15rem .55rem !important;
+  }
+  .grouped-scope-switcher .scope-switcher-group-menu {
+    position: fixed !important;
+    left: .75rem !important;
+    right: .75rem !important;
+    top: calc(var(--phone-topbar-height, 74px) + 4.1rem) !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    max-height: min(52vh, 24rem) !important;
+  }
+  html.phone-native-active .grouped-scope-switcher .scope-switcher-group-menu {
+    top: 5.1rem !important;
+  }
+  .scanner-hero,
+  .bill-save-routing-card,
+  .bill-candidate-head {
+    grid-template-columns: 1fr;
+    display: grid;
+    align-items: stretch;
+  }
+  .bill-items-list div {
+    grid-template-columns: 1fr;
+    gap: .2rem;
+  }
+  .bill-save-floating-actions {
+    bottom: calc(var(--phone-bottom-nav-height, 68px) + .8rem);
+  }
+}

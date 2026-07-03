@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block page_title %}Bill scanner{% endblock %}
+
+{% block content %}
+<section class="scanner-hero panel-card">
+  <div>
+    <span class="eyebrow">PDF to expense</span>
+    <h2>Bill scanner</h2>
+    <p>Upload one or more text-based PDF bills/receipts, review the detected expense drafts, then save all or only the rows you choose.</p>
+  </div>
+  <a class="secondary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense') }}">Manual expense</a>
+</section>
+
+{% if save_message %}
+  <div class="form-alert form-alert-success"><strong>Saved.</strong> {{ save_message }}</div>
+{% endif %}
+{% if save_errors %}
+  <div class="form-alert form-alert-error">
+    <strong>Check needed.</strong>
+    {% for error in save_errors %}<p>{{ error }}</p>{% endfor %}
+  </div>
+{% endif %}
+
+<section class="form-section bill-upload-panel">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Step 1</span>
+      <h3>Upload PDF bills</h3>
+      <p>The importer reads selectable PDF text locally. Image-only/scanned PDFs need OCR first.</p>
+    </div>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="bill-upload-form">
+    <input type="hidden" name="action" value="scan_bills">
+    <div class="bill-upload-dropzone">
+      <input type="file" name="bill_files" accept="application/pdf,.pdf,.txt" multiple required>
+      <strong>Choose PDF bills or receipts</strong>
+      <small>Use Ctrl/Cmd to select multiple files. Nothing is saved until you confirm the preview.</small>
+    </div>
+    <div class="bill-upload-assumption">
+      <label class="inline-checkbox"><input type="checkbox" checked disabled> Treat detected rows as expenses</label>
+      <small class="hint">You can still edit date, description, category, account and amount before saving.</small>
+    </div>
+    <button type="submit" class="primary-btn">Scan PDF</button>
+  </form>
+</section>
+
+{% if scan_result.errors %}
+  <div class="form-alert form-alert-error">
+    <strong>Some files were not imported.</strong>
+    {% for error in scan_result.errors %}<p>{{ error }}</p>{% endfor %}
+  </div>
+{% endif %}
+
+{% set candidates = scan_result.candidates or [] %}
+{% if candidates %}
+<section class="form-section bill-preview-panel">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Step 2</span>
+      <h3>Review detected expenses</h3>
+      <p>Confirm that these are expenses, choose the account/payment method once, then save selected rows.</p>
+    </div>
+    <div class="bill-preview-actions">
+      <button type="button" class="secondary-btn compact-btn" data-bill-select-all>Select all</button>
+      <button type="button" class="secondary-btn compact-btn" data-bill-select-none>None</button>
+    </div>
+  </div>
+
+  <form method="post" class="bill-preview-form">
+    <input type="hidden" name="action" value="save_detected_bills">
+    <input type="hidden" name="candidate_count" value="{{ candidates|length }}">
+
+    <div class="bill-save-routing-card">
+      <label class="inline-checkbox bill-expense-confirm"><input type="checkbox" name="confirm_expenses" value="1" required checked> Yes, save these selected rows as expenses</label>
+      <div>
+        <label>Account / Conto</label>
+        <select name="account_id" id="bill-account-select" required>
+          {% for account in payment_form.account_options %}
+            <option value="{{ account.id }}" {% if (selected_account_id or payment_form.selected_account_id) == account.id %}selected{% endif %} {% if account.disabled_reason %}disabled{% endif %}>{{ account.label }}{% if account.disabled_reason %} — {{ account.disabled_reason }}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Payment method</label>
+        <select name="payment_method_id" id="bill-payment-method-select" required>
+          {% for method in payment_form.payment_method_options %}
+            <option value="{{ method.id }}" {% if (selected_payment_method_id or payment_form.selected_payment_method_id) == method.id %}selected{% endif %} {% if method.disabled_reason %}disabled{% endif %}>{{ method.label }}{% if method.disabled_reason %} — {{ method.disabled_reason }}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="bill-candidate-stack">
+      {% for candidate in candidates %}
+        {% set candidate_index = loop.index0 %}
+        <article class="bill-candidate-card {{ 'is-low-confidence' if candidate.confidence == 'low' else '' }}">
+          <div class="bill-candidate-head">
+            <label class="inline-checkbox"><input type="checkbox" name="save_{{ candidate_index }}" value="1" checked data-bill-save-toggle> Save this expense</label>
+            <span class="status-pill">{{ candidate.confidence|capitalize }} confidence</span>
+          </div>
+
+          <div class="bill-candidate-grid">
+            <div>
+              <label>Date</label>
+              <input type="date" name="date_{{ candidate_index }}" value="{{ candidate.date or today }}" required>
+            </div>
+            <div>
+              <label>Merchant</label>
+              <input type="text" name="merchant_{{ candidate_index }}" value="{{ candidate.merchant }}" placeholder="Merchant/store">
+            </div>
+            <div>
+              <label>Description</label>
+              <input type="text" name="description_{{ candidate_index }}" value="{{ candidate.description or candidate.merchant or candidate.source_filename }}" required>
+            </div>
+            <div>
+              <label>Category</label>
+              <select name="category_{{ candidate_index }}" required>
+                {% for row in category_rows %}
+                  <option value="{{ row.name }}" {% if (default_category or '') == row.name %}selected{% endif %}>{{ row.icon }} {{ row.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label>Sub-category</label>
+              <input type="text" name="sub_category_{{ candidate_index }}" value="{{ candidate.source_filename }}">
+            </div>
+            <div>
+              <label>Total €</label>
+              <input type="number" min="0" step="0.01" name="amount_{{ candidate_index }}" value="{{ '%.2f'|format(candidate.amount or 0) }}" required>
+            </div>
+            <div>
+              <label>Discount</label>
+              <div class="bill-discount-inline">
+                <select name="discount_type_{{ candidate_index }}">
+                  <option value="none" {% if candidate.discount_type == 'none' %}selected{% endif %}>None</option>
+                  <option value="voucher" {% if candidate.discount_type == 'voucher' %}selected{% endif %}>Amount €</option>
+                  <option value="percent" {% if candidate.discount_type == 'percent' %}selected{% endif %}>Percent %</option>
+                </select>
+                <input type="number" min="0" step="0.01" name="discount_value_{{ candidate_index }}" value="{{ '%.2f'|format(candidate.discount_value or 0) }}">
+              </div>
+            </div>
+          </div>
+
+          {% if candidate.warning %}<p class="bill-warning">{{ candidate.warning }}</p>{% endif %}
+          <input type="hidden" name="items_{{ candidate_index }}" value='{{ candidate.items|tojson|forceescape }}'>
+          <input type="hidden" name="notes_{{ candidate_index }}" value="{{ candidate.notes }}">
+
+          <details class="bill-items-details">
+            <summary>Detected items · {{ candidate.items|length }}</summary>
+            <div class="bill-items-list">
+              {% for item in candidate.items %}
+                <div><span>{{ item.name }}</span><small>{{ item.qty }} × € {{ '%.2f'|format(item.unit_price or 0) }}</small><strong>€ {{ '%.2f'|format(item.line_total or 0) }}</strong></div>
+              {% endfor %}
+            </div>
+          </details>
+
+          <details class="bill-text-details">
+            <summary>Extracted text preview</summary>
+            <pre>{{ candidate.extracted_text_preview }}</pre>
+          </details>
+        </article>
+      {% endfor %}
+    </div>
+
+    <div class="bill-save-floating-actions">
+      <button type="submit" class="primary-btn">Save selected expenses</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.moneyManagerPaymentForm = {{ payment_form_json | safe }};
+</script>
+<script>
+(function () {
+  const accountSelect = document.getElementById('bill-account-select');
+  const methodSelect = document.getElementById('bill-payment-method-select');
+  const paymentForm = window.moneyManagerPaymentForm || {};
+  const methodsByAccount = paymentForm.payment_methods_by_account || {};
+
+  function optionForMethod(method) {
+    const option = document.createElement('option');
+    option.value = method.id || '';
+    option.textContent = method.label || method.id || 'Payment method';
+    if (method.disabled_reason) {
+      option.disabled = true;
+      option.textContent += ' — ' + method.disabled_reason;
+    }
+    return option;
+  }
+
+  function refreshMethods() {
+    if (!accountSelect || !methodSelect) return;
+    const methods = methodsByAccount[accountSelect.value] || paymentForm.payment_method_options || [];
+    const previous = methodSelect.value;
+    methodSelect.innerHTML = '';
+    methods.forEach((method) => methodSelect.appendChild(optionForMethod(method)));
+    if (previous && Array.from(methodSelect.options).some((option) => option.value === previous && !option.disabled)) {
+      methodSelect.value = previous;
+    }
+  }
+
+  if (accountSelect && methodSelect) {
+    accountSelect.addEventListener('change', refreshMethods);
+    refreshMethods();
+  }
+
+  document.querySelector('[data-bill-select-all]')?.addEventListener('click', () => {
+    document.querySelectorAll('[data-bill-save-toggle]').forEach((input) => { input.checked = true; });
+  });
+  document.querySelector('[data-bill-select-none]')?.addEventListener('click', () => {
+    document.querySelectorAll('[data-bill-save-toggle]').forEach((input) => { input.checked = false; });
+  });
+})();
+</script>
+{% endblock %}
