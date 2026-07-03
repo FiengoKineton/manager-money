@@ -421,6 +421,9 @@ def receipt_scanner():
         selected_payment_method_id = request.form.get("payment_method_id", "")
         saved_count = 0
         candidate_count = _positive_int_form("candidate_count", 0, minimum=0, maximum=50)
+        if request.form.get("confirm_expenses") != "1":
+            save_errors.append("Confirm that the selected detected rows should be saved as expenses.")
+            candidate_count = 0
         for index in range(candidate_count):
             if request.form.get(f"save_{index}") != "1":
                 continue
@@ -477,18 +480,21 @@ def receipt_scanner():
         selected_account_id=selected_account_id,
         selected_payment_method_id=selected_payment_method_id,
     )
-    return render_template(
-        "core/receipt_scanner.html",
+    template_context = {
         **context,
         **payment_context,
-        today=date.today().isoformat(),
-        scan_result=scan_result,
-        save_message=save_message,
-        save_errors=save_errors,
-        selected_account_id=selected_account_id,
-        selected_payment_method_id=selected_payment_method_id,
-        payment_form_json=json.dumps(payment_context.get("payment_form", {})),
+        "today": date.today().isoformat(),
+        "scan_result": scan_result,
+        "save_message": save_message,
+        "save_errors": save_errors,
+        "selected_account_id": selected_account_id,
+        "selected_payment_method_id": selected_payment_method_id,
+    }
+    template_context["payment_form_json"] = payment_context.get("payment_form_json") or json.dumps(
+        payment_context.get("payment_form", {}),
+        ensure_ascii=False,
     )
+    return render_template("core/receipt_scanner.html", **template_context)
 
 
 def _positive_int_form(name: str, default: int, *, minimum: int = 0, maximum: int | None = None) -> int:
