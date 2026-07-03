@@ -8,6 +8,7 @@ from typing import Any, Iterable, Mapping
 
 from money_manager.config.user_defaults import DEFAULT_ACCOUNTS
 from money_manager.services._user_config import load_user_config, save_user_config
+from money_manager.config.user_paths import get_current_user_id, normalize_user_id
 
 ACCOUNTS_FILE = "accounts.json"
 
@@ -227,7 +228,55 @@ def load_accounts_config(user_id: str | None = None) -> dict[str, Any]:
 def save_accounts_config(config: Mapping[str, Any], user_id: str | None = None) -> dict[str, Any]:
     payload = normalize_accounts_config(config)
     payload["updated_at"] = utc_now()
+    try:
+        from money_manager.cache import request_cache
+
+        request_cache.delete_prefix("account_config_lookup:")
+    except Exception:
+        pass
     return save_user_config(ACCOUNTS_FILE, payload, user_id=user_id)
+
+
+def _account_lookup_snapshot(user_id: str | None = None) -> dict[str, Any]:
+    """Return request-local account indexes used by hot form/render paths.
+
+    Account label/key resolution is called many times while rendering sidebars,
+    payment forms, and transaction rows.  Building the alias/key maps once per
+    request avoids repeated JSON decrypt/parse/normalize cycles without changing
+    the persisted account structure.
+    """
+    safe_id = normalize_user_id(user_id or get_current_user_id()) if (user_id or get_current_user_id()) else ""
+    cache_key = f"account_config_lookup:{safe_id}"
+    try:
+        from money_manager.cache import request_cache
+
+        sentinel = object()
+        cached = request_cache.get(cache_key, sentinel)
+        if cached is not sentinel:
+            return cached
+    except Exception:
+        request_cache = None  # type: ignore
+
+    accounts = list(load_accounts_config(user_id=user_id).get("accounts", []) or [])
+    by_key: dict[str, dict[str, Any]] = {}
+    alias_map: dict[str, str] = {}
+    for account in accounts:
+        if not isinstance(account, Mapping):
+            continue
+        key = str(account.get("key") or account.get("id") or "")
+        if key:
+            by_key[key] = account  # keep original object identity for compatibility inside the request
+        for value in [account.get("id"), account.get("key"), account.get("label"), account.get("name"), *account.get("aliases", [])]:
+            alias = clean_text(value)
+            if alias and key:
+                alias_map[alias] = key
+
+    payload = {"accounts": accounts, "by_key": by_key, "alias_map": alias_map}
+    try:
+        request_cache.set(cache_key, payload)  # type: ignore[name-defined]
+    except Exception:
+        pass
+    return payload
 
 
 def ensure_accounts_config(user_id: str | None = None) -> dict[str, Any]:
@@ -704,7 +753,7 @@ def _clean_string_list(value: Any) -> list[str]:
 
 
 def all_accounts(user_id: str | None = None, *, include_archived: bool = True, include_main: bool = True) -> list[dict[str, Any]]:
-    accounts = load_accounts_config(user_id=user_id).get("accounts", [])
+    accounts = _account_lookup_snapshot(user_id=user_id).get("accounts", [])
     result: list[dict[str, Any]] = []
     for account in accounts:
         if not include_main and account.get("key") == MAIN_ACCOUNT_KEY:
@@ -721,21 +770,16 @@ def active_accounts(user_id: str | None = None, *, include_main: bool = True) ->
 
 def account_by_key(key: str | None, user_id: str | None = None, *, include_archived: bool = True) -> dict[str, Any] | None:
     wanted = normalize_account_key(key, user_id=user_id)
-    for account in all_accounts(user_id=user_id, include_archived=include_archived, include_main=True):
-        if account.get("key") == wanted:
-            return account
-    return None
+    account = _account_lookup_snapshot(user_id=user_id).get("by_key", {}).get(wanted)
+    if not account:
+        return None
+    if not include_archived and (not account.get("is_active", True) or account.get("is_archived") or account.get("is_closed")):
+        return None
+    return account
 
 
 def account_alias_map(user_id: str | None = None) -> dict[str, str]:
-    mapping: dict[str, str] = {}
-    for account in all_accounts(user_id=user_id, include_archived=True, include_main=True):
-        key = str(account.get("key") or "")
-        for value in [account.get("id"), account.get("key"), account.get("label"), account.get("name"), *account.get("aliases", [])]:
-            alias = clean_text(value)
-            if alias:
-                mapping[alias] = key
-    return mapping
+    return dict(_account_lookup_snapshot(user_id=user_id).get("alias_map", {}))
 
 
 def normalize_account_key(value: str | None, user_id: str | None = None) -> str:
@@ -744,14 +788,14 @@ def normalize_account_key(value: str | None, user_id: str | None = None) -> str:
         return MAIN_ACCOUNT_KEY
     if text == "other_accounts":
         text = OTHER_ACCOUNTS_KEY
-    return account_alias_map(user_id=user_id).get(text, MAIN_ACCOUNT_KEY)
+    return _account_lookup_snapshot(user_id=user_id).get("alias_map", {}).get(text, MAIN_ACCOUNT_KEY)
 
 
 def account_label_for_key(key: str | None, user_id: str | None = None) -> str:
     wanted = normalize_account_key(key, user_id=user_id)
-    for account in all_accounts(user_id=user_id, include_archived=True, include_main=True):
-        if account.get("key") == wanted:
-            return str(account.get("label") or account.get("name") or wanted)
+    account = _account_lookup_snapshot(user_id=user_id).get("by_key", {}).get(wanted)
+    if account:
+        return str(account.get("label") or account.get("name") or wanted)
     return "Main bank account"
 
 

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
 from money_manager.config.user_defaults import DEFAULT_PAYMENT_METHODS
-from money_manager.config.user_paths import get_user_data_dir
+from money_manager.config.user_paths import get_current_user_id, get_user_data_dir, normalize_user_id
 from money_manager.security.protection_manager import read_json, write_json_atomic
 from money_manager.services._user_config import config_path, load_user_config, save_user_config
 
@@ -106,6 +106,12 @@ def save_payment_methods(payload: Mapping[str, Any], user_id: str | None = None)
     accounts_payload = load_accounts_config(user_id=user_id)
     normalized = normalize_payment_methods_config(payload, accounts_payload=accounts_payload)
     normalized["updated_at"] = utc_now()
+    try:
+        from money_manager.cache import request_cache
+
+        request_cache.delete_prefix("payment_method_lookup:")
+    except Exception:
+        pass
     return save_user_config(PAYMENT_METHODS_FILE, normalized, user_id=user_id)
 
 
@@ -132,8 +138,57 @@ def ensure_payment_methods_file(user_id: str | None = None) -> dict[str, Any]:
     return normalized_with_account_methods
 
 
+def _payment_lookup_user_key(user_id: str | None = None) -> str:
+    try:
+        current = user_id or get_current_user_id()
+        return normalize_user_id(current) if current else ""
+    except Exception:
+        return str(user_id or "")
+
+
+def _payment_method_lookup_snapshot(user_id: str | None = None) -> dict[str, Any]:
+    """Return request-local payment method indexes for hot render paths.
+
+    Forms and transaction rows frequently resolve the same payment method id,
+    aliases, and active lists many times during a single request.  Build those
+    maps once per request so encrypted config files are not repeatedly parsed and
+    normalized while preserving the same payment-method schema and behavior.
+    """
+    cache_key = f"payment_method_lookup:{_payment_lookup_user_key(user_id)}"
+    try:
+        from money_manager.cache import request_cache
+
+        sentinel = object()
+        cached = request_cache.get(cache_key, sentinel)
+        if cached is not sentinel:
+            return cached
+    except Exception:
+        request_cache = None  # type: ignore
+
+    methods = list(ensure_payment_methods_file(user_id=user_id).get("payment_methods", []) or [])
+    by_id: dict[str, dict[str, Any]] = {}
+    alias_map: dict[str, str] = {}
+    for method in methods:
+        if not isinstance(method, Mapping):
+            continue
+        method_id = str(method.get("id") or "")
+        if method_id:
+            by_id[method_id] = method
+        for alias_value in [method.get("id"), method.get("name"), *method.get("aliases", [])]:
+            alias = clean_text(alias_value)
+            if alias and method_id:
+                alias_map[alias] = method_id
+
+    payload = {"methods": methods, "by_id": by_id, "alias_map": alias_map}
+    try:
+        request_cache.set(cache_key, payload)  # type: ignore[name-defined]
+    except Exception:
+        pass
+    return payload
+
+
 def all_payment_methods(include_archived: bool = True, user_id: str | None = None) -> list[dict[str, Any]]:
-    methods = ensure_payment_methods_file(user_id=user_id).get("payment_methods", [])
+    methods = _payment_method_lookup_snapshot(user_id=user_id).get("methods", [])
     result: list[dict[str, Any]] = []
     for method in methods:
         if not include_archived and (method.get("is_archived") or not method.get("is_active", True)):
@@ -148,23 +203,19 @@ def active_payment_methods(user_id: str | None = None) -> list[dict[str, Any]]:
 
 def payment_method_by_id(method_id: str, include_archived: bool = True, user_id: str | None = None) -> dict[str, Any] | None:
     wanted = normalize_payment_method_id(method_id, user_id=user_id)
-    for method in all_payment_methods(include_archived=include_archived, user_id=user_id):
-        if method.get("id") == wanted:
-            return method
-    return None
+    method = _payment_method_lookup_snapshot(user_id=user_id).get("by_id", {}).get(wanted)
+    if not method:
+        return None
+    if not include_archived and (method.get("is_archived") or not method.get("is_active", True)):
+        return None
+    return method
 
 
 def normalize_payment_method_id(value: str | None, user_id: str | None = None) -> str:
     text = clean_text(value)
     if not text:
         return ""
-    mapping: dict[str, str] = {}
-    for method in all_payment_methods(include_archived=True, user_id=user_id):
-        method_id = str(method.get("id") or "")
-        for alias_value in [method.get("id"), method.get("name"), *method.get("aliases", [])]:
-            alias = clean_text(alias_value)
-            if alias:
-                mapping[alias] = method_id
+    mapping = _payment_method_lookup_snapshot(user_id=user_id).get("alias_map", {})
     return mapping.get(text, slugify(text))
 
 

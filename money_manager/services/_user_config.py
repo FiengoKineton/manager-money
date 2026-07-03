@@ -1,15 +1,63 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from money_manager.config.user_defaults import USER_CONFIG_DEFAULTS, default_for
-from money_manager.config.user_paths import user_data_path
+from money_manager.config.user_paths import normalize_user_id, user_data_path
 from money_manager.security.secure_storage import read_json_secure, write_json_secure
 
 CONFIG_FILENAMES = frozenset(USER_CONFIG_DEFAULTS.keys())
+
+_CONFIG_CACHE_LOCK = threading.RLock()
+_CONFIG_CACHE: dict[tuple[str, str, str, int, int, bool], dict[str, Any]] = {}
+_CONFIG_CACHE_MAX_ENTRIES = 128
+
+
+def _stat_signature(path: Path) -> tuple[int, int]:
+    try:
+        stat = path.stat()
+        return int(stat.st_mtime_ns), int(stat.st_size)
+    except OSError:
+        return 0, 0
+
+
+def _cache_user_id(user_id: str | None) -> str:
+    try:
+        return normalize_user_id(user_id) if user_id else ""
+    except Exception:
+        return str(user_id or "")
+
+
+def _get_cached_config(key: tuple[str, str, str, int, int, bool]) -> dict[str, Any] | None:
+    with _CONFIG_CACHE_LOCK:
+        value = _CONFIG_CACHE.get(key)
+        if value is None:
+            return None
+        return deepcopy(value)
+
+
+def _set_cached_config(key: tuple[str, str, str, int, int, bool], value: Mapping[str, Any]) -> None:
+    with _CONFIG_CACHE_LOCK:
+        _CONFIG_CACHE[key] = deepcopy(dict(value or {}))
+        if len(_CONFIG_CACHE) > _CONFIG_CACHE_MAX_ENTRIES:
+            for old_key in list(_CONFIG_CACHE.keys())[: max(1, _CONFIG_CACHE_MAX_ENTRIES // 4)]:
+                _CONFIG_CACHE.pop(old_key, None)
+
+
+def _invalidate_config_cache(filename: str | None = None, user_id: str | None = None) -> None:
+    safe_id = _cache_user_id(user_id)
+    with _CONFIG_CACHE_LOCK:
+        for key in list(_CONFIG_CACHE.keys()):
+            key_user, key_filename, _key_path, *_rest = key
+            if safe_id and key_user != safe_id:
+                continue
+            if filename and key_filename != filename:
+                continue
+            _CONFIG_CACHE.pop(key, None)
 
 
 def utc_now() -> str:
@@ -51,13 +99,23 @@ def load_user_config(filename: str, user_id: str | None = None, *, repair: bool 
         path = config_path(filename, user_id=user_id)
     except RuntimeError:
         return default
+
+    mtime_ns, size = _stat_signature(path)
+    cache_key = (_cache_user_id(user_id), filename, str(path), mtime_ns, size, bool(repair))
+    cached = _get_cached_config(cache_key)
+    if cached is not None:
+        return cached
+
     raw = read_json_secure(path, None, user_id=user_id)
     merged = deep_merge_defaults(default, raw)
     if not isinstance(merged, dict):
         merged = default
     if repair and (raw != merged or not path.exists()):
         write_json_secure(path, merged, user_id=user_id)
-    return merged
+        mtime_ns, size = _stat_signature(path)
+        cache_key = (_cache_user_id(user_id), filename, str(path), mtime_ns, size, bool(repair))
+    _set_cached_config(cache_key, merged)
+    return deepcopy(merged)
 
 
 def save_user_config(filename: str, payload: Mapping[str, Any], user_id: str | None = None) -> dict[str, Any]:
@@ -66,7 +124,14 @@ def save_user_config(filename: str, payload: Mapping[str, Any], user_id: str | N
     if not isinstance(merged, dict):
         merged = default
     write_json_secure(config_path(filename, user_id=user_id), merged, user_id=user_id)
-    return merged
+    _invalidate_config_cache(filename, user_id=user_id)
+    try:
+        path = config_path(filename, user_id=user_id)
+        mtime_ns, size = _stat_signature(path)
+        _set_cached_config((_cache_user_id(user_id), filename, str(path), mtime_ns, size, True), merged)
+    except Exception:
+        pass
+    return deepcopy(merged)
 
 
 def safe_update_fields(

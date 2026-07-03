@@ -35,3 +35,16 @@ This patch targets the slow request paths that were making the app feel stuck or
 - `money_manager/web/templates/core/_transaction_phone_cards.html`
 - `static/js/dashboard.js`
 - `static/js/shared/performance-lazy.js`
+
+## 2026-07-03 hotfix: navigation and config hot paths
+
+This hotfix keeps the app logic and route structure unchanged, but removes extra work that happened during normal navigation.
+
+- Disabled full-document hover/focus/touch prefetch by default in `static/js/shared/instant-nav.js`. The transition animation remains, but the browser no longer starts expensive Flask page requests before the user clicks.
+- Added a server-side 204 guard for browser `prefetch`/`prerender` document requests in `money_manager/app.py`, registered before blueprints so auth/onboarding guards do not repair or decrypt data for speculative requests.
+- Added short sessionStorage caching, idle scheduling, and a timeout for the topbar summary fetch in `static/js/shared/performance-lazy.js`.
+- Added a stat-keyed in-process cache around `load_user_config()` so repeated encrypted JSON config loads avoid repeated decrypt/parse/deep-merge work until the file changes.
+- Added request-local account/payment-method lookup snapshots so forms, sidebars, and transaction rows do not rebuild alias/id maps repeatedly in the same request.
+- Bumped the script query strings in `base.html` so browsers use the updated JavaScript immediately.
+
+These changes target overfetching/over-eager preparation and repeated config lookup work; they do not change transaction calculations, schemas, routes, or page-level business behavior.

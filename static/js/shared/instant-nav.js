@@ -1,9 +1,16 @@
 (function () {
   "use strict";
 
+  // Document prefetch is intentionally opt-in.
+  // In this local Flask app every prefetched document executes the full backend
+  // route, which can decrypt CSV/JSON data, build dashboards, run maintenance,
+  // and compete with the real click.  Keep instant-nav as a visual transition,
+  // but do not silently prepare the whole workflow just because a link was
+  // hovered/focused.
+  var ENABLE_DOCUMENT_PREFETCH = window.MONEY_MANAGER_ENABLE_DOCUMENT_PREFETCH === true;
   var prefetched = new Set();
-  var PREFETCH_LIMIT = 18;
-  var SKIP_PATH_PARTS = ["/logout", "/delete", "/archive", "/restore", "/export"];
+  var PREFETCH_LIMIT = 3;
+  var SKIP_PATH_PARTS = ["/logout", "/delete", "/archive", "/restore", "/export", "/api/", "/integrity"];
 
   function ensureBar() {
     if (document.querySelector(".nav-transition-bar")) {
@@ -46,7 +53,7 @@
   }
 
   function prefetch(link) {
-    if (!isSafeNavigationLink(link) || prefetched.size >= PREFETCH_LIMIT) {
+    if (!ENABLE_DOCUMENT_PREFETCH || !isSafeNavigationLink(link) || prefetched.size >= PREFETCH_LIMIT) {
       return;
     }
     var url = new URL(link.getAttribute("href"), window.location.href);
