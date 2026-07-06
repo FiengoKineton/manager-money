@@ -1113,3 +1113,15 @@
     align-items: flex-start;
   }
 }
+
+/* Patch v6: explain empty credit-settlement state */
+.credit-settlement-empty-note {
+  max-width: 760px;
+  margin: .75rem auto 0;
+  text-align: center;
+}
+.credit-settlement-empty-note p {
+  margin: .35rem 0 0;
+  color: var(--muted-text, #64748b);
+  line-height: 1.45;
+}

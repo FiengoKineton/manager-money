@@ -245,7 +245,10 @@
       {% endfor %}
     </div>
   {% else %}
-    <p class="empty">No open credit settlements.</p>
+    <div class="empty credit-settlement-empty-note">
+      <strong>No open credit settlements.</strong>
+      <p>Only transactions paid with a delayed credit-card method, or with a delegated method such as <b>PayPal via Credit Card</b>, create future settlements. Transactions saved as <b>PayPal balance</b> are immediate PayPal stored-balance expenses and will not appear here.</p>
+    </div>
   {% endif %}
 </section>
 

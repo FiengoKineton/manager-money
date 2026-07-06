@@ -1,5 +1,6 @@
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 from time import monotonic
+import logging
 import threading
 
 from money_manager.services.account_service import (
@@ -20,7 +21,7 @@ from money_manager.services.account_calculation_service import get_account_dashb
 from money_manager.services.calculation_service import cached_context
 from money_manager.services.pending_service import process_pending, sync_credit_account_statements
 from money_manager.services.account_closure_service import account_closure_precheck, close_account
-from money_manager.services.account_config_service import all_accounts, set_default_account
+from money_manager.services.account_config_service import all_accounts, set_default_account, account_by_key
 from money_manager.services.account_integrity_service import full_integrity_report
 from money_manager.services.payment_form_service import account_options_for_payment_forms, explain_payment_method, payment_method_options_for_forms
 from money_manager.services.payment_method_service import (
@@ -36,6 +37,7 @@ from money_manager.web.auth import current_user
 from money_manager.config.user_paths import using_user
 
 bp = Blueprint("accounts", __name__, url_prefix="/accounts")
+logger = logging.getLogger(__name__)
 
 _CREDIT_REFRESH_INTERVAL_SECONDS = 60
 _credit_refresh_lock = threading.RLock()
@@ -227,52 +229,72 @@ def account_detail(account_key: str):
             archive_card_from_form(account_key, request.form.get("card_id", ""))
             return redirect(url_for("accounts.account_detail", account_key=account_key))
         if action == "create_account_card_method":
-            card_type = str(request.form.get("method_type") or "debit_card").strip()
-            settlement_mode = {
-                "debit_card": "immediate",
-                "credit_card": "delayed",
-                "prepaid_card": "stored_balance",
-            }.get(card_type, "immediate")
-            card_form = dict(request.form)
-            card_account_key = account_key
-            liability_account_key = str(card_form.get("liability_account_id") or "").strip()
-            if card_type == "prepaid_card":
-                card_account_key = ensure_prepaid_card_balance_account(
-                    account_key,
-                    card_form.get("name") or card_form.get("label") or "Prepaid card",
-                )
-            elif card_type == "credit_card":
-                liability_account_key = liability_account_key or ensure_credit_card_liability_account(
-                    account_key,
-                    card_form.get("name") or card_form.get("label") or "Credit card",
-                )
+            try:
+                card_type = str(request.form.get("method_type") or "debit_card").strip()
+                settlement_mode = {
+                    "debit_card": "immediate",
+                    "credit_card": "delayed",
+                    "prepaid_card": "stored_balance",
+                }.get(card_type, "immediate")
+                card_form = dict(request.form)
+                card_name = str(card_form.get("name") or card_form.get("label") or "").strip() or {
+                    "debit_card": "Debit card",
+                    "credit_card": "Credit card",
+                    "prepaid_card": "Prepaid card",
+                }.get(card_type, "Card")
+                card_form["name"] = card_name
+                card_form["manual_card"] = "1"
+                # Never reuse the old built-in `credit_card` id when adding a manual
+                # card to an account.  Reusing that archived legacy id could create
+                # invalid/hidden methods and surface as a generic Internal Error.
+                card_form["id"] = card_form.get("id") or f"{account_key}_{card_type}_{card_name}"
+                card_account_key = account_key
+                liability_account_key = str(card_form.get("liability_account_id") or "").strip()
+                if card_type == "prepaid_card":
+                    card_account_key = ensure_prepaid_card_balance_account(account_key, card_name)
+                elif card_type == "credit_card":
+                    # If the user typed a non-existing liability account, ignore it and
+                    # create/reuse the correct hidden liability bucket under this Conto.
+                    if not liability_account_key or not account_by_key(liability_account_key, include_archived=True):
+                        liability_account_key = ensure_credit_card_liability_account(account_key, card_name)
 
-            if card_type == "credit_card":
-                linked_account_id = account_key
-                funding_account_id = account_key
-                settlement_account_id = account_key
-            else:
-                linked_account_id = card_account_key
-                funding_account_id = card_account_key
-                settlement_account_id = card_account_key
+                if card_type == "credit_card":
+                    linked_account_id = account_key
+                    funding_account_id = account_key
+                    settlement_account_id = account_key
+                else:
+                    linked_account_id = card_account_key
+                    funding_account_id = card_account_key
+                    settlement_account_id = card_account_key
 
-            card_form.update({
-                "method_type": card_type,
-                "settlement_mode": settlement_mode,
-                "linked_account_id": linked_account_id,
-                "funding_account_id": funding_account_id,
-                "settlement_account_id": settlement_account_id,
-                "parent_account_id": account_key,
-                "is_active": "1",
-            })
-            if card_type == "credit_card":
-                card_form["liability_account_id"] = liability_account_key
-            else:
-                card_form["liability_account_id"] = ""
-            method = create_payment_method_from_form(card_form)
-            if method.get("id"):
-                return redirect(url_for("accounts.account_payment_method_detail", account_key=account_key, method_id=method["id"], _anchor="payment-method-detail"))
-            return redirect(url_for("accounts.account_detail", account_key=account_key))
+                card_form.update({
+                    "method_type": card_type,
+                    "settlement_mode": settlement_mode,
+                    "linked_account_id": linked_account_id,
+                    "funding_account_id": funding_account_id,
+                    "settlement_account_id": settlement_account_id,
+                    "parent_account_id": account_key,
+                    "is_active": "1",
+                })
+                if card_type == "credit_card":
+                    card_form["liability_account_id"] = liability_account_key
+                else:
+                    card_form["liability_account_id"] = ""
+                method = create_payment_method_from_form(card_form)
+                if method.get("validation_errors"):
+                    raise ValueError("Payment method validation failed: " + ", ".join(method.get("validation_errors", [])))
+                if method.get("id"):
+                    _schedule_credit_refresh(force=True)
+                    return redirect(url_for("accounts.account_payment_method_detail", account_key=account_key, method_id=method["id"], _anchor="payment-method-detail"))
+                return redirect(url_for("accounts.account_detail", account_key=account_key))
+            except Exception as exc:
+                logger.exception("Failed to create card/payment method for account %s", account_key)
+                try:
+                    from flask import current_app
+                    current_app.logger.exception("Manual card creation failed on account %s", account_key)
+                except Exception:
+                    pass
+                error = f"Could not create the card: {exc}"
 
     context = cached_context(
         "account_detail_summary",

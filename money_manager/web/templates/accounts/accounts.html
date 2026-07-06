@@ -2,58 +2,82 @@
 {% block page_title %}All Conti{% endblock %}
 
 {% block content %}
-<section class="all-conti-board panel-card">
+<section class="all-conti-board panel-card all-conti-board-compact all-conti-board-ultra">
   <div class="all-conti-board-main">
     <span class="eyebrow">All Conti</span>
-    <h2>{{ global_summary.net_balance|money_masked }}</h2>
-    <p>One clean view of your independent banks, standalone CashFlow, and dependent wallets without double-counting card routes.</p>
-    <div class="all-conti-board-actions">
-      <a class="primary-btn compact-btn" href="#add-account-panel">Add account</a>
-      <a class="secondary-btn compact-btn" href="{{ url_for('dashboard.index') }}">Global dashboard</a>
-      <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page') }}">All transactions</a>
-    </div>
+    <h2>Accounts overview</h2>
+    <p>Open a Conto for the full page, or click an account block to expand cards, wallets and projected values here.</p>
   </div>
-  <div class="all-conti-board-stats">
-    <article><span>Level 1 banks</span><strong>{{ totals.current_accounts_count }}</strong></article>
-    <article><span>CashFlow</span><strong>{{ totals.cashflow_count }}</strong></article>
-    <article><span>Wallets</span><strong>{{ totals.dependent_accounts_count }}</strong></article>
-    <article><span>Cards</span><strong>{{ totals.payment_methods_count }}</strong></article>
+  <div class="all-conti-board-stats all-conti-board-stats-compact all-conti-overview-pills">
+    <article><span>Net</span><strong>{{ global_summary.net_balance|money_masked }}</strong></article>
     <article><span>Pending</span><strong>{{ global_summary.pending_total|money_masked }}</strong></article>
-    <article><span>Projected</span><strong>{{ global_summary.projected_net|money_masked }}</strong></article>
+    <article><span>Banks</span><strong>{{ totals.current_accounts_count }}</strong></article>
+    <article><span>Wallets</span><strong>{{ totals.dependent_accounts_count }}</strong></article>
   </div>
-</section>
-
-<section class="panel-card all-conti-command-strip">
-  <form method="get" action="{{ url_for('search.search_page') }}" class="accounts-search-inline compact-search-inline">
+  <form method="get" action="{{ url_for('search.search_page') }}" class="accounts-search-inline compact-search-inline all-conti-board-search">
     <input type="search" name="q" value="{{ request.args.get('q', '') }}" placeholder="Search Conti, cards, transactions...">
     <button class="secondary-btn compact-btn" type="submit">Search</button>
   </form>
+  <div class="all-conti-board-actions all-conti-board-actions-ultra">
+    <a class="primary-btn compact-btn" href="#add-account-panel">Add account</a>
+    <a class="secondary-btn compact-btn" href="{{ url_for('dashboard.index') }}">Overview</a>
+    <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page') }}">All transactions</a>
+  </div>
 </section>
 
-<section class="panel-card accounts-focus-list-card all-conti-clean-list">
+<section class="panel-card accounts-focus-list-card all-conti-clean-list all-conti-foldout-section">
   <div class="panel-header compact-panel-header">
     <div>
       <span class="eyebrow">Level 1</span>
       <h3>Independent bank accounts</h3>
-      <p>Open a Conto to lock Overview, Dashboard and Transactions to that account.</p>
+      <p>Surface shows only the essentials. Expand a row for cards, wallets and local pressure.</p>
     </div>
   </div>
   {% if current_accounts_overview %}
-    <div class="all-conti-account-list modern-account-list">
+    <div class="all-conti-foldout-list">
       {% for account in current_accounts_overview %}
-        <article class="all-conti-account-row modern-account-row account-{{ account.balance_tone }}">
-          <div class="all-conti-account-main">
-            <span>{{ account.account_level_label }}{% if account.is_default %} · Default{% endif %}</span>
-            <h3>{{ account.label|text_masked }}</h3>
-            {% if account.institution %}<p>{{ account.institution|text_masked }}</p>{% endif %}
+        <details class="all-conti-foldout-row account-{{ account.balance_tone }}">
+          <summary>
+            <span class="all-conti-row-title">
+              <b>{{ account.label|text_masked }}</b>
+              <small>{{ account.account_level_label }}{% if account.is_default %} · Default{% endif %}{% if account.institution %} · {{ account.institution|text_masked }}{% endif %}</small>
+            </span>
+            <span class="all-conti-row-metric"><small>Net</small><strong>{{ account.net_balance|money_masked }}</strong></span>
+            <a class="primary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Open Conto</a>
+            <span class="all-conti-expand-cue" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="all-conti-row-details">
+            <div class="all-conti-detail-grid">
+              <article><span>Pending</span><strong>{{ account.pending_total|money_masked }}</strong></article>
+              <article><span>Projected</span><strong>{{ account.projected_net|money_masked }}</strong></article>
+              <article><span>Cards</span><strong>{{ account.cards_count }}</strong></article>
+              <article><span>Wallets</span><strong>{{ account.dependent_accounts_count }}</strong></article>
+              <article><span>Monthly recurring</span><strong>{{ account.recurring_monthly_total|money_masked }}</strong></article>
+              <article><span>Transactions</span><strong>{{ account.transactions_count }}</strong></article>
+            </div>
+            <div class="all-conti-row-links">
+              <a href="{{ url_for('dashboard.index', account_id=account.key) }}">Overview</a>
+              <a href="{{ url_for('transactions.transactions_page', account_id=account.key) }}">Transactions</a>
+              <a href="{{ url_for('pending.pending_page', account_id=account.key) }}">Pending</a>
+            </div>
+            {% if account.dependent_accounts %}
+              <div class="all-conti-mini-list">
+                <strong>Linked wallets</strong>
+                {% for child in account.dependent_accounts %}
+                  <a href="{{ url_for('accounts.account_detail', account_key=child.key) }}"><span>{{ child.label|text_masked }}</span><b>{{ child.net_balance|money_masked }}</b></a>
+                {% endfor %}
+              </div>
+            {% endif %}
+            {% if account.payment_methods %}
+              <div class="all-conti-mini-list compact-method-list">
+                <strong>Payment methods</strong>
+                {% for method in account.payment_methods[:6] %}
+                  <span><span>{{ method.label|text_masked }}</span><b>{{ method.method_type|replace('_', ' ')|title }}</b></span>
+                {% endfor %}
+              </div>
+            {% endif %}
           </div>
-          <div class="all-conti-account-number"><span>Net</span><strong>{{ account.net_balance|money_masked }}</strong></div>
-          <div class="all-conti-account-mini"><span>Pending</span><strong>{{ account.pending_total|money_masked }}</strong></div>
-          <div class="all-conti-account-mini"><span>Projected</span><strong>{{ account.projected_net|money_masked }}</strong></div>
-          <div class="all-conti-account-mini"><span>Cards</span><strong>{{ account.cards_count }}</strong></div>
-          <div class="all-conti-account-mini"><span>Wallets</span><strong>{{ account.dependent_accounts_count }}</strong></div>
-          <a class="primary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Open Conto</a>
-        </article>
+        </details>
       {% endfor %}
     </div>
   {% else %}
@@ -62,30 +86,51 @@
 </section>
 
 {% if cashflow_overview %}
-<section class="panel-card accounts-focus-list-card all-conti-clean-list">
+<section class="panel-card accounts-focus-list-card all-conti-clean-list all-conti-foldout-section">
   <div class="panel-header compact-panel-header"><div><span class="eyebrow">Level 2</span><h3>CashFlow / standalone cash</h3></div></div>
-  <div class="all-conti-account-list compact modern-account-list">
+  <div class="all-conti-foldout-list compact">
     {% for account in cashflow_overview %}
-      <article class="all-conti-account-row modern-account-row account-{{ account.balance_tone }}">
-        <div class="all-conti-account-main"><span>{{ account.account_level_label }}</span><h3>{{ account.label|text_masked }}</h3></div>
-        <div class="all-conti-account-number"><span>Net</span><strong>{{ account.net_balance|money_masked }}</strong></div>
-        <div class="all-conti-account-mini"><span>Projected</span><strong>{{ account.projected_net|money_masked }}</strong></div>
-        <a class="primary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Open</a>
-      </article>
+      <details class="all-conti-foldout-row account-{{ account.balance_tone }}">
+        <summary>
+          <span class="all-conti-row-title"><b>{{ account.label|text_masked }}</b><small>{{ account.account_level_label }}</small></span>
+          <span class="all-conti-row-metric"><small>Net</small><strong>{{ account.net_balance|money_masked }}</strong></span>
+          <a class="primary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=account.key) }}">Open</a>
+          <span class="all-conti-expand-cue" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="all-conti-row-details">
+          <div class="all-conti-detail-grid">
+            <article><span>Pending</span><strong>{{ account.pending_total|money_masked }}</strong></article>
+            <article><span>Projected</span><strong>{{ account.projected_net|money_masked }}</strong></article>
+            <article><span>Monthly recurring</span><strong>{{ account.recurring_monthly_total|money_masked }}</strong></article>
+            <article><span>Transactions</span><strong>{{ account.transactions_count }}</strong></article>
+          </div>
+          <div class="all-conti-row-links">
+            <a href="{{ url_for('dashboard.index', account_id=account.key) }}">Overview</a>
+            <a href="{{ url_for('transactions.transactions_page', account_id=account.key) }}">Transactions</a>
+          </div>
+        </div>
+      </details>
     {% endfor %}
   </div>
 </section>
 {% endif %}
 
 {% if dependent_accounts_overview %}
-<section class="panel-card accounts-focus-list-card all-conti-clean-list">
-  <div class="panel-header compact-panel-header"><div><span class="eyebrow">Level 3</span><h3>Dependent wallets</h3><p>PayPal, Glovo, EasyPark and similar accounts live under a parent Conto. Payments through a linked card remain visible on both sides.</p></div></div>
-  <div class="dependent-wallet-list modern-wallet-list">
+<section class="panel-card accounts-focus-list-card all-conti-clean-list all-conti-foldout-section">
+  <div class="panel-header compact-panel-header"><div><span class="eyebrow">Level 3</span><h3>Dependent wallets</h3><p>PayPal, Glovo, EasyPark and similar accounts stay compact here. Expand to see parent and projected balance.</p></div></div>
+  <div class="all-conti-wallet-grid">
     {% for child in dependent_accounts_overview %}
-      <a href="{{ url_for('accounts.account_detail', account_key=child.key) }}">
-        <span><b>{{ child.label|text_masked }}</b><small>Parent: {{ child.parent_label|text_masked }}</small></span>
-        <strong>{{ child.net_balance|money_masked }}</strong>
-      </a>
+      <details class="all-conti-wallet-chip account-{{ child.balance_tone }}">
+        <summary>
+          <span><b>{{ child.label|text_masked }}</b><small>Parent: {{ child.parent_label|text_masked }}</small></span>
+          <strong>{{ child.net_balance|money_masked }}</strong>
+        </summary>
+        <div>
+          <p>Projected: <b>{{ child.projected_net|money_masked }}</b></p>
+          <p>Pending: <b>{{ child.pending_total|money_masked }}</b></p>
+          <a class="secondary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=child.key) }}">Open wallet</a>
+        </div>
+      </details>
     {% endfor %}
   </div>
 </section>
