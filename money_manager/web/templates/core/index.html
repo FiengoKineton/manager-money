@@ -48,6 +48,7 @@
           <a class="dashboard-plan-row row-{{ item.type|lower }}" href="{{ url_for('pending.recurring_page') }}">
             <span class="plan-date">{{ item.payment_due_date }}</span>
             <span class="plan-main"><strong>{{ item.name }}</strong><small>{{ item.category }} · {{ item.account_label }}</small></span>
+            <span class="plan-status status-{{ item.queue_status|default('forecast') }}">{{ item.status_label }}</span>
             <span class="plan-auto {% if item.auto_execute %}auto-on{% else %}auto-off{% endif %}">{{ item.auto_execute_label }}</span>
             <strong>{{ item.amount_str }}</strong>
           </a>
@@ -73,6 +74,7 @@
           <a class="dashboard-plan-row row-income" href="{{ url_for('pending.recurring_page') }}">
             <span class="plan-date">{{ item.payment_due_date }}</span>
             <span class="plan-main"><strong>{{ item.name }}</strong><small>{{ item.category }} · {{ item.account_label }}</small></span>
+            <span class="plan-status status-{{ item.queue_status|default('forecast') }}">{{ item.status_label }}</span>
             <span class="plan-auto income-chip">Income</span>
             <strong>{{ item.amount_str }}</strong>
           </a>

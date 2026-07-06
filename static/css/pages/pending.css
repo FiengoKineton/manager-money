@@ -997,7 +997,8 @@
   color: var(--warning);
 }
 
-.auto-chip {
+.auto-chip,
+.status-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1007,6 +1008,26 @@
   font-weight: 900;
   font-style: normal;
   white-space: nowrap;
+}
+
+.status-chip.status-paid {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.status-chip.status-pending {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.status-chip.status-skipped {
+  background: rgba(100, 116, 139, 0.14);
+  color: var(--ink-soft);
+}
+
+.status-chip.status-forecast {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--brand);
 }
 
 .compact-recurring-due-card .panel-header p {
@@ -1029,7 +1050,7 @@
 
 .next-payment-row summary {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) 130px 110px 96px;
+  grid-template-columns: minmax(0, 1.4fr) 130px 110px 86px 96px;
   gap: 0.75rem;
   align-items: center;
   padding: 0.78rem 0.9rem;

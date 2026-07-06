@@ -218,16 +218,16 @@ def sync_credit_account_statements(today: date | None = None) -> int:
 
     Purchases paid with a configured credit account are saved as normal
     transaction rows on the real purchase date, but they do not affect the main
-    net. This function aggregates those purchases by calendar month and credit
+    net. This function aggregates those purchases by statement month and credit
     account, then creates one pending settlement due on that account's configured
-    due day in the following month.
+    due day. Current-month purchases are included immediately as the next future
+    statement so the Credit settlements panel works as a forward-looking tracker.
 
     Example: Visa due day 15, purchases in June => one pending statement due
-    July 15. Purchases from July 1-14 are part of July and therefore settle on
-    August 15, not July 15.
+    July 15. Purchases from July 1-14 are visible right away as the July
+    statement due August 15.
     """
     today = today or date.today()
-    first_day_this_month = date(today.year, today.month, 1)
 
     try:
         from money_manager.services.transaction_service import load_transactions
@@ -235,31 +235,23 @@ def sync_credit_account_statements(today: date | None = None) -> int:
         return 0
 
     df = load_transactions()
-    groups: dict[tuple[str, str], dict] = {}
+    groups: dict[tuple[str, str, int], dict] = {}
     if not df.empty:
         for _, row in df.iterrows():
             tx_type = str(row.get("type", "")).casefold()
             if tx_type != "expense":
                 continue
-            key = str(row.get("account_key") or normalize_account_key(row.get("account", "")))
-            if account_policy_for_key(key) != MAIN_NET_CREDIT_PENDING:
+            key = _credit_statement_account_key_for_row(row)
+            if not key:
                 continue
             if _is_credit_settlement_transaction_row(row):
                 continue
-            charge_date = row.get("date")
-            if pd.isna(charge_date):
+            charge_day = _date_from_transaction_value(row.get("date"))
+            if not charge_day or charge_day > today:
                 continue
-            if not isinstance(charge_date, pd.Timestamp):
-                charge_date = pd.to_datetime(charge_date, errors="coerce")
-            if pd.isna(charge_date):
-                continue
-            charge_day = charge_date.date()
-            if charge_day >= first_day_this_month:
-                # Current-month charges are not a closed statement yet.
-                continue
-            statement_month = charge_day.strftime("%Y-%m")
+            statement_month = _credit_statement_month_for_row(row, charge_day)
             due_day = _charge_due_day(row, key)
-            due = _statement_due_date(charge_day, due_day)
+            due = _credit_due_date_for_row(row, charge_day, due_day)
             amount = _safe_float(row.get("amount", 0.0))
             group_key = (key, statement_month, due_day)
             item = groups.setdefault(group_key, {
@@ -271,6 +263,11 @@ def sync_credit_account_statements(today: date | None = None) -> int:
                 "amount": 0.0,
                 "count": 0,
             })
+            # Keep the earliest/snapshot due date for this statement if mixed old/new
+            # rows exist. Current-month charges remain visible as the next statement
+            # instead of waiting until the month has closed.
+            if due < item["date_due"]:
+                item["date_due"] = due
             item["amount"] += amount
             item["count"] += 1
 
@@ -551,10 +548,71 @@ def _is_credit_settlement_transaction_row(row) -> bool:
 
 
 def _charge_due_day(row, account_key: str) -> int:
-    snapshot = _safe_int(row.get("account_due_day_snapshot"))
-    if snapshot and 1 <= snapshot <= 31:
-        return snapshot
+    for field in ("payment_due_day_snapshot", "account_due_day_snapshot"):
+        snapshot = _safe_int(row.get(field))
+        if snapshot and 1 <= snapshot <= 31:
+            return snapshot
     return account_due_day_for_key(account_key, 15)
+
+
+def _credit_statement_account_key_for_row(row) -> str:
+    """Return the liability account that should be grouped into a statement.
+
+    Modern ledger-backed rows store the liability in snapshot columns. Legacy rows
+    only have the enriched account/account_key columns. Supporting both makes the
+    Credit settlements section show this month's future statement immediately
+    after a credit purchase is saved.
+    """
+    candidates = [
+        row.get("liability_account_id_snapshot"),
+        row.get("account_key_snapshot"),
+        row.get("account_key"),
+        row.get("account_id"),
+        row.get("account"),
+    ]
+    for value in candidates:
+        text = str(value or "").strip()
+        if not text:
+            continue
+        key = _credit_pending_key(text) or normalize_account_key(text)
+        if key and account_policy_for_key(key) == MAIN_NET_CREDIT_PENDING:
+            return key
+    return ""
+
+
+def _date_from_transaction_value(value) -> date | None:
+    if pd.isna(value):
+        return None
+    if isinstance(value, pd.Timestamp):
+        return None if pd.isna(value) else value.date()
+    parsed = pd.to_datetime(value, errors="coerce")
+    if pd.isna(parsed):
+        return None
+    return parsed.date()
+
+
+def _valid_statement_month(value: str | None) -> str:
+    text = str(value or "").strip()
+    if len(text) != 7 or text[4] != "-":
+        return ""
+    try:
+        year = int(text[:4])
+        month = int(text[5:7])
+    except ValueError:
+        return ""
+    if 1 <= month <= 12 and year >= 1900:
+        return f"{year:04d}-{month:02d}"
+    return ""
+
+
+def _credit_statement_month_for_row(row, charge_day: date) -> str:
+    snapshot = _valid_statement_month(row.get("payment_statement_period_snapshot"))
+    return snapshot or charge_day.strftime("%Y-%m")
+
+
+def _credit_due_date_for_row(row, charge_day: date, due_day: int) -> date:
+    snapshot = _date_from_transaction_value(row.get("payment_due_date_snapshot"))
+    return snapshot or _statement_due_date(charge_day, due_day)
 
 
 def _safe_int(value, default: int | None = None) -> int | None:
@@ -580,20 +638,16 @@ def _credit_statement_charge_details(account_value: str | None, statement_month:
     for _, row in df.iterrows():
         if str(row.get("type", "")).casefold() != "expense":
             continue
-        if str(row.get("account_key") or "") != key:
+        if _credit_statement_account_key_for_row(row) != key:
             continue
         if _is_credit_settlement_transaction_row(row):
             continue
-        tx_date = row.get("date")
-        if pd.isna(tx_date):
-            continue
-        if not isinstance(tx_date, pd.Timestamp):
-            tx_date = pd.to_datetime(tx_date, errors="coerce")
-        if pd.isna(tx_date) or tx_date.strftime("%Y-%m") != statement_month:
+        tx_day = _date_from_transaction_value(row.get("date"))
+        if not tx_day or _credit_statement_month_for_row(row, tx_day) != statement_month:
             continue
         amount = _safe_float(row.get("amount", 0.0))
         details.append({
-            "date": tx_date.strftime("%Y-%m-%d"),
+            "date": tx_day.isoformat(),
             "category": row.get("category", ""),
             "description": row.get("description", ""),
             "amount": amount,

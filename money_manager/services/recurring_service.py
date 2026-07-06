@@ -362,13 +362,26 @@ def recurring_forecast_for_period(window_start: date, window_end: date, today: d
             amount = normalize_amount(row.get("amount", 0))
             tx_type = str(row.get("type", "expense") or "expense").lower()
             account = _pending_account_for_rule(row)
-            already_queued = _matching_pending_row_exists(
+            matching_pending = _matching_pending_row(
                 pending_rows,
                 row,
                 scheduled_date=scheduled_date,
                 pending_due_date=payment_due_date,
                 account=account,
             )
+            queue_status = str((matching_pending or {}).get("status") or "forecast").strip().lower()
+            if queue_status in {"executed", "paid"}:
+                status_label = "Paid"
+                status_tone = "paid"
+            elif queue_status == "pending":
+                status_label = "Pending"
+                status_tone = "pending"
+            elif queue_status in {"discarded", "cancelled", "canceled"}:
+                status_label = "Skipped"
+                status_tone = "skipped"
+            else:
+                status_label = "Forecast"
+                status_tone = "forecast"
 
             auto_execute = is_auto_execute(row.get("auto_execute"))
             forecast_rows.append({
@@ -385,8 +398,12 @@ def recurring_forecast_for_period(window_start: date, window_end: date, today: d
                 "amount_str": f"€ {amount:.2f}",
                 "scheduled_date": scheduled_date.isoformat(),
                 "payment_due_date": payment_due_date.isoformat(),
-                "already_queued": already_queued,
-                "status_label": "Already queued" if already_queued else "Forecast only",
+                "already_queued": matching_pending is not None,
+                "matching_pending_id": (matching_pending or {}).get("id", ""),
+                "queue_status": status_tone,
+                "status_label": status_label,
+                "is_paid": status_tone == "paid",
+                "is_open_pending": status_tone == "pending",
                 "auto_execute": auto_execute,
                 "auto_execute_label": "Auto-pay" if auto_execute else "Ask first",
                 "impact_tone": "income" if tx_type == "income" else "expense",
@@ -471,6 +488,22 @@ def _matching_pending_row_exists(
     pending_due_date: date,
     account: str,
 ) -> bool:
+    return _matching_pending_row(
+        pending_rows,
+        row,
+        scheduled_date=scheduled_date,
+        pending_due_date=pending_due_date,
+        account=account,
+    ) is not None
+
+
+def _matching_pending_row(
+    pending_rows: list[dict],
+    row: dict,
+    scheduled_date: date,
+    pending_due_date: date,
+    account: str,
+) -> dict | None:
     due = pending_due_date.isoformat()
     rule_id = str(row.get("id", ""))
     name = str(row.get("name", ""))
@@ -492,9 +525,9 @@ def _matching_pending_row_exists(
         )
 
         if same_source or same_legacy_row:
-            return True
+            return tx
 
-    return False
+    return None
 
 
 def _nth_occurrence_date(row: dict, occurrence_number: int) -> date | None:

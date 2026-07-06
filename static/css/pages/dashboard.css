@@ -207,7 +207,7 @@
 
 .dashboard-plan-row {
   display: grid;
-  grid-template-columns: 106px minmax(0, 1fr) 86px minmax(92px, auto);
+  grid-template-columns: 106px minmax(0, 1fr) 74px 86px minmax(92px, auto);
   gap: 0.65rem;
   align-items: center;
   padding: 0.72rem 0.8rem;
@@ -257,7 +257,8 @@
   font-size: 0.78rem;
 }
 
-.plan-auto {
+.plan-auto,
+.plan-status {
   display: inline-flex;
   justify-content: center;
   border-radius: 999px;
@@ -267,9 +268,25 @@
   white-space: nowrap;
 }
 
-.plan-auto.income-chip {
+.plan-auto.income-chip,
+.plan-status.status-paid {
   background: var(--good-soft);
   color: var(--good);
+}
+
+.plan-status.status-pending {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.plan-status.status-skipped {
+  background: rgba(100, 116, 139, 0.14);
+  color: var(--ink-soft);
+}
+
+.plan-status.status-forecast {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--brand);
 }
 
 .dashboard-conti-compact-card {
