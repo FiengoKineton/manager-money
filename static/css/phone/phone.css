@@ -656,3 +656,216 @@ html.phone-native-active .phone-table-card.phone-card-expanded .phone-table-card
   html.phone-native-active .phone-mini-nav-btn { width: 26px !important; }
   html.phone-native-active .phone-dock-item b { font-size: .5rem !important; }
 }
+
+/* v15: full-height phone form portal and readable loan/payable/receivable cards. */
+html.phone-native-active .phone-form-modal-open > form.phone-form-modal-form {
+  display: none !important;
+}
+
+html.phone-native-active .phone-form-portal[hidden] {
+  display: none !important;
+}
+
+html.phone-native-active .phone-form-portal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483400 !important;
+  display: grid !important;
+  pointer-events: none !important;
+}
+
+html.phone-native-active .phone-form-portal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: rgba(8, 24, 44, .44) !important;
+  backdrop-filter: blur(7px) !important;
+  -webkit-backdrop-filter: blur(7px) !important;
+  pointer-events: auto !important;
+}
+
+html.phone-native-active .phone-form-portal-panel {
+  position: fixed !important;
+  left: max(8px, env(safe-area-inset-left, 0px)) !important;
+  right: max(8px, env(safe-area-inset-right, 0px)) !important;
+  top: calc(var(--phone-top-height, 52px) + env(safe-area-inset-top, 0px) + 8px) !important;
+  bottom: calc(var(--phone-dock-height, 64px) + env(safe-area-inset-bottom, 0px) + 10px) !important;
+  z-index: 1 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  overflow: hidden !important;
+  border-radius: 24px !important;
+  background: rgba(250, 254, 255, .98) !important;
+  border: 1px solid rgba(44, 96, 140, .18) !important;
+  box-shadow: 0 26px 90px rgba(12, 44, 84, .38) !important;
+  pointer-events: auto !important;
+}
+
+html.phone-native-active .phone-form-portal-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 3 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  min-height: 48px !important;
+  padding: 10px 12px !important;
+  background: rgba(250, 254, 255, .96) !important;
+  border-bottom: 1px solid rgba(44, 96, 140, .12) !important;
+}
+
+html.phone-native-active .phone-form-portal-header strong {
+  font-size: .98rem !important;
+  line-height: 1.1 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+html.phone-native-active .phone-form-portal-header button {
+  width: 36px !important;
+  min-width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  background: rgba(217, 245, 240, .95) !important;
+  color: var(--phone-text) !important;
+  font-size: 1.2rem !important;
+  line-height: 1 !important;
+}
+
+html.phone-native-active .phone-form-portal-body {
+  min-height: 0 !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  padding: 10px 12px calc(var(--phone-dock-height, 64px) + 24px) !important;
+}
+
+html.phone-native-active .phone-form-portal-body > form.phone-form-modal-form {
+  display: grid !important;
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: auto !important;
+  overflow: visible !important;
+  gap: 9px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  box-sizing: border-box !important;
+}
+
+html.phone-native-active .phone-form-portal-body .phone-form-close {
+  display: none !important;
+}
+
+html.phone-native-active .phone-table-card-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  align-items: start !important;
+}
+
+html.phone-native-active .phone-table-card-head strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: .96rem !important;
+}
+
+html.phone-native-active .phone-table-card-head em {
+  justify-self: end !important;
+  white-space: nowrap !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
+  font-size: .92rem !important;
+}
+
+html.phone-native-active .phone-table-card-detail span b {
+  overflow-wrap: anywhere !important;
+}
+
+/* v16: keep the account scope dropdown above cards on real phones. */
+html.phone-native-active .compact-scope-switcher.grouped-scope-switcher {
+  position: sticky !important;
+  top: calc(var(--phone-top-height, 52px) + env(safe-area-inset-top, 0px) + 6px) !important;
+  z-index: 2147483200 !important;
+  overflow: visible !important;
+  isolation: isolate !important;
+  max-width: 100% !important;
+}
+
+html.phone-native-active .grouped-scope-switcher .scope-switcher-grouped-links {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  position: relative !important;
+  z-index: 2147483201 !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+}
+html.phone-native-active .grouped-scope-switcher .scope-switcher-grouped-links::-webkit-scrollbar {
+  display: none !important;
+}
+
+html.phone-native-active .grouped-scope-switcher .scope-switcher-group,
+html.phone-native-active .grouped-scope-switcher .scope-group-direct {
+  position: relative !important;
+  z-index: 2147483202 !important;
+}
+
+html.phone-native-active .grouped-scope-switcher .scope-switcher-group[open] {
+  z-index: 2147483400 !important;
+}
+
+html.phone-native-active .grouped-scope-switcher .scope-switcher-group[open] > summary {
+  background: rgba(255, 255, 255, .96) !important;
+  box-shadow: 0 14px 36px rgba(17, 54, 94, .16) !important;
+}
+
+html.phone-native-active .grouped-scope-switcher .scope-switcher-group-menu {
+  display: none !important;
+}
+
+html.phone-native-active .grouped-scope-switcher .scope-switcher-group[open] .scope-switcher-group-menu {
+  display: grid !important;
+  position: fixed !important;
+  left: max(10px, env(safe-area-inset-left, 0px)) !important;
+  right: max(10px, env(safe-area-inset-right, 0px)) !important;
+  top: calc(var(--phone-top-height, 52px) + env(safe-area-inset-top, 0px) + 68px) !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  max-height: min(46vh, 340px) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  z-index: 2147483600 !important;
+  padding: 8px !important;
+  border-radius: 18px !important;
+  background: rgba(250, 254, 255, .98) !important;
+  border: 1px solid rgba(44, 96, 140, .22) !important;
+  box-shadow: 0 28px 90px rgba(12, 44, 84, .34) !important;
+}
+
+html.phone-native-active .grouped-scope-switcher .scope-switcher-group-menu a,
+html.phone-native-active .grouped-scope-switcher .scope-switcher-empty {
+  padding: 12px 13px !important;
+  border-radius: 13px !important;
+  font-size: .96rem !important;
+  line-height: 1.2 !important;
+}
+
+html.phone-native-active.phone-scope-menu-open .phone-bottom-dock {
+  z-index: 2147481000 !important;
+}

@@ -418,26 +418,87 @@
     );
   }
 
+  let activePhoneCreateModal = null;
+
+  function ensurePhoneFormPortal() {
+    let portal = document.getElementById("phone-form-modal-portal");
+    if (portal) return portal;
+    portal = document.createElement("section");
+    portal.id = "phone-form-modal-portal";
+    portal.className = "phone-form-portal";
+    portal.hidden = true;
+    portal.innerHTML = `
+      <button type="button" class="phone-form-portal-backdrop" data-phone-form-portal-close aria-label="Close form"></button>
+      <div class="phone-form-portal-panel" role="dialog" aria-modal="true">
+        <header class="phone-form-portal-header">
+          <strong data-phone-form-portal-title>Add item</strong>
+          <button type="button" data-phone-form-portal-close aria-label="Close form">×</button>
+        </header>
+        <div class="phone-form-portal-body"></div>
+      </div>`;
+    document.body.appendChild(portal);
+    return portal;
+  }
+
   function closePhoneCreateModal(panel) {
-    if (!panel) return;
-    panel.classList.remove("phone-form-modal-open");
-    document.documentElement.classList.remove("phone-form-modal-active");
-    if (document.body) document.body.classList.remove("phone-form-modal-active");
-    const opener = panel.querySelector(".phone-form-open-card");
-    if (opener) opener.setAttribute("aria-expanded", "false");
+    const active = activePhoneCreateModal;
+    if (active && (!panel || panel === active.panel)) {
+      active.panel.classList.remove("phone-form-modal-open");
+      if (active.opener) active.opener.setAttribute("aria-expanded", "false");
+      if (active.placeholder && active.placeholder.parentNode) {
+        active.placeholder.parentNode.insertBefore(active.form, active.placeholder);
+        active.placeholder.remove();
+      }
+      const portal = document.getElementById("phone-form-modal-portal");
+      if (portal) {
+        portal.classList.remove("is-open");
+        portal.hidden = true;
+        const body = portal.querySelector(".phone-form-portal-body");
+        if (body) body.innerHTML = "";
+      }
+      activePhoneCreateModal = null;
+    } else if (panel) {
+      panel.classList.remove("phone-form-modal-open");
+      const opener = panel.querySelector(".phone-form-open-card");
+      if (opener) opener.setAttribute("aria-expanded", "false");
+    }
+
+    if (!activePhoneCreateModal) {
+      document.documentElement.classList.remove("phone-form-modal-active");
+      if (document.body) document.body.classList.remove("phone-form-modal-active");
+    }
   }
 
   function openPhoneCreateModal(panel) {
     if (!isPhone() || !panel) return;
+    const form = panel.querySelector("form.phone-form-modal-form");
+    if (!form) return;
+    if (activePhoneCreateModal) closePhoneCreateModal(activePhoneCreateModal.panel);
     document.querySelectorAll(".phone-form-modal-open").forEach((other) => {
       if (other !== panel) closePhoneCreateModal(other);
     });
+
+    const portal = ensurePhoneFormPortal();
+    const body = portal.querySelector(".phone-form-portal-body");
+    const title = portal.querySelector("[data-phone-form-portal-title]");
+    const opener = panel.querySelector(".phone-form-open-card");
+    const placeholder = document.createElement("span");
+    placeholder.hidden = true;
+    placeholder.dataset.phoneFormPlaceholder = "true";
+
+    form.parentNode.insertBefore(placeholder, form);
+    body.appendChild(form);
     panel.classList.add("phone-form-modal-open");
+    if (title) title.textContent = labelForCreatePanel(panel, form);
+    if (opener) opener.setAttribute("aria-expanded", "true");
+
+    activePhoneCreateModal = { panel, form, placeholder, opener };
+    portal.hidden = false;
+    requestAnimationFrame(() => portal.classList.add("is-open"));
     document.documentElement.classList.add("phone-form-modal-active");
     if (document.body) document.body.classList.add("phone-form-modal-active");
-    const opener = panel.querySelector(".phone-form-open-card");
-    if (opener) opener.setAttribute("aria-expanded", "true");
-    const first = panel.querySelector(".phone-form-modal-form input:not([type='hidden']), .phone-form-modal-form select, .phone-form-modal-form textarea");
+
+    const first = form.querySelector("input:not([type='hidden']), select, textarea");
     window.setTimeout(() => {
       try { first?.focus({ preventScroll: true }); } catch (error) { /* ignored */ }
     }, 180);
@@ -487,11 +548,71 @@
       openPhoneCreateModal(panel);
       return;
     }
-    const close = event.target.closest(".phone-form-close");
+    const close = event.target.closest(".phone-form-close, [data-phone-form-portal-close]");
     if (close) {
       event.preventDefault();
-      closePhoneCreateModal(close.closest(".phone-form-modal-card"));
+      closePhoneCreateModal(activePhoneCreateModal ? activePhoneCreateModal.panel : close.closest(".phone-form-modal-card"));
     }
+  }
+
+  function controlText(control) {
+    if (!control || control.disabled) return "";
+    const tag = String(control.tagName || "").toLowerCase();
+    const type = String(control.getAttribute("type") || "").toLowerCase();
+    if (type === "hidden" || type === "password" || type === "submit" || type === "button") return "";
+    if ((type === "checkbox" || type === "radio") && !control.checked) return "";
+    if (tag === "select") {
+      return Array.from(control.selectedOptions || [])
+        .map((option) => text(option))
+        .filter(Boolean)
+        .join(", ");
+    }
+    if (tag === "textarea" || tag === "input") return String(control.value || "").trim();
+    return text(control);
+  }
+
+  function cellText(cell, fallback) {
+    if (!cell) return fallback || "";
+    const controls = Array.from(cell.querySelectorAll("input, select, textarea"))
+      .map(controlText)
+      .filter(Boolean);
+    if (controls.length) {
+      return Array.from(new Set(controls)).slice(0, 4).join(" · ");
+    }
+    const clone = cell.cloneNode(true);
+    clone.querySelectorAll("script, style, form, button, .table-action-rail, .row-action-form, .mini-pay-form").forEach((node) => node.remove());
+    return text(clone, fallback);
+  }
+
+  function preferredHeaderIndex(headers, preferred, fallbackRegex) {
+    const tokens = String(preferred || "")
+      .split(",")
+      .map((token) => token.trim().toLowerCase())
+      .filter(Boolean);
+    for (const token of tokens) {
+      const exact = headers.findIndex((header) => header.toLowerCase() === token);
+      if (exact >= 0) return exact;
+      const partial = headers.findIndex((header) => header.toLowerCase().includes(token));
+      if (partial >= 0) return partial;
+    }
+    return headers.findIndex((header) => fallbackRegex.test(header));
+  }
+
+  function bestTitleFromCells(table, headers, cells) {
+    const preferredTitle = table.dataset.mobileTitle || "Payee,Person,Debtor,Creditor,Name,Description,Title,Account,Conto";
+    const titleIndexes = String(preferredTitle)
+      .split(",")
+      .map((token) => token.trim())
+      .filter(Boolean)
+      .map((token) => preferredHeaderIndex(headers, token, /$a/))
+      .filter((index) => index >= 0);
+    const fallbackIndexes = [headers.findIndex((h) => /name|title|description|payee|person|debtor|creditor|account|conto/i.test(h)), 0].filter((index) => index >= 0);
+    const candidates = [...titleIndexes, ...fallbackIndexes];
+    for (const index of candidates) {
+      const value = cellText(cells[index], "");
+      if (value && !/^item(?:\s*\d+)?$/i.test(value)) return value;
+    }
+    return cellText(cells[candidates[0] || 0], "Item");
   }
 
   function convertGenericTables() {
@@ -508,15 +629,22 @@
       list.className = "phone-table-card-list";
       rows.slice(0, 120).forEach((row) => {
         const cells = Array.from(row.children);
-        const amountIndex = headers.findIndex((h) => /amount|totale|saldo|value|€|price|payment/i.test(h));
-        const titleIndex = headers.findIndex((h) => /description|category|name|title|account|conto/i.test(h));
+        const amountIndex = preferredHeaderIndex(headers, table.dataset.mobileAmount || "Remaining,Amount,Total,Saldo,Value,Price,Payment,Paid,Collected", /remaining|amount|total|totale|saldo|value|€|price|payment|paid|collected/i);
         const card = document.createElement("article");
         card.className = "phone-table-card";
-        const title = text(cells[titleIndex >= 0 ? titleIndex : 0], "Item");
-        const amount = amountIndex >= 0 ? text(cells[amountIndex], "") : "";
-        const detail = cells.map((cell, index) => ({ label: headers[index] || "Info", value: text(cell) }))
+        const title = bestTitleFromCells(table, headers, cells);
+        const amount = amountIndex >= 0 ? cellText(cells[amountIndex], "") : "";
+        const preferredMeta = String(table.dataset.mobileMeta || "")
+          .split(",")
+          .map((token) => token.trim())
+          .filter(Boolean)
+          .map((token) => preferredHeaderIndex(headers, token, /$a/))
+          .filter((index) => index >= 0);
+        const fallbackMeta = cells.map((_, index) => index);
+        const detailIndexes = Array.from(new Set([...preferredMeta, ...fallbackMeta]));
+        const detail = detailIndexes.map((index) => ({ label: headers[index] || "Info", value: cellText(cells[index], "") }))
           .filter((item) => item.value && item.value !== title && item.value !== amount)
-          .slice(0, 4)
+          .slice(0, 6)
           .map((item) => `<span><small>${htmlEscape(item.label)}</small><b>${htmlEscape(item.value)}</b></span>`)
           .join("");
         const openLink = row.dataset.href ? `<a class="phone-table-card-open" href="${htmlEscape(row.dataset.href)}">Open</a>` : "";
@@ -527,19 +655,52 @@
     });
   }
 
+
+  function setupPhoneScopeSwitcher() {
+    if (!isPhone()) return;
+    document.querySelectorAll("[data-scope-accordion]").forEach((nav) => {
+      const groups = Array.from(nav.querySelectorAll("details[data-scope-group]"));
+      if (!groups.length || nav.dataset.phoneScopeReady === "true") return;
+      nav.dataset.phoneScopeReady = "true";
+      groups.forEach((group) => {
+        group.addEventListener("toggle", () => {
+          if (!isPhone()) return;
+          if (group.open) {
+            groups.forEach((other) => {
+              if (other !== group) other.removeAttribute("open");
+            });
+            document.documentElement.classList.add("phone-scope-menu-open");
+          } else if (!groups.some((item) => item.open)) {
+            document.documentElement.classList.remove("phone-scope-menu-open");
+          }
+        });
+      });
+    });
+  }
+
+  function closePhoneScopeSwitcher(event) {
+    if (!isPhone()) return;
+    if (event && event.target && event.target.closest && event.target.closest(".grouped-scope-switcher")) return;
+    document.querySelectorAll("details[data-scope-group][open]").forEach((group) => group.removeAttribute("open"));
+    document.documentElement.classList.remove("phone-scope-menu-open");
+  }
+
   function boot() {
     ensureShell();
+    setupPhoneScopeSwitcher();
     wireSheetLinks();
     convertGenericTables();
     wirePhoneCompactCards();
     wirePhoneFormModals();
   }
 
+  document.addEventListener("click", closePhoneScopeSwitcher);
   document.addEventListener("click", handleClick);
   document.addEventListener("click", handlePhoneFormModalClick);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeSheets();
+      closePhoneScopeSwitcher();
       document.querySelectorAll(".phone-form-modal-open").forEach(closePhoneCreateModal);
     }
   });
