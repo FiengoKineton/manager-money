@@ -1,6 +1,6 @@
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, send_file, url_for
 from time import monotonic
-import os, threading
+import threading
 
 from money_manager.config import TRANSACTION_TYPES
 from money_manager.repositories.pending import load_pending
@@ -69,9 +69,6 @@ def _schedule_automatic_items_refresh(*, force: bool = False) -> None:
     this maintenance synchronously before rendering /home, /overview and
     /dashboard, which could make a simple click wait on encrypted file IO.
     """
-    if not force and os.environ.get("MONEY_MANAGER_AUTO_MAINTENANCE_ON_GET", "0").strip() != "1":
-        return
-    
     user_id = _current_user_id()
     if not user_id:
         return

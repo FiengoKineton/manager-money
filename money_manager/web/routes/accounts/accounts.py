@@ -1,6 +1,6 @@
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 from time import monotonic
-import os, threading
+import threading
 
 from money_manager.services.account_service import (
     account_detail_context,
@@ -61,10 +61,6 @@ def _schedule_credit_refresh(*, force: bool = False) -> None:
     normal GET requests.  With encrypted CSVs and larger data folders this can
     turn a simple navigation click into a long write-heavy request or a 504.
     """
-    
-    if not force and os.environ.get("MONEY_MANAGER_AUTO_CREDIT_REFRESH_ON_GET", "0").strip() != "1":
-        return
-    
     user_id = _current_user_id()
     if not user_id:
         return
