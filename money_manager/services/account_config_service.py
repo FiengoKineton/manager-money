@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import re
+import os, re
 import uuid
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -122,6 +122,10 @@ ACCOUNT_PRESET_OPTIONS: tuple[dict[str, str], ...] = (
 )
 
 
+def _repair_config_on_read_enabled() -> bool:
+    return os.environ.get("MONEY_MANAGER_REPAIR_CONFIG_ON_READ", "0").strip() == "1"
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -212,9 +216,10 @@ def load_accounts_config(user_id: str | None = None) -> dict[str, Any]:
     missing these fields, it is repaired so every payment flow can read the same
     account rules from accounts.json.
     """
-    raw = load_user_config(ACCOUNTS_FILE, user_id=user_id)
+    raw = load_user_config(ACCOUNTS_FILE, user_id=user_id, repair=False)
     normalized = normalize_accounts_config(raw)
-    if normalized != raw:
+
+    if normalized != raw and _repair_config_on_read_enabled():
         try:
             save_user_config(ACCOUNTS_FILE, normalized, user_id=user_id)
         except RuntimeError:

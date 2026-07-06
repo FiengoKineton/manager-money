@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import re
+import os, re
 import uuid
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -41,6 +41,9 @@ _ACCOUNT_REQUIRED_BY_MODE = {
     "delegated": ("delegates_to_payment_method_id",),
     "external_record_only": (),
 }
+
+def _repair_config_on_read_enabled() -> bool:
+    return os.environ.get("MONEY_MANAGER_REPAIR_CONFIG_ON_READ", "0").strip() == "1"
 
 
 def utc_now() -> str:
@@ -133,8 +136,10 @@ def ensure_payment_methods_file(user_id: str | None = None) -> dict[str, Any]:
     else:
         normalized = normalize_payment_methods_config(raw, accounts_payload=accounts_payload)
     normalized_with_account_methods = ensure_methods_for_accounts(normalized, accounts_payload)
-    if created or normalized_with_account_methods != raw:
+
+    if (created or normalized_with_account_methods != raw) and _repair_config_on_read_enabled():
         save_user_config(PAYMENT_METHODS_FILE, normalized_with_account_methods, user_id=user_id)
+
     return normalized_with_account_methods
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,14 @@ def ensure_user_schema(user_id: str | None = None) -> dict[str, Any]:
 
 def ensure_account_payment_model_schema(user_id: str | None = None) -> dict[str, Any]:
     """Upgrade accounts.json to schema v3 and create/repair payment_methods.json."""
+    if os.environ.get("MONEY_MANAGER_REPAIR_CONFIG_ON_READ", "0").strip() != "1":
+        return {
+            "accounts_repaired": False,
+            "payment_methods_repaired": False,
+            "from_accounts_schema": None,
+            "payment_methods_created": False,
+        }
+    
     user_dir = get_user_data_dir(user_id)
     accounts_path = user_dir / "accounts.json"
     methods_path = user_dir / "payment_methods.json"
