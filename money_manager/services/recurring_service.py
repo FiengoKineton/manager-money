@@ -24,6 +24,7 @@ from money_manager.repositories.recurring import (
     append_recurring,
     delete_recurring,
     first_due_date,
+    is_auto_execute,
     load_recurring,
     normalize_amount,
     occurrence_count_until,
@@ -48,6 +49,10 @@ def _payment_fields_from_form(form) -> dict:
         "payment_method_name_snapshot": snapshot_payment_method(payment_method_id)["payment_method_name_snapshot"],
         "payment_resolution_template_json": "",
     }
+
+
+def _auto_execute_from_form(form) -> str:
+    return "1" if is_auto_execute(form.get("auto_execute")) else ""
 
 
 def prepare_recurring_sections(rows: list[dict]) -> dict:
@@ -86,6 +91,7 @@ def append_rule_from_form(form) -> None:
         "day_of_month": int(form.get("day_of_month", 1)),
         "category": form.get("category", ""),
         **_payment_fields_from_form(form),
+        "auto_execute": _auto_execute_from_form(form),
         "start_date": form.get("start_date", ""),
         "end_date": end_date,
         "max_occurrences": max_occurrences,
@@ -117,6 +123,7 @@ def update_rule_from_form(form) -> None:
         "day_of_month": int(form.get("day_of_month", 1)),
         "category": form.get("category", ""),
         **_payment_fields_from_form(form),
+        "auto_execute": _auto_execute_from_form(form),
         "start_date": form.get("start_date", ""),
         "end_date": end_date,
         "max_occurrences": max_occurrences,
@@ -331,6 +338,13 @@ def recurring_forecast_for_next_month(today: date | None = None) -> dict:
     return recurring_forecast_for_period(window_start, window_end, today=today)
 
 
+def recurring_forecast_for_current_month(today: date | None = None) -> dict:
+    today = today or date.today()
+    window_start = date(today.year, today.month, 1)
+    window_end = date(today.year, today.month, calendar.monthrange(today.year, today.month)[1])
+    return recurring_forecast_for_period(window_start, window_end, today=today)
+
+
 def recurring_forecast_for_period(window_start: date, window_end: date, today: date | None = None) -> dict:
     """Preview recurring payments due in a period without writing pending rows."""
     today = today or date.today()
@@ -356,6 +370,7 @@ def recurring_forecast_for_period(window_start: date, window_end: date, today: d
                 account=account,
             )
 
+            auto_execute = is_auto_execute(row.get("auto_execute"))
             forecast_rows.append({
                 "rule_id": row.get("id", ""),
                 "name": row.get("name", ""),
@@ -372,6 +387,8 @@ def recurring_forecast_for_period(window_start: date, window_end: date, today: d
                 "payment_due_date": payment_due_date.isoformat(),
                 "already_queued": already_queued,
                 "status_label": "Already queued" if already_queued else "Forecast only",
+                "auto_execute": auto_execute,
+                "auto_execute_label": "Auto-pay" if auto_execute else "Ask first",
                 "impact_tone": "income" if tx_type == "income" else "expense",
             })
 
@@ -540,6 +557,10 @@ def _decorate_rule(row: dict) -> dict:
     decorated["max_occurrences_value"] = max_occurrences
     decorated["stop_after_last_date"] = stop_after_last_date.isoformat() if stop_after_last_date else ""
     decorated["stop_rule_display"] = _stop_rule_display(end_date, max_occurrences, stop_after_last_date)
+    auto_execute = is_auto_execute(decorated.get("auto_execute"))
+    decorated["auto_execute"] = auto_execute
+    decorated["auto_execute_value"] = "1" if auto_execute else ""
+    decorated["auto_execute_label"] = "Auto-pay on due date" if auto_execute else "Ask before paying"
     decorated["account_label"] = account_label_for_value(decorated.get("account", ""))
     decorated["is_auxiliary_account"] = is_auxiliary_account(decorated.get("account", ""))
     decorated["is_finished"] = finished

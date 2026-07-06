@@ -19,6 +19,7 @@ from money_manager.config import (
     normalize_account_key,
 )
 from money_manager.repositories.pending import load_pending, mark_executed, append_pending, write_pending
+from money_manager.repositories.recurring import is_auto_execute, load_recurring
 from money_manager.repositories.transactions import append_transaction
 from money_manager.services.transaction_service import save_transaction_payload
 
@@ -59,7 +60,8 @@ def pending_total(rows: list[dict], include_auxiliary: bool = False) -> float:
 
 def prepare_pending_for_display(rows: list[dict]) -> dict:
     """Sort pending items first, then executed items, and add UI helpers."""
-    prepared = [_decorate_pending_row(row) for row in rows]
+    recurring_auto_map = _recurring_auto_execute_map()
+    prepared = [_decorate_pending_row(row, recurring_auto_map=recurring_auto_map) for row in rows]
     pending_rows = sorted(
         [row for row in prepared if row["status"] == "pending"],
         key=lambda row: (row["date_due_sort"], row["category"], row["description"]),
@@ -125,13 +127,14 @@ def execute_pending_by_id(tx_id: int | str, execution_date: str | None = None) -
 def process_pending(today: date | None = None, credit_only: bool = False) -> int:
     """Execute pending rows due up to today.
 
-    Opening the Pending page first syncs credit-account statement rows. This
-    function then auto-executes only credit-style rows when credit_only=True, to
-    preserve the app's old behavior. Manual pending/recurring/debt rows stay
-    manual unless credit_only=False.
+    Opening the Pending page first syncs credit-account statement rows. With
+    credit_only=True, the app auto-executes only credit-style rows plus recurring
+    rows whose rule explicitly has Pay without asking enabled. Manual pending,
+    debt, and non-auto recurring rows stay manual unless credit_only=False.
     """
     today = today or date.today()
     pending = load_pending()
+    auto_recurring_ids = _auto_recurring_rule_ids()
     executed_count = 0
 
     credit_group: dict[tuple[str, str], float] = {}
@@ -153,8 +156,12 @@ def process_pending(today: date | None = None, credit_only: bool = False) -> int
         account_value = str(tx.get("account", "")).strip().lower()
         credit_account_key = _credit_pending_key(account_value) or _credit_pending_key(tx.get("account_key", ""))
         is_credit_payment = bool(credit_account_key) or tx.get("source") == CREDIT_STATEMENT_SOURCE
+        is_auto_recurring = (
+            tx.get("source") == "recurring"
+            and str(tx.get("source_id", "")) in auto_recurring_ids
+        )
 
-        if credit_only and not is_credit_payment:
+        if credit_only and not is_credit_payment and not is_auto_recurring:
             continue
 
         try:
@@ -164,6 +171,10 @@ def process_pending(today: date | None = None, credit_only: bool = False) -> int
 
         if tx.get("source") == CREDIT_STATEMENT_SOURCE:
             _execute_pending_row(tx)
+            mark_executed(int(tx["id"]))
+            executed_count += 1
+        elif is_auto_recurring and credit_only:
+            _execute_pending_row(tx, automatic=True)
             mark_executed(int(tx["id"]))
             executed_count += 1
         elif is_credit_payment:
@@ -334,7 +345,7 @@ def sync_credit_account_statements(today: date | None = None) -> int:
     return len(groups)
 
 
-def _execute_pending_row(tx: dict, execution_date: str | None = None) -> None:
+def _execute_pending_row(tx: dict, execution_date: str | None = None, *, automatic: bool = False) -> None:
     execution_date = execution_date or tx.get("date_due", date.today().isoformat())
     account_value = str(tx.get("account", "")).strip().lower()
 
@@ -357,7 +368,7 @@ def _execute_pending_row(tx: dict, execution_date: str | None = None) -> None:
             "sub_category": label,
             "amount": float(tx.get("amount", 0.0)),
             "account": key or tx.get("account", ""),
-            "description": f"{label} statement payment {month} ({execution_date})".strip(),
+            "description": _auto_description(f"{label} statement payment {month} ({execution_date})".strip(), automatic),
         })
         return
 
@@ -371,7 +382,7 @@ def _execute_pending_row(tx: dict, execution_date: str | None = None) -> None:
             "sub_category": label,
             "amount": float(tx.get("amount", 0.0)),
             "account": _credit_execution_account_value(credit_account_key),
-            "description": f"{label} payment ({execution_date})",
+            "description": _auto_description(f"{label} payment ({execution_date})", automatic),
         })
         return
 
@@ -387,11 +398,28 @@ def _execute_pending_row(tx: dict, execution_date: str | None = None) -> None:
             "account": tx.get("account", ""),
             "account_id": account_id,
             "payment_method_id": payment_method_id,
-            "description": tx.get("description", ""),
+            "description": _auto_description(tx.get("description", ""), automatic),
         },
         account_id=account_id,
         payment_method_id=payment_method_id,
     )
+
+
+def _auto_description(description: str | None, automatic: bool) -> str:
+    text = str(description or "").strip()
+    if not automatic:
+        return text
+    if "auto" in text.casefold():
+        return text
+    return f"{text} [auto]" if text else "Auto payment"
+
+
+def _auto_recurring_rule_ids() -> set[str]:
+    return {str(row.get("id", "")) for row in load_recurring() if is_auto_execute(row.get("auto_execute"))}
+
+
+def _recurring_auto_execute_map() -> dict[str, bool]:
+    return {str(row.get("id", "")): is_auto_execute(row.get("auto_execute")) for row in load_recurring()}
 
 
 def _is_separate_auxiliary_pending(account_value: str | None) -> bool:
@@ -428,7 +456,7 @@ def _credit_execution_account_value(account_value: str | None) -> str:
     return normalize_account_key(key)
 
 
-def _decorate_pending_row(row: dict) -> dict:
+def _decorate_pending_row(row: dict, recurring_auto_map: dict[str, bool] | None = None) -> dict:
     decorated = dict(row)
     decorated["status"] = str(decorated.get("status", "pending") or "pending").lower()
     decorated["type"] = str(decorated.get("type", "expense") or "expense").lower()
@@ -442,6 +470,14 @@ def _decorate_pending_row(row: dict) -> dict:
         and not credit_key
     )
     decorated["statement_month"] = str(decorated.get("statement_month", "") or "")
+    if recurring_auto_map is None:
+        recurring_auto_map = _recurring_auto_execute_map()
+    auto_recurring = (
+        decorated.get("source") == "recurring"
+        and recurring_auto_map.get(str(decorated.get("source_id", "")), False)
+    )
+    decorated["auto_execute"] = bool(auto_recurring)
+    decorated["auto_execute_label"] = "Auto-pay" if auto_recurring else "Ask first"
 
     try:
         amount = float(decorated.get("amount", 0.0))

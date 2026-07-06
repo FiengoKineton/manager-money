@@ -170,6 +170,7 @@ RECURRING_FIELDS = [
     "payment_method_id",
     "payment_method_name_snapshot",
     "payment_resolution_template_json",
+    "auto_execute",
 ]
 
 SPARAGNAT_FIELDS = [

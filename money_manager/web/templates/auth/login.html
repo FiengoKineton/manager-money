@@ -2,38 +2,74 @@
 <html lang="{{ current_language or 'en' }}">
 <head>
   <meta charset="utf-8">
-  <title>{{ t("auth.login.title") }}</title>
+  <title>Money Manager · Sign in</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    :root { color-scheme: dark; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: #e5e7eb; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.22), transparent 28rem), linear-gradient(135deg, #020617, #111827); }
-    .auth-card { width: min(92vw, 440px); padding: 28px; border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 24px; background: rgba(15, 23, 42, 0.88); box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45); }
-    h1 { margin: 0 0 8px; font-size: 1.8rem; }
-    p { margin: 0 0 24px; color: #94a3b8; }
-    label { display: block; margin: 14px 0 8px; font-weight: 700; }
-    input { width: 100%; box-sizing: border-box; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(148, 163, 184, 0.35); background: #020617; color: #f8fafc; font-size: 1rem; }
-    button, .link-button { display: inline-flex; justify-content: center; align-items: center; width: 100%; box-sizing: border-box; margin-top: 18px; padding: 14px 18px; border: 0; border-radius: 14px; background: #2563eb; color: white; font-weight: 800; font-size: 1rem; cursor: pointer; text-decoration: none; }
-    .secondary-link { display: block; margin-top: 16px; color: #bfdbfe; text-align: center; text-decoration: none; font-weight: 700; }
-    .error { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(239, 68, 68, 0.14); color: #fecaca; }
+    :root { color-scheme: dark; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #020617; color: #f8fafc; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 18% 16%, rgba(59, 130, 246, 0.24), transparent 22rem), radial-gradient(circle at 88% 8%, rgba(16, 185, 129, 0.16), transparent 24rem), linear-gradient(135deg, #020617, #0f172a 55%, #111827); }
+    .auth-shell { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.72fr); gap: 2rem; align-items: stretch; padding: clamp(1.25rem, 3vw, 3rem); }
+    .auth-brand-panel { display: grid; align-content: center; padding: clamp(1.5rem, 4vw, 4rem); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 32px; background: linear-gradient(145deg, rgba(15, 23, 42, 0.66), rgba(30, 41, 59, 0.34)); box-shadow: 0 28px 90px rgba(0, 0, 0, 0.38); }
+    .brand-mark { width: 54px; height: 54px; border-radius: 18px; display: grid; place-items: center; background: linear-gradient(135deg, #2563eb, #10b981); color: white; font-weight: 950; letter-spacing: -0.08em; box-shadow: 0 18px 45px rgba(37, 99, 235, 0.3); }
+    .eyebrow { display: inline-flex; margin-top: 1.2rem; color: #93c5fd; font-weight: 850; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em; }
+    h1 { margin: 0.75rem 0 0; max-width: 12ch; font-size: clamp(2.45rem, 6vw, 5rem); line-height: 0.9; letter-spacing: -0.08em; }
+    .auth-brand-panel p { max-width: 64ch; margin: 1.1rem 0 0; color: #cbd5e1; font-size: 1.04rem; line-height: 1.65; }
+    .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8rem; margin-top: 1.6rem; }
+    .feature-card { min-height: 112px; padding: 1rem; border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 20px; background: rgba(15, 23, 42, 0.5); }
+    .feature-card strong { display: block; margin-bottom: 0.35rem; }
+    .feature-card small { color: #94a3b8; line-height: 1.45; }
+    .auth-form-panel { display: grid; align-content: center; }
+    .auth-card { width: 100%; max-width: 460px; justify-self: center; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid rgba(148, 163, 184, 0.24); border-radius: 28px; background: rgba(248, 250, 252, 0.96); color: #0f172a; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42); }
+    .auth-card h2 { margin: 0; font-size: 1.65rem; letter-spacing: -0.04em; }
+    .auth-card p { margin: 0.45rem 0 1.4rem; color: #64748b; line-height: 1.5; }
+    label { display: block; margin: 0.95rem 0 0.35rem; color: #334155; font-size: 0.82rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.06em; }
+    input { width: 100%; padding: 0.92rem 1rem; border-radius: 16px; border: 1px solid rgba(148, 163, 184, 0.62); background: white; color: #0f172a; font-size: 1rem; outline: none; }
+    input:focus { border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12); }
+    button, .link-button { display: inline-flex; justify-content: center; align-items: center; width: 100%; margin-top: 1.15rem; padding: 0.95rem 1rem; border: 0; border-radius: 16px; background: #2563eb; color: white; font-weight: 900; font-size: 1rem; cursor: pointer; text-decoration: none; }
+    .auth-links { display: grid; gap: 0.55rem; margin-top: 1rem; }
+    .secondary-link { color: #1d4ed8; text-align: center; text-decoration: none; font-weight: 800; }
+    .support-note { margin-top: 1rem; padding: 0.82rem 0.92rem; border-radius: 16px; background: #f1f5f9; color: #475569; font-size: 0.9rem; line-height: 1.45; }
+    .error { margin-top: 1rem; padding: 0.85rem 0.95rem; border-radius: 14px; background: #fee2e2; color: #991b1b; font-weight: 750; }
+    @media (max-width: 980px) { .auth-shell { grid-template-columns: 1fr; } .feature-grid { grid-template-columns: 1fr; } .auth-card { max-width: none; } }
   </style>
 </head>
 <body>
-  <form class="auth-card" method="post">
-    <h1>{{ t("auth.login.heading") }}</h1>
-    <p>{{ t("auth.login.subtitle") }}</p>
+  <main class="auth-shell">
+    <section class="auth-brand-panel" aria-label="Money Manager overview">
+      <div class="brand-mark">MM</div>
+      <span class="eyebrow">Private finance workspace</span>
+      <h1>Money Manager</h1>
+      <p>Track Conti, scheduled bills, subscriptions, credit settlements, expected incomes and transactions in one local, encrypted workspace.</p>
+      <div class="feature-grid">
+        <div class="feature-card"><strong>Scheduled control</strong><small>Recurring rules, pending payments and due-date decisions stay visible before money moves.</small></div>
+        <div class="feature-card"><strong>Conto overview</strong><small>Compact navigation for bank accounts, cards, wallets and projected balances.</small></div>
+        <div class="feature-card"><strong>Local protection</strong><small>Your vault stays password-protected and unlocks only for the active session.</small></div>
+      </div>
+    </section>
 
-    <label for="username">{{ t("common.username") }}</label>
-    <input id="username" name="username" type="text" autocomplete="username" autofocus required>
+    <section class="auth-form-panel">
+      <form class="auth-card" method="post">
+        <h2>Sign in</h2>
+        <p>Access your private workspace. No account totals are shown on this screen.</p>
 
-    <label for="password">{{ t("common.password") }}</label>
-    <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" autofocus required>
 
-    <button type="submit">{{ t("auth.login.submit") }}</button>
-    <a class="secondary-link" href="{{ url_for('auth.register') }}">{{ t("auth.login.create_user") }}</a>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
 
-    {% if error %}
-      <div class="error">{{ error }}</div>
-    {% endif %}
-  </form>
+        <button type="submit">Unlock workspace</button>
+        <div class="auth-links">
+          <a class="secondary-link" href="{{ url_for('auth.register') }}">Create another user</a>
+          <a class="secondary-link" href="{{ url_for('auth.password_recovery') }}">Password recovery</a>
+        </div>
+        <div class="support-note">Password recovery opens a request workflow. It cannot bypass a local encrypted vault without the correct password or an available backup/export.</div>
+
+        {% if error %}
+          <div class="error">{{ error }}</div>
+        {% endif %}
+      </form>
+    </section>
+  </main>
 </body>
 </html>

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import wraps
 import threading
+from urllib.parse import quote
 
 from flask import Blueprint, g, redirect, render_template, request, session, url_for
 
@@ -73,9 +74,9 @@ def _schedule_schema_repair(user_id: str, key: tuple[str, int]) -> None:
     thread.start()
 
 
-PUBLIC_ENDPOINTS = {"auth.login", "auth.register", "static"}
-UNLOCK_ALLOWED_ENDPOINTS = {"security.unlock", "security.lock", "auth.logout", "static"}
-ONBOARDING_ALLOWED_ENDPOINTS = {"onboarding.onboarding_page", "onboarding.reset_onboarding", "auth.logout", "security.unlock", "security.lock"}
+PUBLIC_ENDPOINTS = {"auth.login", "auth.register", "auth.password_recovery", "static"}
+UNLOCK_ALLOWED_ENDPOINTS = {"security.unlock", "security.lock", "auth.logout", "auth.password_recovery", "static"}
+ONBOARDING_ALLOWED_ENDPOINTS = {"onboarding.onboarding_page", "onboarding.reset_onboarding", "auth.logout", "security.unlock", "security.lock", "auth.password_recovery"}
 
 
 def is_authenticated() -> bool:
@@ -162,7 +163,7 @@ def _should_redirect_to_onboarding(endpoint: str) -> bool:
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     if is_authenticated():
-        return redirect(request.args.get("next") or url_for("accounts.accounts_page"))
+        return redirect(request.args.get("next") or url_for("dashboard.index"))
 
     error = None
     first_user = not has_any_user()
@@ -187,7 +188,7 @@ def register():
                 error = str(exc)
             else:
                 _login_user(user, password=password)
-                return redirect(request.args.get("next") or url_for("accounts.accounts_page"))
+                return redirect(request.args.get("next") or url_for("dashboard.index"))
 
     return render_template("auth/register.html", error=error, first_user=first_user)
 
@@ -195,10 +196,10 @@ def register():
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if not has_any_user():
-        return redirect(url_for("auth.register", next=request.args.get("next") or url_for("accounts.accounts_page")))
+        return redirect(url_for("auth.register", next=request.args.get("next") or url_for("dashboard.index")))
 
     if is_authenticated():
-        return redirect(request.args.get("next") or url_for("accounts.accounts_page"))
+        return redirect(request.args.get("next") or url_for("dashboard.index"))
 
     error = None
 
@@ -212,11 +213,25 @@ def login():
             except Exception:
                 error = "Password verified, but the encrypted vault could not be unlocked."
             else:
-                return redirect(request.args.get("next") or url_for("accounts.accounts_page"))
+                return redirect(request.args.get("next") or url_for("dashboard.index"))
         elif error is None:
             error = "Wrong username or password."
 
     return render_template("auth/login.html", error=error)
+
+
+@bp.get("/password-recovery")
+def password_recovery():
+    subject = quote("Money Manager password recovery")
+    body = quote(
+        "Hello,\n\n"
+        "I need help recovering access to my local Money Manager profile.\n\n"
+        "Username: \n"
+        "Device: \n"
+        "Backup/export available: \n"
+        "Notes: \n"
+    )
+    return render_template("auth/password_recovery.html", recovery_mailto=f"mailto:?subject={subject}&body={body}")
 
 
 @bp.post("/logout")

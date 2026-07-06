@@ -13,6 +13,7 @@ from money_manager.services.recurring_service import (
     delete_rule_from_form,
     generate_recurring,
     prepare_recurring_sections,
+    recurring_forecast_for_current_month,
     recurring_forecast_for_next_month,
     update_rule_from_form,
     recurring_context_for_scope,
@@ -80,12 +81,26 @@ def pending_page():
     pending_context = pending_context_for_scope(selected_scope)
     pending_rows = prepare_pending_for_display(pending_context.get("all", load_pending()))
     credit_settlements = preview_credit_settlements()
+    credit_statement_pending = [
+        row for row in pending_rows["pending"]
+        if row.get("is_credit_statement") and row.get("source") != "credit_settlement"
+    ]
+    pending_manual_open = [
+        row for row in pending_rows["pending"]
+        if not (row.get("is_credit_statement") and row.get("source") != "credit_settlement")
+    ]
     recurring_forecast = recurring_forecast_for_next_month()
+    current_month_recurring = recurring_forecast_for_current_month()
+    current_recurring_expenses = [
+        item for item in current_month_recurring.get("items", [])
+        if item.get("type") == "expense"
+    ]
 
     return render_template(
         "planning/pending.html",
         pending=pending_rows["all"],
         pending_open=pending_rows["pending"],
+        pending_manual_open=pending_manual_open,
         pending_executed=pending_rows["executed"],
         pending_discarded=pending_rows.get("discarded", []),
         pending_total=pending_rows["pending_total"],
@@ -95,7 +110,10 @@ def pending_page():
         auxiliary_pending=pending_rows["auxiliary_pending"],
         next_pending_date=pending_rows["next_pending_date"],
         recurring_forecast=recurring_forecast,
+        current_month_recurring=current_month_recurring,
+        current_recurring_expenses=current_recurring_expenses,
         credit_settlements=credit_settlements,
+        credit_statement_pending=credit_statement_pending,
         account_options=account_options_for_payment_forms(),
         payment_method_options=payment_method_options_for_forms(),
         **scope_template_context(selected_scope),

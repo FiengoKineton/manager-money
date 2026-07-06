@@ -8,8 +8,7 @@
     <span class="eyebrow">Queue</span>
     <h2>Pending — {{ scope_label if scope_is_account else 'All accounts' }}</h2>
     <p>
-      These rows are not auto-executed just because the due date arrived. Confirm a payment with ✓,
-      delay it with ⏳, edit it with ✎, or delete it with ×.
+      Auto-pay recurring rows are executed on their due date. Everything else stays here so you can pay, delay, discard or delete it.
     </p>
     <div class="hero-actions">
       <a class="secondary-btn compact-btn" href="{{ url_for('pending.recurring_page') }}">Recurring rules</a>
@@ -52,21 +51,53 @@
   </article>
 </section>
 
+<section class="transactions pending-card compact-recurring-due-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">This month</span>
+      <h2>Next recurring expenses</h2>
+      <p>Compact view: name, due date, amount, and whether it pays automatically. Open a row to see the linked rule details.</p>
+    </div>
+    <a class="secondary-btn compact-btn" href="{{ url_for('pending.recurring_page') }}">Manage rules</a>
+  </div>
+
+  {% if current_recurring_expenses %}
+    <div class="next-payment-list">
+      {% for item in current_recurring_expenses %}
+      <details class="next-payment-row row-{{ item.type|lower }} {% if item.is_auxiliary_account %}payment-auxiliary{% endif %}">
+        <summary>
+          <strong>{{ item.name }}</strong>
+          <span>{{ item.payment_due_date }}</span>
+          <span>{{ item.amount_str }}</span>
+          <em class="auto-chip {% if item.auto_execute %}auto-on{% else %}auto-off{% endif %}">{{ item.auto_execute_label }}</em>
+        </summary>
+        <div class="next-payment-detail">
+          <p>{{ item.category }} · {{ item.account_label }} · {{ item.status_label }} · Scheduled {{ item.scheduled_date }}</p>
+          <a class="secondary-btn compact-btn" href="{{ url_for('pending.recurring_page') }}">Open recurring rules</a>
+        </div>
+      </details>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">No recurring expense scheduled for {{ current_month_recurring.window_label }}.</p>
+  {% endif %}
+</section>
+
 <section class="transactions pending-card pending-payments-card">
   <div class="panel-header">
     <div>
       <span class="eyebrow">Open items</span>
       <h2>Credits to be paid</h2>
-      <p>Nothing is executed automatically: use this section only when the real payment has actually happened.</p>
+      <p>Manual items wait here. Auto-pay recurring rules disappear after the app creates the real transaction.</p>
     </div>
     <form method="post" class="inline-form">
       <button type="submit" name="action" value="process_due" class="secondary-btn compact-btn" onclick="return confirm('Execute every pending item due up to today?')">✓ Manually execute due today</button>
     </form>
   </div>
 
-  {% if pending_open %}
+  {% if pending_manual_open %}
     <div class="payment-card-list">
-      {% for tx in pending_open %}
+      {% for tx in pending_manual_open %}
       <form method="post" class="payment-card payment-{{ tx.status }} row-{{ tx.type|lower }} {% if tx.is_auxiliary_account %}payment-auxiliary{% endif %} {% if tx.is_overdue %}payment-overdue{% elif tx.is_due_today %}payment-due-today{% endif %}">
         <input type="hidden" name="id" value="{{ tx.id }}">
         <div class="payment-date-block">
@@ -140,7 +171,7 @@
       {% endfor %}
     </div>
   {% else %}
-    <p class="empty">No open pending payments.</p>
+    <p class="empty">No manual pending payments. Credit statement rows are shown under Credit card settlements.</p>
   {% endif %}
 </section>
 
@@ -153,7 +184,7 @@
       <p>Ledger-backed settlements grouped by payment method, statement period, due date, and settlement account. Executing one posts the cash-out and liability-decrease ledger movements once.</p>
     </div>
   </div>
-  {% if credit_settlements %}
+  {% if credit_settlements or credit_statement_pending %}
     <div class="payment-card-list">
       {% for settlement in credit_settlements %}
       <form method="post" class="payment-card payment-pending">
@@ -174,6 +205,40 @@
           <strong>{{ settlement.amount_str }}</strong>
           <button type="submit" name="action" value="execute_credit_settlement" class="secondary-btn compact-btn" onclick="return confirm('Execute this credit settlement now?')">Settle now</button>
           <button type="submit" name="action" value="discard_credit_settlement" class="secondary-btn compact-btn danger-soft-btn" onclick="return confirm('Discard this credit settlement without creating a transaction? The mirrored pending row will be saved as discarded.')">Discard</button>
+        </div>
+      </form>
+      {% endfor %}
+      {% for tx in credit_statement_pending %}
+      <form method="post" class="payment-card payment-pending credit-statement-pending-card {% if tx.is_overdue %}payment-overdue{% elif tx.is_due_today %}payment-due-today{% endif %}">
+        <input type="hidden" name="id" value="{{ tx.id }}">
+        <div class="payment-date-block">
+          <label>Due date</label>
+          <input type="date" name="date_due" value="{{ tx.date_due_str }}" required>
+          <small>Future statement</small>
+        </div>
+        <div class="payment-main payment-edit-grid">
+          <div><label>Account</label><strong>{{ tx.account_label }}</strong></div>
+          <div><label>Statement month</label><span>{{ tx.statement_month }}</span></div>
+          <div class="payment-description-field"><label>Description</label><small>{{ tx.description }}</small></div>
+          {% if tx.credit_charge_details %}
+          <div class="payment-description-field form-field-wide">
+            <label>Grouped charges</label>
+            <div class="credit-statement-mini-list">
+              {% for charge in tx.credit_charge_details %}
+                <div><span>{{ charge.date }} · {{ charge.category }}</span><strong>{{ charge.amount_str }}</strong></div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <div class="payment-side payment-edit-side">
+          <label>Amount</label>
+          <strong>{{ tx.amount_str }}</strong>
+          <label>Delay to</label>
+          <input type="date" name="delay_date" value="{{ tx.delay_date_default }}">
+          <button type="submit" name="action" value="execute_pending" class="secondary-btn compact-btn" onclick="return confirm('Settle this future credit statement now?')">Settle now</button>
+          <button type="submit" name="action" value="delay_pending" class="secondary-btn compact-btn">Delay</button>
+          <button type="submit" name="action" value="discard_pending" class="secondary-btn compact-btn danger-soft-btn" onclick="return confirm('Discard this credit statement without creating a transaction?')">Discard</button>
         </div>
       </form>
       {% endfor %}
@@ -230,6 +295,7 @@
         </div>
         <div class="forecast-amount">
           <span class="type-badge type-{{ item.type|lower }}">{{ item.type|capitalize }}</span>
+          <span class="auto-chip {% if item.auto_execute %}auto-on{% else %}auto-off{% endif %}">{{ item.auto_execute_label }}</span>
           <strong>{{ item.amount_str }}</strong>
         </div>
       </article>

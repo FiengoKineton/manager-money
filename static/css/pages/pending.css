@@ -940,3 +940,155 @@
   border-color: rgba(220, 38, 38, 0.36) !important;
   background: rgba(254, 202, 202, 0.86) !important;
 }
+
+/* Recurring auto-pay and compact pending overview */
+.checkbox-card {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: flex-start;
+  min-height: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.78rem 0.85rem;
+  background: rgba(255, 255, 255, 0.84);
+  cursor: pointer;
+}
+
+.checkbox-card input {
+  width: auto;
+  margin-top: 0.18rem;
+  accent-color: var(--brand);
+}
+
+.checkbox-card strong,
+.checkbox-card small {
+  display: block;
+}
+
+.checkbox-card small {
+  margin-top: 0.18rem;
+  color: var(--muted);
+  font-weight: 650;
+  line-height: 1.35;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.recurring-auto-pay-field {
+  align-self: stretch;
+}
+
+.compact-checkbox-card {
+  padding: 0.62rem 0.7rem;
+}
+
+.auto-badge.auto-on,
+.auto-chip.auto-on,
+.plan-auto.auto-on {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.auto-badge.auto-off,
+.auto-chip.auto-off,
+.plan-auto.auto-off {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.auto-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.compact-recurring-due-card .panel-header p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+.next-payment-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.next-payment-row {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.next-payment-row summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 130px 110px 96px;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.78rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.next-payment-row summary::-webkit-details-marker {
+  display: none;
+}
+
+.next-payment-row summary strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.next-payment-row summary span {
+  color: var(--ink-soft);
+  font-weight: 830;
+}
+
+.next-payment-detail {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.78rem 0.9rem;
+  border-top: 1px solid var(--line);
+  background: rgba(248, 250, 252, 0.88);
+}
+
+.next-payment-detail p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.credit-statement-pending-card {
+  border-color: rgba(37, 99, 235, 0.2) !important;
+  background: linear-gradient(135deg, #fff 0%, rgba(239, 246, 255, 0.78) 100%) !important;
+}
+
+.form-field-wide {
+  grid-column: 1 / -1;
+}
+
+.forecast-amount .auto-chip {
+  margin: 0 0 0.3rem;
+}
+
+@media (max-width: 760px) {
+  .next-payment-row summary,
+  .next-payment-detail {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .next-payment-detail {
+    align-items: flex-start;
+  }
+}

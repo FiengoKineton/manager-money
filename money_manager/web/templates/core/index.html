@@ -32,6 +32,89 @@
   <button type="button" class="dashboard-wallet-stat tone-net" data-mm-dialog-open="dash-savings-dialog"><span>Savings rate</span><strong>{{ '%.1f'|format(totals.savings_rate) }}%</strong><small>{{ money_calculation_label|default('full history') }}</small></button>
 </section>
 
+<section class="dashboard-month-plan-grid">
+  <article class="panel-card dashboard-month-plan-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">This month</span>
+        <h3>Immediate recurring payments</h3>
+        <p>Bills, subscriptions and scheduled expenses due in {{ current_month_recurring.window_label }}.</p>
+      </div>
+      <a class="secondary-btn compact-btn" href="{{ url_for('pending.pending_page') }}">Pending</a>
+    </div>
+    {% if recurring_expenses_this_month %}
+      <div class="dashboard-plan-list">
+        {% for item in recurring_expenses_this_month %}
+          <a class="dashboard-plan-row row-{{ item.type|lower }}" href="{{ url_for('pending.recurring_page') }}">
+            <span class="plan-date">{{ item.payment_due_date }}</span>
+            <span class="plan-main"><strong>{{ item.name }}</strong><small>{{ item.category }} · {{ item.account_label }}</small></span>
+            <span class="plan-auto {% if item.auto_execute %}auto-on{% else %}auto-off{% endif %}">{{ item.auto_execute_label }}</span>
+            <strong>{{ item.amount_str }}</strong>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty compact-empty">No recurring expense scheduled this month.</p>
+    {% endif %}
+  </article>
+
+  <article class="panel-card dashboard-month-plan-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">This month</span>
+        <h3>Expected incomes</h3>
+        <p>Cedolini and other income rules expected in {{ current_month_recurring.window_label }}.</p>
+      </div>
+      <a class="secondary-btn compact-btn" href="{{ url_for('pending.recurring_page') }}">Rules</a>
+    </div>
+    {% if recurring_incomes_this_month %}
+      <div class="dashboard-plan-list">
+        {% for item in recurring_incomes_this_month %}
+          <a class="dashboard-plan-row row-income" href="{{ url_for('pending.recurring_page') }}">
+            <span class="plan-date">{{ item.payment_due_date }}</span>
+            <span class="plan-main"><strong>{{ item.name }}</strong><small>{{ item.category }} · {{ item.account_label }}</small></span>
+            <span class="plan-auto income-chip">Income</span>
+            <strong>{{ item.amount_str }}</strong>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty compact-empty">No recurring income scheduled this month.</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="panel-card dashboard-conti-compact-card">
+  <div class="panel-header compact-panel-header">
+    <div>
+      <span class="eyebrow">Conti</span>
+      <h3>Compact Conto summary</h3>
+      <p>Net, pending and projected balance without taking over the dashboard.</p>
+    </div>
+    <a class="secondary-btn compact-btn" href="{{ url_for('accounts.accounts_page') }}">All Conti</a>
+  </div>
+  {% if dashboard_current_accounts %}
+    <div class="dashboard-conti-compact-list">
+      {% for account in dashboard_current_accounts %}
+      <article class="dashboard-conti-row account-{{ account.balance_tone|default('neutral') }}">
+        <div class="dashboard-conti-main">
+          <span>{{ account.account_level_label|default('Conto') }}{% if account.is_default %} · Default{% endif %}</span>
+          <strong>{{ account.label|text_masked }}</strong>
+        </div>
+        <div class="dashboard-conti-stats">
+          <span>Net <b>{{ account.net_balance|money_masked }}</b></span>
+          <span>Pending <b>{{ account.pending_total|money_masked }}</b></span>
+          <span>Projected <b>{{ account.projected_net|money_masked }}</b></span>
+        </div>
+        <a class="primary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=account.key or account.id) }}">Open</a>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty compact-empty">No Conto summary available yet.</p>
+  {% endif %}
+</section>
+
 <section class="filters app-filter-bar dashboard-filter-bar dashboard-filter-minimal">
   <details>
     <summary><strong>Date and filters</strong> <span class="muted">Charts can be filtered without changing the selected Conto.</span></summary>

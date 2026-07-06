@@ -7,7 +7,7 @@
   <div class="pending-hero-copy">
     <span class="eyebrow">Automation rules</span>
     <h2>Recurring — {{ scope_label if scope_is_account else 'All accounts' }}</h2>
-    <p>Rules generate pending payments automatically. Generated payments stay in the Pending page until you pay, delay, edit or delete them.</p>
+    <p>Rules generate pending payments automatically. Enable Pay without asking only for payments that should be executed automatically on the due date.</p>
     <div class="hero-actions">
       <a class="secondary-btn compact-btn" href="{{ url_for('pending.pending_page') }}">Open pending payments</a>
     </div>
@@ -83,6 +83,13 @@
       </select>
     </div>
 
+    <div class="form-field recurring-auto-pay-field">
+      <label class="checkbox-card">
+        <input type="checkbox" name="auto_execute" value="1">
+        <span><strong>Pay without asking</strong><small>Automatically pays on the due date. Leave off to get a Pending notification and choose pay, delay or discard.</small></span>
+      </label>
+    </div>
+
     <div class="form-field">
       <label>Amount (€)</label>
       <input type="number" step="0.01" name="amount" required>
@@ -156,6 +163,7 @@
         <div class="rule-badges">
           <span class="type-badge type-{{ r.type|lower }}">{{ r.type|capitalize }}</span>
           <span class="soft-badge next-badge">Next: {{ r.next_payment }}</span>
+          <span class="soft-badge auto-badge {% if r.auto_execute %}auto-on{% else %}auto-off{% endif %}">{{ r.auto_execute_label }}</span>
           {% if r.end_date %}<span class="soft-badge">Ends: {{ r.end_date }}</span>{% endif %}
           {% if r.max_occurrences %}<span class="soft-badge">{{ r.generated_count }}/{{ r.max_occurrences }} used{% if r.stop_after_last_date %} · last: {{ r.stop_after_last_date }}{% endif %}</span>{% endif %}
           {% if r.is_auxiliary_account %}<span class="soft-badge account-badge-soft">{{ r.account_label }}</span>{% endif %}
@@ -246,6 +254,12 @@
               <option value="{{ method.id }}" {% if method.id == r.payment_method_id %}selected{% endif %}>{{ method.label }}</option>
             {% endfor %}
           </select>
+        </div>
+        <div class="recurring-auto-pay-field recurring-auto-pay-edit">
+          <label class="checkbox-card compact-checkbox-card">
+            <input type="checkbox" name="auto_execute" value="1" {% if r.auto_execute %}checked{% endif %}>
+            <span><strong>Pay without asking</strong><small>{{ r.auto_execute_label }}</small></span>
+          </label>
         </div>
       </div>
 

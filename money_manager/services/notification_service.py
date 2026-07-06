@@ -7,7 +7,7 @@ from typing import Any
 from money_manager.repositories.debts import load_debts
 from money_manager.repositories.payables import load_payables
 from money_manager.repositories.pending import load_pending
-from money_manager.repositories.recurring import load_recurring, normalize_amount, parse_date
+from money_manager.repositories.recurring import is_auto_execute, load_recurring, normalize_amount, parse_date
 from money_manager.services.debt_service import next_due_date_for_rule as next_debt_rule_due_date
 from money_manager.services.recurring_service import is_rule_finished, next_due_date_for_rule as next_recurring_due_date
 
@@ -16,6 +16,10 @@ MAX_CURRENT_NOTIFICATIONS = 14
 UPCOMING_DAYS = 3
 DEBT_STALE_DAYS = 45
 PAYABLE_STALE_DAYS = 21
+
+
+def _auto_recurring_rule_ids() -> set[str]:
+    return {str(row.get("id", "")) for row in load_recurring() if is_auto_execute(row.get("auto_execute"))}
 
 
 def attach_notification_state(context: dict[str, Any]) -> dict[str, Any]:
@@ -153,9 +157,12 @@ def build_notification_context(
 def _pending_notifications(today: date) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     upcoming_limit = today + timedelta(days=UPCOMING_DAYS)
+    auto_recurring_ids = _auto_recurring_rule_ids()
 
     for row in load_pending():
         if str(row.get("status", "pending")).lower() != "pending":
+            continue
+        if row.get("source") == "recurring" and str(row.get("source_id", "")) in auto_recurring_ids:
             continue
 
         due = _parse_date(row.get("date_due"))
@@ -189,7 +196,7 @@ def _pending_notifications(today: date) -> list[dict[str, Any]]:
             summary=f"{_format_amount(amount)} · {due.isoformat()}",
             detail=(
                 f"This row is still pending. Open Pending payments to execute it, delay it, "
-                f"or edit the due date before it affects your planning."
+                f"discard it, delete it, or edit the due date before it affects your planning."
             ),
             meta=f"Pending · {row.get('category', '') or 'No category'} · {row.get('account', '') or 'No account'}",
             href_endpoint="pending.pending_page",
@@ -338,6 +345,8 @@ def _recurring_notifications(today: date) -> list[dict[str, Any]]:
             continue
 
         rule_id = str(row.get("id", ""))
+        if is_auto_execute(row.get("auto_execute")):
+            continue
         # If the rule already has an open pending row, the pending reminder is clearer.
         if ("recurring", rule_id) in pending_sources:
             continue

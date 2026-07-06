@@ -9,7 +9,7 @@ from money_manager.services.calculation_service import cached_context
 from money_manager.services.debt_service import generate_debt_payments
 from money_manager.services.dashboard_calculation_service import get_dashboard_overview_cached
 from money_manager.services.pending_service import process_pending, sync_credit_account_statements
-from money_manager.services.recurring_service import generate_recurring
+from money_manager.services.recurring_service import generate_recurring, recurring_forecast_for_current_month
 from money_manager.services.transaction_service import load_transactions
 from money_manager.utils.stats import summary_totals
 from money_manager.services.transaction_window_service import (
@@ -54,8 +54,8 @@ def user_plot(filename):
 
 def _refresh_automatic_items_sync(user_id: str) -> None:
     with using_user(user_id):
-        # Generate queues, but do not mark pending items as paid automatically.
-        # Payments can now be executed or delayed explicitly from the Pending page.
+        # Generate queues and execute only safe automatic items: credit settlements
+        # plus recurring rules explicitly marked Pay without asking.
         generate_recurring()
         generate_debt_payments()
         sync_credit_account_statements()
@@ -97,7 +97,7 @@ def _schedule_automatic_items_refresh(*, force: bool = False) -> None:
 
 @bp.route("/")
 def home():
-    return redirect(url_for("accounts.accounts_page"))
+    return redirect(url_for("dashboard.index"))
 
 
 
@@ -210,6 +210,31 @@ def index():
     scoped_net = float(scope_summary.get("net_balance", metrics["totals"].get("net", 0.0)) or 0.0)
     scoped_net_after_pending = float(scope_summary.get("net_after_pending", scoped_net - current_pending_total) or 0.0)
 
+    current_month_recurring = recurring_forecast_for_current_month()
+    recurring_expenses_this_month = [
+        item for item in current_month_recurring.get("items", [])
+        if item.get("type") == "expense"
+    ][:8]
+    recurring_incomes_this_month = [
+        item for item in current_month_recurring.get("items", [])
+        if item.get("type") == "income"
+    ][:6]
+
+    try:
+        from money_manager.services.account_calculation_service import get_account_dashboard_summary_cached
+
+        account_snapshot = get_account_dashboard_summary_cached()
+        dashboard_current_accounts = list(account_snapshot.get("current_accounts_overview") or account_snapshot.get("accounts") or [])
+    except Exception:
+        dashboard_current_accounts = []
+    if selected_scope.get("is_account") and selected_scope.get("account_id"):
+        selected_key = str(selected_scope.get("account_id") or "")
+        dashboard_current_accounts = [
+            row for row in dashboard_current_accounts
+            if str(row.get("key") or row.get("id") or "") == selected_key
+        ]
+    dashboard_current_accounts = dashboard_current_accounts[:4]
+
     # The dashboard charts and income/expense cards can follow the visible date
     # window, but the hero balance must be the actual selected Conto/global net.
     # Otherwise an account with an initial balance of €100 and €23.95 expenses
@@ -236,6 +261,10 @@ def index():
         net_after_pending=scoped_net_after_pending,
         scope_balance=scope_summary,
         pending_this_month=current_pending_total,
+        current_month_recurring=current_month_recurring,
+        recurring_expenses_this_month=recurring_expenses_this_month,
+        recurring_incomes_this_month=recurring_incomes_this_month,
+        dashboard_current_accounts=dashboard_current_accounts,
         charts=metrics["charts"],
         has_effective_filters=has_effective_filters,
         has_non_date_filters=has_non_date_filters,

@@ -28,8 +28,8 @@ bp = Blueprint("security", __name__)
 def unlock():
     user_id = str(session.get("user_id") or "")
     if not user_id:
-        return redirect(url_for("auth.login", next=request.args.get("next") or url_for("accounts.accounts_page")))
-    next_url = request.args.get("next") or request.form.get("next") or url_for("accounts.accounts_page")
+        return redirect(url_for("auth.login", next=request.args.get("next") or url_for("dashboard.index")))
+    next_url = request.args.get("next") or request.form.get("next") or url_for("dashboard.index")
     if not is_encryption_enabled(user_id):
         return redirect(next_url)
     error = None
@@ -45,7 +45,7 @@ def unlock():
             except Exception:
                 pass
             return redirect(next_url)
-    return render_template("settings/unlock.html", error=error, next_url=next_url)
+    return render_template("settings/unlock.html", error=error, next_url=next_url, unlock_username=session.get("display_name") or session.get("username") or "Local user")
 
 
 @bp.post("/security/lock")

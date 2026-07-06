@@ -6,6 +6,17 @@ from money_manager.domain.constants import RECURRING_FIELDS
 from money_manager.repositories.csv_files import next_numeric_id, read_rows, write_rows
 
 
+_AUTO_EXECUTE_TRUE_VALUES = {"1", "true", "yes", "y", "on", "auto", "automatic"}
+
+
+def is_auto_execute(value) -> bool:
+    return str(value or "").strip().casefold() in _AUTO_EXECUTE_TRUE_VALUES
+
+
+def _clean_bool_field(value) -> str:
+    return "1" if is_auto_execute(value) else ""
+
+
 def load_recurring() -> list[dict]:
     return [_normalize_row(row) for row in read_rows(RECURRING_CSV, RECURRING_FIELDS)]
 
@@ -30,6 +41,7 @@ def append_recurring(rule: dict) -> int | None:
         "payment_method_id": rule.get("payment_method_id", ""),
         "payment_method_name_snapshot": rule.get("payment_method_name_snapshot", ""),
         "payment_resolution_template_json": rule.get("payment_resolution_template_json", ""),
+        "auto_execute": _clean_bool_field(rule.get("auto_execute", "")),
         "start_date": (parse_date(rule.get("start_date")) or date.today()).isoformat(),
         "end_date": _clean_date_field(rule.get("end_date", "")),
         "max_occurrences": _clean_max_occurrences(rule.get("max_occurrences", "")),
@@ -66,6 +78,8 @@ def update_recurring(rule_id, updates: dict) -> None:
         for key in ["account_id", "account_name_snapshot", "payment_method_id", "payment_method_name_snapshot", "payment_resolution_template_json"]:
             if key in updates:
                 row[key] = updates.get(key, "")
+        if "auto_execute" in updates:
+            row["auto_execute"] = _clean_bool_field(updates.get("auto_execute", ""))
         row["start_date"] = updates.get("start_date") or row.get("start_date") or date.today().isoformat()
         row["end_date"] = _clean_date_field(updates.get("end_date", row.get("end_date", "")))
         row["max_occurrences"] = _clean_max_occurrences(
@@ -216,6 +230,7 @@ def _clean_max_occurrences(value) -> str:
 def _normalize_row(row: dict) -> dict:
     normalized = {field: row.get(field, "") for field in RECURRING_FIELDS}
     normalized["frequency"] = str(parse_frequency_months(normalized.get("frequency")))
+    normalized["auto_execute"] = _clean_bool_field(normalized.get("auto_execute", ""))
     normalized["max_occurrences"] = _clean_max_occurrences(normalized.get("max_occurrences", ""))
     normalized["end_date"] = _clean_date_field(normalized.get("end_date", ""))
 
