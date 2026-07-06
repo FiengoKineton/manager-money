@@ -68,3 +68,4 @@ MoneyManagerData/data/users/*/plots/
 .*.tmp
 MoneyManagerData/data/users/**/*.tmp
 MoneyManagerData/data/users/**/.*.tmp
+__pycache__/
