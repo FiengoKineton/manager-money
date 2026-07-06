@@ -10,6 +10,8 @@ ENV/
 *.pyc
 *.pyo
 *.pyd
+*.mmcache
+
 
 # Distribution / packages
 dist/
@@ -39,6 +41,7 @@ MoneyManagerData/backups/
 
 # Device-specific config
 MoneyManagerData/app_config/local_app.json
+MoneyManagerData/app_config/install_state.json
 
 # OS/editor
 .DS_Store
@@ -54,7 +57,7 @@ Thumbs.db
 *.sqlite-journal
 *.db-journal
 
-MoneyManagerData/app_config/install_state.json
+MoneyManagerData/**/*.mmcache
 MoneyManagerData/data/users/*/plots/
-*.mmcache
-__pycache__/
+*.pending.*.tmp
+*.broken_partial.csv
