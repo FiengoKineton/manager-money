@@ -9,6 +9,7 @@
   const DOCK_ID = "phone-native-dock";
   const SHEET_ROOT_ID = "phone-native-sheets";
   let resizeTimer = null;
+  let phoneCreateFormId = 0;
 
   function isForcedPhone() {
     try {
@@ -342,7 +343,7 @@
     });
   }
 
-  const compactInteractiveSelector = "a, button, input, select, textarea, label, summary, [role='button'], .icon-action-btn, .desktop-drawer-primary-action";
+  const compactInteractiveSelector = "a, button, input, select, textarea, label, summary, [role='button'], .icon-action-btn, .desktop-drawer-primary-action, .phone-form-open-card";
 
   function wirePhoneCompactCards() {
     if (!isPhone()) return;
@@ -350,6 +351,7 @@
       ".recurring-rule-card",
       ".finished-rule-card",
       ".payment-card",
+      ".special-item-card",
       ".account-card",
       ".account-directory-card",
       ".professional-table-card",
@@ -369,7 +371,7 @@
       if (card.dataset.phoneCompactCardWired === "true") return;
       card.dataset.phoneCompactCardWired = "true";
       card.classList.add("phone-card-collapsible");
-      const compactByDefault = card.matches(".recurring-rule-card, .finished-rule-card, .professional-table-card, .phone-table-card, .analysis-card, .mortgage-card, .managed-recurring-card, .bill-card, .work-income-card, .debt-card, .payable-card, .receivable-card, .project-card");
+      const compactByDefault = card.matches(".recurring-rule-card, .finished-rule-card, .payment-card, .special-item-card, .professional-table-card, .phone-table-card, .analysis-card, .mortgage-card, .managed-recurring-card, .bill-card, .work-income-card, .debt-card, .payable-card, .receivable-card, .project-card");
       if (!compactByDefault) {
         card.classList.add("phone-card-expanded");
       }
@@ -380,6 +382,116 @@
         card.classList.toggle("phone-card-expanded");
       });
     });
+  }
+
+
+
+  function labelForCreatePanel(panel, form) {
+    const heading = panel.querySelector(".panel-header h2, .panel-header h3, h2, h3") || form.querySelector("legend");
+    const raw = text(heading, "Add item");
+    if (/^new\b/i.test(raw)) return raw;
+    if (/^add\b/i.test(raw)) return raw;
+    return `Open ${raw}`;
+  }
+
+  function createPanelHint(form) {
+    if (form.matches(".debt-form")) return "Tap to fill the compact mobile form.";
+    if (form.matches(".special-form-grid")) return "Tap to create or update the rule details.";
+    if (form.matches(".entry-form")) return "Tap to fill the full entry details.";
+    if (form.matches(".expense-project-form")) return "Tap to add the project details.";
+    if (form.matches(".forecast-form-grid")) return "Tap to edit the forecast inputs.";
+    return "Tap to open the full form.";
+  }
+
+  function shouldModalizeCreateForm(form) {
+    if (!form || form.dataset.phoneModalReady === "true") return false;
+    if (form.closest(".phone-sheet, .phone-native-topbar, .phone-bottom-dock")) return false;
+    if (form.closest(".add-mode-stack, .receipt-entry-page, .transaction-detail-page")) return false;
+    if (form.matches(".logout-form, .filters-form, .filter-form, .row-action-form, .mini-pay-form, .inline-form, .special-item-form, .archived-special-row, .creditor-payoff-form, .expense-project-inline-actions, .hidden-support-form")) return false;
+    if (form.id && /update-/i.test(form.id)) return false;
+    const panel = form.closest("section");
+    if (!panel) return false;
+    if (panel.closest(".transactions, .phone-sheet")) return false;
+    if (panel.querySelector("table")) return false;
+    return form.matches(
+      ".debt-form, .special-form-grid:not(.compact-special-form), .expense-project-form, .forecast-form-grid, .entry-form.designer-form.support-form, .entry-form:not(.filters-form)"
+    );
+  }
+
+  function closePhoneCreateModal(panel) {
+    if (!panel) return;
+    panel.classList.remove("phone-form-modal-open");
+    document.documentElement.classList.remove("phone-form-modal-active");
+    if (document.body) document.body.classList.remove("phone-form-modal-active");
+    const opener = panel.querySelector(".phone-form-open-card");
+    if (opener) opener.setAttribute("aria-expanded", "false");
+  }
+
+  function openPhoneCreateModal(panel) {
+    if (!isPhone() || !panel) return;
+    document.querySelectorAll(".phone-form-modal-open").forEach((other) => {
+      if (other !== panel) closePhoneCreateModal(other);
+    });
+    panel.classList.add("phone-form-modal-open");
+    document.documentElement.classList.add("phone-form-modal-active");
+    if (document.body) document.body.classList.add("phone-form-modal-active");
+    const opener = panel.querySelector(".phone-form-open-card");
+    if (opener) opener.setAttribute("aria-expanded", "true");
+    const first = panel.querySelector(".phone-form-modal-form input:not([type='hidden']), .phone-form-modal-form select, .phone-form-modal-form textarea");
+    window.setTimeout(() => {
+      try { first?.focus({ preventScroll: true }); } catch (error) { /* ignored */ }
+    }, 180);
+  }
+
+  function wirePhoneFormModals() {
+    if (!isPhone()) return;
+    document.querySelectorAll("form").forEach((form) => {
+      if (!shouldModalizeCreateForm(form)) return;
+      const panel = form.closest("section");
+      if (!panel) return;
+      phoneCreateFormId += 1;
+      const modalId = `phone-create-form-${phoneCreateFormId}`;
+      form.dataset.phoneModalReady = "true";
+      form.id = form.id || modalId;
+      form.classList.add("phone-form-modal-form");
+      panel.classList.add("phone-form-modal-card");
+      if (!panel.querySelector(".phone-form-close")) {
+        const closeButton = document.createElement("button");
+        closeButton.type = "button";
+        closeButton.className = "phone-form-close";
+        closeButton.setAttribute("aria-label", "Close form");
+        closeButton.textContent = "×";
+        form.insertAdjacentElement("afterbegin", closeButton);
+      }
+      if (!panel.querySelector(".phone-form-open-card")) {
+        const opener = document.createElement("button");
+        opener.type = "button";
+        opener.className = "phone-form-open-card";
+        opener.setAttribute("aria-controls", form.id);
+        opener.setAttribute("aria-expanded", "false");
+        opener.innerHTML = `<span>＋</span><strong>${htmlEscape(labelForCreatePanel(panel, form))}</strong><small>${htmlEscape(createPanelHint(form))}</small>`;
+        const header = panel.querySelector(".panel-header") || panel.querySelector("h2, h3")?.parentElement;
+        if (header) header.insertAdjacentElement("afterend", opener);
+        else panel.insertAdjacentElement("afterbegin", opener);
+      }
+    });
+  }
+
+  function handlePhoneFormModalClick(event) {
+    if (!isPhone()) return;
+    const opener = event.target.closest(".phone-form-open-card");
+    if (opener) {
+      const panel = opener.closest(".phone-form-modal-card");
+      if (!panel) return;
+      event.preventDefault();
+      openPhoneCreateModal(panel);
+      return;
+    }
+    const close = event.target.closest(".phone-form-close");
+    if (close) {
+      event.preventDefault();
+      closePhoneCreateModal(close.closest(".phone-form-modal-card"));
+    }
   }
 
   function convertGenericTables() {
@@ -420,11 +532,16 @@
     wireSheetLinks();
     convertGenericTables();
     wirePhoneCompactCards();
+    wirePhoneFormModals();
   }
 
   document.addEventListener("click", handleClick);
+  document.addEventListener("click", handlePhoneFormModalClick);
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeSheets();
+    if (event.key === "Escape") {
+      closeSheets();
+      document.querySelectorAll(".phone-form-modal-open").forEach(closePhoneCreateModal);
+    }
   });
 
   window.addEventListener("resize", () => {

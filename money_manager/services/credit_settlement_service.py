@@ -163,6 +163,75 @@ def _clean_snapshot_value(value: Any) -> str:
     return text
 
 
+
+
+def _transaction_lookup_for_credit_settlements() -> dict[str, dict[str, Any]]:
+    """Return current transaction rows keyed by their stable transaction UID.
+
+    Credit settlements must follow the current transaction route, not stale
+    ledger rows left behind by earlier edits.  If an expense was changed from a
+    credit/deferred route back to PayPal balance, its old credit-liability ledger
+    row should not keep generating a statement settlement.
+    """
+    try:
+        from money_manager.domain.transaction import make_transaction_uid
+
+        df = load_transactions()
+    except Exception:
+        return {}
+    lookup: dict[str, dict[str, Any]] = {}
+    if df.empty:
+        return lookup
+    for _, tx in df.fillna("").iterrows():
+        row = tx.to_dict()
+        tx_uid = _clean_snapshot_value(row.get("transaction_uid"))
+        if not tx_uid:
+            tx_uid = make_transaction_uid(_clean_snapshot_value(row.get("type")), _clean_snapshot_value(row.get("id")))
+        if tx_uid:
+            lookup[tx_uid] = row
+    return lookup
+
+
+def _transaction_row_is_active_credit_purchase(row: Mapping[str, Any]) -> bool:
+    tx_type = _clean_snapshot_value(row.get("type")).casefold()
+    if tx_type != "expense":
+        return False
+    settlement_mode = _clean_snapshot_value(row.get("settlement_mode_snapshot")).casefold()
+    due_date = _clean_snapshot_value(row.get("payment_due_date_snapshot"))
+    liability_id = _clean_snapshot_value(row.get("liability_account_id_snapshot"))
+    category = _clean_snapshot_value(row.get("category")).casefold()
+    sub_category = _clean_snapshot_value(row.get("sub_category")).casefold()
+    description = _clean_snapshot_value(row.get("description")).casefold()
+    text = f"{category} {sub_category} {description}"
+    if "settlement" in text or "statement payment" in text or "credit card payment" in text:
+        return False
+    return settlement_mode == "delayed" or bool(due_date and liability_id)
+
+
+def _ledger_row_matches_current_credit_purchase(row: Mapping[str, Any], transaction_lookup: Mapping[str, Mapping[str, Any]]) -> bool:
+    """Ignore stale credit-liability rows whose transaction was later edited.
+
+    The ledger is the durable settlement source, but in this app transactions can
+    still be edited from a credit route back to an immediate route.  During that
+    transition older files may keep a posted credit-liability row.  Cross-check
+    the current transaction CSV so those stale rows do not inflate the statement
+    amount from €200 to €400.
+    """
+    tx_uid = _clean_snapshot_value(row.get("transaction_uid"))
+    if not tx_uid:
+        return True
+    tx_row = transaction_lookup.get(tx_uid)
+    if tx_row is None:
+        source_kind = _clean_snapshot_value(row.get("source_kind")).casefold()
+        return not source_kind.startswith("transaction")
+    if not _transaction_row_is_active_credit_purchase(tx_row):
+        return False
+    tx_ledger_group = _clean_snapshot_value(tx_row.get("ledger_group_id"))
+    row_ledger_group = _clean_snapshot_value(row.get("ledger_group_id"))
+    if tx_ledger_group and row_ledger_group and tx_ledger_group != row_ledger_group:
+        return False
+    return True
+
 def _credit_rule_method(payment_method_id: str, user_id: str | None = None) -> dict[str, Any] | None:
     """Return the real credit-card method that owns statement rules.
 
@@ -233,6 +302,7 @@ def _effective_credit_schedule(row: Mapping[str, Any], metadata: Mapping[str, An
 
 def group_unsettled_credit_movements(user_id: str | None = None) -> list[dict[str, Any]]:
     settled_groups = _settled_ledger_group_ids(user_id=user_id)
+    transaction_lookup = _transaction_lookup_for_credit_settlements()
     groups: dict[tuple[str, str, str, str, str], dict[str, Any]] = {}
     for row in load_ledger(include_void=False, user_id=user_id):
         if str(row.get("movement_kind") or "") != "credit_liability_increase":
@@ -241,6 +311,8 @@ def group_unsettled_credit_movements(user_id: str | None = None) -> list[dict[st
             continue
         ledger_group_id = str(row.get("ledger_group_id") or "")
         if ledger_group_id in settled_groups:
+            continue
+        if not _ledger_row_matches_current_credit_purchase(row, transaction_lookup):
             continue
         metadata = _resolution_metadata(row)
         schedule = _effective_credit_schedule(row, metadata, user_id=user_id)

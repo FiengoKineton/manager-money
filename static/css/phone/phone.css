@@ -3,7 +3,7 @@
    The desktop stylesheet is still loaded first by base.html. This file is
    media-gated in the template and contains only the real phone overrides.
 -------------------------------------------------------------------------- */
-@import url("phone-native-app.css?v=phone-nav-2");
+@import url("phone-native-app.css?v=phone-nav-14");
 @import url("phone-transactions.css");
 @import url("phone-add-flow.css");
 
@@ -249,4 +249,410 @@ html.phone-native-active .phone-table-card-open {
   html.phone-native-active .panel-card.is-wide {
     grid-column: 1 / -1 !important;
   }
+}
+
+/* v14: phone-wide dense layout, modal create forms, and safe bottom scrolling. */
+html.phone-native-active {
+  --phone-top-height: 52px;
+  --phone-dock-height: 64px;
+  --phone-page-pad: 8px;
+  --phone-radius: 16px;
+}
+
+html.phone-native-active .app-main {
+  padding: calc(var(--phone-top-height) + env(safe-area-inset-top, 0px) + 8px) 8px calc(var(--phone-dock-height) + env(safe-area-inset-bottom, 0px) + 7.25rem) !important;
+}
+
+html.phone-native-active .app-content-stage::after,
+html.phone-native-active .container::after {
+  content: "" !important;
+  display: block !important;
+  height: calc(var(--phone-dock-height) + env(safe-area-inset-bottom, 0px) + 4.25rem) !important;
+  pointer-events: none !important;
+}
+
+html.phone-native-active .phone-bottom-dock {
+  left: 8px !important;
+  right: 8px !important;
+  bottom: calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+  min-height: var(--phone-dock-height) !important;
+  padding: 5px !important;
+  border-radius: 22px !important;
+}
+
+html.phone-native-active .phone-dock-item {
+  min-height: 48px !important;
+  border-radius: 16px !important;
+  padding: 3px 1px !important;
+}
+
+html.phone-native-active .phone-dock-item span {
+  font-size: .92rem !important;
+}
+
+html.phone-native-active .phone-dock-item b {
+  font-size: .54rem !important;
+  letter-spacing: .055em !important;
+}
+
+html.phone-native-active .phone-dock-add {
+  transform: translateY(-4px) !important;
+}
+
+html.phone-native-active .phone-native-topbar {
+  grid-template-columns: auto minmax(0, 1fr) 36px 36px !important;
+  gap: 5px !important;
+  padding-left: 7px !important;
+  padding-right: 7px !important;
+}
+
+html.phone-native-active .phone-history-nav {
+  grid-template-columns: repeat(3, 28px) !important;
+  gap: 3px !important;
+}
+
+html.phone-native-active .phone-mini-nav-btn {
+  width: 28px !important;
+  height: 32px !important;
+  border-radius: 11px !important;
+}
+
+html.phone-native-active .phone-icon-btn {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 13px !important;
+}
+
+html.phone-native-active .phone-title-block strong {
+  font-size: .98rem !important;
+}
+
+html.phone-native-active .phone-title-block small {
+  font-size: .58rem !important;
+}
+
+html.phone-native-active .special-page-hero,
+html.phone-native-active .pending-hero-card,
+html.phone-native-active .page-heading,
+html.phone-native-active .panel-card,
+html.phone-native-active .form-section,
+html.phone-native-active .transactions,
+html.phone-native-active .filters,
+html.phone-native-active .special-card,
+html.phone-native-active .receivables-card,
+html.phone-native-active .debt-card,
+html.phone-native-active .payables-card {
+  padding: 10px !important;
+  margin-bottom: 8px !important;
+  border-radius: 16px !important;
+}
+
+html.phone-native-active .special-page-hero p,
+html.phone-native-active .page-heading p,
+html.phone-native-active .panel-header p,
+html.phone-native-active .pending-hero-copy p,
+html.phone-native-active .special-card > p {
+  display: none !important;
+}
+
+html.phone-native-active .special-metric-grid,
+html.phone-native-active .pending-hero-metrics,
+html.phone-native-active .rule-metric-grid,
+html.phone-native-active .mortgage-summary-grid,
+html.phone-native-active .summary-grid,
+html.phone-native-active .summary,
+html.phone-native-active .receivables-summary {
+  display: flex !important;
+  gap: 7px !important;
+  overflow-x: auto !important;
+  padding: 0 0 5px !important;
+  margin-bottom: 7px !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-snap-type: x proximity !important;
+}
+
+html.phone-native-active .special-metric-grid > *,
+html.phone-native-active .pending-hero-metrics > *,
+html.phone-native-active .rule-metric-grid > *,
+html.phone-native-active .summary-card,
+html.phone-native-active .mortgage-summary-grid > * {
+  flex: 0 0 min(58vw, 210px) !important;
+  min-width: 0 !important;
+  padding: 8px !important;
+  border-radius: 13px !important;
+  scroll-snap-align: start !important;
+}
+
+html.phone-native-active .special-metric-grid strong,
+html.phone-native-active .pending-hero-metrics strong,
+html.phone-native-active .rule-metric-grid strong,
+html.phone-native-active .summary-card strong,
+html.phone-native-active .summary-card p {
+  font-size: .98rem !important;
+  line-height: 1.08 !important;
+}
+
+html.phone-native-active .special-form-grid,
+html.phone-native-active .compact-special-form,
+html.phone-native-active .mortgage-form-grid,
+html.phone-native-active .mortgage-nested-grid,
+html.phone-native-active .debt-form,
+html.phone-native-active .entry-form,
+html.phone-native-active .expense-project-form,
+html.phone-native-active .forecast-form-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+
+html.phone-native-active label {
+  font-size: .72rem !important;
+  line-height: 1.15 !important;
+  letter-spacing: .02em !important;
+}
+
+html.phone-native-active :is(input, select, textarea) {
+  min-height: 38px !important;
+  padding: .54rem .68rem !important;
+  border-radius: 12px !important;
+}
+
+html.phone-native-active textarea {
+  min-height: 72px !important;
+}
+
+/* Create/edit blocks are compact launcher cards on phone; the full form opens as a modal. */
+html.phone-native-active .phone-form-modal-card {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+html.phone-native-active .phone-form-modal-card:not(.phone-form-modal-open) > form.phone-form-modal-form {
+  display: none !important;
+}
+
+html.phone-native-active .phone-form-open-card {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 9px !important;
+  min-height: 56px !important;
+  padding: 9px !important;
+  border: 1px solid rgba(44, 96, 140, .12) !important;
+  border-radius: 16px !important;
+  background: rgba(255,255,255,.82) !important;
+  color: var(--phone-text) !important;
+  text-align: left !important;
+  box-shadow: 0 8px 20px rgba(23, 48, 86, .08) !important;
+}
+
+html.phone-native-active .phone-form-open-card span {
+  display: grid !important;
+  place-items: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  grid-row: span 2 !important;
+  border-radius: 13px !important;
+  background: linear-gradient(135deg, var(--phone-brand), var(--phone-brand-2)) !important;
+  color: white !important;
+  font-weight: 950 !important;
+}
+
+html.phone-native-active .phone-form-open-card strong,
+html.phone-native-active .phone-form-open-card small {
+  display: block !important;
+  min-width: 0 !important;
+}
+
+html.phone-native-active .phone-form-open-card strong {
+  font-size: .92rem !important;
+  line-height: 1.08 !important;
+}
+
+html.phone-native-active .phone-form-open-card small {
+  font-size: .68rem !important;
+  line-height: 1.2 !important;
+  color: var(--phone-muted) !important;
+}
+
+html.phone-native-active .phone-form-modal-open::before {
+  content: "" !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 5490 !important;
+  background: rgba(11, 27, 48, .36) !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+}
+
+html.phone-native-active .phone-form-modal-open > form.phone-form-modal-form {
+  display: grid !important;
+  position: fixed !important;
+  left: 10px !important;
+  right: 10px !important;
+  top: calc(var(--phone-top-height) + env(safe-area-inset-top, 0px) + 10px) !important;
+  bottom: calc(var(--phone-dock-height) + env(safe-area-inset-bottom, 0px) + 14px) !important;
+  z-index: 5500 !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+  gap: 8px !important;
+  padding: 50px 12px 16px !important;
+  border-radius: 22px !important;
+  background: rgba(250,254,255,.97) !important;
+  border: 1px solid rgba(44, 96, 140, .16) !important;
+  box-shadow: 0 26px 80px rgba(12, 44, 84, .34) !important;
+  box-sizing: border-box !important;
+}
+
+html.phone-native-active .phone-form-close {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  z-index: 1 !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  border-radius: 13px !important;
+  border: 1px solid rgba(44, 96, 140, .14) !important;
+  background: white !important;
+  color: var(--phone-text) !important;
+  font-size: 1.2rem !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+}
+
+html.phone-form-modal-active body {
+  overflow: hidden !important;
+}
+
+/* Existing rows/cards show only the essential facts until tapped. */
+html.phone-native-active .special-item-card.phone-card-collapsible,
+html.phone-native-active .payment-card.phone-card-collapsible,
+html.phone-native-active .mortgage-card.phone-card-collapsible,
+html.phone-native-active .managed-recurring-card.phone-card-collapsible,
+html.phone-native-active .bill-card.phone-card-collapsible,
+html.phone-native-active .work-income-card.phone-card-collapsible,
+html.phone-native-active .debt-card.phone-card-collapsible,
+html.phone-native-active .payable-card.phone-card-collapsible,
+html.phone-native-active .receivable-card.phone-card-collapsible,
+html.phone-native-active .project-card.phone-card-collapsible {
+  position: relative !important;
+  padding: 10px 38px 10px 10px !important;
+  border-radius: 16px !important;
+  cursor: pointer !important;
+}
+
+html.phone-native-active .special-item-card.phone-card-collapsible::after,
+html.phone-native-active .payment-card.phone-card-collapsible::after,
+html.phone-native-active .mortgage-card.phone-card-collapsible::after,
+html.phone-native-active .managed-recurring-card.phone-card-collapsible::after,
+html.phone-native-active .bill-card.phone-card-collapsible::after,
+html.phone-native-active .work-income-card.phone-card-collapsible::after,
+html.phone-native-active .debt-card.phone-card-collapsible::after,
+html.phone-native-active .payable-card.phone-card-collapsible::after,
+html.phone-native-active .receivable-card.phone-card-collapsible::after,
+html.phone-native-active .project-card.phone-card-collapsible::after {
+  content: "⌄" !important;
+  position: absolute !important;
+  right: 10px !important;
+  top: 10px !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  background: rgba(13, 110, 253, .10) !important;
+  color: var(--phone-brand) !important;
+  font-weight: 900 !important;
+  transition: transform .16s ease !important;
+}
+
+html.phone-native-active .phone-card-collapsible.phone-card-expanded::after {
+  transform: rotate(180deg) !important;
+}
+
+html.phone-native-active .special-item-head,
+html.phone-native-active .payment-card.phone-card-collapsible {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  gap: 7px !important;
+}
+
+html.phone-native-active .special-item-head h3,
+html.phone-native-active .special-item-head p,
+html.phone-native-active .special-item-head strong {
+  margin: 0 !important;
+}
+
+html.phone-native-active .special-item-head h3 {
+  font-size: .98rem !important;
+  line-height: 1.1 !important;
+}
+
+html.phone-native-active .special-item-head p {
+  display: block !important;
+  max-height: 2.35em !important;
+  overflow: hidden !important;
+  font-size: .72rem !important;
+  color: var(--phone-muted) !important;
+}
+
+html.phone-native-active .special-item-head strong {
+  font-size: .94rem !important;
+  white-space: nowrap !important;
+}
+
+html.phone-native-active .special-item-card.phone-card-collapsible:not(.phone-card-expanded) :is(.rule-metric-grid, .special-form-grid, .compact-special-form, .form-actions-row, .mortgage-edit-details, .mortgage-analysis-details, details, .special-item-actions, .pending-check-list, .payment-edit-grid),
+html.phone-native-active .payment-card.phone-card-collapsible:not(.phone-card-expanded) :is(.payment-main, .payment-edit-grid, .payment-description-field, .payment-card-extra, .payment-card-actions),
+html.phone-native-active .payment-card.phone-card-collapsible:not(.phone-card-expanded) button:not(.phone-form-open-card) {
+  display: none !important;
+}
+
+html.phone-native-active .payment-card.phone-card-collapsible:not(.phone-card-expanded) .payment-date-block {
+  display: grid !important;
+  gap: 4px !important;
+  padding: 0 !important;
+}
+
+html.phone-native-active .payment-card.phone-card-collapsible:not(.phone-card-expanded) .payment-date-block input {
+  min-height: 34px !important;
+  padding: .4rem .55rem !important;
+  pointer-events: none !important;
+}
+
+html.phone-native-active .payment-card.phone-card-collapsible:not(.phone-card-expanded) .payment-side {
+  display: grid !important;
+  justify-items: end !important;
+  align-self: center !important;
+}
+
+html.phone-native-active .payment-card.phone-card-collapsible:not(.phone-card-expanded) .payment-side label {
+  display: none !important;
+}
+
+html.phone-native-active .payment-card.phone-card-collapsible:not(.phone-card-expanded) .payment-side strong {
+  font-size: .94rem !important;
+  white-space: nowrap !important;
+}
+
+html.phone-native-active .phone-card-collapsible.phone-card-expanded :is(.rule-metric-grid, .special-form-grid, .compact-special-form, .form-actions-row, .payment-edit-grid) {
+  margin-top: 8px !important;
+}
+
+/* Tables generated into phone cards stay compact until tapped. */
+html.phone-native-active .phone-table-card:not(.phone-card-expanded) .phone-table-card-detail {
+  display: none !important;
+}
+
+html.phone-native-active .phone-table-card.phone-card-expanded .phone-table-card-detail {
+  display: grid !important;
+}
+
+@media (max-width: 380px) {
+  html.phone-native-active .phone-title-block small { display: none !important; }
+  html.phone-native-active .phone-history-nav { grid-template-columns: repeat(3, 26px) !important; }
+  html.phone-native-active .phone-mini-nav-btn { width: 26px !important; }
+  html.phone-native-active .phone-dock-item b { font-size: .5rem !important; }
 }

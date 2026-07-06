@@ -164,8 +164,8 @@ def save_transaction_payload(
     return {"ok": True, "message": "Transaction saved.", "transaction_ids": [tx_id], "pending_ids": []}
 
 
-def _sync_credit_settlements_if_needed(ledger_rows: list[dict[str, Any]] | None) -> None:
-    if not any(str(row.get("movement_kind") or "") == "credit_liability_increase" for row in (ledger_rows or [])):
+def _sync_credit_settlements_if_needed(ledger_rows: list[dict[str, Any]] | None, *, force: bool = False) -> None:
+    if not force and not any(str(row.get("movement_kind") or "") == "credit_liability_increase" for row in (ledger_rows or [])):
         return
     try:
         from money_manager.services.credit_settlement_service import sync_credit_settlements
@@ -685,6 +685,7 @@ def update_existing_transaction(row_index: int, form) -> dict:
 
     original_uid = original.get("transaction_uid") or make_transaction_uid(original.get("type", ""), original.get("id", ""))
     existing_ledger_rows = ledger_rows_for_transaction(original_uid, include_void=False) if original_uid else []
+    old_had_credit_ledger = any(str(row.get("movement_kind") or "") == "credit_liability_increase" for row in existing_ledger_rows)
     has_new_payment_context = transaction_has_payment_snapshots(original) or bool(existing_ledger_rows) or bool(tx_input.payment_method_id or tx_input.account_id)
     data["transaction_uid"] = original_uid
 
@@ -752,13 +753,13 @@ def update_existing_transaction(row_index: int, form) -> dict:
         source_id=str(original.get("id") or ""),
     )
     ledger_ids = append_ledger_movements(new_ledger_rows) if new_ledger_rows else []
-    _sync_credit_settlements_if_needed(new_ledger_rows)
     data.update(_transaction_metadata_from_resolution(route_data, resolution))
     data["transaction_uid"] = original_uid
     data["ledger_group_id"] = resolution.ledger_group_id
     data["ledger_status"] = "adjusted_rebuilt" if settled_credit else "rebuilt"
     data["description"] = _with_audit_note(str(data.get("description") or ""), reason)
     update_transaction(original.get("id", ""), original.get("type", ""), data)
+    _sync_credit_settlements_if_needed(new_ledger_rows, force=old_had_credit_ledger)
     return {"ok": True, "message": "Payment route rebuilt.", "ledger_report": ledger_report, "ledger_ids": ledger_ids, "warnings": resolution.warnings}
 
 
@@ -770,6 +771,7 @@ def delete_existing_transaction(row_index: int, confirm_settled_edit: bool = Fal
     existing_ledger_rows = ledger_rows_for_transaction(uid, include_void=False) if uid else []
     has_ledger_context = transaction_has_payment_snapshots(original) or bool(existing_ledger_rows)
 
+    old_had_credit_ledger = any(str(row.get("movement_kind") or "") == "credit_liability_increase" for row in existing_ledger_rows)
     if has_ledger_context:
         settled_credit = _looks_like_settled_credit(original, existing_ledger_rows)
         if settled_credit and not confirm_settled_edit:
@@ -785,6 +787,8 @@ def delete_existing_transaction(row_index: int, confirm_settled_edit: bool = Fal
             void_ledger_for_transaction(uid, reason=reason)
 
     deleted = delete_transaction(original.get("id", ""), original.get("type", ""))
+    if old_had_credit_ledger:
+        _sync_credit_settlements_if_needed([], force=True)
     return {"ok": bool(deleted), "message": "Transaction deleted." if deleted else "Transaction not found."}
 
 
@@ -875,11 +879,17 @@ def _submitted_payment_context_changed(original: Mapping[str, Any], route_data: 
     """
     submitted_method = str(tx_input.payment_method_id or "").strip()
     if submitted_method:
-        original_methods = {
-            str(original.get("payment_method_id") or "").strip(),
-            str(original.get("payment_channel_method_id_snapshot") or "").strip(),
-        }
-        if submitted_method not in original_methods:
+        original_primary_method = str(original.get("payment_method_id") or "").strip()
+        original_channel_method = str(original.get("payment_channel_method_id_snapshot") or "").strip()
+        # The visible selector must win over the old primary route.  Older rows
+        # could have payment_method_id=paypal_balance while the visible/channel
+        # snapshot already said paypal_via_credit_card; accepting the channel as
+        # "unchanged" kept the PayPal balance route alive and left settlements
+        # wrong.  Rebuild whenever the submitted visible method differs from the
+        # primary stored method.
+        if submitted_method != original_primary_method:
+            return True
+        if original_channel_method and original_channel_method != submitted_method:
             return True
 
     submitted_account = str(tx_input.account_id or "").strip()
