@@ -286,11 +286,20 @@ def _method_is_compatible_with_account(method: Mapping[str, Any], account_id: st
             if parent == account_id:
                 return True
 
+    if method_type == "credit_card" or method.get("settlement_mode") == "delayed":
+        liability = str(method.get("liability_account_id") or "")
+        if liability:
+            account = account_by_key(liability, user_id=user_id, include_archived=True) or {}
+            parent = str(account.get("parent_account_id") or account.get("parent_key") or "")
+            if parent == account_id:
+                return True
+
     if method.get("settlement_mode") == "delegated":
+        linked = str(method.get("linked_account_id") or "")
         # Delegated wrappers belong to their visible linked account.  Example:
-        # "PayPal via Main card" should appear under PayPal, not under Main, even
-        # though its delegate ultimately charges a Main debit/credit card.
-        return False
+        # "PayPal via Credit Card" appears under PayPal, while the underlying
+        # credit card itself appears under Main.
+        return bool(linked and linked == account_id)
 
     return False
 

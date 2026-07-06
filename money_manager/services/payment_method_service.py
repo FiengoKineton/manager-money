@@ -477,6 +477,7 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
             str(method.get("linked_account_id") or ""),
             str(method.get("funding_account_id") or ""),
             str(method.get("settlement_account_id") or ""),
+            str(method.get("liability_account_id") or ""),
         }
 
     def _has_active_method(key: str, method_type: str) -> bool:
@@ -507,6 +508,141 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
         while f"{base}_{index}" in existing_ids:
             index += 1
         return f"{base}_{index}"
+
+    def _method_by_id(method_id: str) -> dict[str, Any] | None:
+        wanted = str(method_id or "")
+        for method in methods:
+            if str(method.get("id") or "") == wanted:
+                return method
+        return None
+
+    def _is_active_method(method: Mapping[str, Any] | None) -> bool:
+        return bool(method) and bool(method.get("is_active", True)) and not bool(method.get("is_archived", False))
+
+    def _account_parent_for_key(key: str) -> str:
+        for account in accounts:
+            if str(account.get("key") or account.get("id") or "") != str(key or ""):
+                continue
+            return str(account.get("parent_account_id") or account.get("parent_key") or "")
+        return ""
+
+    def _active_credit_method_ids(parent_key: str = "") -> list[str]:
+        result_ids: list[str] = []
+        for method in methods:
+            if not _is_active_method(method):
+                continue
+            if clean_text(method.get("method_type") or "") != "credit_card" and clean_text(method.get("settlement_mode") or "") != "delayed":
+                continue
+            method_id = str(method.get("id") or "")
+            # The old built-in `credit_card` placeholder was archived in the new
+            # account model.  Even if an older file still has it active, avoid
+            # using it as a delegate because it usually has no real liability
+            # account behind it.  Prefer user-created/manual cards.
+            if method_id == "credit_card" and _is_legacy_default_credit_method(method):
+                continue
+            if parent_key:
+                refs = {
+                    str(method.get("linked_account_id") or ""),
+                    str(method.get("funding_account_id") or ""),
+                    str(method.get("settlement_account_id") or ""),
+                }
+                liability = str(method.get("liability_account_id") or "")
+                if liability:
+                    refs.add(liability)
+                    liability_parent = _account_parent_for_key(liability)
+                    if liability_parent:
+                        refs.add(liability_parent)
+                if parent_key not in refs:
+                    continue
+            result_ids.append(method_id)
+        return result_ids
+
+    def _first_active_credit_method_id(parent_key: str = "") -> str:
+        ids = _active_credit_method_ids(parent_key) or _active_credit_method_ids("")
+        return ids[0] if ids else ""
+
+    def _repair_credit_method_accounts() -> None:
+        for method in methods:
+            if clean_text(method.get("method_type") or "") != "credit_card" and clean_text(method.get("settlement_mode") or "") != "delayed":
+                continue
+            if not _is_active_method(method):
+                continue
+            liability_key = str(method.get("liability_account_id") or "")
+            parent_key = _account_parent_for_key(liability_key) if liability_key else ""
+            changed = False
+            if parent_key:
+                for field in ("linked_account_id", "funding_account_id", "settlement_account_id"):
+                    if not str(method.get(field) or ""):
+                        method[field] = parent_key
+                        changed = True
+            if not str(method.get("settlement_mode") or "") or method.get("settlement_mode") != "delayed":
+                method["settlement_mode"] = "delayed"
+                changed = True
+            if changed:
+                method["updated_at"] = utc_now()
+
+    def _ensure_paypal_credit_delegate() -> None:
+        if "paypal" not in account_keys:
+            return
+        credit_delegate = _first_active_credit_method_id("main_bank") or _first_active_credit_method_id("")
+        wrapper = _method_by_id("paypal_via_credit_card")
+        if not credit_delegate:
+            # Keep stale wrappers out of the transaction dropdown.  They were the
+            # source of errors like: delegated method points to missing/inactive
+            # credit_card.  As soon as a real active credit card exists, the
+            # wrapper is restored below.
+            if wrapper and _is_active_method(wrapper):
+                wrapper["is_active"] = False
+                wrapper["is_archived"] = True
+                wrapper["archived_at"] = wrapper.get("archived_at") or utc_now()
+                wrapper["updated_at"] = utc_now()
+                wrapper.setdefault("legacy", {})["auto_archived_reason"] = "missing_active_credit_card_delegate"
+            return
+
+        if not wrapper:
+            _add({
+                "id": "paypal_via_credit_card",
+                "name": "PayPal via Credit Card",
+                "method_type": "wallet_linked_card",
+                "settlement_mode": "delegated",
+                "linked_account_id": "paypal",
+                "delegates_to_payment_method_id": credit_delegate,
+                "display_order": 75,
+                "aliases": ["paypal credit", "paypal via credit", "paypal via credit card", "paypal carta credito", "paypal card credit"],
+                "legacy": {"migration_rule": "auto_paypal_via_credit_card"},
+                "metadata": {"auto_default": True, "visible_card": True},
+            })
+            return
+
+        delegate = _method_by_id(str(wrapper.get("delegates_to_payment_method_id") or ""))
+        changed = False
+        if wrapper.get("is_archived") or not wrapper.get("is_active", True):
+            wrapper["is_active"] = True
+            wrapper["is_archived"] = False
+            wrapper["archived_at"] = ""
+            changed = True
+        if clean_text(wrapper.get("name") or "") in {"paypal credit", "paypal via credit card", "paypal via carta credito"}:
+            wrapper["name"] = "PayPal via Credit Card"
+        if wrapper.get("method_type") != "wallet_linked_card":
+            wrapper["method_type"] = "wallet_linked_card"
+            changed = True
+        if wrapper.get("settlement_mode") != "delegated":
+            wrapper["settlement_mode"] = "delegated"
+            changed = True
+        if wrapper.get("linked_account_id") != "paypal":
+            wrapper["linked_account_id"] = "paypal"
+            changed = True
+        if str(wrapper.get("delegates_to_payment_method_id") or "") in {"", "credit_card"} or not _is_active_method(delegate):
+            wrapper["delegates_to_payment_method_id"] = credit_delegate
+            changed = True
+        before_aliases = list(wrapper.get("aliases", []))
+        _merge_aliases(wrapper, ["paypal credit", "paypal via credit", "paypal via credit card", "paypal carta credito", "paypal card credit"])
+        if before_aliases != wrapper.get("aliases", []):
+            changed = True
+        if changed:
+            wrapper["updated_at"] = utc_now()
+
+    _repair_credit_method_accounts()
 
     for account in accounts:
         key = str(account.get("key") or account.get("id") or "")
@@ -633,6 +769,8 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
             if changed:
                 method["updated_at"] = utc_now()
             break
+
+    _ensure_paypal_credit_delegate()
 
     result["payment_methods"] = methods
     result["updated_at"] = clean_label(result.get("updated_at") or "")
