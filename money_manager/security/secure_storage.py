@@ -19,6 +19,8 @@ from money_manager.security.session_vault import require_dek
 from money_manager.storage.data_registry import definition_by_name, definition_for_filename
 
 
+def _repair_csv_on_read_enabled() -> bool:
+    return os.environ.get("MONEY_MANAGER_REPAIR_CSV_ON_READ", "0").strip() == "1"
 
 def _raise_csv_field_limit() -> None:
     limit = sys.maxsize
@@ -190,6 +192,9 @@ def read_csv_secure(logical_name_or_path: str | os.PathLike[str], fieldnames: li
 
     missing = [field for field in fieldnames if field not in existing_fields]
     if missing:
+        if not _repair_csv_on_read_enabled():
+            return rows
+
         final_fields = [*fieldnames, *[field for field in existing_fields if field not in fieldnames]]
         for row in rows:
             for field in missing:
@@ -242,6 +247,10 @@ def ensure_csv_secure(logical_name_or_path: str | os.PathLike[str], fieldnames: 
     missing = [field for field in fieldnames if field not in existing_fields]
     if not missing:
         return False, []
+
+    if not _repair_csv_on_read_enabled():
+        return False, missing
+
     final_fields = list(fieldnames)
     if preserve_unknown_columns:
         final_fields.extend(field for field in existing_fields if field not in final_fields)
