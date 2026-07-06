@@ -1,3 +1,4 @@
+import os
 from __future__ import annotations
 
 from copy import deepcopy
@@ -110,10 +111,14 @@ def load_user_config(filename: str, user_id: str | None = None, *, repair: bool 
     merged = deep_merge_defaults(default, raw)
     if not isinstance(merged, dict):
         merged = default
-    if repair and (raw != merged or not path.exists()):
+
+    repair_on_read = os.environ.get("MONEY_MANAGER_REPAIR_CONFIG_ON_READ", "0").strip() == "1"
+
+    if repair and repair_on_read and (raw != merged or not path.exists()):
         write_json_secure(path, merged, user_id=user_id)
         mtime_ns, size = _stat_signature(path)
         cache_key = (_cache_user_id(user_id), filename, str(path), mtime_ns, size, bool(repair))
+        
     _set_cached_config(cache_key, merged)
     return deepcopy(merged)
 

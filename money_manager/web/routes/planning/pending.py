@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, redirect, render_template, request, url_for
 
 from money_manager.services.payment_form_service import account_options_for_payment_forms, payment_method_options_for_forms
@@ -19,6 +20,10 @@ from money_manager.services.recurring_service import (
 )
 
 bp = Blueprint("pending", __name__)
+
+
+def _auto_maintenance_on_get_enabled() -> bool:
+    return os.environ.get("MONEY_MANAGER_AUTO_MAINTENANCE_ON_GET", "0").strip() == "1"
 
 
 def _pending_update_payload(form) -> dict:
@@ -70,11 +75,12 @@ def pending_page():
         account_id = request.args.get("account_id", "")
         return redirect(url_for("pending.pending_page", account_id=account_id) if account_id else url_for("pending.pending_page"))
 
-    generate_recurring()
-    generate_debt_payments()
-    sync_credit_account_statements()
-    sync_credit_settlements(sync_pending=True)
-    process_pending(credit_only=True)
+    if _auto_maintenance_on_get_enabled():
+        generate_recurring()
+        generate_debt_payments()
+        sync_credit_account_statements()
+        sync_credit_settlements(sync_pending=True)
+        process_pending(credit_only=True)
 
     selected_scope = resolve_request_scope(request)
     pending_context = pending_context_for_scope(selected_scope)
@@ -117,10 +123,11 @@ def recurring_page():
         account_id = request.args.get("account_id", "")
         return redirect(url_for("pending.recurring_page", account_id=account_id) if account_id else url_for("pending.recurring_page"))
 
-    generate_recurring()
-    sync_credit_account_statements()
-    process_pending(credit_only=True)
-    
+    if _auto_maintenance_on_get_enabled():
+        generate_recurring()
+        sync_credit_account_statements()
+        process_pending(credit_only=True)
+
     selected_scope = resolve_request_scope(request)
     recurring_context = recurring_context_for_scope(selected_scope)
     recurring_sections = prepare_recurring_sections(recurring_context.get("all", load_recurring()))
