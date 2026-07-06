@@ -113,6 +113,39 @@
   </form>
 </section>
 
+{% if credit_purchase_rows %}
+<details class="panel-card credit-purchase-panel" open>
+  <summary class="credit-purchase-summary-toggle">
+    <span>
+      <span class="eyebrow">Credit card queue</span>
+      <strong>Card purchases waiting for statement settlement</strong>
+      <small>{{ credit_purchase_summary.count }} payments · € {{ '%.2f'|format(credit_purchase_summary.total) }} · next due {{ credit_purchase_summary.next_due }}</small>
+    </span>
+    <em>Tap/click to collapse</em>
+  </summary>
+  <p class="hint">These purchases are not shown in the main transaction log until the credit-card statement is paid. The statement payment will be saved on the due date and will include the original purchase date in its description.</p>
+  <div class="credit-purchase-list">
+    {% for tx in credit_purchase_rows %}
+      <article class="credit-purchase-card row-{{ tx.type }}">
+        <a class="credit-purchase-main" href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
+          <span class="transaction-category-icon" aria-hidden="true">{{ tx.category_icon or '💳' }}</span>
+          <span>
+            <strong>{{ tx.description if tx.description and tx.description != 'nan' else tx.category }}</strong>
+            <small>Made {{ tx.date_str }} · Due {{ tx.credit_due_date or '—' }} · {{ tx.credit_method_label }}</small>
+          </span>
+          <b>€ {{ tx.amount_str }}</b>
+        </a>
+        <div class="credit-purchase-meta">
+          <span>{{ tx.credit_status_label }}</span>
+          {% if tx.credit_statement_period %}<span>Statement {{ tx.credit_statement_period }}</span>{% endif %}
+          {% if tx.account_display and tx.account_display != 'nan' %}<span>{{ tx.account_icon or '🏦' }} {{ tx.account_display }}</span>{% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
+
 <section class="transactions transactions-with-phone-cards"
          data-transactions-lazy-root
          data-next-page="{{ transactions_page + 1 }}"
@@ -163,5 +196,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=transactions-lazy-3"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=transactions-credit-12"></script>
 {% endblock %}

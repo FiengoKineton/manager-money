@@ -809,7 +809,20 @@ def _transaction_metadata_from_resolution(tx: Mapping[str, Any], resolution) -> 
     channel_name = wrapper_name or method_name
 
     legacy_account = str(tx.get("account") or "")
-    if not legacy_account and account_id and account_id != MAIN_ACCOUNT_KEY:
+
+    # Delegated wallet/card methods need a CSV-compatible account marker that
+    # represents the real money route, not the visible checkout wallet.  If the
+    # form selection remains account=PayPal while the method is PayPal via Credit
+    # Card, keeping "PayPal" here makes the PayPal wallet balance drop by the
+    # purchase amount.  Store the legacy credit-route alias instead so PayPal can
+    # show a zero-balance trace row while the real payment waits for the card
+    # settlement.
+    route_channel_id = (channel_id or method_id or "").strip()
+    if route_channel_id == "paypal_via_credit_card":
+        legacy_account = PAYPAL_CREDIT_ACCOUNT_VALUE
+    elif route_channel_id == "paypal_via_main_bank":
+        legacy_account = "paypal card"
+    elif not legacy_account and account_id and account_id != MAIN_ACCOUNT_KEY:
         legacy_account = account_id
 
     return {

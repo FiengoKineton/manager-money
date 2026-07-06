@@ -155,7 +155,7 @@ def process_pending(today: date | None = None, credit_only: bool = False) -> int
 
         account_value = str(tx.get("account", "")).strip().lower()
         credit_account_key = _credit_pending_key(account_value) or _credit_pending_key(tx.get("account_key", ""))
-        is_credit_payment = bool(credit_account_key) or tx.get("source") == CREDIT_STATEMENT_SOURCE
+        is_credit_payment = bool(credit_account_key) or tx.get("source") in {CREDIT_STATEMENT_SOURCE, "credit_settlement"}
         is_auto_recurring = (
             tx.get("source") == "recurring"
             and str(tx.get("source_id", "")) in auto_recurring_ids
@@ -169,8 +169,17 @@ def process_pending(today: date | None = None, credit_only: bool = False) -> int
         except (TypeError, ValueError):
             amount = 0.0
 
-        if tx.get("source") == CREDIT_STATEMENT_SOURCE:
-            _execute_pending_row(tx)
+        if tx.get("source") == "credit_settlement":
+            try:
+                from money_manager.services.credit_settlement_service import execute_credit_settlement
+
+                result = execute_credit_settlement(tx.get("source_id", ""), execution_date=tx.get("date_due") or today.isoformat(), automatic=True)
+                if result.get("ok"):
+                    executed_count += 1
+            except Exception:
+                pass
+        elif tx.get("source") == CREDIT_STATEMENT_SOURCE:
+            _execute_pending_row(tx, automatic=True)
             mark_executed(int(tx["id"]))
             executed_count += 1
         elif is_auto_recurring and credit_only:
@@ -606,13 +615,22 @@ def _valid_statement_month(value: str | None) -> str:
 
 
 def _credit_statement_month_for_row(row, charge_day: date) -> str:
-    snapshot = _valid_statement_month(row.get("payment_statement_period_snapshot"))
-    return snapshot or charge_day.strftime("%Y-%m")
+    # Use the actual charge month for statement grouping.  Older snapshots could
+    # be stale after card-wrapper repair and caused July charges to be grouped
+    # into June/current-month settlements.
+    return charge_day.strftime("%Y-%m")
 
 
 def _credit_due_date_for_row(row, charge_day: date, due_day: int) -> date:
+    expected = _statement_due_date(charge_day, due_day)
     snapshot = _date_from_transaction_value(row.get("payment_due_date_snapshot"))
-    return snapshot or _statement_due_date(charge_day, due_day)
+    if not snapshot:
+        return expected
+    # Same-month snapshots are not valid for this app's credit-card model: a
+    # purchase in month M is paid on the configured day in month M+1.
+    if snapshot.year == charge_day.year and snapshot.month == charge_day.month:
+        return expected
+    return snapshot
 
 
 def _safe_int(value, default: int | None = None) -> int | None:

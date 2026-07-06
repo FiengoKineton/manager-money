@@ -1,6 +1,8 @@
 from datetime import date
 import json
 
+import pandas as pd
+
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
 
 from money_manager.config import TRANSACTION_TYPES
@@ -113,7 +115,7 @@ def transactions_page():
     params.update({"page": 1, "page_size": page_size})
 
     context = cached_context(
-        "transaction_table_view_v3",
+        "transaction_table_view_v4",
         lambda: _build_transactions_page_context(scope_key, filter_state, page=1, page_size=page_size),
         params=params,
     )
@@ -156,6 +158,66 @@ def _filtered_transactions_for_page(scope_key: str, filter_state: dict):
     return main_df, filtered
 
 
+def _safe_text_series(df, column: str) -> pd.Series:
+    if df.empty:
+        return pd.Series(dtype=str, index=df.index)
+    if column not in df.columns:
+        return pd.Series("", index=df.index, dtype=str)
+    return df[column].fillna("").astype(str)
+
+
+def _credit_purchase_mask(df) -> pd.Series:
+    if df.empty:
+        return pd.Series(False, index=df.index)
+    tx_type = _safe_text_series(df, "type").str.casefold()
+    settlement_mode = _safe_text_series(df, "settlement_mode_snapshot").str.casefold()
+    due = _safe_text_series(df, "payment_due_date_snapshot").str.strip()
+    liability = _safe_text_series(df, "liability_account_id_snapshot").str.strip()
+    description = _safe_text_series(df, "description").str.casefold()
+    sub_category = _safe_text_series(df, "sub_category").str.casefold()
+    category = _safe_text_series(df, "category").str.casefold()
+    text = description + " " + sub_category + " " + category
+    settlement_like = (
+        text.str.contains("settlement", na=False)
+        | text.str.contains("statement payment", na=False)
+        | text.str.contains("credit card payment", na=False)
+        | text.str.contains("credit statement payment", na=False)
+    )
+    return tx_type.eq("expense") & (settlement_mode.eq("delayed") | (due.ne("") & liability.ne(""))) & ~settlement_like
+
+
+def _split_credit_purchase_rows(filtered):
+    mask = _credit_purchase_mask(filtered)
+    regular = filtered[~mask].copy()
+    credit_rows = filtered[mask].copy()
+    return regular, credit_rows
+
+
+def _credit_purchase_display_rows(credit_rows) -> list[dict]:
+    if credit_rows.empty:
+        return []
+    sort_columns = [column for column in ["payment_due_date_snapshot", "date"] if column in credit_rows.columns]
+    if sort_columns:
+        credit_rows = credit_rows.sort_values(by=sort_columns, ascending=[True] * len(sort_columns))
+    display = prepare_transactions_for_display(credit_rows).fillna("")
+    rows = display.to_dict(orient="records")
+    for row in rows:
+        due = str(row.get("payment_due_date_snapshot") or "").strip()
+        row["credit_due_date"] = due
+        row["credit_statement_period"] = str(row.get("payment_statement_period_snapshot") or "").strip()
+        row["credit_status_label"] = "Waiting settlement"
+        row["credit_method_label"] = str(row.get("payment_channel_name_snapshot") or row.get("payment_method_name_snapshot") or row.get("payment_method") or "Credit card").strip()
+    return rows
+
+
+def _credit_purchase_summary(credit_rows) -> dict:
+    if credit_rows.empty:
+        return {"count": 0, "total": 0.0, "next_due": "—"}
+    amount = pd.to_numeric(credit_rows.get("amount", pd.Series(dtype=float)), errors="coerce").fillna(0.0).sum()
+    due_values = sorted(value for value in _safe_text_series(credit_rows, "payment_due_date_snapshot").tolist() if value)
+    return {"count": int(len(credit_rows)), "total": float(amount), "next_due": due_values[0] if due_values else "—"}
+
+
 def _slice_transactions_for_display(filtered, *, page: int, page_size: int) -> tuple[list[dict], int, int, bool]:
     total_rows = int(len(filtered))
     start_index = max(page - 1, 0) * page_size
@@ -183,15 +245,18 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict, *, page
         scope=scope_key,
         start=start,
     )
-    calculation_totals = summary_totals(filtered)
+    regular_filtered, credit_purchase_frame = _split_credit_purchase_rows(filtered)
+    calculation_totals = summary_totals(regular_filtered)
     if not has_effective_filters:
-        calculation_totals = totals_with_initial_conditions(filtered, initial_conditions)
+        calculation_totals = totals_with_initial_conditions(regular_filtered, initial_conditions)
 
     rows, total_rows, _start_index, has_more = _slice_transactions_for_display(
-        filtered,
+        regular_filtered,
         page=page,
         page_size=page_size,
     )
+    credit_purchase_rows = _credit_purchase_display_rows(credit_purchase_frame)
+    credit_purchase_summary = _credit_purchase_summary(credit_purchase_frame)
     all_categories = sorted(main_df["category"].dropna().unique().tolist()) if not main_df.empty and "category" in main_df.columns else []
 
     transaction_summary = {
@@ -222,6 +287,8 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict, *, page
         "transactions_page": page,
         "transactions_page_size": page_size,
         "transactions_has_more": has_more,
+        "credit_purchase_rows": credit_purchase_rows,
+        "credit_purchase_summary": credit_purchase_summary,
         "start": start,
         "end": end,
         "active_types": types,
@@ -259,7 +326,7 @@ def transactions_page_slice():
     params.update({"page": page, "page_size": page_size})
 
     payload = cached_context(
-        "transaction_table_page_v2",
+        "transaction_table_page_v3",
         lambda: _build_transactions_page_slice(scope_key, filter_state, page=page, page_size=page_size),
         params=params,
     )
@@ -268,8 +335,9 @@ def transactions_page_slice():
 
 def _build_transactions_page_slice(scope_key: str, filter_state: dict, *, page: int, page_size: int) -> dict:
     _main_df, filtered = _filtered_transactions_for_page(scope_key, filter_state)
+    regular_filtered, _credit_purchase_frame = _split_credit_purchase_rows(filtered)
     rows, total_rows, start_index, has_more = _slice_transactions_for_display(
-        filtered,
+        regular_filtered,
         page=page,
         page_size=page_size,
     )

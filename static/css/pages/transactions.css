@@ -126,3 +126,114 @@
   margin: 0.35rem 0 0;
   color: var(--muted);
 }
+
+/* Credit-card queue: card purchases stay separate from settled transaction log. */
+.credit-purchase-panel {
+  margin-bottom: 1rem;
+}
+
+.credit-purchase-summary-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.credit-purchase-summary-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.credit-purchase-summary-toggle span {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.credit-purchase-summary-toggle strong {
+  font-size: 1.04rem;
+}
+
+.credit-purchase-summary-toggle small,
+.credit-purchase-summary-toggle em {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-style: normal;
+}
+
+.credit-purchase-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.credit-purchase-card {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.78rem 0.9rem;
+  border: 1px solid rgba(44, 96, 140, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.credit-purchase-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.credit-purchase-main strong,
+.credit-purchase-main small {
+  display: block;
+}
+
+.credit-purchase-main small {
+  margin-top: 0.12rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.credit-purchase-main b {
+  white-space: nowrap;
+}
+
+.credit-purchase-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-left: 2.6rem;
+}
+
+.credit-purchase-meta span {
+  padding: 0.24rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(13, 110, 253, 0.08);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .credit-purchase-summary-toggle {
+    align-items: flex-start;
+  }
+
+  .credit-purchase-summary-toggle em {
+    display: none;
+  }
+
+  .credit-purchase-main {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .credit-purchase-main b {
+    grid-column: 2;
+  }
+
+  .credit-purchase-meta {
+    padding-left: 0;
+  }
+}

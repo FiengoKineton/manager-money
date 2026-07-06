@@ -68,6 +68,7 @@
         if (isDesktopDetailViewport() && canUseDesktopDrawer(row)) {
           event.preventDefault();
           event.stopPropagation();
+          if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
           openDesktopRowDrawer(row);
           return;
         }
@@ -598,6 +599,8 @@
     });
 
     addDesktopDrawerActions(elements.actions, row, detail);
+    elements.actions.classList.add("is-arming");
+    window.setTimeout(() => elements.actions.classList.remove("is-arming"), 180);
 
     elements.backdrop.classList.add("is-visible");
     elements.drawer.classList.add("is-visible");

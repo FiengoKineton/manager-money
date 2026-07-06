@@ -436,6 +436,11 @@ def _resolve_delegated(
 
 
 def _finalize(resolution: PaymentResolution) -> PaymentResolution:
+    # Preserve wrapper/delegation metadata that may have been attached before
+    # finalization.  The old code overwrote it with the flattened resolution
+    # snapshot, so a PayPal -> Credit Card wrapper looked like a plain PayPal
+    # balance transaction later in the CSV/account layer.
+    extra_metadata = dict(resolution.created_from_resolution or {})
     resolution.amount = _money(resolution.amount)
     for movement in resolution.movements:
         movement.amount = _money(movement.amount)
@@ -444,6 +449,8 @@ def _finalize(resolution: PaymentResolution) -> PaymentResolution:
     base.pop("created_from_resolution", None)
     base.pop("movements", None)
     base["movement_count"] = len(resolution.movements)
+    if extra_metadata:
+        base.update(extra_metadata)
     resolution.created_from_resolution = base
     return resolution
 

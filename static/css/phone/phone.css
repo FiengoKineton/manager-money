@@ -67,3 +67,186 @@ html.phone-shell-active .smart-floating-submit-proxy {
   min-width: 9.5rem !important;
   min-height: 3rem !important;
 }
+
+/* v12 phone-wide compact polish and drawer click safety. */
+.desktop-detail-actions.is-arming {
+  pointer-events: none !important;
+}
+
+html.phone-native-active .app-content-stage,
+html.phone-native-active .container {
+  padding-left: max(0.7rem, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(0.7rem, env(safe-area-inset-right, 0px)) !important;
+}
+
+html.phone-native-active .page-heading,
+html.phone-native-active .transactions-hero,
+html.phone-native-active .panel-card,
+html.phone-native-active .card,
+html.phone-native-active .form-section,
+html.phone-native-active .summary-card,
+html.phone-native-active .analysis-card,
+html.phone-native-active .mortgage-card,
+html.phone-native-active .managed-recurring-card,
+html.phone-native-active .bill-card,
+html.phone-native-active .work-income-card,
+html.phone-native-active .debt-card,
+html.phone-native-active .payable-card,
+html.phone-native-active .receivable-card,
+html.phone-native-active .project-card {
+  padding: 0.72rem !important;
+  margin-bottom: 0.58rem !important;
+  border-radius: 18px !important;
+}
+
+html.phone-native-active .page-heading h1,
+html.phone-native-active .transactions-hero h2,
+html.phone-native-active h1 {
+  font-size: clamp(1.12rem, 6vw, 1.42rem) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.045em !important;
+}
+
+html.phone-native-active h2,
+html.phone-native-active h3,
+html.phone-native-active .panel-header h2,
+html.phone-native-active .card-title {
+  font-size: 0.98rem !important;
+  line-height: 1.15 !important;
+}
+
+html.phone-native-active p,
+html.phone-native-active .hint,
+html.phone-native-active small,
+html.phone-native-active .muted,
+html.phone-native-active .helper-text,
+html.phone-native-active .page-heading p,
+html.phone-native-active .transactions-hero p {
+  font-size: 0.76rem !important;
+  line-height: 1.32 !important;
+}
+
+html.phone-native-active .dashboard-kpi strong,
+html.phone-native-active .transaction-stat-card strong,
+html.phone-native-active .summary-card strong,
+html.phone-native-active .metric-card strong,
+html.phone-native-active .kpi-card strong {
+  font-size: 1.02rem !important;
+}
+
+html.phone-native-active .transactions-summary-grid,
+html.phone-native-active .dashboard-kpi-grid,
+html.phone-native-active .dashboard-grid,
+html.phone-native-active .overview-grid,
+html.phone-native-active .summary-grid,
+html.phone-native-active .metrics-grid,
+html.phone-native-active .analysis-summary-grid,
+html.phone-native-active .forecast-grid,
+html.phone-native-active .mortgage-grid,
+html.phone-native-active .managed-recurring-grid,
+html.phone-native-active .form-grid,
+html.phone-native-active .stacked-form-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.5rem !important;
+}
+
+html.phone-native-active .transactions-filter-row,
+html.phone-native-active .filter-grid,
+html.phone-native-active .filters-grid,
+html.phone-native-active .search-filter-row {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0.5rem !important;
+}
+
+html.phone-native-active input,
+html.phone-native-active select,
+html.phone-native-active textarea,
+html.phone-native-active .primary-btn,
+html.phone-native-active .secondary-btn,
+html.phone-native-active button {
+  min-height: 40px !important;
+  font-size: 0.88rem !important;
+}
+
+html.phone-native-active .standard-table th,
+html.phone-native-active .standard-table td {
+  padding: 0.55rem 0.62rem !important;
+  font-size: 0.78rem !important;
+}
+
+html.phone-native-active .credit-purchase-panel {
+  padding: 0.68rem !important;
+}
+
+html.phone-native-active .credit-purchase-summary-toggle strong {
+  font-size: 0.92rem !important;
+}
+
+html.phone-native-active .credit-purchase-card {
+  padding: 0.62rem !important;
+  border-radius: 16px !important;
+}
+
+html.phone-native-active .credit-purchase-main {
+  gap: 0.55rem !important;
+}
+
+html.phone-native-active .credit-purchase-main small,
+html.phone-native-active .credit-purchase-meta span {
+  font-size: 0.68rem !important;
+}
+
+html.phone-native-active .phone-table-card {
+  padding: 0.66rem !important;
+  border-radius: 16px !important;
+}
+
+html.phone-native-active .phone-table-card-detail {
+  display: none !important;
+}
+
+html.phone-native-active .phone-table-card.phone-card-expanded .phone-table-card-detail {
+  display: grid !important;
+  gap: 0.45rem !important;
+  margin-top: 0.55rem !important;
+}
+
+html.phone-native-active .phone-table-card-open {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 34px !important;
+  padding: 0.45rem 0.65rem !important;
+  border-radius: 12px !important;
+  background: rgba(13, 110, 253, 0.12) !important;
+  color: var(--phone-brand) !important;
+  font-weight: 900 !important;
+  text-decoration: none !important;
+}
+
+
+@media (max-width: 520px) {
+  html.phone-native-active .transactions-summary-grid,
+  html.phone-native-active .dashboard-kpi-grid,
+  html.phone-native-active .dashboard-grid,
+  html.phone-native-active .overview-grid,
+  html.phone-native-active .summary-grid,
+  html.phone-native-active .metrics-grid,
+  html.phone-native-active .analysis-summary-grid,
+  html.phone-native-active .forecast-grid,
+  html.phone-native-active .mortgage-grid,
+  html.phone-native-active .managed-recurring-grid,
+  html.phone-native-active .form-grid,
+  html.phone-native-active .stacked-form-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  html.phone-native-active .wide-card,
+  html.phone-native-active .full-width,
+  html.phone-native-active .chart-card,
+  html.phone-native-active .panel-card.is-wide {
+    grid-column: 1 / -1 !important;
+  }
+}

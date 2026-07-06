@@ -14,6 +14,7 @@ from datetime import date as date_cls, datetime, timezone
 from typing import Any, Mapping
 
 from money_manager.domain.payment import LedgerMovementDraft
+from money_manager.config import CREDIT_CARD_PAYMENT_CATEGORY
 from money_manager.repositories.credit_settlements import (
     append_settlement,
     find_by_id,
@@ -22,14 +23,16 @@ from money_manager.repositories.credit_settlements import (
     upsert_by_uid,
 )
 from money_manager.repositories.pending import load_pending, write_pending, mark_executed
+from money_manager.repositories.transactions import append_transaction, load_all as load_transactions
 from money_manager.services.account_config_service import account_by_key, account_label_for_key
 from money_manager.services.account_ledger_service import append_ledger_movements, load_ledger
 from money_manager.services.payment_method_service import payment_method_by_id
+from money_manager.services.payment_routing_service import compute_due_date, compute_statement_period
 
 CREDIT_SETTLEMENT_SOURCE = "credit_settlement"
 CREDIT_SETTLEMENT_KIND = "credit_settlement"
 EXECUTABLE_STATUSES = {"open", "scheduled"}
-FINAL_STATUSES = {"executed", "cancelled", "adjusted"}
+FINAL_STATUSES = {"executed", "cancelled", "adjusted", "superseded"}
 
 
 def utc_now() -> str:
@@ -160,6 +163,74 @@ def _clean_snapshot_value(value: Any) -> str:
     return text
 
 
+def _credit_rule_method(payment_method_id: str, user_id: str | None = None) -> dict[str, Any] | None:
+    """Return the real credit-card method that owns statement rules.
+
+    A visible wrapper such as PayPal via Credit Card is the checkout channel, but
+    the due day and liability account belong to its delegated credit card.
+    """
+    method = payment_method_by_id(payment_method_id, include_archived=True, user_id=user_id) if payment_method_id else None
+    if not method:
+        return None
+    if str(method.get("settlement_mode") or "") == "delegated":
+        delegate_id = str(method.get("delegates_to_payment_method_id") or "").strip()
+        delegate = payment_method_by_id(delegate_id, include_archived=True, user_id=user_id) if delegate_id else None
+        if delegate and (str(delegate.get("method_type") or "") == "credit_card" or str(delegate.get("settlement_mode") or "") == "delayed"):
+            return delegate
+    return method
+
+
+def _safe_day(value: Any, default: int = 15) -> int:
+    try:
+        day = int(float(str(value or "").strip()))
+    except (TypeError, ValueError):
+        day = default
+    return max(1, min(31, day))
+
+
+def _effective_credit_schedule(row: Mapping[str, Any], metadata: Mapping[str, Any], user_id: str | None = None) -> dict[str, str]:
+    """Recompute the statement month/due date from the purchase date.
+
+    Older rows sometimes carried a same-month due-date snapshot after wrapper
+    repair.  Credit-card purchases should be grouped by their actual charge
+    month and settled on the configured day of the following month, unless the
+    method explicitly says otherwise.
+    """
+    tx_date = (
+        _clean_snapshot_value(row.get("effective_date"))
+        or _clean_snapshot_value(row.get("date"))
+        or _clean_snapshot_value(metadata.get("transaction_date"))
+        or date_cls.today().isoformat()
+    )[:10]
+    payment_method_id = _clean_snapshot_value(row.get("payment_method_id")) or _clean_snapshot_value(metadata.get("payment_method_id"))
+    method = _credit_rule_method(payment_method_id, user_id=user_id) or {}
+    rules = method.get("rules") if isinstance(method.get("rules"), Mapping) else {}
+
+    due_day = _safe_day(
+        rules.get("due_day")
+        or metadata.get("due_day_snapshot")
+        or metadata.get("due_day")
+        or row.get("payment_due_day_snapshot"),
+        15,
+    )
+    statement_day_raw = rules.get("statement_day")
+    try:
+        statement_day = int(statement_day_raw) if statement_day_raw else None
+    except (TypeError, ValueError):
+        statement_day = None
+    policy = str(rules.get("settlement_day_policy") or metadata.get("settlement_day_policy") or "next_month").strip() or "next_month"
+
+    statement_period = compute_statement_period(tx_date, statement_day=statement_day)
+    due_date = compute_due_date(tx_date, due_day=due_day, statement_day=statement_day, policy=policy)
+    return {
+        "due_date": due_date,
+        "statement_period": statement_period,
+        "due_day": str(due_day),
+        "statement_day": str(statement_day or ""),
+        "settlement_day_policy": policy,
+    }
+
+
 def group_unsettled_credit_movements(user_id: str | None = None) -> list[dict[str, Any]]:
     settled_groups = _settled_ledger_group_ids(user_id=user_id)
     groups: dict[tuple[str, str, str, str, str], dict[str, Any]] = {}
@@ -172,8 +243,9 @@ def group_unsettled_credit_movements(user_id: str | None = None) -> list[dict[st
         if ledger_group_id in settled_groups:
             continue
         metadata = _resolution_metadata(row)
-        due_date = str(metadata.get("due_date") or "")
-        statement_period = str(metadata.get("statement_period") or "")
+        schedule = _effective_credit_schedule(row, metadata, user_id=user_id)
+        due_date = schedule["due_date"]
+        statement_period = schedule["statement_period"]
         liability_account_id = str(row.get("account_id") or metadata.get("liability_account_id") or "credit_card")
         settlement_account_id = str(metadata.get("settlement_account_id") or metadata.get("funding_account_id") or "main_bank")
         payment_method_id = str(row.get("payment_method_id") or metadata.get("payment_method_id") or "")
@@ -199,6 +271,8 @@ def group_unsettled_credit_movements(user_id: str | None = None) -> list[dict[st
                 "movement_ids": [],
                 "ledger_group_ids": [],
                 "transaction_uids": [],
+                "due_day_snapshot": schedule.get("due_day", ""),
+                "settlement_day_policy": schedule.get("settlement_day_policy", "next_month"),
             }
         group = groups[key]
         group["amount"] = group["total_amount"] = round(float(group["total_amount"]) + amount, 2)
@@ -218,10 +292,13 @@ def group_unsettled_credit_movements(user_id: str | None = None) -> list[dict[st
 
 def sync_credit_settlements(today: date_cls | None = None, user_id: str | None = None, *, sync_pending: bool = True) -> dict[str, Any]:
     _backfill_missing_credit_liability_movements(user_id=user_id)
+    _repair_missing_executed_settlement_transactions(user_id=user_id)
     created_or_updated: list[int] = []
+    current_uids: set[str] = set()
     for group in group_unsettled_credit_movements(user_id=user_id):
         if _to_float(group.get("amount")) <= 0.005:
             continue
+        current_uids.add(str(group.get("settlement_uid") or ""))
         status = "scheduled" if _parse_date(group.get("due_date")) and _parse_date(group.get("due_date")) > (today or date_cls.today()) else "open"
         payload = {
             **group,
@@ -234,7 +311,132 @@ def sync_credit_settlements(today: date_cls | None = None, user_id: str | None =
         created_or_updated.append(settlement_id)
         if sync_pending:
             _sync_pending_for_settlement_id(settlement_id)
-    return {"ok": True, "settlement_count": len(created_or_updated), "settlement_ids": created_or_updated}
+    superseded = _supersede_stale_open_settlements(current_uids, sync_pending=sync_pending)
+    return {"ok": True, "settlement_count": len(created_or_updated), "settlement_ids": created_or_updated, "superseded_count": superseded}
+
+
+def _supersede_stale_open_settlements(current_uids: set[str], *, sync_pending: bool = True) -> int:
+    changed = 0
+    for row in load_rows():
+        status = str(row.get("status") or "open").lower()
+        if status in FINAL_STATUSES:
+            continue
+        uid = str(row.get("settlement_uid") or "")
+        if uid in current_uids:
+            continue
+        update_settlement(row.get("id", ""), {
+            "status": "superseded",
+            "notes": _merge_note(row.get("notes"), "Superseded by recalculated credit-card statement schedule."),
+            "updated_at": utc_now(),
+        })
+        if sync_pending:
+            _cancel_pending_for_settlement(row.get("id", ""))
+        changed += 1
+    return changed
+
+
+def _merge_note(existing: Any, note: str) -> str:
+    text = str(existing or "").strip()
+    note = str(note or "").strip()
+    if not note or note in text:
+        return text
+    return f"{text} | {note}" if text else note
+
+
+def _repair_missing_executed_settlement_transactions(user_id: str | None = None) -> int:
+    repaired = 0
+    for row in load_rows():
+        if str(row.get("status") or "").lower() != "executed":
+            continue
+        tx_uid = str(row.get("executed_transaction_uid") or f"credit_settlement:{row.get('id')}")
+        if _transaction_uid_exists(tx_uid):
+            continue
+        _append_settlement_transaction(row, _date_to_str(row.get("due_date")) or date_cls.today().isoformat(), user_id=user_id, automatic=False)
+        repaired += 1
+    return repaired
+
+
+def _transaction_uid_exists(tx_uid: str) -> bool:
+    wanted = str(tx_uid or "").strip()
+    if not wanted:
+        return False
+    try:
+        df = load_transactions()
+    except Exception:
+        return False
+    if df.empty or "transaction_uid" not in df.columns:
+        return False
+    return bool(df["transaction_uid"].fillna("").astype(str).eq(wanted).any())
+
+
+def _settlement_purchase_date_label(row: Mapping[str, Any], user_id: str | None = None) -> str:
+    groups = set(str(item) for item in _json_list(row.get("created_from_ledger_group_ids_json")) if item)
+    if not groups:
+        return ""
+    dates: list[str] = []
+    for ledger in load_ledger(include_void=False, user_id=user_id):
+        if str(ledger.get("ledger_group_id") or "") not in groups:
+            continue
+        if str(ledger.get("movement_kind") or "") != "credit_liability_increase":
+            continue
+        day = _date_to_str(ledger.get("effective_date") or ledger.get("date"))
+        if day:
+            dates.append(day)
+    dates = sorted(set(dates))
+    if not dates:
+        return ""
+    if len(dates) == 1:
+        return f"purchase made on {dates[0]}"
+    return f"purchases from {dates[0]} to {dates[-1]}"
+
+
+def _auto_description(description: str, automatic: bool) -> str:
+    text = str(description or "").strip()
+    if not automatic:
+        return text
+    if "auto" in text.casefold():
+        return text
+    return f"{text} [auto]" if text else "Credit-card settlement [auto]"
+
+
+def _append_settlement_transaction(row: Mapping[str, Any], effective: str, *, user_id: str | None = None, automatic: bool = False) -> int:
+    tx_uid = str(row.get("executed_transaction_uid") or f"credit_settlement:{row.get('id')}")
+    if _transaction_uid_exists(tx_uid):
+        return 0
+    amount = _to_float(row.get("amount"))
+    settlement_account_id = str(row.get("settlement_account_id") or "main_bank")
+    statement = str(row.get("statement_period") or "").strip()
+    method_name = str(row.get("payment_method_name_snapshot") or row.get("liability_account_name_snapshot") or "Credit card").strip()
+    purchase_label = _settlement_purchase_date_label(row, user_id=user_id)
+    description_parts = [
+        f"{method_name} settlement",
+        f"statement {statement}" if statement else "",
+        purchase_label,
+        f"paid on {effective}" if effective else "",
+    ]
+    description = _auto_description("; ".join(part for part in description_parts if part), automatic)
+    return append_transaction({
+        "type": "expense",
+        "transaction_uid": tx_uid,
+        "date": effective,
+        "category": CREDIT_CARD_PAYMENT_CATEGORY,
+        "sub_category": method_name,
+        "amount": f"{amount:.2f}",
+        "account": settlement_account_id,
+        "account_id": settlement_account_id,
+        "account_key_snapshot": settlement_account_id,
+        "account_name_snapshot": row.get("settlement_account_name_snapshot") or account_label_for_key(settlement_account_id, user_id=user_id),
+        "payment_method": row.get("payment_method_name_snapshot") or "",
+        "payment_method_id": row.get("payment_method_id") or "",
+        "payment_method_name_snapshot": row.get("payment_method_name_snapshot") or "",
+        "payment_channel_method_id_snapshot": row.get("payment_method_id") or "",
+        "payment_channel_name_snapshot": row.get("payment_method_name_snapshot") or "",
+        "settlement_mode_snapshot": "immediate",
+        "payment_statement_period_snapshot": statement,
+        "ledger_group_id": row.get("ledger_group_id") or "",
+        "ledger_status": "posted",
+        "description": description,
+    })
 
 
 def preview_credit_settlements(as_of: str | date_cls | datetime | None = None, user_id: str | None = None) -> list[dict[str, Any]]:
@@ -255,13 +457,21 @@ def preview_credit_settlements(as_of: str | date_cls | datetime | None = None, u
     return sorted(previews, key=lambda item: (item.get("due_date") or "9999-12-31", item.get("payment_method_name_snapshot") or ""))
 
 
-def execute_credit_settlement(settlement_id: str | int, execution_date: str | date_cls | datetime | None = None, user_id: str | None = None) -> dict[str, Any]:
+def execute_credit_settlement(
+    settlement_id: str | int,
+    execution_date: str | date_cls | datetime | None = None,
+    user_id: str | None = None,
+    *,
+    automatic: bool = False,
+) -> dict[str, Any]:
     row = find_by_id(settlement_id)
     if not row:
         return {"ok": False, "error": "Credit settlement not found."}
     status = str(row.get("status") or "open").lower()
     if status == "executed":
-        return {"ok": True, "already_executed": True, "ledger_group_id": row.get("ledger_group_id", "")}
+        effective_existing = _date_to_str(execution_date) or _date_to_str(row.get("due_date")) or date_cls.today().isoformat()
+        tx_id = _append_settlement_transaction(row, effective_existing, user_id=user_id, automatic=automatic)
+        return {"ok": True, "already_executed": True, "ledger_group_id": row.get("ledger_group_id", ""), "transaction_id": tx_id}
     if status not in EXECUTABLE_STATUSES:
         return {"ok": False, "error": f"Settlement status '{status}' cannot be executed."}
 
@@ -273,15 +483,17 @@ def execute_credit_settlement(settlement_id: str | int, execution_date: str | da
     tx_uid = str(row.get("executed_transaction_uid") or f"credit_settlement:{row.get('id')}")
     movements = _settlement_ledger_drafts(row, status="posted", effective_date=effective, ledger_group_id=ledger_group_id, transaction_uid=tx_uid)
     ledger_ids = append_ledger_movements(movements, user_id=user_id)
+    tx_id = _append_settlement_transaction({**row, "ledger_group_id": ledger_group_id, "executed_transaction_uid": tx_uid}, effective, user_id=user_id, automatic=automatic)
     update_settlement(row.get("id", ""), {
         "status": "executed",
         "ledger_group_id": ledger_group_id,
         "executed_transaction_uid": tx_uid,
+        "executed_transaction_id": str(tx_id or ""),
         "executed_at": utc_now(),
         "updated_at": utc_now(),
     })
     _mark_pending_for_settlement(row.get("id", ""))
-    return {"ok": True, "ledger_ids": ledger_ids, "ledger_group_id": ledger_group_id, "executed_transaction_uid": tx_uid}
+    return {"ok": True, "ledger_ids": ledger_ids, "ledger_group_id": ledger_group_id, "executed_transaction_uid": tx_uid, "transaction_id": tx_id}
 
 
 def settle_all_due(today: str | date_cls | datetime | None = None, user_id: str | None = None) -> dict[str, Any]:
@@ -294,7 +506,7 @@ def settle_all_due(today: str | date_cls | datetime | None = None, user_id: str 
             continue
         due = _parse_date(row.get("due_date"))
         if due and due <= target:
-            executed.append(execute_credit_settlement(row.get("id", ""), execution_date=target, user_id=user_id))
+            executed.append(execute_credit_settlement(row.get("id", ""), execution_date=target, user_id=user_id, automatic=True))
         else:
             skipped.append({"id": row.get("id"), "due_date": row.get("due_date")})
     return {"ok": True, "executed_count": len([item for item in executed if item.get("ok")]), "executed": executed, "skipped": skipped}

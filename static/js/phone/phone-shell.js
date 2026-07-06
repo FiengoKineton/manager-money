@@ -352,19 +352,30 @@
       ".payment-card",
       ".account-card",
       ".account-directory-card",
-      ".professional-table-card"
+      ".professional-table-card",
+      ".phone-table-card",
+      ".summary-card",
+      ".analysis-card",
+      ".mortgage-card",
+      ".managed-recurring-card",
+      ".bill-card",
+      ".work-income-card",
+      ".debt-card",
+      ".payable-card",
+      ".receivable-card",
+      ".project-card"
     ];
     document.querySelectorAll(selectors.join(",")).forEach((card) => {
       if (card.dataset.phoneCompactCardWired === "true") return;
       card.dataset.phoneCompactCardWired = "true";
       card.classList.add("phone-card-collapsible");
-      if (!card.classList.contains("recurring-rule-card") && !card.classList.contains("finished-rule-card")) {
+      const compactByDefault = card.matches(".recurring-rule-card, .finished-rule-card, .professional-table-card, .phone-table-card, .analysis-card, .mortgage-card, .managed-recurring-card, .bill-card, .work-income-card, .debt-card, .payable-card, .receivable-card, .project-card");
+      if (!compactByDefault) {
         card.classList.add("phone-card-expanded");
       }
       card.addEventListener("click", (event) => {
         if (!isPhone()) return;
         if (event.target.closest(compactInteractiveSelector)) return;
-        if (!card.classList.contains("recurring-rule-card") && !card.classList.contains("finished-rule-card")) return;
         event.preventDefault();
         card.classList.toggle("phone-card-expanded");
       });
@@ -387,9 +398,8 @@
         const cells = Array.from(row.children);
         const amountIndex = headers.findIndex((h) => /amount|totale|saldo|value|€|price|payment/i.test(h));
         const titleIndex = headers.findIndex((h) => /description|category|name|title|account|conto/i.test(h));
-        const card = document.createElement(row.dataset.href ? "a" : "article");
+        const card = document.createElement("article");
         card.className = "phone-table-card";
-        if (row.dataset.href) card.setAttribute("href", row.dataset.href);
         const title = text(cells[titleIndex >= 0 ? titleIndex : 0], "Item");
         const amount = amountIndex >= 0 ? text(cells[amountIndex], "") : "";
         const detail = cells.map((cell, index) => ({ label: headers[index] || "Info", value: text(cell) }))
@@ -397,7 +407,8 @@
           .slice(0, 4)
           .map((item) => `<span><small>${htmlEscape(item.label)}</small><b>${htmlEscape(item.value)}</b></span>`)
           .join("");
-        card.innerHTML = `<div class="phone-table-card-head"><strong>${htmlEscape(title)}</strong>${amount ? `<em>${htmlEscape(amount)}</em>` : ""}</div><div class="phone-table-card-detail">${detail}</div>`;
+        const openLink = row.dataset.href ? `<a class="phone-table-card-open" href="${htmlEscape(row.dataset.href)}">Open</a>` : "";
+        card.innerHTML = `<div class="phone-table-card-head"><strong>${htmlEscape(title)}</strong>${amount ? `<em>${htmlEscape(amount)}</em>` : ""}</div><div class="phone-table-card-detail">${detail}${openLink}</div>`;
         list.appendChild(card);
       });
       table.insertAdjacentElement("afterend", list);
