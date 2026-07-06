@@ -680,12 +680,22 @@ def update_existing_transaction(row_index: int, form) -> dict:
     route_data = dict(original)
     route_data.update(data)
     if tx_input.payment_method_id:
+        # The edit page's visible selector is the source of truth.  Do not keep
+        # the old payment_channel_method_id_snapshot as a hidden submitted value:
+        # otherwise changing PayPal balance -> PayPal via Credit Card can look
+        # selected in the browser but still rebuild through the old route.
         route_data["payment_method_id"] = tx_input.payment_method_id
+        route_data["payment_channel_method_id"] = tx_input.payment_method_id
     else:
         route_data["payment_method_id"] = original.get("payment_method_id", "")
+        route_data["payment_channel_method_id"] = original.get("payment_channel_method_id_snapshot", "")
     route_data["account_id"] = _effective_account_id_for_edit(original, route_data, tx_input)
 
-    payment_changed = tx_input.force_payment_rebuild or _payment_affecting_changed(original, route_data)
+    payment_changed = (
+        tx_input.force_payment_rebuild
+        or _payment_affecting_changed(original, route_data)
+        or _submitted_payment_context_changed(original, route_data, tx_input)
+    )
     if not payment_changed:
         update_transaction(original.get("id", ""), original.get("type", ""), data)
         return {"ok": True, "message": "Transaction metadata updated; ledger route unchanged."}
@@ -823,6 +833,37 @@ def _effective_account_id_for_edit(original: Mapping[str, Any], route_data: Mapp
     if new_account != old_account:
         return normalize_account_key(new_account) if new_account else MAIN_ACCOUNT_KEY
     return _first_nonblank(tx_input.account_id, original.get("account_id"), original.get("account_key_snapshot"), normalize_account_key(new_account))
+
+
+def _submitted_payment_context_changed(original: Mapping[str, Any], route_data: Mapping[str, Any], tx_input: TransactionInput) -> bool:
+    """Return True when the edit form explicitly changed the visible route.
+
+    Some existing rows store both the real method and a visible wrapper/channel
+    snapshot.  For example, a PayPal payment can show a PayPal wrapper while the
+    old row still carries a previous immediate PayPal-balance route.  Comparing
+    only the normalized legacy context may miss that UI-level intent, so the
+    posted stable ids are checked directly.
+    """
+    submitted_method = str(tx_input.payment_method_id or "").strip()
+    if submitted_method:
+        original_methods = {
+            str(original.get("payment_method_id") or "").strip(),
+            str(original.get("payment_channel_method_id_snapshot") or "").strip(),
+        }
+        if submitted_method not in original_methods:
+            return True
+
+    submitted_account = str(tx_input.account_id or "").strip()
+    if submitted_account:
+        original_accounts = {
+            str(original.get("account_id") or "").strip(),
+            str(original.get("account_key_snapshot") or "").strip(),
+            normalize_account_key(str(original.get("account") or "")),
+        }
+        if submitted_account not in original_accounts:
+            return True
+
+    return False
 
 
 def _payment_affecting_changed(original: Mapping[str, Any], route_data: Mapping[str, Any]) -> bool:

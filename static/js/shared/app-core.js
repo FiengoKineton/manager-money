@@ -1300,3 +1300,44 @@
     });
   });
 })();
+
+/* --------------------------------------------------------------------------
+   Browser history controls
+-------------------------------------------------------------------------- */
+(function () {
+  function homeFallback() {
+    const home = document.querySelector('[aria-label="Home"][href], .phone-dock-item[href], a[href="/dashboard"], a[href="/accounts"]');
+    return home ? home.getAttribute('href') : '/dashboard';
+  }
+
+  function navigateBack() {
+    const before = window.location.href;
+    if (window.history.length > 1) {
+      window.history.back();
+      window.setTimeout(() => {
+        if (window.location.href === before && homeFallback()) window.location.href = homeFallback();
+      }, 450);
+      return;
+    }
+    window.location.href = homeFallback();
+  }
+
+  function navigateForward() {
+    window.history.forward();
+  }
+
+  document.addEventListener('click', function (event) {
+    const back = event.target.closest('[data-browser-back]');
+    if (back) {
+      event.preventDefault();
+      navigateBack();
+      return;
+    }
+
+    const forward = event.target.closest('[data-browser-forward]');
+    if (forward) {
+      event.preventDefault();
+      navigateForward();
+    }
+  });
+})();

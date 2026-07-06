@@ -662,7 +662,7 @@ def _safe_payment_form_context(tx: dict) -> dict:
         return payment_form_context(
             transaction_type=str(tx.get("type") or "expense"),
             selected_account_id=tx.get("account_id") or tx.get("account_key") or tx.get("account"),
-            selected_payment_method_id=tx.get("payment_method_id") or tx.get("payment_channel_method_id_snapshot"),
+            selected_payment_method_id=tx.get("payment_channel_method_id_snapshot") or tx.get("payment_method_id"),
         )
     except Exception:
         current_app.logger.exception("Failed to build payment form context for transaction detail")

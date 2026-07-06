@@ -134,8 +134,10 @@
     </form>
   </section>
 
-  <form method="post" class="transaction-form">
-    <input type="hidden" name="payment_channel_method_id" value="{{ tx.payment_channel_method_id_snapshot }}">
+  <form method="post" class="transaction-form" data-transaction-payment-form>
+    <input type="hidden" name="force_payment_rebuild" value="0" data-force-payment-rebuild>
+    <input type="hidden" name="original_account_id" value="{{ tx.account_id or tx.account_key or payment_form.selected_account_id }}">
+    <input type="hidden" name="original_payment_method_id" value="{{ tx.payment_method_id or tx.payment_channel_method_id_snapshot or payment_form.selected_payment_method_id }}">
     <div>
       <label>Date</label>
       <input type="date" name="date" value="{{ tx.date }}">
@@ -171,7 +173,7 @@
 
     <div>
       <label>Account / Conto</label>
-      <select name="account_id">
+      <select name="account_id" id="transaction-account-select" data-original-value="{{ tx.account_id or tx.account_key or payment_form.selected_account_id }}">
         {% for account in payment_form.account_options %}
           <option value="{{ account.id }}"
             {% if (tx.account_id or tx.account_key or payment_form.selected_account_id) == account.id %}selected{% endif %}
@@ -186,17 +188,18 @@
 
     <div>
       <label>Payment Method / Metodo di pagamento</label>
-      <select name="payment_method_id">
+      <select name="payment_method_id" id="transaction-payment-method-select" data-original-value="{{ tx.payment_method_id or tx.payment_channel_method_id_snapshot or payment_form.selected_payment_method_id }}">
         {% if tx.type == 'income' %}<option value="">Optional for income</option>{% endif %}
         {% for method in payment_form.payment_method_options %}
           <option value="{{ method.id }}"
-            {% if (tx.payment_method_id or payment_form.selected_payment_method_id) == method.id %}selected{% endif %}
+            data-description="{{ method.description|e }}"
+            {% if (tx.payment_channel_method_id_snapshot or tx.payment_method_id or payment_form.selected_payment_method_id) == method.id %}selected{% endif %}
             {% if method.disabled_reason %}disabled{% endif %}>
             {{ method.label }}{% if method.disabled_reason %} — {{ method.disabled_reason }}{% endif %}
           </option>
         {% endfor %}
       </select>
-      <small class="hint">{{ payment_form.selected_payment_method_explanation }}</small>
+      <small class="hint" data-payment-method-hint>{{ payment_form.selected_payment_method_explanation }}</small>
     </div>
 
     <div class="form-field-wide">
@@ -277,7 +280,80 @@
       updateReceiptTotals();
     });
   }
+
+  function wireTransactionPaymentEdit() {
+    const form = document.querySelector("[data-transaction-payment-form]");
+    if (!form) return;
+    const accountSelect = document.getElementById("transaction-account-select");
+    const methodSelect = document.getElementById("transaction-payment-method-select");
+    const hint = form.querySelector("[data-payment-method-hint]");
+    const rebuildInput = form.querySelector("[data-force-payment-rebuild]");
+    let paymentForm = {};
+    try {
+      paymentForm = {{ payment_form_json|safe }} || {};
+    } catch (error) {
+      paymentForm = {};
+    }
+    const methodsByAccount = paymentForm.payment_methods_by_account || {};
+    const originalAccount = (accountSelect?.dataset.originalValue || "").trim();
+    const originalMethod = (methodSelect?.dataset.originalValue || "").trim();
+
+    function currentMethods(accountId) {
+      return methodsByAccount[accountId] || paymentForm.payment_method_options || [];
+    }
+
+    function setRebuildFlag() {
+      if (!rebuildInput) return;
+      const accountChanged = accountSelect && (accountSelect.value || "") !== originalAccount;
+      const methodChanged = methodSelect && (methodSelect.value || "") !== originalMethod;
+      rebuildInput.value = accountChanged || methodChanged ? "1" : "0";
+    }
+
+    function updateHint() {
+      if (!methodSelect || !hint) return;
+      const selected = methodSelect.options[methodSelect.selectedIndex];
+      hint.textContent = selected?.dataset.description || "Select a payment method to preview its route.";
+      setRebuildFlag();
+    }
+
+    function renderMethodsForAccount() {
+      if (!accountSelect || !methodSelect) {
+        updateHint();
+        return;
+      }
+      const wanted = methodSelect.value || originalMethod;
+      const methods = currentMethods(accountSelect.value);
+      if (!methods.length) {
+        updateHint();
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      methods.forEach((method) => {
+        const option = document.createElement("option");
+        option.value = method.id || method.value || "";
+        option.textContent = method.label || option.value;
+        option.dataset.description = method.description || "";
+        if (method.disabled_reason) {
+          option.disabled = true;
+          option.textContent += " — " + method.disabled_reason;
+        }
+        if (option.value === wanted) option.selected = true;
+        fragment.appendChild(option);
+      });
+      methodSelect.replaceChildren(fragment);
+      if (wanted && Array.from(methodSelect.options).some((option) => option.value === wanted)) {
+        methodSelect.value = wanted;
+      }
+      updateHint();
+    }
+
+    if (accountSelect) accountSelect.addEventListener("change", renderMethodsForAccount);
+    if (methodSelect) methodSelect.addEventListener("change", updateHint);
+    renderMethodsForAccount();
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
+    wireTransactionPaymentEdit();
     document.querySelectorAll(".receipt-item-row").forEach(wireRow);
     ["receipt-discount-type", "receipt-discount-value"].forEach((id) => {
       const el = document.getElementById(id);

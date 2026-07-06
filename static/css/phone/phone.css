@@ -3,7 +3,7 @@
    The desktop stylesheet is still loaded first by base.html. This file is
    media-gated in the template and contains only the real phone overrides.
 -------------------------------------------------------------------------- */
-@import url("phone-native-app.css");
+@import url("phone-native-app.css?v=phone-nav-1");
 @import url("phone-transactions.css");
 @import url("phone-add-flow.css");
 

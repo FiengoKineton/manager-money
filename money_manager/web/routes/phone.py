@@ -14,4 +14,4 @@ def phone_home():
     device breakpoint. This route avoids a confusing 404 when someone opens
     /phone from the URL printed by the phone launcher.
     """
-    return redirect(url_for("accounts.accounts_page"))
+    return redirect(url_for("dashboard.index", ui="phone"))

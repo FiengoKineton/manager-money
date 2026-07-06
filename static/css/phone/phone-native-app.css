@@ -100,11 +100,11 @@ html.phone-native-active .phone-native-topbar {
   top: 0 !important;
   z-index: 1100 !important;
   display: grid !important;
-  grid-template-columns: 42px minmax(0, 1fr) 42px 42px !important;
+  grid-template-columns: auto minmax(0, 1fr) 40px 40px !important;
   align-items: center !important;
-  gap: 8px !important;
+  gap: 7px !important;
   height: calc(var(--phone-top-height) + env(safe-area-inset-top, 0px)) !important;
-  padding: calc(env(safe-area-inset-top, 0px) + 7px) 10px 7px !important;
+  padding: calc(env(safe-area-inset-top, 0px) + 7px) 8px 7px !important;
   box-sizing: border-box !important;
   background: rgba(235, 249, 255, 0.92) !important;
   backdrop-filter: blur(18px) saturate(1.35) !important;
@@ -135,6 +135,39 @@ html.phone-native-active .phone-title-block strong {
   font-size: 1.03rem !important;
   letter-spacing: -0.03em !important;
   color: var(--phone-text) !important;
+}
+
+html.phone-native-active .phone-history-nav {
+  display: grid !important;
+  grid-template-columns: repeat(3, 32px) !important;
+  gap: 4px !important;
+  align-items: center !important;
+  min-width: 0 !important;
+}
+
+html.phone-native-active .phone-mini-nav-btn {
+  appearance: none !important;
+  width: 32px !important;
+  height: 38px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(44, 96, 140, 0.12) !important;
+  background: rgba(255, 255, 255, 0.76) !important;
+  color: var(--phone-text) !important;
+  box-shadow: 0 8px 18px rgba(36, 80, 120, 0.08) !important;
+  text-decoration: none !important;
+  font: inherit !important;
+  font-size: 1rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+html.phone-native-active .phone-mini-nav-btn:active,
+html.phone-native-active .phone-icon-btn:active,
+html.phone-native-active .phone-dock-item:active {
+  transform: translateY(1px) !important;
 }
 
 html.phone-native-active .phone-icon-btn,
@@ -201,9 +234,7 @@ html.phone-native-active .app-topbar::after {
 }
 
 html.phone-native-active .topbar-nav-buttons {
-  display: flex !important;
-  gap: 8px !important;
-  margin-bottom: 10px !important;
+  display: none !important;
 }
 
 html.phone-native-active .topbar-nav-btn {
@@ -212,7 +243,6 @@ html.phone-native-active .topbar-nav-btn {
   min-width: 38px !important;
   border-radius: 15px !important;
   font-size: 1.05rem !important;
-  display: grid !important;
   place-items: center !important;
   padding: 0 !important;
 }
@@ -1074,4 +1104,46 @@ html[data-theme="night"].phone-native-active .phone-settings-group,
 html[data-theme="night"].phone-native-active .phone-settings-link {
   background: rgba(28, 45, 72, 0.82) !important;
   border-color: rgba(162, 196, 255, 0.15) !important;
+}
+
+/* Compact native phone navigation controls. */
+html[data-theme="night"].phone-native-active .phone-mini-nav-btn {
+  background: rgba(28, 45, 72, 0.82) !important;
+  border-color: rgba(162, 196, 255, 0.15) !important;
+  color: var(--phone-text) !important;
+}
+
+@media (max-width: 380px) {
+  html.phone-native-active {
+    --phone-top-height: 56px;
+  }
+
+  html.phone-native-active .phone-native-topbar {
+    grid-template-columns: auto minmax(0, 1fr) 38px 38px !important;
+    gap: 5px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
+  html.phone-native-active .phone-history-nav {
+    grid-template-columns: repeat(3, 28px) !important;
+    gap: 3px !important;
+  }
+
+  html.phone-native-active .phone-mini-nav-btn {
+    width: 28px !important;
+    height: 36px !important;
+    border-radius: 12px !important;
+    font-size: .95rem !important;
+  }
+
+  html.phone-native-active .phone-icon-btn {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 14px !important;
+  }
+
+  html.phone-native-active .phone-title-block small {
+    display: none !important;
+  }
 }

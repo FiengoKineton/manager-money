@@ -283,7 +283,11 @@
       document.body.appendChild(topbar);
     }
     topbar.innerHTML = `
-      <button type="button" class="phone-icon-btn" data-phone-open="menu" aria-expanded="false" aria-label="Open menu">☰</button>
+      <nav class="phone-history-nav" aria-label="Page navigation">
+        <a class="phone-mini-nav-btn" href="${htmlEscape(homeHref())}" title="Home" aria-label="Home">⌂</a>
+        <button type="button" class="phone-mini-nav-btn" data-browser-back title="Back" aria-label="Back">‹</button>
+        <button type="button" class="phone-mini-nav-btn" data-browser-forward title="Forward" aria-label="Forward">›</button>
+      </nav>
       <div class="phone-title-block"><small>Personal finance</small><strong>${htmlEscape(currentTitle())}</strong></div>
       <button type="button" class="phone-icon-btn" data-phone-open="search" aria-expanded="false" aria-label="Search">⌕</button>
       <button type="button" class="phone-icon-btn phone-alert-btn" data-phone-open="alerts" aria-expanded="false" aria-label="Alerts">🔔${unreadCount() !== "0" ? `<em>${htmlEscape(unreadCount())}</em>` : ""}</button>`;
