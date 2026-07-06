@@ -1147,3 +1147,230 @@ html[data-theme="night"].phone-native-active .phone-mini-nav-btn {
     display: none !important;
   }
 }
+
+/* v8 compact phone cards: keep lists readable, reveal full controls after tap. */
+html.phone-native-active {
+  --phone-top-height: 54px;
+  --phone-dock-height: 70px;
+  --phone-page-pad: 9px;
+  --phone-radius: 18px;
+}
+
+html.phone-native-active .phone-native-topbar {
+  grid-template-columns: auto minmax(0, 1fr) 38px 38px !important;
+  gap: 6px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+html.phone-native-active .phone-history-nav {
+  grid-template-columns: repeat(3, 30px) !important;
+  gap: 3px !important;
+}
+
+html.phone-native-active .phone-mini-nav-btn {
+  width: 30px !important;
+  height: 34px !important;
+  border-radius: 12px !important;
+}
+
+html.phone-native-active .phone-icon-btn {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 14px !important;
+}
+
+html.phone-native-active .phone-bottom-dock {
+  min-height: var(--phone-dock-height) !important;
+  padding: 5px !important;
+  border-radius: 24px !important;
+}
+
+html.phone-native-active .phone-dock-item {
+  min-height: 52px !important;
+  border-radius: 17px !important;
+  padding: 4px 2px !important;
+}
+
+html.phone-native-active .phone-dock-add {
+  transform: translateY(-5px) !important;
+}
+
+html.phone-native-active .panel-header,
+html.phone-native-active .pending-hero-copy,
+html.phone-native-active .pending-hero-card,
+html.phone-native-active .add-recurring-card,
+html.phone-native-active .recurring-rules-card {
+  gap: 8px !important;
+}
+
+html.phone-native-active .panel-header p,
+html.phone-native-active .pending-hero-copy p,
+html.phone-native-active .form-section > p,
+html.phone-native-active .transactions > p:not(.empty) {
+  display: none !important;
+}
+
+html.phone-native-active .pending-hero-card,
+html.phone-native-active .add-recurring-card,
+html.phone-native-active .recurring-rules-card,
+html.phone-native-active .form-section,
+html.phone-native-active .transactions,
+html.phone-native-active .panel-card,
+html.phone-native-active .payment-card,
+html.phone-native-active .account-card,
+html.phone-native-active .professional-table-card {
+  padding: 11px !important;
+  margin-bottom: 9px !important;
+  border-radius: 18px !important;
+}
+
+html.phone-native-active .pending-hero-metrics,
+html.phone-native-active .rule-metric-grid,
+html.phone-native-active .finished-metric-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+html.phone-native-active .pending-hero-metrics > *,
+html.phone-native-active .rule-metric-grid > *,
+html.phone-native-active .finished-metric-grid > * {
+  padding: 9px !important;
+  border-radius: 14px !important;
+  min-width: 0 !important;
+}
+
+html.phone-native-active .recurring-rule-list,
+html.phone-native-active .finished-rule-list {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+html.phone-native-active .recurring-rule-card,
+html.phone-native-active .finished-rule-card {
+  position: relative !important;
+  padding: 10px 42px 10px 10px !important;
+  cursor: pointer !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+html.phone-native-active .recurring-rule-card::after,
+html.phone-native-active .finished-rule-card::after {
+  content: "⌄" !important;
+  position: absolute !important;
+  right: 12px !important;
+  top: 14px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  background: rgba(13, 110, 253, 0.10) !important;
+  color: var(--phone-brand) !important;
+  font-weight: 900 !important;
+  transition: transform 160ms ease !important;
+}
+
+html.phone-native-active .recurring-rule-card.phone-card-expanded::after,
+html.phone-native-active .finished-rule-card.phone-card-expanded::after {
+  transform: rotate(180deg) !important;
+}
+
+html.phone-native-active .rule-card-topline,
+html.phone-native-active .finished-rule-main {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  gap: 7px !important;
+}
+
+html.phone-native-active .rule-name-field label,
+html.phone-native-active .rule-amount-stack span,
+html.phone-native-active .rule-badges .type-badge,
+html.phone-native-active .finished-rule-main form {
+  display: none !important;
+}
+
+html.phone-native-active .rule-name-field input {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-weight: 900 !important;
+  font-size: 1rem !important;
+  line-height: 1.18 !important;
+  color: var(--phone-text) !important;
+  pointer-events: none !important;
+}
+
+html.phone-native-active .recurring-rule-card.phone-card-expanded .rule-name-field input {
+  min-height: 42px !important;
+  padding: 0.62rem 0.8rem !important;
+  border: 1px solid rgba(44, 96, 140, 0.12) !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  pointer-events: auto !important;
+}
+
+html.phone-native-active .rule-amount-stack strong {
+  font-size: 0.98rem !important;
+  white-space: nowrap !important;
+}
+
+html.phone-native-active .rule-badges {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  gap: 5px !important;
+  overflow-x: auto !important;
+  padding-bottom: 2px !important;
+}
+
+html.phone-native-active .soft-badge,
+html.phone-native-active .type-badge,
+html.phone-native-active .section-count {
+  min-height: 0 !important;
+  padding: 4px 8px !important;
+  font-size: 0.68rem !important;
+  white-space: nowrap !important;
+}
+
+html.phone-native-active .recurring-rule-card:not(.phone-card-expanded) .rule-metric-grid,
+html.phone-native-active .recurring-rule-card:not(.phone-card-expanded) .rule-fields-grid,
+html.phone-native-active .recurring-rule-card:not(.phone-card-expanded) .rule-card-actions,
+html.phone-native-active .finished-rule-card:not(.phone-card-expanded) .finished-metric-grid,
+html.phone-native-active .finished-rule-card:not(.phone-card-expanded) .inline-form {
+  display: none !important;
+}
+
+html.phone-native-active .recurring-rule-card.phone-card-expanded .rule-fields-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  margin-top: 9px !important;
+}
+
+html.phone-native-active .recurring-rule-card.phone-card-expanded .rule-card-actions,
+html.phone-native-active .finished-rule-card.phone-card-expanded .inline-form {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  margin-top: 9px !important;
+}
+
+html.phone-native-active .finished-rule-card h3,
+html.phone-native-active .finished-rule-card p {
+  margin: 0 !important;
+}
+
+html.phone-native-active .finished-rule-card p {
+  color: var(--phone-muted) !important;
+  font-size: .78rem !important;
+}
+
+html.phone-native-active .phone-card-collapsible:not(.phone-card-expanded) .phone-card-extra,
+html.phone-native-active .phone-card-collapsible:not(.phone-card-expanded) .payment-edit-grid,
+html.phone-native-active .phone-card-collapsible:not(.phone-card-expanded) .account-metrics-grid,
+html.phone-native-active .phone-card-collapsible:not(.phone-card-expanded) .account-card-detail {
+  display: none !important;
+}

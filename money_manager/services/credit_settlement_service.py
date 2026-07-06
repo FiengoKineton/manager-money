@@ -36,6 +36,130 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def _backfill_missing_credit_liability_movements(user_id: str | None = None) -> int:
+    """Create missing credit-liability ledger rows from delayed transaction snapshots.
+
+    Older saves/edits could store the transaction's delayed payment snapshots but
+    fail to append the matching `credit_liability_increase` ledger row.  The
+    settlement window is ledger-backed, so those purchases looked invisible even
+    though the transaction detail correctly said it was paid by credit card.
+
+    The backfill is conservative: it only touches expense rows that already carry
+    delayed/credit snapshots and skips every transaction UID that already has an
+    active credit-liability movement.
+    """
+    try:
+        from money_manager.domain.transaction import make_transaction_uid
+        from money_manager.repositories.transactions import load_all as load_transactions
+        from money_manager.services.payment_routing_service import compute_statement_period
+    except Exception:
+        return 0
+
+    existing_credit_uids = {
+        str(row.get("transaction_uid") or "")
+        for row in load_ledger(include_void=False, user_id=user_id)
+        if str(row.get("movement_kind") or "") == "credit_liability_increase"
+    }
+    try:
+        df = load_transactions()
+    except Exception:
+        return 0
+    if df.empty:
+        return 0
+
+    rows_to_append: list[dict[str, Any]] = []
+    for _, tx in df.fillna("").iterrows():
+        tx_row = tx.to_dict()
+        tx_type = _clean_snapshot_value(tx_row.get("type")).casefold()
+        if tx_type != "expense":
+            continue
+        settlement_mode = _clean_snapshot_value(tx_row.get("settlement_mode_snapshot")).casefold()
+        due_date = _clean_snapshot_value(tx_row.get("payment_due_date_snapshot"))
+        liability_id = _clean_snapshot_value(tx_row.get("liability_account_id_snapshot"))
+        if settlement_mode != "delayed" and not (due_date and liability_id):
+            continue
+        amount = abs(_to_float(tx_row.get("amount")))
+        if amount <= 0.005:
+            continue
+
+        tx_uid = _clean_snapshot_value(tx_row.get("transaction_uid")) or make_transaction_uid(tx_type, _clean_snapshot_value(tx_row.get("id")))
+        if not tx_uid or tx_uid in existing_credit_uids:
+            continue
+
+        liability_id = liability_id or "credit_card"
+        settlement_id = (
+            _clean_snapshot_value(tx_row.get("settlement_account_id_snapshot"))
+            or _clean_snapshot_value(tx_row.get("funding_account_id_snapshot"))
+            or "main_bank"
+        )
+        method_id = (
+            _clean_snapshot_value(tx_row.get("payment_channel_method_id_snapshot"))
+            or _clean_snapshot_value(tx_row.get("payment_method_id"))
+        )
+        method_name = (
+            _clean_snapshot_value(tx_row.get("payment_channel_name_snapshot"))
+            or _clean_snapshot_value(tx_row.get("payment_method_name_snapshot"))
+            or method_id
+        )
+        tx_date = _clean_snapshot_value(tx_row.get("date"))[:10] or date_cls.today().isoformat()
+        statement_period = _clean_snapshot_value(tx_row.get("payment_statement_period_snapshot")) or compute_statement_period(tx_date)
+        if not due_date:
+            due_day = int(_to_float(tx_row.get("payment_due_day_snapshot")) or 15)
+            from money_manager.services.payment_routing_service import compute_due_date
+
+            due_date = compute_due_date(tx_date, due_day=due_day)
+
+        ledger_group_id = _clean_snapshot_value(tx_row.get("ledger_group_id")) or f"lg_credit_backfill_{uuid.uuid4().hex}"
+        metadata = {
+            "payment_method_id": method_id,
+            "payment_method_name_snapshot": method_name,
+            "settlement_mode": "delayed",
+            "funding_account_id": _clean_snapshot_value(tx_row.get("funding_account_id_snapshot")) or settlement_id,
+            "settlement_account_id": settlement_id,
+            "liability_account_id": liability_id,
+            "due_date": due_date,
+            "due_day_snapshot": _clean_snapshot_value(tx_row.get("payment_due_day_snapshot")),
+            "statement_period": statement_period,
+            "movement_count": 1,
+            "backfilled_from_transaction_snapshot": True,
+        }
+        rows_to_append.append({
+            "ledger_group_id": ledger_group_id,
+            "transaction_uid": tx_uid,
+            "transaction_type": tx_type,
+            "transaction_id": _clean_snapshot_value(tx_row.get("id")),
+            "source_kind": "transaction_credit_backfill",
+            "source_id": _clean_snapshot_value(tx_row.get("id")),
+            "date": tx_date,
+            "effective_date": tx_date,
+            "account_id": liability_id,
+            "account_name_snapshot": _clean_snapshot_value(tx_row.get("liability_account_name_snapshot")) or account_label_for_key(liability_id, user_id=user_id),
+            "payment_method_id": method_id,
+            "payment_method_name_snapshot": method_name,
+            "movement_kind": "credit_liability_increase",
+            "direction": "liability_increase",
+            "amount": amount,
+            "currency": "EUR",
+            "signed_amount": -amount,
+            "status": "posted",
+            "is_void": "0",
+            "created_from_resolution_json": json.dumps(metadata, ensure_ascii=False, sort_keys=True),
+            "notes": "Backfilled credit-card liability movement from delayed transaction snapshot.",
+        })
+        existing_credit_uids.add(tx_uid)
+
+    if rows_to_append:
+        append_ledger_movements(rows_to_append, user_id=user_id)
+    return len(rows_to_append)
+
+
+def _clean_snapshot_value(value: Any) -> str:
+    text = str(value or "").strip()
+    if text.lower() in {"nan", "nat", "none", "null"}:
+        return ""
+    return text
+
+
 def group_unsettled_credit_movements(user_id: str | None = None) -> list[dict[str, Any]]:
     settled_groups = _settled_ledger_group_ids(user_id=user_id)
     groups: dict[tuple[str, str, str, str, str], dict[str, Any]] = {}
@@ -93,6 +217,7 @@ def group_unsettled_credit_movements(user_id: str | None = None) -> list[dict[st
 
 
 def sync_credit_settlements(today: date_cls | None = None, user_id: str | None = None, *, sync_pending: bool = True) -> dict[str, Any]:
+    _backfill_missing_credit_liability_movements(user_id=user_id)
     created_or_updated: list[int] = []
     for group in group_unsettled_credit_movements(user_id=user_id):
         if _to_float(group.get("amount")) <= 0.005:

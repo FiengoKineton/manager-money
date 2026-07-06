@@ -32,6 +32,7 @@
       const row = event.target.closest(".clickable-row");
       if (!row || !root.contains(row)) return;
       if (event.target.closest(interactiveSelector)) return;
+      if (row.dataset.desktopDrawerReady === "true" || row.querySelector(".transaction-row-actions-source")) return;
       const href = row.dataset.href;
       if (href) window.location.href = href;
     });

@@ -342,6 +342,35 @@
     });
   }
 
+  const compactInteractiveSelector = "a, button, input, select, textarea, label, summary, [role='button'], .icon-action-btn, .desktop-drawer-primary-action";
+
+  function wirePhoneCompactCards() {
+    if (!isPhone()) return;
+    const selectors = [
+      ".recurring-rule-card",
+      ".finished-rule-card",
+      ".payment-card",
+      ".account-card",
+      ".account-directory-card",
+      ".professional-table-card"
+    ];
+    document.querySelectorAll(selectors.join(",")).forEach((card) => {
+      if (card.dataset.phoneCompactCardWired === "true") return;
+      card.dataset.phoneCompactCardWired = "true";
+      card.classList.add("phone-card-collapsible");
+      if (!card.classList.contains("recurring-rule-card") && !card.classList.contains("finished-rule-card")) {
+        card.classList.add("phone-card-expanded");
+      }
+      card.addEventListener("click", (event) => {
+        if (!isPhone()) return;
+        if (event.target.closest(compactInteractiveSelector)) return;
+        if (!card.classList.contains("recurring-rule-card") && !card.classList.contains("finished-rule-card")) return;
+        event.preventDefault();
+        card.classList.toggle("phone-card-expanded");
+      });
+    });
+  }
+
   function convertGenericTables() {
     if (!isPhone()) return;
     document.querySelectorAll("table:not([data-no-mobile-cards])").forEach((table) => {
@@ -379,6 +408,7 @@
     ensureShell();
     wireSheetLinks();
     convertGenericTables();
+    wirePhoneCompactCards();
   }
 
   document.addEventListener("click", handleClick);

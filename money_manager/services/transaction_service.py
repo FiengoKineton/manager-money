@@ -164,6 +164,20 @@ def save_transaction_payload(
     return {"ok": True, "message": "Transaction saved.", "transaction_ids": [tx_id], "pending_ids": []}
 
 
+def _sync_credit_settlements_if_needed(ledger_rows: list[dict[str, Any]] | None) -> None:
+    if not any(str(row.get("movement_kind") or "") == "credit_liability_increase" for row in (ledger_rows or [])):
+        return
+    try:
+        from money_manager.services.credit_settlement_service import sync_credit_settlements
+
+        sync_credit_settlements(sync_pending=True)
+    except Exception:
+        # Settlement sync is a derived view.  The transaction and ledger save must
+        # remain successful even if the pending mirror cannot be refreshed in the
+        # same request.
+        pass
+
+
 def _save_transaction_with_ledger_payload(tx: Mapping[str, Any]) -> dict:
     tx = dict(tx)
     tx_type = str(tx.get("type") or "").casefold()
@@ -196,6 +210,7 @@ def _save_transaction_with_ledger_payload(tx: Mapping[str, Any]) -> dict:
         source_id=str(tx_id),
     )
     ledger_ids = append_ledger_movements(ledger_rows) if ledger_rows else []
+    _sync_credit_settlements_if_needed(ledger_rows)
     if ledger_rows:
         update_transaction(tx_id, tx_type, {"transaction_uid": uid, "ledger_group_id": resolution.ledger_group_id, "ledger_status": "posted"})
     return {
@@ -737,6 +752,7 @@ def update_existing_transaction(row_index: int, form) -> dict:
         source_id=str(original.get("id") or ""),
     )
     ledger_ids = append_ledger_movements(new_ledger_rows) if new_ledger_rows else []
+    _sync_credit_settlements_if_needed(new_ledger_rows)
     data.update(_transaction_metadata_from_resolution(route_data, resolution))
     data["transaction_uid"] = original_uid
     data["ledger_group_id"] = resolution.ledger_group_id

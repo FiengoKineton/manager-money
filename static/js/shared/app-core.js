@@ -60,12 +60,14 @@
 
         if (isMobileCardsViewport() && row.classList.contains("mobile-disclosure-row")) {
           event.preventDefault();
+          event.stopPropagation();
           toggleMobileRow(row);
           return;
         }
 
         if (isDesktopDetailViewport() && canUseDesktopDrawer(row)) {
           event.preventDefault();
+          event.stopPropagation();
           openDesktopRowDrawer(row);
           return;
         }

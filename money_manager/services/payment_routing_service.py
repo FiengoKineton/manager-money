@@ -30,6 +30,7 @@ from money_manager.services.account_config_service import (
 )
 from money_manager.services.payment_method_service import (
     active_payment_methods,
+    ensure_payment_methods_file,
     payment_method_by_id,
     normalize_payment_method_id,
 )
@@ -383,6 +384,26 @@ def _resolve_delegated(
         return _error(resolution, f"Delegated method {wrapper_id} has no delegate.")
     delegated = payment_method_by_id(delegate_id, include_archived=False, user_id=user_id)
     if not delegated:
+        # Repair stale wrappers in-place before failing.  Older files often kept
+        # paypal_via_credit_card -> credit_card even after the old placeholder was
+        # archived by the newer account/card model.
+        try:
+            ensure_payment_methods_file(user_id=user_id)
+            refreshed = payment_method_by_id(wrapper_id, include_archived=False, user_id=user_id)
+            if refreshed:
+                method = refreshed
+                delegate_id = str(method.get("delegates_to_payment_method_id") or delegate_id)
+                delegated = payment_method_by_id(delegate_id, include_archived=False, user_id=user_id)
+        except Exception:
+            delegated = None
+
+    if not delegated and wrapper_id == "paypal_via_credit_card":
+        fallback_delegate_id = _first_active_credit_delegate_id(user_id=user_id)
+        if fallback_delegate_id:
+            delegate_id = fallback_delegate_id
+            delegated = payment_method_by_id(delegate_id, include_archived=False, user_id=user_id)
+
+    if not delegated:
         return _error(resolution, f"Delegated method {wrapper_id} points to missing/inactive {delegate_id}.")
 
     delegated_resolution = resolve_payment(
@@ -480,10 +501,42 @@ def _legacy_payment_method_id_for_account_value(account_id: str | None, *, user_
     paypal_credit_aliases = {"paypal_credit", "paypal credit", "pay pal credit", "paypal card", "pay pal card"}
     credit_aliases = {"credit", "card", "credit card", "credit cards", "carta credito", "carta di credito"}
     if text in paypal_credit_aliases:
-        return "paypal_via_credit_card" if payment_method_by_id("paypal_via_credit_card", include_archived=False, user_id=user_id) else "credit_card"
+        wrapper = payment_method_by_id("paypal_via_credit_card", include_archived=False, user_id=user_id)
+        return "paypal_via_credit_card" if wrapper else (_first_active_credit_delegate_id(user_id=user_id) or "credit_card")
     if text in credit_aliases:
-        return "credit_card"
+        return _first_active_credit_delegate_id(user_id=user_id) or "credit_card"
     return ""
+
+
+def _first_active_credit_delegate_id(*, user_id: str | None) -> str:
+    preferred: list[str] = []
+    fallback: list[str] = []
+    for method in active_payment_methods(user_id=user_id):
+        method_id = str(method.get("id") or "")
+        if not method_id or method_id == "credit_card":
+            continue
+        method_type = clean_text(method.get("method_type") or "")
+        settlement_mode = clean_text(method.get("settlement_mode") or "")
+        if method_type != "credit_card" and settlement_mode != "delayed":
+            continue
+        liability = str(method.get("liability_account_id") or "")
+        settlement = str(method.get("settlement_account_id") or method.get("funding_account_id") or "")
+        if not liability or not settlement:
+            continue
+        refs = {
+            str(method.get("linked_account_id") or ""),
+            str(method.get("funding_account_id") or ""),
+            str(method.get("settlement_account_id") or ""),
+        }
+        liability_account = account_by_key(liability, user_id=user_id, include_archived=True) or {}
+        liability_parent = str(liability_account.get("parent_account_id") or liability_account.get("parent_key") or "")
+        if liability_parent:
+            refs.add(liability_parent)
+        if MAIN_ACCOUNT_KEY in refs:
+            preferred.append(method_id)
+        else:
+            fallback.append(method_id)
+    return (preferred or fallback or [""])[0]
 
 def _resolve_method(payment_method_id: str | None, *, tx_type: str, account_id: str | None, user_id: str | None) -> dict[str, Any] | None:
     if payment_method_id:

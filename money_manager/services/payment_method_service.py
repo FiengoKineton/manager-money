@@ -519,41 +519,118 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
     def _is_active_method(method: Mapping[str, Any] | None) -> bool:
         return bool(method) and bool(method.get("is_active", True)) and not bool(method.get("is_archived", False))
 
+    accounts_by_key: dict[str, dict[str, Any]] = {
+        str(account.get("key") or account.get("id") or ""): account
+        for account in accounts
+        if str(account.get("key") or account.get("id") or "")
+    }
+
+    def _account_key(account: Mapping[str, Any] | None) -> str:
+        return str((account or {}).get("key") or (account or {}).get("id") or "")
+
     def _account_parent_for_key(key: str) -> str:
+        account = accounts_by_key.get(str(key or ""))
+        if not account:
+            return ""
+        return str(account.get("parent_account_id") or account.get("parent_key") or "")
+
+    def _account_kind_for_key(key: str) -> str:
+        account = accounts_by_key.get(str(key or ""))
+        return clean_text((account or {}).get("account_kind") or (account or {}).get("type") or "")
+
+    def _account_is_active(key: str) -> bool:
+        account = accounts_by_key.get(str(key or ""))
+        if not account:
+            return False
+        return bool(account.get("is_active", True)) and not bool(account.get("is_archived")) and not bool(account.get("is_closed"))
+
+    def _current_account_keys() -> list[str]:
+        result_keys: list[str] = []
         for account in accounts:
-            if str(account.get("key") or account.get("id") or "") != str(key or ""):
+            key = _account_key(account)
+            if not key or not _account_is_active(key):
                 continue
-            return str(account.get("parent_account_id") or account.get("parent_key") or "")
-        return ""
+            if _account_kind_for_key(key) == "current_account" or bool(account.get("is_current_account")):
+                result_keys.append(key)
+        if "main_bank" in result_keys:
+            result_keys.remove("main_bank")
+            result_keys.insert(0, "main_bank")
+        return result_keys
+
+    def _parent_for_credit_method(method: Mapping[str, Any]) -> str:
+        liability_key = str(method.get("liability_account_id") or "")
+        liability_parent = _account_parent_for_key(liability_key) if liability_key else ""
+        if liability_parent:
+            return liability_parent
+        for field in ("linked_account_id", "funding_account_id", "settlement_account_id", "parent_account_id"):
+            ref = str(method.get(field) or "")
+            if not ref or not _account_is_active(ref):
+                continue
+            if _account_kind_for_key(ref) == "current_account":
+                return ref
+            parent = _account_parent_for_key(ref)
+            if parent and _account_is_active(parent):
+                return parent
+        return (_current_account_keys() or ["main_bank"])[0]
+
+    def _ensure_credit_liability_account(parent_key: str, card_name: str = "Credit card") -> str:
+        parent_key = parent_key if _account_is_active(parent_key) else ((_current_account_keys() or ["main_bank"])[0])
+        for account in accounts:
+            key = _account_key(account)
+            if not key or not _account_is_active(key):
+                continue
+            if _account_kind_for_key(key) == "credit_card_liability" and _account_parent_for_key(key) == parent_key:
+                return key
+        try:
+            from money_manager.services.account_service import ensure_credit_card_liability_account
+            from money_manager.services.account_config_service import account_by_key
+
+            key = ensure_credit_card_liability_account(parent_key, card_name or "Credit card")
+            account = account_by_key(key, include_archived=True) or {}
+            if account:
+                account_key = _account_key(account)
+                if account_key and account_key not in accounts_by_key:
+                    account_row = dict(account)
+                    accounts.append(account_row)
+                    accounts_by_key[account_key] = account_row
+            return str(key or "")
+        except Exception:
+            return ""
+
+    def _is_credit_like_method(method: Mapping[str, Any]) -> bool:
+        return clean_text(method.get("method_type") or "") == "credit_card" or clean_text(method.get("settlement_mode") or "") == "delayed"
+
+    def _credit_method_has_required_accounts(method: Mapping[str, Any], parent_key: str = "") -> bool:
+        liability = str(method.get("liability_account_id") or "")
+        settlement = str(method.get("settlement_account_id") or method.get("funding_account_id") or "")
+        if not liability or not settlement:
+            return False
+        if not _account_is_active(liability) or not _account_is_active(settlement):
+            return False
+        if parent_key:
+            refs = {
+                str(method.get("linked_account_id") or ""),
+                str(method.get("funding_account_id") or ""),
+                str(method.get("settlement_account_id") or ""),
+                _account_parent_for_key(liability),
+            }
+            if parent_key not in refs:
+                return False
+        return True
 
     def _active_credit_method_ids(parent_key: str = "") -> list[str]:
         result_ids: list[str] = []
         for method in methods:
-            if not _is_active_method(method):
-                continue
-            if clean_text(method.get("method_type") or "") != "credit_card" and clean_text(method.get("settlement_mode") or "") != "delayed":
+            if not _is_active_method(method) or not _is_credit_like_method(method):
                 continue
             method_id = str(method.get("id") or "")
-            # The old built-in `credit_card` placeholder was archived in the new
-            # account model.  Even if an older file still has it active, avoid
-            # using it as a delegate because it usually has no real liability
-            # account behind it.  Prefer user-created/manual cards.
+            # The old built-in `credit_card` placeholder is intentionally not used
+            # as a PayPal delegate; it was often a missing liability bucket.  A
+            # real repaired/user card gets its own stable id below.
             if method_id == "credit_card" and _is_legacy_default_credit_method(method):
                 continue
-            if parent_key:
-                refs = {
-                    str(method.get("linked_account_id") or ""),
-                    str(method.get("funding_account_id") or ""),
-                    str(method.get("settlement_account_id") or ""),
-                }
-                liability = str(method.get("liability_account_id") or "")
-                if liability:
-                    refs.add(liability)
-                    liability_parent = _account_parent_for_key(liability)
-                    if liability_parent:
-                        refs.add(liability_parent)
-                if parent_key not in refs:
-                    continue
+            if not _credit_method_has_required_accounts(method, parent_key):
+                continue
             result_ids.append(method_id)
         return result_ids
 
@@ -563,34 +640,99 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
 
     def _repair_credit_method_accounts() -> None:
         for method in methods:
-            if clean_text(method.get("method_type") or "") != "credit_card" and clean_text(method.get("settlement_mode") or "") != "delayed":
+            if not _is_credit_like_method(method):
+                continue
+            if _is_legacy_default_credit_method(method):
+                # Keep legacy placeholder archived.  If PayPal still points here,
+                # a concrete replacement method is created by _ensure_default_credit_method().
+                method["is_active"] = False
+                method["is_archived"] = True
+                method["archived_at"] = method.get("archived_at") or utc_now()
                 continue
             if not _is_active_method(method):
                 continue
+
+            parent_key = _parent_for_credit_method(method)
             liability_key = str(method.get("liability_account_id") or "")
-            parent_key = _account_parent_for_key(liability_key) if liability_key else ""
             changed = False
-            if parent_key:
-                for field in ("linked_account_id", "funding_account_id", "settlement_account_id"):
-                    if not str(method.get(field) or ""):
-                        method[field] = parent_key
-                        changed = True
-            if not str(method.get("settlement_mode") or "") or method.get("settlement_mode") != "delayed":
+            if not liability_key or not _account_is_active(liability_key) or _account_kind_for_key(liability_key) != "credit_card_liability":
+                liability_key = _ensure_credit_liability_account(parent_key, str(method.get("name") or "Credit card"))
+                if liability_key:
+                    method["liability_account_id"] = liability_key
+                    changed = True
+
+            liability_parent = _account_parent_for_key(liability_key) if liability_key else ""
+            if liability_parent:
+                parent_key = liability_parent
+
+            if clean_text(method.get("method_type") or "") != "credit_card":
+                method["method_type"] = "credit_card"
+                changed = True
+            if clean_text(method.get("settlement_mode") or "") != "delayed":
                 method["settlement_mode"] = "delayed"
                 changed = True
+            for field in ("linked_account_id", "funding_account_id", "settlement_account_id"):
+                ref = str(method.get(field) or "")
+                if not ref or ref == liability_key or not _account_is_active(ref):
+                    method[field] = parent_key
+                    changed = True
+            rules = dict(method.get("rules") if isinstance(method.get("rules"), Mapping) else {})
+            if not _parse_optional_day(rules.get("due_day")):
+                rules["due_day"] = 15
+                changed = True
+            if not clean_text(rules.get("settlement_day_policy") or ""):
+                rules["settlement_day_policy"] = "next_month"
+                changed = True
+            if rules != method.get("rules"):
+                method["rules"] = rules
+            before_aliases = list(method.get("aliases", []))
+            _merge_aliases(method, ["credit", "credit card", "carta credito", "carta di credito", str(method.get("name") or "")])
+            if before_aliases != method.get("aliases", []):
+                changed = True
+            metadata = dict(method.get("metadata") if isinstance(method.get("metadata"), Mapping) else {})
+            if metadata.get("visible_card") is not True:
+                metadata["visible_card"] = True
+                changed = True
+            if metadata != method.get("metadata"):
+                method["metadata"] = metadata
             if changed:
                 method["updated_at"] = utc_now()
+
+    def _ensure_default_credit_method(parent_key: str = "main_bank") -> str:
+        existing = _first_active_credit_method_id(parent_key)
+        if existing:
+            return existing
+        parent_key = parent_key if _account_is_active(parent_key) else ((_current_account_keys() or ["main_bank"])[0])
+        liability_key = _ensure_credit_liability_account(parent_key, "Credit card")
+        if not liability_key:
+            return ""
+        method_id = _unique_method_id(f"{parent_key}_credit_card")
+        _add({
+            "id": method_id,
+            "name": "Credit Card" if parent_key == "main_bank" else f"{parent_key.replace('_', ' ').title()} credit card",
+            "method_type": "credit_card",
+            "settlement_mode": "delayed",
+            "linked_account_id": parent_key,
+            "funding_account_id": parent_key,
+            "settlement_account_id": parent_key,
+            "liability_account_id": liability_key,
+            "display_order": 60,
+            "rules": {"due_day": 15, "statement_day": None, "settlement_day_policy": "next_month", "allow_manual_due_date": True},
+            "aliases": ["credit", "credit card", "main credit", "main credit card", "carta credito", "carta di credito"],
+            "legacy": {"migration_rule": "auto_credit_card_delegate_repair"},
+            "metadata": {"auto_default": True, "visible_card": True, "auto_repaired_credit_delegate": True},
+        })
+        return method_id
 
     def _ensure_paypal_credit_delegate() -> None:
         if "paypal" not in account_keys:
             return
-        credit_delegate = _first_active_credit_method_id("main_bank") or _first_active_credit_method_id("")
         wrapper = _method_by_id("paypal_via_credit_card")
+        credit_delegate = _first_active_credit_method_id("main_bank") or _first_active_credit_method_id("")
+        if not credit_delegate and wrapper:
+            credit_delegate = _ensure_default_credit_method("main_bank")
+
         if not credit_delegate:
-            # Keep stale wrappers out of the transaction dropdown.  They were the
-            # source of errors like: delegated method points to missing/inactive
-            # credit_card.  As soon as a real active credit card exists, the
-            # wrapper is restored below.
             if wrapper and _is_active_method(wrapper):
                 wrapper["is_active"] = False
                 wrapper["is_archived"] = True
@@ -608,7 +750,7 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
                 "linked_account_id": "paypal",
                 "delegates_to_payment_method_id": credit_delegate,
                 "display_order": 75,
-                "aliases": ["paypal credit", "paypal via credit", "paypal via credit card", "paypal carta credito", "paypal card credit"],
+                "aliases": ["paypal credit", "paypal via credit", "paypal via credit card", "paypal carta credito", "paypal card credit", "pay pal credit", "pay pal card"],
                 "legacy": {"migration_rule": "auto_paypal_via_credit_card"},
                 "metadata": {"auto_default": True, "visible_card": True},
             })
@@ -632,11 +774,13 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
         if wrapper.get("linked_account_id") != "paypal":
             wrapper["linked_account_id"] = "paypal"
             changed = True
-        if str(wrapper.get("delegates_to_payment_method_id") or "") in {"", "credit_card"} or not _is_active_method(delegate):
+        current_delegate = str(wrapper.get("delegates_to_payment_method_id") or "")
+        delegate_bad = current_delegate in {"", "credit_card"} or not _is_active_method(delegate) or not _credit_method_has_required_accounts(delegate or {})
+        if delegate_bad:
             wrapper["delegates_to_payment_method_id"] = credit_delegate
             changed = True
         before_aliases = list(wrapper.get("aliases", []))
-        _merge_aliases(wrapper, ["paypal credit", "paypal via credit", "paypal via credit card", "paypal carta credito", "paypal card credit"])
+        _merge_aliases(wrapper, ["paypal credit", "paypal via credit", "paypal via credit card", "paypal carta credito", "paypal card credit", "pay pal credit", "pay pal card"])
         if before_aliases != wrapper.get("aliases", []):
             changed = True
         if changed:
