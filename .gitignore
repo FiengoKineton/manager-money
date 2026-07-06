@@ -61,3 +61,10 @@ MoneyManagerData/**/*.mmcache
 MoneyManagerData/data/users/*/plots/
 *.pending.*.tmp
 *.broken_partial.csv
+
+
+# Temporary atomic-write files
+*.tmp
+.*.tmp
+MoneyManagerData/data/users/**/*.tmp
+MoneyManagerData/data/users/**/.*.tmp
