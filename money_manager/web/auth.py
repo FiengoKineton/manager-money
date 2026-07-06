@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import wraps
+import os
 import threading
 
 from flask import Blueprint, g, redirect, render_template, request, session, url_for
@@ -47,7 +48,8 @@ def _ensure_user_files_once(user_id: str) -> None:
         if key in _USER_FILES_READY:
             return
         _USER_FILES_READY.add(key)
-    _schedule_schema_repair(user_id, key)
+    if os.environ.get("MONEY_MANAGER_AUTO_SCHEMA_REPAIR", "0").strip() == "1":
+        _schedule_schema_repair(user_id, key)
 
 
 def _schedule_schema_repair(user_id: str, key: tuple[str, int]) -> None:

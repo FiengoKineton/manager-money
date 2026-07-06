@@ -318,8 +318,34 @@ def _write_bytes(path: Path, raw: bytes, *, logical_name: str = "", user_id: str
     path.parent.mkdir(parents=True, exist_ok=True)
     resolved_user_id = user_id or _infer_user_id(path) or get_current_user_id()
     plaintext = bytes(raw or b"")
+    should_encrypt = _should_encrypt(path, logical_name=logical_name, user_id=resolved_user_id)
+
+    cache = _file_read_cache()
+
+    try:
+        if path.exists() and path.is_file():
+            existing_payload = path.read_bytes()
+            existing_encrypted = is_encrypted_bytes(existing_payload)
+
+            if existing_encrypted:
+                dek = require_dek(resolved_user_id)
+                existing_plaintext = decrypt_bytes(existing_payload, dek)
+            else:
+                existing_plaintext = existing_payload
+
+            encryption_state_already_correct = (
+                (should_encrypt and existing_encrypted)
+                or ((not should_encrypt) and (not existing_encrypted))
+            )
+
+            if existing_plaintext == plaintext and encryption_state_already_correct:
+                cache.set_value(path, plaintext, user_id=resolved_user_id)
+                return
+    except Exception:
+        pass
+
     payload = plaintext
-    if _should_encrypt(path, logical_name=logical_name, user_id=resolved_user_id):
+    if should_encrypt:
         dek = require_dek(resolved_user_id)
         payload = encrypt_bytes(
             plaintext,
@@ -328,12 +354,13 @@ def _write_bytes(path: Path, raw: bytes, *, logical_name: str = "", user_id: str
             original_logical_name=logical_name or _relative_logical_name(path, resolved_user_id) or path.name,
             original_filename=original_filename or path.name,
         )
-    cache = _file_read_cache()
+
     cache.invalidate_path(path, user_id=resolved_user_id)
     try:
         _json_object_cache().invalidate_path(path, user_id=resolved_user_id)
     except Exception:
         pass
+
     _atomic_write_bytes(path, payload)
     cache.set_value(path, plaintext, user_id=resolved_user_id)
 
