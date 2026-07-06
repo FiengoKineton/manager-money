@@ -869,3 +869,38 @@ html.phone-native-active .grouped-scope-switcher .scope-switcher-empty {
 html.phone-native-active.phone-scope-menu-open .phone-bottom-dock {
   z-index: 2147481000 !important;
 }
+
+
+/* v17: keep the account scope selector in normal page flow on phone.
+   The dropdown itself remains fixed above cards, but the chip bar no longer
+   sticks over dashboard content or leaves a reserved blank gap. */
+html.phone-native-active .compact-scope-switcher.grouped-scope-switcher {
+  position: relative !important;
+  top: auto !important;
+  z-index: 120 !important;
+  margin: 0 0 0.55rem !important;
+  transform: none !important;
+}
+
+html.phone-native-active .grouped-scope-switcher .scope-switcher-grouped-links {
+  position: relative !important;
+  z-index: 121 !important;
+}
+
+html.phone-native-active .grouped-scope-switcher .scope-switcher-group[open] {
+  z-index: 2147483400 !important;
+}
+
+html.phone-native-active .grouped-scope-switcher .scope-switcher-group[open] .scope-switcher-group-menu {
+  position: fixed !important;
+  top: calc(var(--phone-top-height, 52px) + env(safe-area-inset-top, 0px) + 8px) !important;
+  left: max(10px, env(safe-area-inset-left, 0px)) !important;
+  right: max(10px, env(safe-area-inset-right, 0px)) !important;
+  max-height: min(52vh, 380px) !important;
+  z-index: 2147483600 !important;
+}
+
+html.phone-native-active.phone-scope-menu-open .app-content-stage,
+html.phone-native-active.phone-scope-menu-open .container {
+  overflow: visible !important;
+}
