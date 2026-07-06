@@ -100,19 +100,25 @@ def load_payment_methods(user_id: str | None = None) -> dict[str, Any]:
     return ensure_payment_methods_file(user_id=user_id)
 
 
-def save_payment_methods(payload: Mapping[str, Any], user_id: str | None = None) -> dict[str, Any]:
-    from money_manager.services.account_config_service import load_accounts_config
-
-    accounts_payload = load_accounts_config(user_id=user_id)
-    normalized = normalize_payment_methods_config(payload, accounts_payload=accounts_payload)
-    normalized["updated_at"] = utc_now()
+def _clear_payment_method_lookup_cache() -> None:
     try:
         from money_manager.cache import request_cache
 
         request_cache.delete_prefix("payment_method_lookup:")
     except Exception:
         pass
-    return save_user_config(PAYMENT_METHODS_FILE, normalized, user_id=user_id)
+
+
+def save_payment_methods(payload: Mapping[str, Any], user_id: str | None = None) -> dict[str, Any]:
+    from money_manager.services.account_config_service import load_accounts_config
+
+    accounts_payload = load_accounts_config(user_id=user_id)
+    normalized = normalize_payment_methods_config(payload, accounts_payload=accounts_payload)
+    normalized["updated_at"] = utc_now()
+    _clear_payment_method_lookup_cache()
+    saved = save_user_config(PAYMENT_METHODS_FILE, normalized, user_id=user_id)
+    _clear_payment_method_lookup_cache()
+    return saved
 
 
 def ensure_payment_methods_file(user_id: str | None = None) -> dict[str, Any]:
@@ -134,7 +140,9 @@ def ensure_payment_methods_file(user_id: str | None = None) -> dict[str, Any]:
         normalized = normalize_payment_methods_config(raw, accounts_payload=accounts_payload)
     normalized_with_account_methods = ensure_methods_for_accounts(normalized, accounts_payload)
     if created or normalized_with_account_methods != raw:
+        _clear_payment_method_lookup_cache()
         save_user_config(PAYMENT_METHODS_FILE, normalized_with_account_methods, user_id=user_id)
+        _clear_payment_method_lookup_cache()
     return normalized_with_account_methods
 
 
@@ -638,10 +646,131 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
         ids = _active_credit_method_ids(parent_key) or _active_credit_method_ids("")
         return ids[0] if ids else ""
 
+    def _materialize_legacy_account_cards(account: Mapping[str, Any]) -> None:
+        """Expose cards saved only on accounts.json as real payment methods.
+
+        Older screens stored card details under the Conto's ``cards`` list.  The
+        transaction form reads payment_methods.json, so those cards existed in
+        the account modal but were not selectable for payments or credit
+        settlements.
+        """
+        parent_key = _account_key(account)
+        if not parent_key or not _account_is_active(parent_key):
+            return
+        cards = account.get("cards") if isinstance(account.get("cards"), list) else []
+        if not cards:
+            return
+
+        def _card_clean(value: Any) -> str:
+            return clean_label(value)
+
+        def _method_exists_for_card(card: Mapping[str, Any], label: str, method_type: str) -> bool:
+            card_id = _card_clean(card.get("id"))
+            last4 = _card_clean(card.get("last4") or card.get("card_last4"))
+            label_key = clean_text(label)
+            for method in methods:
+                if method.get("is_archived") or not method.get("is_active", True):
+                    continue
+                if clean_text(method.get("method_type") or "") != method_type:
+                    continue
+                if parent_key not in {
+                    str(method.get("linked_account_id") or ""),
+                    str(method.get("funding_account_id") or ""),
+                    str(method.get("settlement_account_id") or ""),
+                    _account_parent_for_key(str(method.get("liability_account_id") or "")),
+                }:
+                    continue
+                metadata = method.get("metadata") if isinstance(method.get("metadata"), Mapping) else {}
+                card_meta = metadata.get("card") if isinstance(metadata.get("card"), Mapping) else {}
+                if card_id and str(metadata.get("legacy_account_card_id") or "") == card_id:
+                    return True
+                if last4 and clean_text(card_meta.get("last4")) == clean_text(last4):
+                    return True
+                if label_key and clean_text(method.get("name") or "") == label_key:
+                    return True
+            return False
+
+        for card in cards:
+            if not isinstance(card, Mapping):
+                continue
+            if card.get("is_archived") or card.get("is_active", True) is False:
+                continue
+            raw_type = clean_text(card.get("method_type") or card.get("card_type") or card.get("type") or "debit")
+            method_type = {
+                "debit": "debit_card",
+                "debit_card": "debit_card",
+                "credit": "credit_card",
+                "credit_card": "credit_card",
+                "prepaid": "prepaid_card",
+                "prepaid_card": "prepaid_card",
+            }.get(raw_type, "debit_card")
+            label = _card_clean(card.get("label") or card.get("name") or card.get("card_label")) or {
+                "debit_card": "Debit Card",
+                "credit_card": "Credit Card",
+                "prepaid_card": "Prepaid Card",
+            }.get(method_type, "Card")
+            if _method_exists_for_card(card, label, method_type):
+                continue
+
+            card_key = parent_key
+            liability_key = ""
+            settlement_mode = "immediate"
+            if method_type == "credit_card":
+                settlement_mode = "delayed"
+                liability_key = _ensure_credit_liability_account(parent_key, label)
+            elif method_type == "prepaid_card":
+                settlement_mode = "stored_balance"
+                try:
+                    from money_manager.services.account_service import ensure_prepaid_card_balance_account
+
+                    card_key = ensure_prepaid_card_balance_account(parent_key, label) or parent_key
+                except Exception:
+                    card_key = parent_key
+
+            raw_method = {
+                "id": _unique_method_id(f"{parent_key}_{method_type}_{slugify(label)}"),
+                "name": label,
+                "method_type": method_type,
+                "settlement_mode": settlement_mode,
+                "linked_account_id": parent_key if method_type == "credit_card" else card_key,
+                "funding_account_id": parent_key if method_type == "credit_card" else card_key,
+                "settlement_account_id": parent_key if method_type == "credit_card" else card_key,
+                "liability_account_id": liability_key,
+                "display_order": int(_safe_number(account.get("display_order"), 1000)) + (60 if method_type == "credit_card" else 2),
+                "rules": {"due_day": _parse_optional_day(card.get("due_day")) or 15, "statement_day": _parse_optional_day(card.get("statement_day")), "settlement_day_policy": "next_month", "allow_manual_due_date": True},
+                "aliases": split_aliases([label, card.get("last4") or "", *(card.get("aliases", []) if isinstance(card.get("aliases"), list) else [])]),
+                "legacy": {"migration_rule": "materialized_from_account_card"},
+                "metadata": {
+                    "visible_card": True,
+                    "manual_card": True,
+                    "user_created": True,
+                    "legacy_account_card_id": _card_clean(card.get("id")),
+                    "card": {
+                        "network": _card_clean(card.get("network") or card.get("card_network")),
+                        "last4": _card_clean(card.get("last4") or card.get("card_last4")),
+                        "holder_name": _card_clean(card.get("holder_name") or card.get("card_holder_name")),
+                        "expiry_month": _card_clean(card.get("expiry_month") or card.get("card_expiry_month")),
+                        "expiry_year": _card_clean(card.get("expiry_year") or card.get("card_expiry_year")),
+                    },
+                },
+            }
+            if method_type != "credit_card":
+                raw_method["rules"] = {"due_day": None, "statement_day": None, "settlement_day_policy": "next_month", "allow_manual_due_date": True}
+            _add(raw_method)
+
     def _repair_credit_method_accounts() -> None:
         for method in methods:
             if not _is_credit_like_method(method):
                 continue
+            legacy_info = method.get("legacy") if isinstance(method.get("legacy"), Mapping) else {}
+            if (method.get("is_archived") or not method.get("is_active", True)) and legacy_info.get("auto_archived_reason") == "duplicate_active_payment_method":
+                # Older repair code archived cards just because another method had
+                # the same display name.  Names are allowed to repeat; ids are the
+                # stable identity.  Restore those accidentally hidden cards.
+                method["is_active"] = True
+                method["is_archived"] = False
+                method["archived_at"] = ""
+                method["updated_at"] = utc_now()
             if _is_legacy_default_credit_method(method):
                 # Keep legacy placeholder archived.  If PayPal still points here,
                 # a concrete replacement method is created by _ensure_default_credit_method().
@@ -724,21 +853,130 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
         })
         return method_id
 
+    def _credit_card_signature(method: Mapping[str, Any]) -> tuple[str, str, str]:
+        metadata = method.get("metadata") if isinstance(method.get("metadata"), Mapping) else {}
+        card_meta = metadata.get("card") if isinstance(metadata.get("card"), Mapping) else {}
+        last4 = clean_text(card_meta.get("last4") or metadata.get("last4") or method.get("last4") or "")
+        name = clean_text(method.get("name") or "Credit Card") or "credit card"
+        parent = _parent_for_credit_method(method)
+        if not parent:
+            parent = "main_bank"
+        # When no last4 is available, same parent + same visible name is the only
+        # stable identity we have.  This is exactly the case that generated a
+        # long list of identical "Credit Card" options.
+        return (parent, name, last4)
+
+    def _credit_method_score(method: Mapping[str, Any]) -> tuple[int, int, int, int, int]:
+        metadata = method.get("metadata") if isinstance(method.get("metadata"), Mapping) else {}
+        card_meta = metadata.get("card") if isinstance(metadata.get("card"), Mapping) else {}
+        legacy = method.get("legacy") if isinstance(method.get("legacy"), Mapping) else {}
+        method_id = str(method.get("id") or "")
+        has_last4 = 1 if clean_text(card_meta.get("last4") or method.get("last4") or "") else 0
+        manual = 1 if metadata.get("user_created") or metadata.get("manual_card") else 0
+        valid = 1 if _credit_method_has_required_accounts(method) else 0
+        not_auto_repair = 0 if legacy.get("migration_rule") == "auto_credit_card_delegate_repair" else 1
+        # Prefer stable non-suffixed ids over generated _2/_3/... ids.
+        stable_id = 1 if not re.search(r"_\d+$", method_id) else 0
+        return (valid, manual, has_last4, not_auto_repair, stable_id)
+
+    def _merge_credit_method_fields(target: dict[str, Any], duplicate: Mapping[str, Any]) -> None:
+        before_aliases = list(target.get("aliases", []))
+        _merge_aliases(target, [*(duplicate.get("aliases") or []), duplicate.get("id") or "", duplicate.get("name") or ""])
+        if before_aliases != target.get("aliases", []):
+            target["updated_at"] = utc_now()
+        target_meta = dict(target.get("metadata") if isinstance(target.get("metadata"), Mapping) else {})
+        dup_meta = duplicate.get("metadata") if isinstance(duplicate.get("metadata"), Mapping) else {}
+        target_card = dict(target_meta.get("card") if isinstance(target_meta.get("card"), Mapping) else {})
+        dup_card = dup_meta.get("card") if isinstance(dup_meta.get("card"), Mapping) else {}
+        for field in ["network", "last4", "holder_name", "expiry_month", "expiry_year"]:
+            if not clean_label(target_card.get(field)) and clean_label((dup_card or {}).get(field)):
+                target_card[field] = clean_label(dup_card.get(field))
+        if target_card:
+            target_meta["card"] = target_card
+        if target_meta:
+            target["metadata"] = target_meta
+
+    def _deduplicate_credit_methods() -> dict[str, str]:
+        """Archive duplicate credit-card payment methods and return id redirects.
+
+        v10 could materialize/re-activate many identical account cards.  The
+        payment-method id is still the durable identity, but the UI should show a
+        single active card for one real card.  We keep the best candidate and map
+        every archived duplicate to the survivor so delegated wrappers such as
+        PayPal via Credit Card stay valid.
+        """
+        groups: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+        for method in methods:
+            if not _is_credit_like_method(method) or _is_legacy_default_credit_method(method):
+                continue
+            if not _is_active_method(method):
+                continue
+            groups.setdefault(_credit_card_signature(method), []).append(method)
+
+        redirects: dict[str, str] = {}
+        for rows in groups.values():
+            if len(rows) <= 1:
+                continue
+            survivor = sorted(
+                rows,
+                key=lambda item: (_credit_method_score(item), -len(str(item.get("id") or ""))),
+                reverse=True,
+            )[0]
+            survivor_id = str(survivor.get("id") or "")
+            for duplicate in rows:
+                duplicate_id = str(duplicate.get("id") or "")
+                if not duplicate_id or duplicate is survivor:
+                    continue
+                _merge_credit_method_fields(survivor, duplicate)
+                duplicate["is_active"] = False
+                duplicate["is_archived"] = True
+                duplicate["archived_at"] = duplicate.get("archived_at") or utc_now()
+                duplicate["updated_at"] = utc_now()
+                legacy = dict(duplicate.get("legacy") if isinstance(duplicate.get("legacy"), Mapping) else {})
+                legacy["auto_archived_reason"] = "duplicate_credit_card_payment_method"
+                legacy["replacement_payment_method_id"] = survivor_id
+                duplicate["legacy"] = legacy
+                redirects[duplicate_id] = survivor_id
+        if redirects:
+            for method in methods:
+                delegate_id = str(method.get("delegates_to_payment_method_id") or "")
+                if delegate_id in redirects:
+                    method["delegates_to_payment_method_id"] = redirects[delegate_id]
+                    method["updated_at"] = utc_now()
+        return redirects
+
+    def _paypal_credit_wrapper_candidates() -> list[dict[str, Any]]:
+        candidates: list[dict[str, Any]] = []
+        for method in methods:
+            method_id = str(method.get("id") or "")
+            name = clean_text(method.get("name") or "")
+            aliases = {clean_text(alias) for alias in (method.get("aliases") or [])}
+            if (
+                method_id == "paypal_via_credit_card"
+                or name in {"paypal via credit card", "paypal credit", "paypal via carta credito"}
+                or bool(aliases & {"paypal via credit card", "paypal via credit", "paypal credit", "pay pal credit", "pay pal card"})
+            ):
+                candidates.append(method)
+        return candidates
+
     def _ensure_paypal_credit_delegate() -> None:
         if "paypal" not in account_keys:
             return
-        wrapper = _method_by_id("paypal_via_credit_card")
         credit_delegate = _first_active_credit_method_id("main_bank") or _first_active_credit_method_id("")
-        if not credit_delegate and wrapper:
+        if not credit_delegate:
             credit_delegate = _ensure_default_credit_method("main_bank")
 
+        wrappers = _paypal_credit_wrapper_candidates()
+        wrapper = _method_by_id("paypal_via_credit_card") or (wrappers[0] if wrappers else None)
+
         if not credit_delegate:
-            if wrapper and _is_active_method(wrapper):
-                wrapper["is_active"] = False
-                wrapper["is_archived"] = True
-                wrapper["archived_at"] = wrapper.get("archived_at") or utc_now()
-                wrapper["updated_at"] = utc_now()
-                wrapper.setdefault("legacy", {})["auto_archived_reason"] = "missing_active_credit_card_delegate"
+            for candidate in wrappers:
+                if _is_active_method(candidate):
+                    candidate["is_active"] = False
+                    candidate["is_archived"] = True
+                    candidate["archived_at"] = candidate.get("archived_at") or utc_now()
+                    candidate["updated_at"] = utc_now()
+                    candidate.setdefault("legacy", {})["auto_archived_reason"] = "missing_active_credit_card_delegate"
             return
 
         if not wrapper:
@@ -756,15 +994,18 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
             })
             return
 
-        delegate = _method_by_id(str(wrapper.get("delegates_to_payment_method_id") or ""))
         changed = False
+        if str(wrapper.get("id") or "") != "paypal_via_credit_card" and not _method_by_id("paypal_via_credit_card"):
+            wrapper["id"] = "paypal_via_credit_card"
+            changed = True
         if wrapper.get("is_archived") or not wrapper.get("is_active", True):
             wrapper["is_active"] = True
             wrapper["is_archived"] = False
             wrapper["archived_at"] = ""
             changed = True
-        if clean_text(wrapper.get("name") or "") in {"paypal credit", "paypal via credit card", "paypal via carta credito"}:
+        if wrapper.get("name") != "PayPal via Credit Card":
             wrapper["name"] = "PayPal via Credit Card"
+            changed = True
         if wrapper.get("method_type") != "wallet_linked_card":
             wrapper["method_type"] = "wallet_linked_card"
             changed = True
@@ -774,14 +1015,33 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
         if wrapper.get("linked_account_id") != "paypal":
             wrapper["linked_account_id"] = "paypal"
             changed = True
-        current_delegate = str(wrapper.get("delegates_to_payment_method_id") or "")
-        delegate_bad = current_delegate in {"", "credit_card"} or not _is_active_method(delegate) or not _credit_method_has_required_accounts(delegate or {})
-        if delegate_bad:
+        delegate = _method_by_id(str(wrapper.get("delegates_to_payment_method_id") or ""))
+        delegate_bad = not _is_active_method(delegate) or not _credit_method_has_required_accounts(delegate or {}, "main_bank")
+        if delegate_bad or str(wrapper.get("delegates_to_payment_method_id") or "") != credit_delegate:
             wrapper["delegates_to_payment_method_id"] = credit_delegate
             changed = True
         before_aliases = list(wrapper.get("aliases", []))
         _merge_aliases(wrapper, ["paypal credit", "paypal via credit", "paypal via credit card", "paypal carta credito", "paypal card credit", "pay pal credit", "pay pal card"])
         if before_aliases != wrapper.get("aliases", []):
+            changed = True
+        legacy = dict(wrapper.get("legacy") if isinstance(wrapper.get("legacy"), Mapping) else {})
+        if legacy.get("auto_archived_reason") == "missing_active_credit_card_delegate":
+            legacy.pop("auto_archived_reason", None)
+            wrapper["legacy"] = legacy
+            changed = True
+        # Merge/archive additional PayPal-credit wrapper duplicates.
+        for duplicate in wrappers:
+            if duplicate is wrapper:
+                continue
+            _merge_aliases(wrapper, [*(duplicate.get("aliases") or []), duplicate.get("id") or "", duplicate.get("name") or ""])
+            duplicate["is_active"] = False
+            duplicate["is_archived"] = True
+            duplicate["archived_at"] = duplicate.get("archived_at") or utc_now()
+            duplicate["updated_at"] = utc_now()
+            dup_legacy = dict(duplicate.get("legacy") if isinstance(duplicate.get("legacy"), Mapping) else {})
+            dup_legacy["auto_archived_reason"] = "duplicate_paypal_credit_wrapper"
+            dup_legacy["replacement_payment_method_id"] = "paypal_via_credit_card"
+            duplicate["legacy"] = dup_legacy
             changed = True
         if changed:
             wrapper["updated_at"] = utc_now()
@@ -795,6 +1055,7 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
         kind = clean_text(account.get("account_kind") or account.get("type") or "")
         label = account.get("label") or account.get("name") or key.replace("_", " ").title()
         order = int(_safe_number(account.get("display_order"), 1000))
+        _materialize_legacy_account_cards(account)
         if kind == "current_account":
             if not _has_active_method(key, "debit_card"):
                 _add({
@@ -851,6 +1112,11 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
                 "aliases": account.get("aliases", []) or [key, label],
                 "legacy": {"migration_rule": "auto_wallet_balance_method"},
             })
+
+    # Clean up duplicate credit-card methods before building delegated wrappers.
+    # This keeps the dropdown and wallet carousel from showing the same card many
+    # times and gives PayPal via Credit Card one stable delegate to target.
+    _deduplicate_credit_methods()
 
     account_keys = {str(account.get("key") or account.get("id") or "") for account in accounts}
     if "paypal" in account_keys:
@@ -952,7 +1218,6 @@ def normalize_payment_methods_config(
 
     methods: list[dict[str, Any]] = []
     active_ids: set[str] = set()
-    active_names: set[str] = set()
     for index, raw in enumerate(records):
         if not isinstance(raw, Mapping):
             continue
@@ -963,16 +1228,14 @@ def normalize_payment_methods_config(
             method["archived_at"] = method.get("archived_at") or utc_now()
             method.setdefault("legacy", {})["auto_archived_reason"] = "default_credit_card_removed_from_new_account_model"
         method_id = str(method.get("id") or "")
-        name_key = clean_text(method.get("name") or "")
         active = bool(method.get("is_active", True)) and not bool(method.get("is_archived", False))
-        if active and (method_id in active_ids or name_key in active_names):
+        if active and method_id in active_ids:
             method["is_active"] = False
             method["is_archived"] = True
             method["archived_at"] = method.get("archived_at") or utc_now()
-            method.setdefault("legacy", {})["auto_archived_reason"] = "duplicate_active_payment_method"
+            method.setdefault("legacy", {})["auto_archived_reason"] = "duplicate_active_payment_method_id"
         if bool(method.get("is_active", True)) and not bool(method.get("is_archived", False)):
             active_ids.add(method_id)
-            active_names.add(name_key)
         methods.append(method)
 
     accounts_payload = accounts_payload or {"accounts": []}
@@ -1040,7 +1303,7 @@ def _method_from_form(form: Mapping[str, Any], *, method_id: str) -> dict[str, A
         "settlement_account_id": clean_text(form.get("settlement_account_id") or ""),
         "liability_account_id": clean_text(form.get("liability_account_id") or ""),
         "settlement_mode": clean_text(form.get("settlement_mode") or "external_record_only"),
-        "delegates_to_payment_method_id": clean_text(form.get("delegates_to_payment_method_id") or ""),
+        "delegates_to_payment_method_id": slugify(form.get("delegates_to_payment_method_id")) if clean_text(form.get("delegates_to_payment_method_id") or "") else "",
         "is_default": str(form.get("is_default", "")).lower() in {"1", "true", "on", "yes"},
         "is_active": str(form.get("is_active", "1")).lower() not in {"0", "false", "off", "no"},
         "is_archived": str(form.get("is_archived", "")).lower() in {"1", "true", "on", "yes"},
@@ -1082,7 +1345,7 @@ def _normalize_payment_method_record(raw: Mapping[str, Any], *, index: int = 0) 
         "settlement_account_id": clean_text(raw.get("settlement_account_id") or ""),
         "liability_account_id": clean_text(raw.get("liability_account_id") or ""),
         "settlement_mode": settlement_mode,
-        "delegates_to_payment_method_id": clean_text(raw.get("delegates_to_payment_method_id") or ""),
+        "delegates_to_payment_method_id": slugify(raw.get("delegates_to_payment_method_id")) if clean_text(raw.get("delegates_to_payment_method_id") or "") else "",
         "is_default": bool(raw.get("is_default", False)),
         "is_active": bool(raw.get("is_active", True)) and not is_archived,
         "is_archived": is_archived,

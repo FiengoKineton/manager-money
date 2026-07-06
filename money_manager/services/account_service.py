@@ -1002,6 +1002,24 @@ def update_account_settings_from_form(account_key: str, form) -> dict | None:
     return account
 
 
+
+
+def _exact_account_by_key(account_key: str, user_id: str | None = None) -> dict | None:
+    """Return an account only when the stored key/id exactly matches.
+
+    account_config_service.account_by_key intentionally treats unknown/blank legacy
+    values as Main for transaction imports.  Hidden generated card accounts need
+    stricter behavior; otherwise a missing liability/balance bucket is mistaken for
+    Main and never created.
+    """
+    wanted = str(account_key or "").strip()
+    if not wanted:
+        return None
+    for account in all_accounts(user_id=user_id, include_archived=True, include_main=True):
+        if str(account.get("key") or account.get("id") or "").strip() == wanted:
+            return dict(account)
+    return None
+
 def ensure_prepaid_card_balance_account(parent_account_key: str, card_name: str = "", user_id: str | None = None) -> str:
     """Return/create the hidden stored-balance account used by one prepaid card.
 
@@ -1013,7 +1031,7 @@ def ensure_prepaid_card_balance_account(parent_account_key: str, card_name: str 
     base_name = str(card_name or "Prepaid card").strip() or "Prepaid card"
     account_key = f"{parent_key}_{slugify(base_name)}_balance"
 
-    existing = account_by_key(account_key, user_id=user_id, include_archived=True)
+    existing = _exact_account_by_key(account_key, user_id=user_id)
     if existing:
         return account_key
 
@@ -1042,7 +1060,7 @@ def ensure_credit_card_liability_account(parent_account_key: str, card_name: str
     base_name = str(card_name or "Credit card").strip() or "Credit card"
     account_key = f"{parent_key}_{slugify(base_name)}_liability"
 
-    existing = account_by_key(account_key, user_id=user_id, include_archived=True)
+    existing = _exact_account_by_key(account_key, user_id=user_id)
     if existing:
         return account_key
 
