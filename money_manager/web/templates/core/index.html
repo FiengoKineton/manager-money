@@ -32,6 +32,63 @@
   <button type="button" class="dashboard-wallet-stat tone-net" data-mm-dialog-open="dash-savings-dialog"><span>Savings rate</span><strong>{{ '%.1f'|format(totals.savings_rate) }}%</strong><small>{{ money_calculation_label|default('full history') }}</small></button>
 </section>
 
+{% if dashboard_new_notifications or dashboard_payable_reminders %}
+<section class="dashboard-home-reminders" aria-label="Home reminders">
+  {% if dashboard_new_notifications %}
+  <article class="panel-card dashboard-home-reminder-card dashboard-home-notifications-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">New alerts</span>
+        <h3>Notifications to read</h3>
+        <p>Long reminder view from Alerts, shown here before the monthly plan.</p>
+      </div>
+      <a class="secondary-btn compact-btn" href="{{ url_for('pending.pending_page') }}">Open planning</a>
+    </div>
+    <div class="dashboard-long-reminder-list">
+      {% for item in dashboard_new_notifications %}
+        <a class="dashboard-long-reminder dashboard-long-reminder-{{ item.tone|default('info') }}" href="{{ url_for(item.href_endpoint) }}">
+          <span class="dashboard-long-reminder-icon" aria-hidden="true">{{ item.icon }}</span>
+          <span class="dashboard-long-reminder-copy">
+            <span class="dashboard-long-reminder-meta">{{ item.label }} · {{ item.meta }}</span>
+            <strong>{{ item.title }}</strong>
+            <small>{{ item.summary }}</small>
+            <em>{{ item.detail }}</em>
+          </span>
+          <span class="dashboard-long-reminder-action">{{ item.href_label }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </article>
+  {% endif %}
+
+  {% if dashboard_payable_reminders %}
+  <article class="panel-card dashboard-home-reminder-card dashboard-home-payables-card">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">Payable reminders</span>
+        <h3>Most immediate payables</h3>
+        <p>Active payables ordered by closest due date, also when they are not urgent enough to become an alert.</p>
+      </div>
+      <a class="secondary-btn compact-btn" href="{{ url_for('payables.payables_page', account_id=selected_account_id) if selected_account_id else url_for('payables.payables_page') }}">Payables</a>
+    </div>
+    <div class="dashboard-payable-reminder-list">
+      {% for item in dashboard_payable_reminders %}
+        <a class="dashboard-payable-reminder row-{{ item.tone|default('neutral') }}" href="{{ url_for('payables.payables_page', account_id=selected_account_id) if selected_account_id else url_for('payables.payables_page') }}">
+          <span class="payable-reminder-date">{{ item.due_label }}</span>
+          <span class="payable-reminder-main">
+            <strong>{{ item.name|text_masked }}</strong>
+            <small>{{ item.payee|text_masked }} · {{ item.category }}{% if item.account_label %} · {{ item.account_label|text_masked }}{% endif %}</small>
+            {% if item.description %}<em>{{ item.description|text_masked }}</em>{% endif %}
+          </span>
+          <strong class="payable-reminder-amount">{{ item.remaining_amount|money_masked }}</strong>
+        </a>
+      {% endfor %}
+    </div>
+  </article>
+  {% endif %}
+</section>
+{% endif %}
+
 <section class="dashboard-month-plan-grid">
   <article class="panel-card dashboard-month-plan-card">
     <div class="panel-header compact-panel-header">

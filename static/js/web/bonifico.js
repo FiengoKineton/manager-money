@@ -7,7 +7,6 @@
   const select = document.getElementById('bonifico-contact-select');
   const manualName = document.getElementById('bonifico-manual-name');
   const preview = document.getElementById('bonifico-contact-preview');
-  const targets = window.moneyManagerBonificoTargets || { debts: [], payables: [] };
 
   function setText(selector, value) {
     const node = preview ? preview.querySelector(selector) : null;
@@ -117,26 +116,87 @@
     }
   }
 
+  function cssEscape(value) {
+    if (window.CSS && typeof window.CSS.escape === 'function') return window.CSS.escape(String(value || ''));
+    return String(value || '').replace(/([\"'\\])/g, '\\$1');
+  }
+
+  function checkedDebtRows() {
+    return Array.from(document.querySelectorAll('[data-bonifico-debt-checkbox]:checked')).map((checkbox) => {
+      const id = checkbox.dataset.debtId || checkbox.value || '';
+      const amount = document.querySelector(`[data-bonifico-debt-amount][data-debt-id="${cssEscape(id)}"]`);
+      return { checkbox, amount };
+    });
+  }
+
+  function syncDebtAmountInputs() {
+    document.querySelectorAll('[data-bonifico-debt-checkbox]').forEach((checkbox) => {
+      const id = checkbox.dataset.debtId || checkbox.value || '';
+      const amount = document.querySelector(`[data-bonifico-debt-amount][data-debt-id="${cssEscape(id)}"]`);
+      if (amount) amount.disabled = !checkbox.checked;
+    });
+  }
+
+  function applyMultipleDebts(force) {
+    syncDebtAmountInputs();
+    const rows = checkedDebtRows();
+    if (!rows.length) return;
+
+    let total = 0;
+    const names = [];
+    const recipients = new Set();
+    const contactIds = new Set();
+
+    rows.forEach(({ checkbox, amount }) => {
+      const value = Number(amount && amount.value ? amount.value : checkbox.dataset.amount || 0);
+      if (Number.isFinite(value) && value > 0) total += value;
+      const label = checkbox.closest('.bonifico-debt-multi-row');
+      const nameNode = label ? label.querySelector('strong') : null;
+      if (nameNode && nameNode.textContent.trim()) names.push(nameNode.textContent.trim());
+      if (checkbox.dataset.recipient) recipients.add(checkbox.dataset.recipient);
+      if (checkbox.dataset.contactId) contactIds.add(checkbox.dataset.contactId);
+    });
+
+    setValueIfPresent('bonifico-amount-input', total ? total.toFixed(2) : '', true);
+    setCategory('Debt');
+    setValueIfPresent('bonifico-sub-category-input', 'Multiple debts', force);
+    setValueIfPresent('bonifico-reference-input', 'Debt payments', force);
+    setValueIfPresent('bonifico-description-input', names.length ? `Bonifico debt payments: ${names.join(', ')}` : 'Bonifico debt payments', force);
+
+    if (contactIds.size === 1 && select) {
+      select.value = Array.from(contactIds)[0];
+      if (manualName) manualName.value = '';
+      refreshPreview();
+    } else if (recipients.size === 1 && manualName && (!manualName.value || manualName.dataset.bonificoAutofilled === '1')) {
+      if (select) select.value = '';
+      manualName.value = Array.from(recipients)[0];
+      manualName.dataset.bonificoAutofilled = '1';
+      refreshPreview();
+    }
+  }
+
   function refreshLinkedPaymentPanels(forceApply) {
     const typeSelect = document.getElementById('bonifico-target-type');
     const debtPanel = document.getElementById('bonifico-debt-panel');
+    const debtsPanel = document.getElementById('bonifico-debts-panel');
     const payablePanel = document.getElementById('bonifico-payable-panel');
     const type = typeSelect ? typeSelect.value : 'expense';
 
     if (debtPanel) debtPanel.hidden = type !== 'debt';
+    if (debtsPanel) debtsPanel.hidden = type !== 'debts';
     if (payablePanel) payablePanel.hidden = type !== 'payable';
 
     if (type === 'debt') applyLinkedTarget('debt', forceApply);
+    if (type === 'debts') applyMultipleDebts(forceApply);
     if (type === 'payable') applyLinkedTarget('payable', forceApply);
   }
-
 
   function syncTargetFromCategory() {
     const category = document.getElementById('bonifico-category-select');
     const typeSelect = document.getElementById('bonifico-target-type');
     if (!category || !typeSelect) return;
     const value = String(category.value || '').trim().toLowerCase();
-    if (value === 'debt' && typeSelect.value !== 'debt') {
+    if (value === 'debt' && typeSelect.value !== 'debt' && typeSelect.value !== 'debts') {
       typeSelect.value = 'debt';
       refreshLinkedPaymentPanels(true);
     } else if (value === 'payable' && typeSelect.value !== 'payable') {
@@ -164,12 +224,18 @@
   const targetTypeSelect = document.getElementById('bonifico-target-type');
   if (targetTypeSelect) targetTypeSelect.addEventListener('change', () => refreshLinkedPaymentPanels(true));
 
-
   const categorySelect = document.getElementById('bonifico-category-select');
   if (categorySelect) categorySelect.addEventListener('change', syncTargetFromCategory);
 
   const debtSelect = document.getElementById('bonifico-debt-select');
   if (debtSelect) debtSelect.addEventListener('change', () => applyLinkedTarget('debt', true));
+
+  document.querySelectorAll('[data-bonifico-debt-checkbox]').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => applyMultipleDebts(true));
+  });
+  document.querySelectorAll('[data-bonifico-debt-amount]').forEach((amount) => {
+    amount.addEventListener('input', () => applyMultipleDebts(true));
+  });
 
   const payableSelect = document.getElementById('bonifico-payable-select');
   if (payableSelect) payableSelect.addEventListener('change', () => applyLinkedTarget('payable', true));
@@ -184,6 +250,7 @@
   });
 
   refreshPaymentPanel();
+  syncDebtAmountInputs();
   syncTargetFromCategory();
   refreshLinkedPaymentPanels(false);
 })();

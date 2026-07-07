@@ -27,14 +27,14 @@
       "recurring_rule_id": "12",
       "variable_amount": true,
       "manual_check_required": true,
-      "next_due_amount": "18.39",
+      "next_due_amount": "",
       "notes": "bolletta luce",
       "is_active": true,
-      "last_checked_at": "",
-      "last_checked_amount": "",
-      "last_checked_pending_id": "",
+      "last_checked_at": "2026-07-07T08:22:16+00:00",
+      "last_checked_amount": "18.39",
+      "last_checked_pending_id": "29",
       "created_at": "2026-06-29T16:43:42+00:00",
-      "updated_at": "2026-06-29T18:38:20+00:00",
+      "updated_at": "2026-07-07T08:22:16+00:00",
       "archived_at": ""
     }
   ],
@@ -94,7 +94,15 @@
       "event_type": "update",
       "message": "Updated NWG",
       "created_at": "2026-06-29T18:38:20+00:00"
+    },
+    {
+      "id": "event_f3f64eec47e2",
+      "item_id": "managed_3b7213f28649",
+      "kind": "utility_bill",
+      "event_type": "check",
+      "message": "Checked pending 29",
+      "created_at": "2026-07-07T08:22:16+00:00"
     }
   ],
-  "updated_at": "2026-06-29T18:38:20+00:00"
+  "updated_at": "2026-07-07T08:22:16+00:00"
 }

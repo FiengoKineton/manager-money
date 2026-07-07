@@ -126,7 +126,8 @@ def _normalize_debt(row: dict) -> dict:
     normalized = {field: row.get(field, "") for field in DEBT_FIELDS}
     normalized["original_amount"] = _amount(normalized.get("original_amount"))
     normalized["remaining_amount"] = _amount(normalized.get("remaining_amount"))
-    if not normalized["status"]:
+    normalized["status"] = str(normalized.get("status") or "").strip().casefold().replace(" ", "_")
+    if normalized["status"] not in {"active", "paid", "cancelled", "pocket"}:
         normalized["status"] = "active" if normalized["remaining_amount"] > 0 else "paid"
     return normalized
 

@@ -24,6 +24,19 @@ from money_manager.services.payment_form_service import (
 from money_manager.services.transaction_service import save_transaction_payload
 
 
+DEBT_STATUS_ACTIVE = "active"
+DEBT_STATUS_PAID = "paid"
+DEBT_STATUS_CANCELLED = "cancelled"
+DEBT_STATUS_POCKET = "pocket"
+DEBT_STATUS_OPTIONS = [
+    (DEBT_STATUS_ACTIVE, "Active"),
+    (DEBT_STATUS_PAID, "Paid"),
+    (DEBT_STATUS_CANCELLED, "Cancelled"),
+    (DEBT_STATUS_POCKET, "Pocket"),
+]
+_VALID_DEBT_STATUSES = {value for value, _label in DEBT_STATUS_OPTIONS}
+
+
 def add_debt_from_form(form) -> None:
     amount = _amount(form.get("original_amount"))
     account_id = form.get("account_id") or form.get("account", "")
@@ -59,9 +72,7 @@ def update_debt_from_form(form) -> None:
         return
 
     remaining = _amount(form.get("remaining_amount"))
-    status = form.get("status", "active")
-    if remaining <= 0.005:
-        status = "paid"
+    status = _normalize_debt_status(form.get("status", DEBT_STATUS_ACTIVE), remaining)
 
     account_id = form.get("account_id") or form.get("account", "")
     payment_method_id = form.get("preferred_payment_method_id") or form.get("payment_method_id") or form.get("account_payment_method", "")
@@ -79,11 +90,13 @@ def update_debt_from_form(form) -> None:
         "description": form.get("description", ""),
         "status": status,
     }
-    if status != "active":
+    if status == DEBT_STATUS_ACTIVE:
+        updates["closed_at"] = ""
+    else:
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
     update_debt(debt_id, updates)
 
-    if status != "active":
+    if status != DEBT_STATUS_ACTIVE:
         _deactivate_rules_for_debt(debt_id)
         delete_pending_for_source("debt", debt_id, only_pending=True)
 
@@ -122,7 +135,7 @@ def pay_creditor_debts_from_form(form) -> None:
 
     active_debts = [
         debt for debt in load_debts()
-        if debt.get("status") == "active"
+        if debt.get("status") == DEBT_STATUS_ACTIVE
         and _amount(debt.get("remaining_amount")) > 0
         and str(debt.get("creditor", "")).strip().lower() == creditor.lower()
     ]
@@ -293,7 +306,7 @@ def register_debt_payment(
     remaining = max(0.0, remaining_before - amount)
     updates = {"remaining_amount": remaining, **snapshot_account(effective_account_id), "preferred_payment_method_id": effective_payment_method_id, "preferred_payment_method_name_snapshot": snapshot_payment_method(effective_payment_method_id)["payment_method_name_snapshot"]}
     if remaining <= 0.005:
-        updates["status"] = "paid"
+        updates["status"] = DEBT_STATUS_PAID
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
     update_debt(int(debt["id"]), updates)
 
@@ -321,7 +334,7 @@ def generate_debt_payments(today: date | None = None) -> int:
         debt = debt_lookup.get(str(row.get("debt_id")))
         remaining_budget = _amount(debt.get("remaining_amount")) if debt else 0.0
 
-        if not debt or debt.get("status") != "active" or remaining_budget <= 0:
+        if not debt or debt.get("status") != DEBT_STATUS_ACTIVE or remaining_budget <= 0:
             row["active"] = "0"
             changed = True
             continue
@@ -439,6 +452,8 @@ def page_context() -> dict:
         debt["remaining_amount"] = remaining
         debt["paid_amount"] = max(0.0, original - remaining)
         debt["progress"] = 0.0 if original <= 0 else min(100.0, debt["paid_amount"] / original * 100.0)
+        debt["status"] = _normalize_debt_status(debt.get("status"), remaining)
+        debt["status_label"] = _debt_status_label(debt.get("status"))
 
     for rule in rules:
         rule["amount"] = _amount(rule.get("amount"))
@@ -447,7 +462,7 @@ def page_context() -> dict:
         linked_remaining = _amount(linked_debt.get("remaining_amount")) if linked_debt else 0.0
         rule["debt_name"] = linked_debt.get("name", "Unknown debt")
         rule["debt_remaining"] = linked_remaining
-        rule["linked_debt_active"] = bool(linked_debt and linked_debt.get("status") == "active" and linked_remaining > 0)
+        rule["linked_debt_active"] = bool(linked_debt and linked_debt.get("status") == DEBT_STATUS_ACTIVE and linked_remaining > 0)
         rule["is_active"] = str(rule.get("active", "1")).strip().lower() in {"1", "true", "yes", "on"}
 
         if rule.get("rule_type") == "payoff_date":
@@ -464,7 +479,7 @@ def page_context() -> dict:
         rule["is_payable"] = bool(rule["is_active"] and rule["linked_debt_active"] and next_due)
         rule["status_label"] = "Active" if rule["is_payable"] else "Completed / inactive"
 
-    active_debts = [row for row in debts if row.get("status") == "active" and _amount(row.get("remaining_amount")) > 0]
+    active_debts = [row for row in debts if row.get("status") == DEBT_STATUS_ACTIVE and _amount(row.get("remaining_amount")) > 0]
     creditor_summaries = creditor_summaries_from_debts(active_debts)
 
     totals = {
@@ -485,6 +500,7 @@ def page_context() -> dict:
         "totals": totals,
         "today": date.today().isoformat(),
         "creditor_summaries": creditor_summaries,
+        "debt_status_options": DEBT_STATUS_OPTIONS,
         "account_options": account_options_for_payment_forms(include_credit=True),
         **form_ctx,
     }
@@ -574,13 +590,28 @@ def _sync_debt_rules_with_debts() -> None:
     changed = False
     for row in rows:
         debt = debts.get(str(row.get("debt_id")))
-        if not debt or debt.get("status") != "active" or _amount(debt.get("remaining_amount")) <= 0:
+        if not debt or debt.get("status") != DEBT_STATUS_ACTIVE or _amount(debt.get("remaining_amount")) <= 0:
             if str(row.get("active", "1")) != "0":
                 row["active"] = "0"
                 changed = True
     if changed:
         write_debt_rules(rows)
 
+
+
+def _normalize_debt_status(value, remaining: float | None = None) -> str:
+    status = str(value or "").strip().casefold().replace(" ", "_")
+    if remaining is not None and _amount(remaining) <= 0.005:
+        return DEBT_STATUS_PAID
+    if status not in _VALID_DEBT_STATUSES:
+        return DEBT_STATUS_ACTIVE
+    return status
+
+
+def _debt_status_label(value) -> str:
+    status = _normalize_debt_status(value)
+    labels = dict(DEBT_STATUS_OPTIONS)
+    return labels.get(status, "Active")
 
 def _safe_int(value):
     try:
@@ -592,7 +623,7 @@ def creditor_summaries_from_debts(debts: list[dict]) -> list[dict]:
     grouped = {}
 
     for debt in debts:
-        if debt.get("status") != "active":
+        if debt.get("status") != DEBT_STATUS_ACTIVE:
             continue
 
         remaining = _amount(debt.get("remaining_amount"))

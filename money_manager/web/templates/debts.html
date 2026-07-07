@@ -138,6 +138,7 @@
           <input form="debt-update-{{ debt.id }}" type="hidden" name="account_id" value="{{ debt.account_id or debt.account }}">
           <input form="debt-update-{{ debt.id }}" type="hidden" name="preferred_payment_method_id" value="{{ debt.preferred_payment_method_id }}">
           <input form="debt-update-{{ debt.id }}" type="hidden" name="creditor" value="{{ debt.creditor }}">
+          <input form="debt-update-{{ debt.id }}" type="hidden" name="description" value="{{ debt.description }}">
 
           <input
             form="debt-update-{{ debt.id }}"
@@ -194,9 +195,9 @@
             name="status"
             class="debt-status-select"
             aria-label="Debt status">
-            <option value="active" {% if debt.status == 'active' %}selected{% endif %}>Active</option>
-            <option value="paid" {% if debt.status == 'paid' %}selected{% endif %}>Paid</option>
-            <option value="cancelled" {% if debt.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            {% for value, label in debt_status_options %}
+              <option value="{{ value }}" {% if debt.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
           </select>
         </td>
 
@@ -208,6 +209,26 @@
               class="icon-action-btn icon-action-update"
               title="Update debt"
               aria-label="Update debt">✎</button>
+
+            <form method="post" class="row-action-form debt-status-action-form">
+              <input type="hidden" name="action" value="update_debt">
+              <input type="hidden" name="id" value="{{ debt.id }}">
+              <input type="hidden" name="name" value="{{ debt.name }}">
+              <input type="hidden" name="creditor" value="{{ debt.creditor }}">
+              <input type="hidden" name="original_amount" value="{{ debt.original_amount }}">
+              <input type="hidden" name="remaining_amount" value="{{ debt.remaining_amount }}">
+              <input type="hidden" name="start_date" value="{{ debt.start_date }}">
+              <input type="hidden" name="due_date" value="{{ debt.due_date }}">
+              <input type="hidden" name="account_id" value="{{ debt.account_id or debt.account }}">
+              <input type="hidden" name="preferred_payment_method_id" value="{{ debt.preferred_payment_method_id }}">
+              <input type="hidden" name="description" value="{{ debt.description }}">
+              <select name="status" aria-label="Set debt status">
+                {% for value, label in debt_status_options %}
+                  <option value="{{ value }}" {% if debt.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="secondary-btn compact-btn">Save status</button>
+            </form>
 
             {% if debt.status == 'active' and debt.remaining_amount > 0 %}
             <form method="post" class="row-action-form">

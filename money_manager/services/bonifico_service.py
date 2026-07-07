@@ -18,8 +18,9 @@ BONIFICO_PAYMENT_METHOD = "bonifico"
 BONIFICO_TRANSFER_STATUS = "recorded"
 TARGET_NORMAL_EXPENSE = "expense"
 TARGET_DEBT = "debt"
+TARGET_MULTIPLE_DEBTS = "debts"
 TARGET_PAYABLE = "payable"
-VALID_TARGET_TYPES = {TARGET_NORMAL_EXPENSE, TARGET_DEBT, TARGET_PAYABLE}
+VALID_TARGET_TYPES = {TARGET_NORMAL_EXPENSE, TARGET_DEBT, TARGET_MULTIPLE_DEBTS, TARGET_PAYABLE}
 
 
 def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict[str, Any]:
@@ -38,8 +39,6 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
         target_type = TARGET_NORMAL_EXPENSE
 
     amount = _parse_amount(form.get("amount"))
-    if amount <= 0:
-        errors.append("Amount must be greater than zero.")
 
     transfer_date = _clean_text(form.get("date")) or date.today().isoformat()
     try:
@@ -59,6 +58,7 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
 
     linked_item: dict[str, Any] | None = None
     linked_item_id = ""
+    linked_debt_payments: list[dict[str, Any]] = []
     recipient_fallback = ""
 
     if target_type == TARGET_DEBT:
@@ -78,6 +78,28 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
             if not transfer_reference:
                 transfer_reference = f"Debt #{linked_item_id}"
 
+    elif target_type == TARGET_MULTIPLE_DEBTS:
+        linked_debt_payments, debt_errors = _selected_debt_payments_from_form(form)
+        errors.extend(debt_errors)
+        if linked_debt_payments:
+            amount = sum(item["amount"] for item in linked_debt_payments)
+            selected_names = [_clean_text(item["debt"].get("name")) for item in linked_debt_payments]
+            selected_ids = [str(item["debt"].get("id", "")) for item in linked_debt_payments]
+            creditors = sorted({
+                _clean_text(item["debt"].get("creditor"))
+                for item in linked_debt_payments
+                if _clean_text(item["debt"].get("creditor"))
+            })
+            category = DEBT_PAYMENT_CATEGORY
+            sub_category = "Multiple debts"
+            if len(creditors) == 1:
+                recipient_fallback = creditors[0]
+            if not description:
+                joined_names = ", ".join(name for name in selected_names if name)
+                description = f"Bonifico debt payments: {joined_names}" if joined_names else "Bonifico debt payments"
+            if not transfer_reference:
+                transfer_reference = "Debts " + ", ".join(selected_ids)
+
     elif target_type == TARGET_PAYABLE:
         linked_item_id = _clean_text(form.get("payable_id") or form.get("target_id"))
         linked_item = payable_by_id(linked_item_id)
@@ -94,6 +116,9 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
                 description = f"Bonifico payable payment to {recipient_fallback}: {sub_category}".strip()
             if not transfer_reference:
                 transfer_reference = f"Payable #{linked_item_id}"
+
+    if amount <= 0:
+        errors.append("Amount must be greater than zero.")
 
     contact_id = _clean_text(form.get("contact_id"))
     manual_name = _clean_text(form.get("manual_contact_name") or form.get("contact_name") or form.get("recipient_name"))
@@ -180,6 +205,16 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
             description=description,
             extra_tx_fields=bonifico_fields,
         )
+    elif target_type == TARGET_MULTIPLE_DEBTS:
+        result = _register_multiple_debt_payments(
+            linked_debt_payments,
+            payment_date=transfer_date,
+            account=source_validation["account_value"],
+            account_id=source_validation["account_key"],
+            payment_method_id=payment_method_id,
+            description=description,
+            bonifico_fields=bonifico_fields,
+        )
     elif target_type == TARGET_PAYABLE:
         result = register_payable_payment(
             payable_id=linked_item_id,
@@ -229,6 +264,7 @@ def record_bonifico(form: Mapping[str, Any], user_id: str | None = None) -> dict
         "contact_snapshot": contact_snapshot,
         "target_type": target_type,
         "linked_item_id": linked_item_id,
+        "linked_item_ids": [str(item["debt"].get("id", "")) for item in linked_debt_payments] if target_type == TARGET_MULTIPLE_DEBTS else ([linked_item_id] if linked_item_id else []),
     }
 
 
@@ -279,6 +315,110 @@ def _active_debt_options(contacts: list[Mapping[str, Any]]) -> list[dict[str, An
         )
     return rows
 
+
+
+def _selected_debt_payments_from_form(form: Mapping[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
+    selected_ids = _form_values(form, "debt_ids")
+    if not selected_ids:
+        selected_ids = _form_values(form, "debt_id")
+
+    rows: list[dict[str, Any]] = []
+    errors: list[str] = []
+    seen: set[str] = set()
+
+    for raw_debt_id in selected_ids:
+        debt_id = _clean_text(raw_debt_id)
+        if not debt_id or debt_id in seen:
+            continue
+        seen.add(debt_id)
+
+        debt = debt_by_id(debt_id)
+        if not debt or debt.get("status") != "active":
+            errors.append(f"Debt #{debt_id} is not active or was not found.")
+            continue
+
+        remaining = _parse_amount(debt.get("remaining_amount"))
+        if remaining <= 0:
+            errors.append(f"Debt #{debt_id} has no remaining balance.")
+            continue
+
+        requested_amount = _parse_amount(form.get(f"debt_amount_{debt_id}") or form.get("amount"))
+        if requested_amount <= 0:
+            errors.append(f"Enter a payment amount for {debt.get('name') or 'debt #' + debt_id}.")
+            continue
+        if requested_amount > remaining + 0.005:
+            errors.append(f"Amount for {debt.get('name') or 'debt #' + debt_id} cannot exceed € {remaining:.2f}.")
+            continue
+
+        rows.append({"debt": debt, "amount": requested_amount, "remaining": remaining})
+
+    if not rows and not errors:
+        errors.append("Select at least one active debt to pay with this bonifico.")
+
+    return rows, errors
+
+
+def _register_multiple_debt_payments(
+    debt_payments: list[dict[str, Any]],
+    *,
+    payment_date: str,
+    account: str,
+    account_id: str,
+    payment_method_id: str,
+    description: str,
+    bonifico_fields: Mapping[str, Any],
+) -> dict[str, Any]:
+    transaction_ids: list[Any] = []
+    pending_ids: list[Any] = []
+    paid_amount = 0.0
+    remaining_by_debt: dict[str, float] = {}
+
+    for index, item in enumerate(debt_payments, start=1):
+        debt = item["debt"]
+        debt_id = str(debt.get("id", ""))
+        debt_name = _clean_text(debt.get("name")) or f"Debt #{debt_id}"
+        creditor = _clean_text(debt.get("creditor"))
+        per_payment_fields = dict(bonifico_fields)
+        if len(debt_payments) > 1:
+            per_payment_fields["transfer_reference"] = f"{bonifico_fields.get('transfer_reference') or 'Debt payments'} · {index}/{len(debt_payments)}"
+
+        result = register_debt_payment(
+            debt_id=debt_id,
+            amount=item["amount"],
+            payment_date=payment_date,
+            account=account,
+            account_id=account_id,
+            payment_method_id=payment_method_id,
+            description=description or (f"Bonifico debt payment to {creditor}: {debt_name}" if creditor else f"Bonifico debt payment: {debt_name}"),
+            extra_tx_fields=per_payment_fields,
+        )
+        if not result.get("ok"):
+            return result
+
+        transaction_ids.extend(result.get("transaction_ids", []))
+        pending_ids.extend(result.get("pending_ids", []))
+        paid_amount += _parse_amount(result.get("paid_amount", item["amount"]))
+        remaining_by_debt[debt_id] = _parse_amount(result.get("remaining_amount"))
+
+    return {
+        "ok": True,
+        "transaction_ids": transaction_ids,
+        "pending_ids": pending_ids,
+        "paid_amount": paid_amount,
+        "remaining_by_debt": remaining_by_debt,
+    }
+
+
+def _form_values(form: Mapping[str, Any], key: str) -> list[str]:
+    if hasattr(form, "getlist"):
+        return [_clean_text(value) for value in form.getlist(key) if _clean_text(value)]
+    value = form.get(key)
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        return [_clean_text(item) for item in value if _clean_text(item)]
+    cleaned = _clean_text(value)
+    return [cleaned] if cleaned else []
 
 def _active_payable_options(contacts: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []

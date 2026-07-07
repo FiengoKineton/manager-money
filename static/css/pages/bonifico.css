@@ -40,3 +40,48 @@
   padding: 1rem;
   background: var(--surface-soft);
 }
+
+.bonifico-debt-multi-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.55rem;
+}
+
+.bonifico-debt-multi-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(120px, 180px);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.bonifico-debt-multi-copy {
+  min-width: 0;
+}
+
+.bonifico-debt-multi-copy strong,
+.bonifico-debt-multi-copy small {
+  display: block;
+}
+
+.bonifico-debt-multi-copy small {
+  color: var(--text-muted, var(--muted, #64748b));
+  margin-top: 0.15rem;
+}
+
+.bonifico-debt-multi-row input[type="number"] {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .bonifico-debt-multi-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .bonifico-debt-multi-row input[type="number"] {
+    grid-column: 1 / -1;
+  }
+}

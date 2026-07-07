@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any, Mapping
 
 from money_manager.config import MAIN_ACCOUNT_KEY, normalize_account_key
@@ -194,6 +194,59 @@ def payable_by_id(payable_id) -> dict | None:
     return None
 
 
+def immediate_payable_reminders(*, limit: int = 6, today: date | None = None, scope=None) -> list[dict[str, Any]]:
+    """Return the closest active payables for dashboard reminder cards.
+
+    Unlike alert notifications, this intentionally includes every active payable
+    with remaining money, even when it is not overdue or inside the notification
+    window.  It is a passive reminder list for the home dashboard.
+    """
+
+    today = today or date.today()
+    rows = load_payables()
+    if scope is not None:
+        try:
+            rows = payable_rows_for_scope(rows, scope)
+        except Exception:
+            rows = []
+
+    reminders: list[dict[str, Any]] = []
+    for row in rows:
+        if str(row.get("status", "active")).strip().lower() != "active":
+            continue
+
+        remaining = _amount(row.get("remaining_amount"))
+        if remaining <= 0.005:
+            continue
+
+        due = _parse_payable_date(row.get("due_date"))
+        start = _parse_payable_date(row.get("start_date"))
+        created = _parse_payable_datetime_date(row.get("created_at"))
+        sort_date = due or start or created or date.max
+        due_label = _payable_due_label(due, today)
+        tone = _payable_due_tone(due, today)
+
+        reminders.append({
+            "id": row.get("id", ""),
+            "name": str(row.get("name") or "Payable"),
+            "payee": str(row.get("payee") or "Unknown payee"),
+            "category": str(row.get("category") or DEFAULT_PAYABLE_EXPENSE_CATEGORY),
+            "description": str(row.get("description") or ""),
+            "account_label": str(row.get("account_name_snapshot") or row.get("account") or row.get("account_id") or "No account"),
+            "remaining_amount": float(remaining),
+            "due_date": due.isoformat() if due else "",
+            "due_label": due_label,
+            "tone": tone,
+            "sort_date": sort_date.isoformat() if sort_date != date.max else "",
+            "_sort_key": (0 if due else 1, sort_date, str(row.get("name") or "").lower()),
+        })
+
+    reminders.sort(key=lambda item: item["_sort_key"])
+    for item in reminders:
+        item.pop("_sort_key", None)
+    return reminders[:max(0, int(limit or 0))]
+
+
 def overview_totals(scope=None) -> dict:
     rows = load_payables()
     scoped = scope is not None
@@ -270,6 +323,52 @@ def page_context(main_net: float = 0.0, visible_liquidity: float = 0.0, scope=No
 def _payable_hits_main_net(row: dict) -> bool:
     account_id = row.get("account_id") or row.get("account", "")
     return normalize_account_key(account_id) == MAIN_ACCOUNT_KEY
+
+
+def _parse_payable_date(value) -> date | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    for candidate in (raw[:10], raw):
+        try:
+            return date.fromisoformat(candidate)
+        except ValueError:
+            continue
+    return None
+
+
+def _parse_payable_datetime_date(value) -> date | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(raw).date()
+    except ValueError:
+        return _parse_payable_date(raw)
+
+
+def _payable_due_label(due: date | None, today: date) -> str:
+    if due is None:
+        return "No due date"
+    delta = (due - today).days
+    if delta < 0:
+        days = abs(delta)
+        return f"Overdue by {days} day{'s' if days != 1 else ''}"
+    if delta == 0:
+        return "Due today"
+    if delta == 1:
+        return "Due tomorrow"
+    return f"Due in {delta} days"
+
+
+def _payable_due_tone(due: date | None, today: date) -> str:
+    if due is None:
+        return "neutral"
+    if due <= today:
+        return "critical"
+    if due <= today + timedelta(days=7):
+        return "warning"
+    return "info"
 
 
 def _safe_int(value):

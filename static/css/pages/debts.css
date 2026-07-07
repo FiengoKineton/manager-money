@@ -52,3 +52,19 @@ tr.is-closed td {
 .hidden-debt-rule-field {
   display: none;
 }
+
+.debt-status-action-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
+.debt-status-action-form select {
+  min-width: 120px;
+}
+
+.debt-status-action-form .compact-btn {
+  white-space: nowrap;
+}

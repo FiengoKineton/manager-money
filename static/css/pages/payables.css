@@ -51,3 +51,87 @@
     width: 100%;
   }
 }
+
+/* Desktop fit for tracked payables.
+   The table keeps a horizontal scrollbar on narrow desktop widths, but on normal
+   desktop screens the visible columns fit inside the card like Tracked Debts. */
+@media (min-width: 761px) {
+  .payables-card:has(table.payables-tracked-table) {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+  }
+
+  table.payables-tracked-table {
+    width: 100% !important;
+    min-width: 1120px !important;
+    max-width: none !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  table.payables-tracked-table th,
+  table.payables-tracked-table td {
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    vertical-align: top !important;
+  }
+
+  table.payables-tracked-table thead th {
+    white-space: nowrap !important;
+  }
+
+  table.payables-tracked-table th:nth-child(1),
+  table.payables-tracked-table td[data-label="Name"] { width: 22% !important; }
+
+  table.payables-tracked-table th:nth-child(2),
+  table.payables-tracked-table td[data-label="Payee"] { width: 15% !important; }
+
+  table.payables-tracked-table th:nth-child(3),
+  table.payables-tracked-table td[data-label="Original"] { width: 10% !important; }
+
+  table.payables-tracked-table th:nth-child(4),
+  table.payables-tracked-table td[data-label="Remaining"] { width: 10% !important; }
+
+  table.payables-tracked-table th:nth-child(5),
+  table.payables-tracked-table td[data-label="Paid"] { width: 7% !important; }
+
+  table.payables-tracked-table th:nth-child(6),
+  table.payables-tracked-table td[data-label="Progress"] { width: 13% !important; }
+
+  table.payables-tracked-table th:nth-child(7),
+  table.payables-tracked-table td[data-label="Due / account"] { width: 15% !important; }
+
+  table.payables-tracked-table th:nth-child(8),
+  table.payables-tracked-table td[data-label="Status"] { width: 8% !important; }
+
+  table.payables-tracked-table th:last-child,
+  table.payables-tracked-table td[data-label="Actions"],
+  table.payables-tracked-table td.desktop-actions-cell,
+  table.payables-tracked-table td.debt-actions {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  table.payables-tracked-table input,
+  table.payables-tracked-table select,
+  table.payables-tracked-table textarea,
+  table.payables-tracked-table .table-note-input {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  table.payables-tracked-table .progress-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}

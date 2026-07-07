@@ -25,3 +25,88 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Desktop fit for tracked receivables.
+   The table keeps a horizontal scrollbar on narrow desktop widths, but on normal
+   desktop screens the visible columns fit inside the card like Tracked Debts. */
+@media (min-width: 761px) {
+  .money-owed-table-card:has(table.money-owed-table),
+  .receivables-card:has(table.money-owed-table) {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+  }
+
+  table.money-owed-table {
+    width: 100% !important;
+    min-width: 1120px !important;
+    max-width: none !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  table.money-owed-table th,
+  table.money-owed-table td {
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    vertical-align: top !important;
+  }
+
+  table.money-owed-table thead th {
+    white-space: nowrap !important;
+  }
+
+  table.money-owed-table th:nth-child(1),
+  table.money-owed-table td[data-label="Name"] { width: 22% !important; }
+
+  table.money-owed-table th:nth-child(2),
+  table.money-owed-table td[data-label="Person"] { width: 15% !important; }
+
+  table.money-owed-table th:nth-child(3),
+  table.money-owed-table td[data-label="Original"] { width: 10% !important; }
+
+  table.money-owed-table th:nth-child(4),
+  table.money-owed-table td[data-label="Remaining"] { width: 10% !important; }
+
+  table.money-owed-table th:nth-child(5),
+  table.money-owed-table td[data-label="Collected"] { width: 7% !important; }
+
+  table.money-owed-table th:nth-child(6),
+  table.money-owed-table td[data-label="Progress"] { width: 13% !important; }
+
+  table.money-owed-table th:nth-child(7),
+  table.money-owed-table td[data-label="Due / account"] { width: 15% !important; }
+
+  table.money-owed-table th:nth-child(8),
+  table.money-owed-table td[data-label="Status"] { width: 8% !important; }
+
+  table.money-owed-table th:last-child,
+  table.money-owed-table td[data-label="Actions"],
+  table.money-owed-table td.desktop-actions-cell,
+  table.money-owed-table td.debt-actions {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  table.money-owed-table input,
+  table.money-owed-table select,
+  table.money-owed-table textarea,
+  table.money-owed-table .table-note-input {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  table.money-owed-table .progress-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}

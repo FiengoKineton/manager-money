@@ -29,7 +29,7 @@ def bonifico_page():
         if result.get("ok"):
             if result.get("created_contact"):
                 saved = "recorded_created_contact"
-            elif result.get("target_type") == "debt":
+            elif result.get("target_type") in {"debt", "debts"}:
                 saved = "recorded_debt"
             elif result.get("target_type") == "payable":
                 saved = "recorded_payable"

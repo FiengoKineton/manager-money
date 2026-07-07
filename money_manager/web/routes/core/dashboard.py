@@ -211,6 +211,29 @@ def index():
     scoped_net_after_pending = float(scope_summary.get("net_after_pending", scoped_net - current_pending_total) or 0.0)
 
     current_month_recurring = recurring_forecast_for_current_month()
+
+    try:
+        from money_manager.services.notification_service import build_notification_context_cached
+
+        dashboard_notifications = build_notification_context_cached()
+        dashboard_new_notifications = [
+            item for item in dashboard_notifications.get("items", [])
+            if item.get("is_unread", True)
+        ]
+    except Exception:
+        dashboard_notifications = {"items": [], "count": 0, "unread_count": 0}
+        dashboard_new_notifications = []
+
+    try:
+        from money_manager.services.payable_service import immediate_payable_reminders
+
+        dashboard_payable_reminders = immediate_payable_reminders(
+            limit=6,
+            scope=selected_scope,
+        )
+    except Exception:
+        dashboard_payable_reminders = []
+
     recurring_expenses_this_month = [
         item for item in current_month_recurring.get("items", [])
         if item.get("type") == "expense"
@@ -264,6 +287,9 @@ def index():
         current_month_recurring=current_month_recurring,
         recurring_expenses_this_month=recurring_expenses_this_month,
         recurring_incomes_this_month=recurring_incomes_this_month,
+        dashboard_notifications=dashboard_notifications,
+        dashboard_new_notifications=dashboard_new_notifications,
+        dashboard_payable_reminders=dashboard_payable_reminders,
         dashboard_current_accounts=dashboard_current_accounts,
         charts=metrics["charts"],
         has_effective_filters=has_effective_filters,

@@ -75,6 +75,7 @@
       <select name="bonifico_target_type" id="bonifico-target-type">
         <option value="expense" {% if (form_values.bonifico_target_type or 'expense') == 'expense' %}selected{% endif %}>{{ t("bonifico.target_expense") }}</option>
         <option value="debt" {% if form_values.bonifico_target_type == 'debt' %}selected{% endif %}>{{ t("bonifico.target_debt") }}</option>
+        <option value="debts" {% if form_values.bonifico_target_type == 'debts' %}selected{% endif %}>{{ t("bonifico.target_debts") }}</option>
         <option value="payable" {% if form_values.bonifico_target_type == 'payable' %}selected{% endif %}>{{ t("bonifico.target_payable") }}</option>
       </select>
       <small class="hint">{{ t("bonifico.target_type_hint") }}</small>
@@ -99,6 +100,49 @@
         {% endfor %}
       </select>
       <small class="hint">{{ t("bonifico.select_debt_hint") }}</small>
+    </div>
+
+    <div class="form-field-wide bonifico-target-picker" id="bonifico-debts-panel" hidden>
+      <label>{{ t("bonifico.select_debts") }}</label>
+      {% if bonifico_targets.debts %}
+        <div class="bonifico-debt-multi-list" data-bonifico-multi-debts>
+          {% for debt in bonifico_targets.debts %}
+            <label class="bonifico-debt-multi-row">
+              <input
+                type="checkbox"
+                name="debt_ids"
+                value="{{ debt.id }}"
+                data-bonifico-debt-checkbox
+                data-debt-id="{{ debt.id }}"
+                data-amount="{{ debt.remaining_amount_str }}"
+                data-recipient="{{ debt.recipient_name }}"
+                data-contact-id="{{ debt.contact_id }}"
+                data-category="{{ debt.category }}"
+                data-sub-category="{{ debt.sub_category }}"
+                data-description="{{ debt.description }}"
+                data-reference="{{ debt.reference }}">
+              <span class="bonifico-debt-multi-copy">
+                <strong>{{ debt.name }}</strong>
+                <small>{{ debt.recipient_name or 'No creditor' }} · remaining € {{ debt.remaining_amount_str }}</small>
+              </span>
+              <input
+                type="number"
+                min="0.01"
+                max="{{ debt.remaining_amount_str }}"
+                step="0.01"
+                name="debt_amount_{{ debt.id }}"
+                value="{{ debt.remaining_amount_str }}"
+                data-bonifico-debt-amount
+                data-debt-id="{{ debt.id }}"
+                aria-label="Amount for {{ debt.name }}"
+                disabled>
+            </label>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="hint">{{ t("bonifico.no_active_debts") }}</p>
+      {% endif %}
+      <small class="hint">{{ t("bonifico.select_debts_hint") }}</small>
     </div>
 
     <div class="form-field-wide bonifico-target-picker" id="bonifico-payable-panel" hidden>
@@ -211,5 +255,5 @@
   window.moneyManagerBonificoTargets = {{ bonifico_targets|tojson }};
   window.moneyManagerAccountBalances = {{ account_balances|tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/web/bonifico.js') }}?v=bonifico-2"></script>
+<script src="{{ url_for('static', filename='js/web/bonifico.js') }}?v=bonifico-3"></script>
 {% endblock %}
