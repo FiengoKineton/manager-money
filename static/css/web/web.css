@@ -4168,3 +4168,240 @@ html[data-theme="night"] .bill-items-list div {
   flex: 0 0 1.35em;
   margin-right: .2rem;
 }
+
+/* Patch: aligned sidebar navigation grid + Search page without duplicate input. */
+.app-sidebar-nav-clean {
+  --nav-group-icon-slot: 1.75rem;
+  --nav-subgroup-icon-slot: 1.55rem;
+  --nav-link-dot-slot: .85rem;
+  --nav-link-icon-slot: 1.55rem;
+}
+
+.app-sidebar-nav-clean .app-nav-group > summary,
+.app-sidebar-nav-clean .nav-subgroup > summary {
+  display: grid !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  text-align: left !important;
+  column-gap: .62rem !important;
+}
+
+.app-sidebar-nav-clean .app-nav-group > summary {
+  grid-template-columns: var(--nav-group-icon-slot) minmax(0, 1fr) !important;
+  padding-left: clamp(4.6rem, 28%, 5.75rem) !important;
+  padding-right: 2.55rem !important;
+}
+
+.app-sidebar-nav-clean .nav-subgroup > summary {
+  grid-template-columns: var(--nav-subgroup-icon-slot) minmax(0, 1fr) !important;
+  padding-left: clamp(3.35rem, 23%, 4.25rem) !important;
+  padding-right: 2.35rem !important;
+}
+
+.app-sidebar-nav-clean .app-nav-group > summary .nav-icon,
+.app-sidebar-nav-clean .nav-subgroup > summary .nav-icon {
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  display: inline-grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1;
+}
+
+.app-sidebar-nav-clean .app-nav-group > summary::after,
+.app-sidebar-nav-clean .nav-subgroup > summary::after {
+  position: absolute !important;
+  right: .95rem !important;
+  top: 50% !important;
+}
+
+.app-sidebar-nav-clean .nav-items > a,
+.app-sidebar-nav-clean .nav-subitems a {
+  display: grid !important;
+  grid-template-columns: var(--nav-link-dot-slot) var(--nav-link-icon-slot) minmax(0, 1fr);
+  align-items: center !important;
+  column-gap: .42rem !important;
+  text-align: left !important;
+  padding-left: .9rem !important;
+  padding-right: .75rem !important;
+}
+
+.app-sidebar-nav-clean .nav-items > a::before,
+.app-sidebar-nav-clean .nav-subitems a::before {
+  content: "";
+  grid-column: 1;
+  width: .36rem;
+  height: .36rem;
+  border-radius: 999px;
+  margin: 0 auto !important;
+  background: rgba(100, 116, 139, .28);
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.app-sidebar-nav-clean .nav-items > a.active::before,
+.app-sidebar-nav-clean .nav-subitems a.active::before {
+  background: linear-gradient(135deg, #22d3ee, #6366f1);
+  box-shadow: 0 0 16px rgba(99, 102, 241, .42);
+}
+
+.app-sidebar-nav-clean .nav-link-icon {
+  grid-column: 2;
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  display: inline-grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1;
+}
+
+.search-page-helper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: .65rem;
+  margin-left: auto;
+}
+.search-page-helper .pill-muted {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.4rem;
+  padding: .62rem .85rem;
+  border-radius: 999px;
+  color: rgba(15, 23, 42, .66);
+  background: rgba(255, 255, 255, .54);
+  border: 1px solid rgba(148, 163, 184, .22);
+  font-weight: 850;
+}
+.compact-command-btn {
+  min-height: 2.45rem;
+  padding-inline: .95rem;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .search-page-helper {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
+
+/* Patch: left-start sidebar alignment + hide legacy topbar search UI.
+   Keep the search form in the DOM, but do not show it because Smart Search/Ctrl+K is now the main entry point. */
+.topbar-global-search {
+  display: none !important;
+}
+
+/* Sidebar rows: start like normal rows, with a fixed icon column and a fixed text start. */
+.app-sidebar-nav-clean {
+  --nav-main-left: .95rem;
+  --nav-sub-left: .85rem;
+  --nav-item-left: .7rem;
+  --nav-icon-col: 2rem;
+  --nav-dot-col: .75rem;
+  --nav-text-gap: .55rem;
+}
+
+.app-sidebar-nav-clean .app-nav-group > summary,
+.app-sidebar-nav-clean .nav-subgroup > summary {
+  display: grid !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  justify-items: stretch !important;
+  text-align: left !important;
+  column-gap: var(--nav-text-gap) !important;
+  white-space: normal !important;
+}
+
+.app-sidebar-nav-clean .app-nav-group > summary {
+  grid-template-columns: var(--nav-icon-col) minmax(0, 1fr) auto !important;
+  padding-left: var(--nav-main-left) !important;
+  padding-right: .9rem !important;
+}
+
+.app-sidebar-nav-clean .nav-subgroup > summary {
+  grid-template-columns: var(--nav-icon-col) minmax(0, 1fr) auto !important;
+  padding-left: var(--nav-sub-left) !important;
+  padding-right: .78rem !important;
+}
+
+.app-sidebar-nav-clean .app-nav-group > summary .nav-icon,
+.app-sidebar-nav-clean .nav-subgroup > summary .nav-icon {
+  grid-column: 1 !important;
+  width: var(--nav-icon-col) !important;
+  min-width: var(--nav-icon-col) !important;
+  max-width: var(--nav-icon-col) !important;
+  margin: 0 !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  text-align: center !important;
+  line-height: 1 !important;
+}
+
+.app-sidebar-nav-clean .app-nav-group > summary::after,
+.app-sidebar-nav-clean .nav-subgroup > summary::after {
+  position: static !important;
+  grid-column: 3 !important;
+  justify-self: end !important;
+  align-self: center !important;
+  margin: 0 !important;
+  transform: none !important;
+  right: auto !important;
+  top: auto !important;
+}
+
+.app-sidebar-nav-clean .app-nav-group[open] > summary::after,
+.app-sidebar-nav-clean .nav-subgroup[open] > summary::after {
+  transform: rotate(180deg) !important;
+}
+
+.app-sidebar-nav-clean .nav-subgroup > summary::after {
+  content: "›" !important;
+  transition: transform .16s ease;
+}
+
+.app-sidebar-nav-clean .nav-subgroup[open] > summary::after {
+  transform: rotate(90deg) !important;
+}
+
+.app-sidebar-nav-clean .nav-items > a,
+.app-sidebar-nav-clean .nav-subitems a {
+  display: grid !important;
+  grid-template-columns: var(--nav-dot-col) var(--nav-icon-col) minmax(0, 1fr) !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  text-align: left !important;
+  column-gap: .48rem !important;
+  padding-left: var(--nav-item-left) !important;
+  padding-right: .75rem !important;
+}
+
+.app-sidebar-nav-clean .nav-items > a::before,
+.app-sidebar-nav-clean .nav-subitems a::before {
+  grid-column: 1 !important;
+  justify-self: center !important;
+  margin: 0 !important;
+}
+
+.app-sidebar-nav-clean .nav-link-icon {
+  grid-column: 2 !important;
+  width: var(--nav-icon-col) !important;
+  min-width: var(--nav-icon-col) !important;
+  max-width: var(--nav-icon-col) !important;
+  margin: 0 !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  text-align: center !important;
+  line-height: 1 !important;
+}
+
+@media (max-width: 1180px) {
+  .app-sidebar-nav-clean {
+    --nav-main-left: .75rem;
+    --nav-sub-left: .7rem;
+    --nav-item-left: .55rem;
+    --nav-icon-col: 1.75rem;
+  }
+}

@@ -8,9 +8,9 @@
     <h2>Search Money Manager</h2>
     <p>Find accounts, cards/payment methods, transactions, pending items, recurring rules, payables, contacts and safe document metadata.</p>
   </div>
-  <div class="search-hero-actions">
-    <span class="soft-chip">Use the top search bar</span>
-    <span class="soft-chip">or press Ctrl + K</span>
+  <div class="search-page-helper" aria-label="Search shortcuts">
+    <span class="pill-muted">Use the global search from any page</span>
+    <button type="button" class="secondary-btn compact-command-btn" data-command-palette-open>⌘K Smart search</button>
   </div>
 </section>
 
@@ -47,6 +47,6 @@
     {% endfor %}
   </section>
 {% else %}
-  <section class="panel-card"><p class="empty">Use the top search bar or press Ctrl + K to search across the app.</p></section>
+  <section class="panel-card"><p class="empty">Use the top navigation search from any other page, or press Ctrl + K to open Smart Search.</p></section>
 {% endif %}
 {% endblock %}

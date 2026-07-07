@@ -130,13 +130,13 @@
         {% if has_active_account %}
           <a class="nav-back-card" href="{{ url_for('accounts.accounts_page') }}">← Back to all Conti</a>
           <details class="nav-group app-nav-group is-active" open>
-            <summary>{{ account_label|text_masked }}</summary>
+            <summary><span class="nav-icon" aria-hidden="true">🏦</span> {{ account_label|text_masked }}</summary>
             <div class="nav-items">
-              {% if endpoint_exists('accounts.account_detail') %}<a href="{{ url_for('accounts.account_detail', account_key=active_account_id) }}" class="{{ 'active' if request.endpoint in ['accounts.account_detail', 'accounts.account_payment_method_detail'] else '' }}">Conto home</a>{% endif %}
+              {% if endpoint_exists('accounts.account_detail') %}<a href="{{ url_for('accounts.account_detail', account_key=active_account_id) }}" class="{{ 'active' if request.endpoint in ['accounts.account_detail', 'accounts.account_payment_method_detail'] else '' }}"><span class="nav-link-icon">🏠</span> Conto home</a>{% endif %}
               {% if endpoint_exists('transactions.transactions_page') %}<a href="{{ url_for('transactions.transactions_page', account_id=active_account_id) }}" class="{{ 'active' if request.endpoint == 'transactions.transactions_page' else '' }}"><span class="nav-link-icon">↕</span> Transactions</a>{% endif %}
-              {% if endpoint_exists('dashboard.overview') %}<a href="{{ url_for('dashboard.overview', account_id=active_account_id) }}" class="{{ 'active' if request.endpoint == 'dashboard.overview' else '' }}">Quick overview</a>{% endif %}
-              {% if endpoint_exists('dashboard.overview_detailed') %}<a href="{{ url_for('dashboard.overview_detailed', account_id=active_account_id) }}" class="{{ 'active' if request.endpoint == 'dashboard.overview_detailed' else '' }}">Detailed overview</a>{% endif %}
-              {% if endpoint_exists('net_explanation.net_explanation') %}<a href="{{ url_for('net_explanation.net_explanation', account_id=active_account_id) }}" class="{{ 'active' if request.endpoint == 'net_explanation.net_explanation' else '' }}">Why this net?</a>{% endif %}
+              {% if endpoint_exists('dashboard.overview') %}<a href="{{ url_for('dashboard.overview', account_id=active_account_id) }}" class="{{ 'active' if request.endpoint == 'dashboard.overview' else '' }}"><span class="nav-link-icon">📌</span> Quick overview</a>{% endif %}
+              {% if endpoint_exists('dashboard.overview_detailed') %}<a href="{{ url_for('dashboard.overview_detailed', account_id=active_account_id) }}" class="{{ 'active' if request.endpoint == 'dashboard.overview_detailed' else '' }}"><span class="nav-link-icon">▦</span> Detailed overview</a>{% endif %}
+              {% if endpoint_exists('net_explanation.net_explanation') %}<a href="{{ url_for('net_explanation.net_explanation', account_id=active_account_id) }}" class="{{ 'active' if request.endpoint == 'net_explanation.net_explanation' else '' }}"><span class="nav-link-icon">?</span> Why this net?</a>{% endif %}
             </div>
           </details>
         {% else %}
@@ -293,9 +293,9 @@
           <h1>{% block page_title %}{{ t("app.name") }}{% endblock %}</h1>
         </div>
         <div class="app-topbar-actions">
-          {% if is_authenticated and endpoint_exists('search.search_page') %}
+          {% if is_authenticated and endpoint_exists('search.search_page') and request.endpoint != 'search.search_page' %}
           <form class="topbar-global-search" method="get" action="{{ url_for('search.search_page') }}">
-            <input type="search" name="q" value="{{ request.args.get('q', '') if request.endpoint == 'search.search_page' else '' }}" placeholder="Search..." aria-label="Search Money Manager">
+            <input type="search" name="q" value="" placeholder="Search..." aria-label="Search Money Manager">
             <button type="submit">⌕</button>
           </form>
           {% endif %}
