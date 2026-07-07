@@ -5,6 +5,7 @@ from money_manager.services.debt_service import (
     add_rule_from_form,
     delete_debt_from_form,
     delete_rule_from_form,
+    duplicate_debt_from_form,
     generate_debt_payments,
     page_context,
     pay_debt_from_form,
@@ -27,6 +28,8 @@ def debts_page():
             delete_debt_from_form(request.form)
         elif action == "update_debt":
             update_debt_from_form(request.form)
+        elif action == "duplicate_debt":
+            duplicate_debt_from_form(request.form)
         elif action == "pay_debt":
             pay_debt_from_form(request.form)
         elif action == "pay_creditor_debts":

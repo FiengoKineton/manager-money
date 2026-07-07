@@ -172,6 +172,9 @@ def mark_planned_expense_paid_from_form(form: Mapping[str, Any], user_id: str | 
             "account_id": form.get("account_id") or row.get("account_id") or form.get("account") or "",
             "payment_method_id": form.get("payment_method_id") or row.get("payment_method_id") or "",
             "description": form.get("description") or f"Planned expense: {row.get('title', '')}",
+            "linked_object_type": "planned_expense",
+            "linked_object_id": str(row.get("id", "")),
+            "linked_object_name": row.get("title", ""),
         },
         account_id=form.get("account_id") or row.get("account_id") or form.get("account") or "",
         payment_method_id=form.get("payment_method_id") or row.get("payment_method_id") or "",
@@ -189,6 +192,14 @@ def mark_planned_expense_paid_from_form(form: Mapping[str, Any], user_id: str | 
         row["linked_transaction_uid"] = str(save_result.get("transaction_uid") or save_result.get("id") or row.get("linked_transaction_uid") or "")
     payload["planned_expenses"][index] = _normalize(row)
     payload["events"] = [*payload.get("events", []), _event(row, "payment", f"Paid {amount:.2f}")][-500:]
+    try:
+        from money_manager.services.timeline_service import record_payment
+
+        transaction_ids = save_result.get("transaction_ids", []) if isinstance(save_result, dict) else []
+        tx_id = transaction_ids[0] if transaction_ids else ""
+        record_payment("planned_expense", row.get("id", ""), amount, form.get("account_id") or row.get("account_id") or "", "expense", tx_id, title=f"Paid planned expense: €{amount:.2f}")
+    except Exception:
+        pass
     save_planned_expenses(payload, user_id=user_id)
     return {"ok": True, "message": f"{row.get('title', 'Planned expense')} paid.", "paid_amount": amount}
 

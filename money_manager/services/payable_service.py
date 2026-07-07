@@ -37,7 +37,7 @@ def add_payable_from_form(form) -> None:
     if amount <= 0:
         return
 
-    append_payable({
+    new_id = append_payable({
         "name": form.get("name", ""),
         "payee": form.get("payee", ""),
         "original_amount": amount,
@@ -48,13 +48,26 @@ def add_payable_from_form(form) -> None:
         "description": form.get("description", ""),
         **_preferred_fields_from_form(form),
     })
+    try:
+        from money_manager.services.timeline_service import record_created
+
+        record_created("payable", new_id, form.get("name", ""))
+    except Exception:
+        pass
 
 
 def delete_payable_from_form(form) -> None:
     payable_id = _safe_int(form.get("id"))
     if payable_id is None:
         return
+    before = payable_by_id(payable_id)
     delete_payable(payable_id)
+    try:
+        from money_manager.services.timeline_service import record_deleted
+
+        record_deleted("payable", payable_id, (before or {}).get("name", ""))
+    except Exception:
+        pass
 
 
 def update_payable_from_form(form) -> None:
@@ -62,6 +75,7 @@ def update_payable_from_form(form) -> None:
     if payable_id is None:
         return
 
+    before = payable_by_id(payable_id)
     remaining = _amount(form.get("remaining_amount"))
     status = form.get("status", "active")
     if remaining <= 0.005:
@@ -82,6 +96,44 @@ def update_payable_from_form(form) -> None:
     if status != "active":
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
     update_payable(payable_id, updates)
+    try:
+        from money_manager.services.timeline_service import record_update_diff
+
+        record_update_diff("payable", payable_id, before, {**(before or {}), **updates})
+    except Exception:
+        pass
+
+
+def duplicate_payable_from_form(form) -> None:
+    payable_id = _safe_int(form.get("id"))
+    if payable_id is None:
+        return
+    source = payable_by_id(payable_id)
+    if not source:
+        return
+    new_id = append_payable({
+        "name": f"Copy of {source.get('name', '')}".strip(),
+        "payee": source.get("payee", ""),
+        "original_amount": _amount(source.get("original_amount")),
+        "remaining_amount": _amount(source.get("remaining_amount")),
+        "category": source.get("category") or DEFAULT_PAYABLE_EXPENSE_CATEGORY,
+        "account": source.get("account", ""),
+        "account_id": source.get("account_id", ""),
+        "account_name_snapshot": source.get("account_name_snapshot", ""),
+        "preferred_payment_method_id": source.get("preferred_payment_method_id", ""),
+        "preferred_payment_method_name_snapshot": source.get("preferred_payment_method_name_snapshot", ""),
+        "start_date": date.today().isoformat(),
+        "due_date": source.get("due_date", ""),
+        "description": source.get("description", ""),
+        "status": "active",
+    })
+    try:
+        from money_manager.services.timeline_service import record_created, record_event
+
+        record_created("payable", new_id, f"Copy of {source.get('name', '')}")
+        record_event("payable", new_id, "duplicated", f"Duplicated from {source.get('name', '')}")
+    except Exception:
+        pass
 
 
 def pay_payable_from_form(form) -> dict[str, Any] | None:
@@ -145,6 +197,9 @@ def register_payable_payment(
         "account_id": effective_account_id,
         "payment_method_id": effective_payment_method_id,
         "description": description or f"Payable payment to {item.get('payee', '')}: {item.get('name', '')}",
+        "linked_object_type": "payable",
+        "linked_object_id": str(item.get("id", payable_id)),
+        "linked_object_name": item.get("name", ""),
     }
     if extra_tx_fields:
         tx_payload.update(dict(extra_tx_fields))
@@ -181,6 +236,24 @@ def register_payable_payment(
         updates["status"] = "paid"
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
     update_payable(int(item["id"]), updates)
+    try:
+        from money_manager.services.timeline_service import record_amount_change, record_payment, record_status_change
+
+        tx_id = transaction_ids[0] if transaction_ids else ""
+        record_payment(
+            "payable",
+            item.get("id", payable_id),
+            amount,
+            effective_account_id,
+            "expense",
+            tx_id,
+            title=f"Paid €{amount:.2f} from {effective_account_id or 'selected account'}",
+        )
+        record_amount_change("payable", item.get("id", payable_id), "remaining_amount", remaining_before, remaining)
+        if updates.get("status"):
+            record_status_change("payable", item.get("id", payable_id), item.get("status", ""), updates.get("status", ""))
+    except Exception:
+        pass
 
     result = dict(save_result or {"ok": True})
     result.update({"ok": True, "paid_amount": amount, "remaining_amount": remaining, "payable_id": payable_id})
@@ -292,6 +365,14 @@ def page_context(main_net: float = 0.0, visible_liquidity: float = 0.0, scope=No
         row["remaining_amount"] = remaining
         row["paid_amount"] = max(0.0, original - remaining)
         row["progress"] = 0.0 if original <= 0 else min(100.0, row["paid_amount"] / original * 100.0)
+        try:
+            from money_manager.services.timeline_service import enrich_object_row
+
+            enrich_object_row(row, "payable")
+        except Exception:
+            row.setdefault("timeline_text", "No timeline events yet.")
+            row.setdefault("payment_history_text", "No payments recorded yet.")
+            row.setdefault("linked_transactions_text", "No linked transactions yet.")
 
     active = [row for row in rows if row.get("status") == "active" and _amount(row.get("remaining_amount")) > 0]
     totals = overview_totals(selected_scope if scope is not None else None)

@@ -13,7 +13,7 @@ def write_debts(rows: list[dict]) -> None:
     write_rows(DEBTS_CSV, DEBT_FIELDS, [_normalize_debt(row) for row in rows])
 
 
-def append_debt(data: dict) -> None:
+def append_debt(data: dict) -> int:
     rows = load_debts()
     amount = _amount(data.get("original_amount"))
     row = {
@@ -36,6 +36,7 @@ def append_debt(data: dict) -> None:
         "closed_at": "",
     }
     append_row(DEBTS_CSV, DEBT_FIELDS, row)
+    return int(row["id"])
 
 
 def update_debt(debt_id: int, updates: dict) -> None:

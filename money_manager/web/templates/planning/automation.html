@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Automation{% endblock %}
+
+{% block content %}
+<section class="hero-section automation-hero">
+  <div>
+    <span class="eyebrow">Rules</span>
+    <h1>Smart automation</h1>
+    <p>Lightweight rules that classify transactions and link them to recurring payments, debts or other tracked objects when their text matches.</p>
+  </div>
+  <div class="hero-actions">
+    <span class="metric-pill">{{ smart_rules_enabled_count }} active / {{ smart_rules_total_count }} total</span>
+  </div>
+</section>
+
+<section class="form-section automation-card">
+  <h2>Add rule</h2>
+  <form method="post" class="debt-form">
+    <input type="hidden" name="action" value="add_rule">
+    <div class="form-field form-field-wide">
+      <label>Name</label>
+      <input type="text" name="name" placeholder="OneDrive subscription">
+    </div>
+    <div class="form-field">
+      <label>Text contains</label>
+      <input type="text" name="contains" placeholder="onedrive" required>
+    </div>
+    <div class="form-field">
+      <label>Transaction type</label>
+      <select name="transaction_type">
+        <option value="">Any</option>
+        <option value="expense">Expense</option>
+        <option value="income">Income</option>
+        <option value="investment">Investment</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Category</label>
+      <input type="text" name="category" placeholder="Subscriptions">
+    </div>
+    <div class="form-field">
+      <label>Sub-category</label>
+      <input type="text" name="sub_category" placeholder="OneDrive">
+    </div>
+    <div class="form-field">
+      <label>Linked object type</label>
+      <select name="linked_object_type">
+        <option value="">None</option>
+        <option value="recurring">Recurring</option>
+        <option value="debt">Debt</option>
+        <option value="payable">Payable</option>
+        <option value="receivable">Receivable</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Linked object id</label>
+      <input type="text" name="linked_object_id" placeholder="Optional id">
+    </div>
+    <div class="form-field">
+      <label>Linked object name</label>
+      <input type="text" name="linked_object_name" placeholder="Optional display name">
+    </div>
+    <label class="checkbox-row"><input type="checkbox" name="enabled" checked> Enabled</label>
+    <div class="form-actions"><button type="submit">Add rule</button></div>
+  </form>
+</section>
+
+<section class="transactions automation-card">
+  <h2>Rules</h2>
+  {% if smart_rules %}
+  <table class="standard-table inline-edit-table desktop-detail-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Match</th>
+        <th>Output</th>
+        <th>Link</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rule in smart_rules %}
+      <tr class="desktop-detail-row" data-detail-id="{{ rule.id }}" data-detail-kind="{{ 'Built-in' if rule.builtin else 'Custom' }}">
+        <td data-label="Name"><strong>{{ rule.name }}</strong></td>
+        <td data-label="Match">{{ rule.contains }}{% if rule.transaction_type %}<small>{{ rule.transaction_type }}</small>{% endif %}</td>
+        <td data-label="Output">{{ rule.category or 'No category change' }}{% if rule.sub_category %}<small>{{ rule.sub_category }}</small>{% endif %}</td>
+        <td data-label="Link">{{ rule.linked_object_type or 'No link' }}{% if rule.linked_object_id %}<small>#{{ rule.linked_object_id }} {{ rule.linked_object_name }}</small>{% endif %}</td>
+        <td data-label="Status"><span class="status-pill">{{ 'Enabled' if rule.enabled else 'Disabled' }}</span></td>
+        <td data-label="Actions" class="debt-actions">
+          <div class="table-action-rail">
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="toggle_rule">
+              <input type="hidden" name="id" value="{{ rule.id }}">
+              <button type="submit" class="secondary-btn compact-btn">{{ 'Disable' if rule.enabled else 'Enable' }}</button>
+            </form>
+            {% if not rule.builtin %}
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="delete_rule">
+              <input type="hidden" name="id" value="{{ rule.id }}">
+              <button type="submit" class="icon-action-btn icon-action-delete" onclick="return confirm('Delete this automation rule?')">×</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>No automation rules yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

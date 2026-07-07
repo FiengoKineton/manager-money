@@ -183,6 +183,137 @@
   </article>
 </section>
 
+
+{% if useful_charts %}
+<section class="panel-card useful-charts-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Useful charts</span>
+      <h2>Decision charts</h2>
+      <p>Compact views for cashflow, obligations, recurring pressure and balance direction.</p>
+    </div>
+  </div>
+  <div class="analysis-command-grid">
+    <article class="analysis-decision-card">
+      <span class="eyebrow">Monthly cashflow</span>
+      <h3>Income vs expenses</h3>
+      {% if useful_charts.monthly_income_expenses %}
+        <div class="analysis-mini-bars">
+          {% for row in useful_charts.monthly_income_expenses %}
+          <div class="analysis-mini-bar-row">
+            <div><strong>{{ row.month }}</strong><small>Income € {{ '%.2f'|format(row.income) }} · Expenses € {{ '%.2f'|format(row.expenses) }}</small></div>
+            <span><i style="width: {{ '%.0f'|format(row.income_pct) }}%;"></i></span>
+            <em>€ {{ '%.2f'|format(row.income - row.expenses) }}</em>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}<p class="empty">No monthly data yet.</p>{% endif %}
+    </article>
+
+    <article class="analysis-decision-card">
+      <span class="eyebrow">Categories</span>
+      <h3>Category spending</h3>
+      {% if useful_charts.category_spending %}
+        <div class="analysis-mini-bars">
+          {% for row in useful_charts.category_spending %}
+          <div class="analysis-mini-bar-row">
+            <div><strong>{{ row.category }}</strong><small>€ {{ '%.2f'|format(row.amount) }}</small></div>
+            <span><i style="width: {{ '%.0f'|format(row.pct) }}%;"></i></span>
+            <em>{{ '%.0f'|format(row.pct) }}%</em>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}<p class="empty">No category spending yet.</p>{% endif %}
+    </article>
+
+    <article class="analysis-decision-card">
+      <span class="eyebrow">Balance</span>
+      <h3>Balance over time</h3>
+      {% if useful_charts.account_balance_trend %}
+        <div class="analysis-mini-bars">
+          {% for row in useful_charts.account_balance_trend %}
+          <div class="analysis-mini-bar-row">
+            <div><strong>{{ row.date }}</strong><small>€ {{ '%.2f'|format(row.balance) }}</small></div>
+            <span><i style="width: {{ '%.0f'|format(row.pct) }}%;"></i></span>
+            <em>{{ '%.0f'|format(row.pct) }}%</em>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}<p class="empty">No balance trend yet.</p>{% endif %}
+    </article>
+
+    <article class="analysis-decision-card">
+      <span class="eyebrow">Debts</span>
+      <h3>Debts progress</h3>
+      {% if useful_charts.debts_progress %}
+        <div class="analysis-mini-bars">
+          {% for row in useful_charts.debts_progress %}
+          <div class="analysis-mini-bar-row">
+            <div><strong>{{ row.name }}</strong><small>{{ row.counterparty }} · {{ row.status }}</small></div>
+            <span><i style="width: {{ '%.0f'|format(row.progress) }}%;"></i></span>
+            <em>€ {{ '%.2f'|format(row.remaining) }}</em>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}<p class="empty">No debt rows yet.</p>{% endif %}
+    </article>
+
+    <article class="analysis-decision-card">
+      <span class="eyebrow">Next 45 days</span>
+      <h3>Upcoming cashflow</h3>
+      {% if useful_charts.upcoming_cashflow %}
+        <dl class="analysis-stack-list">
+          {% for row in useful_charts.upcoming_cashflow %}
+          <div class="{{ 'positive-line' if row.direction == 'in' else '' }}"><dt>{{ row.date }} · {{ row.title }} <small>{{ row.source }}</small></dt><dd>{{ '+' if row.direction == 'in' else '-' }}€ {{ '%.2f'|format(row.amount) }}</dd></div>
+          {% endfor %}
+        </dl>
+      {% else %}<p class="empty">No upcoming cashflow in the next 45 days.</p>{% endif %}
+    </article>
+
+    <article class="analysis-decision-card">
+      <span class="eyebrow">Saving</span>
+      <h3>Savings rate trend</h3>
+      {% if useful_charts.savings_rate_trend %}
+        <div class="analysis-mini-bars">
+          {% for row in useful_charts.savings_rate_trend %}
+          <div class="analysis-mini-bar-row">
+            <div><strong>{{ row.month }}</strong><small>{{ '%.1f'|format(row.rate) }}%</small></div>
+            <span><i style="width: {{ '%.0f'|format(row.pct) }}%;"></i></span>
+            <em>{{ '%.0f'|format(row.rate) }}%</em>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}<p class="empty">No savings trend yet.</p>{% endif %}
+    </article>
+
+    <article class="analysis-decision-card">
+      <span class="eyebrow">People</span>
+      <h3>Top creditors / debtors</h3>
+      <dl class="analysis-stack-list">
+        {% for row in useful_charts.top_creditors %}<div><dt>Owe: {{ row.name }}</dt><dd>€ {{ '%.2f'|format(row.amount) }}</dd></div>{% endfor %}
+        {% for row in useful_charts.top_debtors %}<div class="positive-line"><dt>Owed by: {{ row.name }}</dt><dd>€ {{ '%.2f'|format(row.amount) }}</dd></div>{% endfor %}
+      </dl>
+    </article>
+
+    <article class="analysis-decision-card">
+      <span class="eyebrow">Recurring</span>
+      <h3>Recurring breakdown</h3>
+      {% if useful_charts.recurring_breakdown %}
+        <div class="analysis-mini-bars">
+          {% for row in useful_charts.recurring_breakdown %}
+          <div class="analysis-mini-bar-row">
+            <div><strong>{{ row.category }}</strong><small>Monthly equivalent</small></div>
+            <span><i style="width: {{ '%.0f'|format(row.pct) }}%;"></i></span>
+            <em>€ {{ '%.2f'|format(row.monthly_amount) }}</em>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}<p class="empty">No recurring rules yet.</p>{% endif %}
+    </article>
+  </div>
+</section>
+{% endif %}
+
 <section class="analysis-command-grid">
   <article class="analysis-decision-card">
     <span class="eyebrow">Income quality</span>

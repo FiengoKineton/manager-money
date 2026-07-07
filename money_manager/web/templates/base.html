@@ -142,7 +142,7 @@
         {% else %}
           {% set accounts_core_open = request.endpoint in ['accounts.accounts_page', 'transactions.transactions_page'] %}
           {% set accounts_transfer_open = request.endpoint in ['internal_transfers.internal_transfers_page', 'bonifico.bonifico_page'] %}
-          {% set accounts_tools_open = (request.endpoint and request.endpoint.startswith('contacts.')) or request.endpoint in ['currencies.currencies_page', 'discount_balances.discount_balances_page'] %}
+          {% set accounts_tools_open = (request.endpoint and request.endpoint.startswith('contacts.')) or request.endpoint in ['currencies.currencies_page', 'discount_balances.discount_balances_page', 'reconciliation.reconciliation_page'] %}
           {% set accounts_records_open = request.endpoint in ['documents.documents', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
           {% set accounts_group_open = accounts_core_open or accounts_transfer_open or accounts_tools_open or accounts_records_open %}
           <details class="nav-group app-nav-group {{ 'is-active' if accounts_group_open else '' }}" {{ 'open' if accounts_group_open else '' }}>
@@ -170,6 +170,7 @@
                   {% if endpoint_exists('contacts.contacts_page') %}<a href="{{ url_for('contacts.contacts_page') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('contacts.') else '' }}">Contacts</a>{% endif %}
                   {% if endpoint_exists('currencies.currencies_page') %}<a href="{{ url_for('currencies.currencies_page') }}" class="{{ 'active' if request.endpoint == 'currencies.currencies_page' else '' }}">Currency exchange</a>{% endif %}
                   {% if endpoint_exists('discount_balances.discount_balances_page') %}<a href="{{ url_for('discount_balances.discount_balances_page') }}" class="{{ 'active' if request.endpoint == 'discount_balances.discount_balances_page' else '' }}">Gift cards & buoni</a>{% endif %}
+                  {% if endpoint_exists('reconciliation.reconciliation_page') %}<a href="{{ url_for('reconciliation.reconciliation_page') }}" class="{{ 'active' if request.endpoint == 'reconciliation.reconciliation_page' else '' }}"><span class="nav-link-icon">✓</span> Reconciliation</a>{% endif %}
                 </div>
               </details>
 
@@ -186,7 +187,7 @@
         {% endif %}
 
         {% set planning_monthly_open = request.endpoint in ['pending.pending_page', 'pending.recurring_page', 'financial_calendar.calendar_page', 'notifications.center'] %}
-        {% set planning_common_open = request.endpoint in ['managed_recurring.bills_page', 'managed_recurring.work_income_page'] %}
+        {% set planning_common_open = request.endpoint in ['managed_recurring.bills_page', 'managed_recurring.work_income_page', 'automation.automation_page'] %}
         {% set planning_loans_open = request.endpoint in ['mortgages.mortgages_page', 'payables.payables_page', 'debts.debts_page', 'receivables.receivables_page'] %}
         {% set planning_projects_open = request.endpoint in ['forecast.forecast', 'planned_expenses.planned_expenses_page', 'savings_goals.savings_goals_page'] or (request.endpoint and request.endpoint.startswith('expense_projects.')) %}
         <details class="nav-group app-nav-group {{ 'is-active' if planning_monthly_open or planning_common_open or planning_loans_open or planning_projects_open else '' }}" >
@@ -207,6 +208,7 @@
               <div class="nav-subitems">
                 {% if endpoint_exists('managed_recurring.bills_page') %}<a href="{{ url_for('managed_recurring.bills_page') }}" class="{{ 'active' if request.endpoint == 'managed_recurring.bills_page' else '' }}">Bollette</a>{% endif %}
                 {% if endpoint_exists('managed_recurring.work_income_page') %}<a href="{{ url_for('managed_recurring.work_income_page') }}" class="{{ 'active' if request.endpoint == 'managed_recurring.work_income_page' else '' }}">Stipendi / Cedolini</a>{% endif %}
+                {% if endpoint_exists('automation.automation_page') %}<a href="{{ url_for('automation.automation_page') }}" class="{{ 'active' if request.endpoint == 'automation.automation_page' else '' }}"><span class="nav-link-icon">⚙</span> Smart automation</a>{% endif %}
               </div>
             </details>
 
@@ -444,6 +446,8 @@
         {% if endpoint_exists('pending.recurring_page') %}<a data-command-item data-keywords="recurring rule subscription salary" href="{{ url_for('pending.recurring_page') }}"><span>↻</span><strong>Add recurring payment</strong><small>Open recurring rules</small></a>{% endif %}
         {% if endpoint_exists('planned_expenses.planned_expenses_page') %}<a data-command-item data-keywords="planned expenses trip repair gift" href="{{ url_for('planned_expenses.planned_expenses_page') }}"><span>🧾</span><strong>Planned expenses</strong><small>One-time future spending</small></a>{% endif %}
         {% if endpoint_exists('savings_goals.savings_goals_page') %}<a data-command-item data-keywords="goals savings emergency fund trip phone" href="{{ url_for('savings_goals.savings_goals_page') }}"><span>◎</span><strong>Savings goals</strong><small>Targets and progress</small></a>{% endif %}
+        {% if endpoint_exists('reconciliation.reconciliation_page') %}<a data-command-item data-keywords="account reconciliation real balance mismatch" href="{{ url_for('reconciliation.reconciliation_page') }}"><span>✓</span><strong>Reconcile accounts</strong><small>Compare app and real balances</small></a>{% endif %}
+        {% if endpoint_exists('automation.automation_page') %}<a data-command-item data-keywords="rules automation smart category link recurring" href="{{ url_for('automation.automation_page') }}"><span>⚙</span><strong>Smart automation</strong><small>Rules for classification and linking</small></a>{% endif %}
         {% if endpoint_exists('yearly_summary.yearly_summary_page') %}<a data-command-item data-keywords="july report yearly summary month" href="{{ url_for('yearly_summary.yearly_summary_page') }}"><span>▦</span><strong>Show report</strong><small>Open yearly/monthly summary</small></a>{% endif %}
       </div>
       <form class="command-palette-search" method="get" action="{{ url_for('search.search_page') if endpoint_exists('search.search_page') else '#' }}">

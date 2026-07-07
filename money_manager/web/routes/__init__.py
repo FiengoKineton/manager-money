@@ -1,9 +1,9 @@
 from money_manager.web import auth
 from money_manager.web.routes import backup, bonifico, contacts, integrity, net_explanation, notifications, onboarding, phone, phone_api, profile, search, security, settings_updates, settings_cache, settings_categories
-from money_manager.web.routes.accounts import accounts, currencies, internal_transfers
+from money_manager.web.routes.accounts import accounts, currencies, internal_transfers, reconciliation
 from money_manager.web.routes.assets import investments
 from money_manager.web.routes.core import analysis, dashboard, transactions, yearly_summary
-from money_manager.web.routes.planning import expense_projects, financial_calendar, forecast, managed_recurring, mortgages, payables, pending, planned_expenses, savings_goals
+from money_manager.web.routes.planning import automation, expense_projects, financial_calendar, forecast, managed_recurring, mortgages, payables, pending, planned_expenses, savings_goals
 from money_manager.web.routes.support import debts, discount_balances, documents, parent_support, receivables, sparagnat
 
 
@@ -33,8 +33,10 @@ def register_routes(app):
     app.register_blueprint(accounts.bp)
     app.register_blueprint(currencies.bp)
     app.register_blueprint(internal_transfers.bp)
+    app.register_blueprint(reconciliation.bp)
 
     app.register_blueprint(pending.bp)
+    app.register_blueprint(automation.bp)
     app.register_blueprint(forecast.bp)
     app.register_blueprint(financial_calendar.bp)
     app.register_blueprint(payables.bp)

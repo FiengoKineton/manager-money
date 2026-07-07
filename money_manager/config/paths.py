@@ -40,6 +40,9 @@ CACHE_DIR = user_cache_dir()
 NOTIFICATIONS_STATE_JSON = user_data_path("notification_state.json")
 SAVINGS_GOALS_JSON = user_data_path("savings_goals.json")
 PLANNED_EXPENSES_JSON = user_data_path("planned_expenses.json")
+TIMELINE_EVENTS_JSON = user_data_path("timeline_events.json")
+ACCOUNT_RECONCILIATION_JSON = user_data_path("account_reconciliation.json")
+SMART_RULES_JSON = user_data_path("smart_rules.json")
 
 TRANSACTION_FILES = {
     "expense": user_data_path("expenses.csv"),

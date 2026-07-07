@@ -323,6 +323,26 @@ DEFAULT_PLANNED_EXPENSES: dict[str, Any] = {
     "updated_at": "",
 }
 
+DEFAULT_TIMELINE_EVENTS: dict[str, Any] = {
+    "schema_version": 1,
+    "events": [],
+    "updated_at": "",
+}
+
+DEFAULT_ACCOUNT_RECONCILIATION: dict[str, Any] = {
+    "schema_version": 1,
+    "accounts": {},
+    "events": [],
+    "updated_at": "",
+}
+
+DEFAULT_SMART_RULES: dict[str, Any] = {
+    "schema_version": 1,
+    "rules": [],
+    "events": [],
+    "updated_at": "",
+}
+
 DEFAULT_CATEGORY_ICONS: dict[str, Any] = {
     "schema_version": 1,
     "icons": {},
@@ -361,6 +381,9 @@ USER_CONFIG_DEFAULTS: dict[str, dict[str, Any]] = {
     "discount_balances.json": DEFAULT_DISCOUNT_BALANCES,
     "savings_goals.json": DEFAULT_SAVINGS_GOALS,
     "planned_expenses.json": DEFAULT_PLANNED_EXPENSES,
+    "timeline_events.json": DEFAULT_TIMELINE_EVENTS,
+    "account_reconciliation.json": DEFAULT_ACCOUNT_RECONCILIATION,
+    "smart_rules.json": DEFAULT_SMART_RULES,
 }
 
 

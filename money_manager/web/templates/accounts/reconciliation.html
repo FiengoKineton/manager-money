@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Account Reconciliation{% endblock %}
+
+{% block content %}
+<section class="hero-section account-reconciliation-hero">
+  <div>
+    <span class="eyebrow">Account controls</span>
+    <h1>Account reconciliation</h1>
+    <p>Compare Money Manager balances with the real balance shown in your bank/app and use the difference to find missing transactions.</p>
+  </div>
+</section>
+
+<section class="transactions account-reconciliation-card">
+  <h2>Balances to check</h2>
+  {% if reconciliation_rows %}
+  <table class="standard-table inline-edit-table desktop-detail-table">
+    <thead>
+      <tr>
+        <th>Account</th>
+        <th>App balance</th>
+        <th>Real balance</th>
+        <th>Difference</th>
+        <th>Status</th>
+        <th>Update</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in reconciliation_rows %}
+      <tr class="desktop-detail-row" data-detail-suggestion="{{ row.suggestion|e }}" data-detail-last-check="{{ row.checked_at|e }}" data-detail-note="{{ row.note|e }}">
+        <td data-label="Account"><strong>{{ row.label }}</strong><small>{{ row.account_id }}</small></td>
+        <td data-label="App balance">€ {{ '%.2f'|format(row.app_balance) }}</td>
+        <td data-label="Real balance">{% if row.real_balance is not none %}€ {{ '%.2f'|format(row.real_balance) }}{% else %}Not checked{% endif %}</td>
+        <td data-label="Difference">{% if row.difference is not none %}€ {{ '%.2f'|format(row.difference) }}{% else %}—{% endif %}</td>
+        <td data-label="Status"><span class="status-pill status-{{ row.status|lower|replace(' ', '-') }}">{{ row.status }}</span></td>
+        <td data-label="Update" class="debt-actions">
+          <form method="post" class="mini-pay-form">
+            <input type="hidden" name="account_id" value="{{ row.account_id }}">
+            <input type="number" step="0.01" name="real_balance" value="{{ row.real_balance if row.real_balance is not none else '' }}" placeholder="Real balance" required>
+            <input type="text" name="note" value="{{ row.note }}" placeholder="Note / missing item">
+            <button type="submit" class="secondary-btn compact-btn">Save check</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>No accounts were found.</p>
+  {% endif %}
+</section>
+
+<section class="transactions account-reconciliation-card">
+  <h2>Recent reconciliation checks</h2>
+  {% if reconciliation_events %}
+    <div class="record-list">
+      {% for event in reconciliation_events %}
+        <article class="record-row">
+          <strong>{{ event.account_id }}</strong>
+          <span>Real balance: € {{ event.real_balance }}</span>
+          <small>{{ event.created_at }}{% if event.note %} · {{ event.note }}{% endif %}</small>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No reconciliation checks yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

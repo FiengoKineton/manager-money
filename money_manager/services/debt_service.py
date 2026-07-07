@@ -41,7 +41,7 @@ def add_debt_from_form(form) -> None:
     amount = _amount(form.get("original_amount"))
     account_id = form.get("account_id") or form.get("account", "")
     payment_method_id = form.get("preferred_payment_method_id") or form.get("payment_method_id") or form.get("account_payment_method", "")
-    append_debt({
+    new_id = append_debt({
         "name": form.get("name", ""),
         "creditor": form.get("creditor", ""),
         "original_amount": amount,
@@ -55,6 +55,12 @@ def add_debt_from_form(form) -> None:
         "due_date": form.get("due_date", ""),
         "description": form.get("description", ""),
     })
+    try:
+        from money_manager.services.timeline_service import record_created
+
+        record_created("debt", new_id, form.get("name", ""))
+    except Exception:
+        pass
 
 
 def delete_debt_from_form(form) -> None:
@@ -62,8 +68,15 @@ def delete_debt_from_form(form) -> None:
         debt_id = int(form.get("id"))
     except (TypeError, ValueError):
         return
+    before = debt_by_id(debt_id)
     delete_pending_for_source("debt", debt_id, only_pending=True)
     delete_debt(debt_id)
+    try:
+        from money_manager.services.timeline_service import record_deleted
+
+        record_deleted("debt", debt_id, (before or {}).get("name", ""))
+    except Exception:
+        pass
 
 
 def update_debt_from_form(form) -> None:
@@ -71,6 +84,7 @@ def update_debt_from_form(form) -> None:
     if debt_id is None:
         return
 
+    before = debt_by_id(debt_id)
     remaining = _amount(form.get("remaining_amount"))
     status = _normalize_debt_status(form.get("status", DEBT_STATUS_ACTIVE), remaining)
 
@@ -95,6 +109,12 @@ def update_debt_from_form(form) -> None:
     else:
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
     update_debt(debt_id, updates)
+    try:
+        from money_manager.services.timeline_service import record_update_diff
+
+        record_update_diff("debt", debt_id, before, {**(before or {}), **updates})
+    except Exception:
+        pass
 
     if status != DEBT_STATUS_ACTIVE:
         _deactivate_rules_for_debt(debt_id)
@@ -154,6 +174,38 @@ def pay_creditor_debts_from_form(form) -> None:
             payment_method=form.get("account_payment_method", ""),
             insufficient_action=form.get("account_insufficient_action", ""),
         )
+
+
+def duplicate_debt_from_form(form) -> None:
+    debt_id = _safe_int(form.get("id"))
+    if debt_id is None:
+        return
+    source = debt_by_id(debt_id)
+    if not source:
+        return
+    new_id = append_debt({
+        "name": f"Copy of {source.get('name', '')}".strip(),
+        "creditor": source.get("creditor", ""),
+        "original_amount": _amount(source.get("original_amount")),
+        "remaining_amount": _amount(source.get("remaining_amount")),
+        "category": source.get("category") or DEBT_PAYMENT_CATEGORY,
+        "account": source.get("account", ""),
+        "account_id": source.get("account_id", ""),
+        "account_name_snapshot": source.get("account_name_snapshot", ""),
+        "preferred_payment_method_id": source.get("preferred_payment_method_id", ""),
+        "preferred_payment_method_name_snapshot": source.get("preferred_payment_method_name_snapshot", ""),
+        "start_date": date.today().isoformat(),
+        "due_date": source.get("due_date", ""),
+        "description": source.get("description", ""),
+        "status": DEBT_STATUS_ACTIVE,
+    })
+    try:
+        from money_manager.services.timeline_service import record_created, record_event
+
+        record_created("debt", new_id, f"Copy of {source.get('name', '')}")
+        record_event("debt", new_id, "duplicated", f"Duplicated from {source.get('name', '')}")
+    except Exception:
+        pass
 
 
 def add_rule_from_form(form) -> None:
@@ -289,6 +341,9 @@ def register_debt_payment(
         "account_id": effective_account_id,
         "payment_method_id": effective_payment_method_id,
         "description": description or f"Debt payment to {debt.get('creditor', '')}: {debt.get('name', '')}",
+        "linked_object_type": "debt",
+        "linked_object_id": str(debt.get("id", debt_id)),
+        "linked_object_name": debt.get("name", ""),
     }
     if extra_tx_fields:
         tx_payload.update(dict(extra_tx_fields))
@@ -309,6 +364,25 @@ def register_debt_payment(
         updates["status"] = DEBT_STATUS_PAID
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
     update_debt(int(debt["id"]), updates)
+    try:
+        from money_manager.services.timeline_service import record_amount_change, record_payment, record_status_change
+
+        transaction_ids = save_result.get("transaction_ids", []) if isinstance(save_result, dict) else []
+        tx_id = transaction_ids[0] if transaction_ids else ""
+        record_payment(
+            "debt",
+            debt.get("id", debt_id),
+            amount,
+            effective_account_id,
+            "expense",
+            tx_id,
+            title=f"Paid €{amount:.2f} from {effective_account_id or 'selected account'}",
+        )
+        record_amount_change("debt", debt.get("id", debt_id), "remaining_amount", remaining_before, remaining)
+        if updates.get("status"):
+            record_status_change("debt", debt.get("id", debt_id), debt.get("status", ""), updates.get("status", ""))
+    except Exception:
+        pass
 
     if remaining <= 0.005:
         _deactivate_rules_for_debt(debt_id)
@@ -454,6 +528,14 @@ def page_context() -> dict:
         debt["progress"] = 0.0 if original <= 0 else min(100.0, debt["paid_amount"] / original * 100.0)
         debt["status"] = _normalize_debt_status(debt.get("status"), remaining)
         debt["status_label"] = _debt_status_label(debt.get("status"))
+        try:
+            from money_manager.services.timeline_service import enrich_object_row
+
+            enrich_object_row(debt, "debt")
+        except Exception:
+            debt.setdefault("timeline_text", "No timeline events yet.")
+            debt.setdefault("payment_history_text", "No payments recorded yet.")
+            debt.setdefault("linked_transactions_text", "No linked transactions yet.")
 
     for rule in rules:
         rule["amount"] = _amount(rule.get("amount"))

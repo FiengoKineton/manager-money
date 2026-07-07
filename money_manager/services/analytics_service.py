@@ -274,6 +274,13 @@ def build_analysis_metrics(df: pd.DataFrame, period_key: str = "ytd", scope: str
     plot_weekday_spending(df_wd)
     plot_rolling_net_flow(df_roll)
 
+    try:
+        from money_manager.services.insight_chart_service import useful_chart_context
+
+        useful_charts = useful_chart_context(main_df_display, df_month)
+    except Exception:
+        useful_charts = {}
+
     return {
         "period": period,
         "period_options": _period_options_with_active(period["key"]),
@@ -292,6 +299,7 @@ def build_analysis_metrics(df: pd.DataFrame, period_key: str = "ytd", scope: str
         "cashflow_statement": cashflow_statement,
         "insight_cards": insight_cards,
         "action_items": action_items,
+        "useful_charts": useful_charts,
         "scope_summary": scope_summary,
         "financial_center_breakdown": financial_center_breakdown,
         "weekday_data": df_wd.to_dict(orient="records"),

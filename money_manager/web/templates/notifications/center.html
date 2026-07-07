@@ -34,9 +34,9 @@
         <span class="notification-section-count">{{ category.count }}</span>
       </div>
 
-      {% if category.items %}
+      {% if category["items"] %}
         <div class="notification-center-list">
-          {% for item in category.items %}
+          {% for item in category["items"] %}
             <article class="notification-center-card card-{{ item.tone|default('info') }} {{ 'is-unread' if item.is_unread else 'is-read' }}" data-center-notification-card data-center-notification-id="{{ item.id }}">
               <div class="notification-center-icon" aria-hidden="true">{{ item.icon }}</div>
               <div class="notification-center-copy">

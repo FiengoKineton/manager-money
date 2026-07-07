@@ -394,7 +394,16 @@ def _execute_pending_row(tx: dict, execution_date: str | None = None, *, automat
 
     account_id = tx.get("account_id") or tx.get("account_key") or tx.get("account", "")
     payment_method_id = tx.get("payment_method_id", "")
-    save_transaction_payload(
+    link_fields: dict[str, str] = {}
+    if tx.get("source") == "recurring":
+        recurring_id = str(tx.get("source_id", "") or "")
+        recurring_rule = next((row for row in load_recurring() if str(row.get("id", "")) == recurring_id), {})
+        link_fields = {
+            "linked_object_type": "recurring",
+            "linked_object_id": recurring_id,
+            "linked_object_name": str(recurring_rule.get("name") or tx.get("description") or "Recurring rule"),
+        }
+    save_result = save_transaction_payload(
         {
             "type": tx.get("type", "expense"),
             "date": execution_date,
@@ -405,10 +414,28 @@ def _execute_pending_row(tx: dict, execution_date: str | None = None, *, automat
             "account_id": account_id,
             "payment_method_id": payment_method_id,
             "description": _auto_description(tx.get("description", ""), automatic),
+            **link_fields,
         },
         account_id=account_id,
         payment_method_id=payment_method_id,
     )
+    if tx.get("source") == "recurring" and link_fields:
+        try:
+            from money_manager.services.timeline_service import record_payment
+
+            transaction_ids = save_result.get("transaction_ids", []) if isinstance(save_result, dict) else []
+            tx_id = transaction_ids[0] if transaction_ids else ""
+            record_payment(
+                "recurring",
+                link_fields.get("linked_object_id", ""),
+                float(tx.get("amount", 0.0)),
+                account_id,
+                tx.get("type", "expense"),
+                tx_id,
+                title=f"Executed recurring payment: €{float(tx.get('amount', 0.0)):.2f}",
+            )
+        except Exception:
+            pass
 
 
 def _auto_description(description: str | None, automatic: bool) -> str:

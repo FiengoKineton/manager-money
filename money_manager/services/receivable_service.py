@@ -51,7 +51,7 @@ def add_receivable_from_form(form) -> None:
     linked_ids = save_result.get("transaction_ids", []) if isinstance(save_result, dict) else []
     linked_expense_id = linked_ids[0] if linked_ids else ""
 
-    append_receivable({
+    new_id = append_receivable({
         "name": name,
         "debtor": debtor,
         "original_amount": amount,
@@ -65,6 +65,20 @@ def add_receivable_from_form(form) -> None:
         "description": description,
         "linked_expense_transaction_id": linked_expense_id,
     })
+    if linked_expense_id:
+        update_transaction(linked_expense_id, "expense", {
+            "linked_object_type": "receivable",
+            "linked_object_id": str(new_id),
+            "linked_object_name": name,
+        })
+    try:
+        from money_manager.services.timeline_service import record_created, record_event
+
+        record_created("receivable", new_id, name)
+        if linked_expense_id:
+            record_event("receivable", new_id, "payment_added", f"Initial money out: €{amount:.2f}", "Receivable creation expense was recorded.", amount=amount, transaction_type="expense", transaction_id=linked_expense_id, account_id=account)
+    except Exception:
+        pass
 
 
 def delete_receivable_from_form(form) -> None:
@@ -78,6 +92,12 @@ def delete_receivable_from_form(form) -> None:
         if linked_id is not None:
             delete_transaction(linked_id, "expense")
     delete_receivable(receivable_id)
+    try:
+        from money_manager.services.timeline_service import record_deleted
+
+        record_deleted("receivable", receivable_id, (item or {}).get("name", ""))
+    except Exception:
+        pass
 
 
 def update_receivable_from_form(form) -> None:
@@ -132,6 +152,43 @@ def update_receivable_from_form(form) -> None:
     if status != "active":
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
     update_receivable(receivable_id, updates)
+    try:
+        from money_manager.services.timeline_service import record_update_diff
+
+        record_update_diff("receivable", receivable_id, item, {**(item or {}), **updates})
+    except Exception:
+        pass
+
+
+def duplicate_receivable_from_form(form) -> None:
+    receivable_id = _safe_int(form.get("id"))
+    if receivable_id is None:
+        return
+    source = receivable_by_id(receivable_id)
+    if not source:
+        return
+    new_id = append_receivable({
+        "name": f"Copy of {source.get('name', '')}".strip(),
+        "debtor": source.get("debtor", ""),
+        "original_amount": _amount(source.get("original_amount")),
+        "remaining_amount": _amount(source.get("remaining_amount")),
+        "account": source.get("account", ""),
+        "account_id": source.get("account_id", ""),
+        "account_name_snapshot": source.get("account_name_snapshot", ""),
+        "preferred_payment_method_id": source.get("preferred_payment_method_id", ""),
+        "preferred_payment_method_name_snapshot": source.get("preferred_payment_method_name_snapshot", ""),
+        "start_date": date.today().isoformat(),
+        "due_date": source.get("due_date", ""),
+        "description": source.get("description", ""),
+        "status": "active",
+    })
+    try:
+        from money_manager.services.timeline_service import record_created, record_event
+
+        record_created("receivable", new_id, f"Copy of {source.get('name', '')}")
+        record_event("receivable", new_id, "duplicated", f"Duplicated from {source.get('name', '')}")
+    except Exception:
+        pass
 
 
 def collect_receivable_from_form(form) -> None:
@@ -167,7 +224,7 @@ def register_receivable_collection(receivable_id, amount: float, payment_date: s
         return
 
     effective_account_id = account_id or account or item.get("account_id") or item.get("account", "")
-    save_transaction_payload({
+    save_result = save_transaction_payload({
         "type": "income",
         "date": payment_date or date.today().isoformat(),
         "category": DEFAULT_RECEIVABLE_INCOME_CATEGORY,
@@ -176,14 +233,37 @@ def register_receivable_collection(receivable_id, amount: float, payment_date: s
         "account": account or effective_account_id,
         "account_id": effective_account_id,
         "description": description or f"Money collected from {item.get('debtor', '')}: {item.get('name', '')}",
+        "linked_object_type": "receivable",
+        "linked_object_id": str(item.get("id", receivable_id)),
+        "linked_object_name": item.get("name", ""),
     }, account_id=effective_account_id)
 
-    remaining = max(0.0, _amount(item.get("remaining_amount")) - amount)
+    remaining_before = _amount(item.get("remaining_amount"))
+    remaining = max(0.0, remaining_before - amount)
     updates = {"remaining_amount": remaining}
     if remaining <= 0.005:
         updates["status"] = "collected"
         updates["closed_at"] = datetime.now().isoformat(timespec="seconds")
     update_receivable(int(item["id"]), updates)
+    try:
+        from money_manager.services.timeline_service import record_amount_change, record_payment, record_status_change
+
+        transaction_ids = save_result.get("transaction_ids", []) if isinstance(save_result, dict) else []
+        tx_id = transaction_ids[0] if transaction_ids else ""
+        record_payment(
+            "receivable",
+            item.get("id", receivable_id),
+            amount,
+            effective_account_id,
+            "income",
+            tx_id,
+            title=f"Collected €{amount:.2f} into {effective_account_id or 'selected account'}",
+        )
+        record_amount_change("receivable", item.get("id", receivable_id), "remaining_amount", remaining_before, remaining)
+        if updates.get("status"):
+            record_status_change("receivable", item.get("id", receivable_id), item.get("status", ""), updates.get("status", ""))
+    except Exception:
+        pass
 
 
 def receivable_by_id(receivable_id) -> dict | None:
@@ -220,6 +300,14 @@ def page_context(main_net: float = 0.0, visible_liquidity: float = 0.0) -> dict:
         row["remaining_amount"] = remaining
         row["collected_amount"] = max(0.0, original - remaining)
         row["progress"] = 0.0 if original <= 0 else min(100.0, row["collected_amount"] / original * 100.0)
+        try:
+            from money_manager.services.timeline_service import enrich_object_row
+
+            enrich_object_row(row, "receivable")
+        except Exception:
+            row.setdefault("timeline_text", "No timeline events yet.")
+            row.setdefault("payment_history_text", "No payments recorded yet.")
+            row.setdefault("linked_transactions_text", "No linked transactions yet.")
 
     active = [row for row in rows if row.get("status") == "active"]
     totals = overview_totals()

@@ -73,6 +73,9 @@ TRANSACTION_FIELDS = [
     "bank_name_snapshot",
     "transfer_reference",
     "transfer_status",
+    "linked_object_type",
+    "linked_object_id",
+    "linked_object_name",
     "description",
     "created_at",
 ]

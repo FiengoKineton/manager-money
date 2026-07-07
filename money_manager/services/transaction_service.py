@@ -116,6 +116,15 @@ def save_transaction_payload(
     external modules remain compatible.
     """
     tx = dict(tx)
+    # Rule-based automation is deliberately soft: it only fills blank category/link
+    # fields and never changes amounts, dates, accounts or payment routing.
+    try:
+        from money_manager.services.smart_rule_service import apply_smart_rules_to_transaction
+
+        tx = apply_smart_rules_to_transaction(tx)
+    except Exception:
+        pass
+
     explicit_account_id = _first_nonblank(account_id, tx.get("account_id"))
     explicit_payment_method_id = _first_nonblank(payment_method_id, tx.get("payment_method_id"))
     if explicit_account_id:
@@ -616,6 +625,9 @@ def transaction_detail_context(row_index: int) -> tuple[dict, list[str]]:
         "bank_name_snapshot": _clean_display(raw.get("bank_name_snapshot", "")),
         "transfer_reference": _clean_display(raw.get("transfer_reference", "")),
         "transfer_status": _clean_display(raw.get("transfer_status", "")),
+        "linked_object_type": _clean_display(raw.get("linked_object_type", "")),
+        "linked_object_id": _clean_display(raw.get("linked_object_id", "")),
+        "linked_object_name": _clean_display(raw.get("linked_object_name", "")),
         "description": _clean_display(raw.get("description", "")),
         "created_at": _clean_display(raw.get("created_at", "")),
         "delay_date_default": (date.today() + timedelta(days=1)).isoformat(),
@@ -627,6 +639,13 @@ def transaction_detail_context(row_index: int) -> tuple[dict, list[str]]:
         tx["receipt"] = receipt_for_transaction(tx)
     except Exception:
         tx["receipt"] = {}
+
+    try:
+        from money_manager.services.timeline_service import transaction_link_summary
+
+        tx["linked_object"] = transaction_link_summary(tx)
+    except Exception:
+        tx["linked_object"] = {}
 
     return tx, categories_for(tx["type"])
 

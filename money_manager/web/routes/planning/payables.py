@@ -3,6 +3,7 @@ from flask import Blueprint, redirect, render_template, request, url_for
 from money_manager.services.payable_service import (
     add_payable_from_form,
     delete_payable_from_form,
+    duplicate_payable_from_form,
     page_context,
     pay_payable_from_form,
     update_payable_from_form,
@@ -24,6 +25,8 @@ def payables_page():
             delete_payable_from_form(request.form)
         elif action == "update_payable":
             update_payable_from_form(request.form)
+        elif action == "duplicate_payable":
+            duplicate_payable_from_form(request.form)
         account_id = request.args.get("account_id", "")
         return redirect(url_for("payables.payables_page", account_id=account_id) if account_id else url_for("payables.payables_page"))
 

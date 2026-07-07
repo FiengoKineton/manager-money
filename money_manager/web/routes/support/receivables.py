@@ -5,6 +5,7 @@ from money_manager.services.receivable_service import (
     add_receivable_from_form,
     collect_receivable_from_form,
     delete_receivable_from_form,
+    duplicate_receivable_from_form,
     page_context,
     update_receivable_from_form,
 )
@@ -26,6 +27,8 @@ def receivables_page():
             delete_receivable_from_form(request.form)
         elif action == "update_receivable":
             update_receivable_from_form(request.form)
+        elif action == "duplicate_receivable":
+            duplicate_receivable_from_form(request.form)
         return redirect(url_for("receivables.receivables_page"))
 
     transactions = load_transactions()

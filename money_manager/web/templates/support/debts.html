@@ -105,7 +105,7 @@
   <h2>Tracked Debts</h2>
 
   {% if debts %}
-  <table class="standard-table inline-edit-table debt-tracked-table" data-mobile-title="Creditor,Name" data-mobile-amount="Remaining" data-mobile-meta="Creditor, Due, Status">
+  <table class="standard-table inline-edit-table debt-tracked-table desktop-detail-table" data-mobile-title="Creditor,Name" data-mobile-amount="Remaining" data-mobile-meta="Creditor, Due, Status">
     <thead>
       <tr>
         <th>Name</th>
@@ -120,7 +120,10 @@
 
     <tbody>
       {% for debt in debts %}
-      <tr class="{{ 'is-closed' if debt.status != 'active' else '' }}"
+      <tr class="desktop-detail-row {{ 'is-closed' if debt.status != 'active' else '' }}"
+          data-detail-payment-history="{{ debt.payment_history_text|e }}"
+          data-detail-linked-transactions="{{ debt.linked_transactions_text|e }}"
+          data-detail-timeline="{{ debt.timeline_text|e }}"
           data-detail-creditor="{{ debt.creditor }}"
           data-detail-description="{{ debt.description }}"
           data-detail-account="{{ debt.account }}"
@@ -251,6 +254,28 @@
               <button type="submit" class="secondary-btn compact-btn">Pay</button>
             </form>
             {% endif %}
+
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="update_debt">
+              <input type="hidden" name="id" value="{{ debt.id }}">
+              <input type="hidden" name="name" value="{{ debt.name }}">
+              <input type="hidden" name="creditor" value="{{ debt.creditor }}">
+              <input type="hidden" name="original_amount" value="{{ debt.original_amount }}">
+              <input type="hidden" name="remaining_amount" value="{{ debt.remaining_amount }}">
+              <input type="hidden" name="start_date" value="{{ debt.start_date }}">
+              <input type="hidden" name="due_date" value="{{ debt.due_date }}">
+              <input type="hidden" name="account_id" value="{{ debt.account_id or debt.account }}">
+              <input type="hidden" name="preferred_payment_method_id" value="{{ debt.preferred_payment_method_id }}">
+              <input type="hidden" name="description" value="{{ debt.description }}">
+              <input type="hidden" name="status" value="pocket">
+              <button type="submit" class="secondary-btn compact-btn" title="Move to Pocket">Pocket</button>
+            </form>
+
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="duplicate_debt">
+              <input type="hidden" name="id" value="{{ debt.id }}">
+              <button type="submit" class="secondary-btn compact-btn" title="Duplicate debt">Duplicate</button>
+            </form>
 
             <form method="post" class="row-action-form">
               <input type="hidden" name="action" value="delete_debt">

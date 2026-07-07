@@ -12,6 +12,17 @@
     </div>
   {% endif %}
 
+  {% if tx.linked_object %}
+    <div class="form-field-wide currency-total-box transaction-metadata-box linked-object-card">
+      <strong>Linked object</strong>
+      <p>
+        <span>{{ tx.linked_object.type_label }}: <b>{{ tx.linked_object.name|text_masked }}</b></span>
+        <br><small>Object id: {{ tx.linked_object.id }}. This is the traceability link created when paying debts, payables, receivables, recurring rows or smart-rule matches.</small>
+      </p>
+      {% if tx.linked_object.href %}<a class="secondary-btn compact-btn" href="{{ tx.linked_object.href }}">Open linked {{ tx.linked_object.type_label|lower }}</a>{% endif %}
+    </div>
+  {% endif %}
+
   {% if tx.payment_method or tx.contact_name or tx.transfer_status %}
     <div class="form-field-wide currency-total-box transaction-metadata-box">
       <strong>{{ t("transaction.bonifico_metadata") if tx.payment_method == 'bonifico' else t("transaction.payment_method") }}</strong>

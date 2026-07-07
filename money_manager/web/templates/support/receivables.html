@@ -99,7 +99,7 @@
 
 <section class="transactions receivables-card money-owed-table-card">
   {% if receivables %}
-  <table class="standard-table inline-edit-table money-owed-table" data-mobile-title="Person,Name" data-mobile-amount="Remaining" data-mobile-meta="Person, Due / account, Status">
+  <table class="standard-table inline-edit-table money-owed-table desktop-detail-table" data-mobile-title="Person,Name" data-mobile-amount="Remaining" data-mobile-meta="Person, Due / account, Status">
     <thead>
       <tr>
         <th>Name</th>
@@ -115,7 +115,15 @@
     </thead>
     <tbody>
       {% for item in receivables %}
-      <tr class="{{ 'is-closed' if item.status != 'active' else '' }}">
+      <tr class="desktop-detail-row {{ 'is-closed' if item.status != 'active' else '' }}"
+          data-detail-person="{{ item.debtor|e }}"
+          data-detail-description="{{ item.description|e }}"
+          data-detail-start-date="{{ item.start_date|e }}"
+          data-detail-created-at="{{ item.created_at|e }}"
+          data-detail-closed-at="{{ item.closed_at|e }}"
+          data-detail-payment-history="{{ item.payment_history_text|e }}"
+          data-detail-linked-transactions="{{ item.linked_transactions_text|e }}"
+          data-detail-timeline="{{ item.timeline_text|e }}">
         <td data-label="Name">
           <form id="receivable-update-{{ item.id }}" method="post"></form>
           <input form="receivable-update-{{ item.id }}" type="hidden" name="action" value="update_receivable">
@@ -176,6 +184,27 @@
               <button type="submit" class="secondary-btn compact-btn">Collect</button>
             </form>
             {% endif %}
+
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="update_receivable">
+              <input type="hidden" name="id" value="{{ item.id }}">
+              <input type="hidden" name="name" value="{{ item.name }}">
+              <input type="hidden" name="debtor" value="{{ item.debtor }}">
+              <input type="hidden" name="original_amount" value="{{ item.original_amount }}">
+              <input type="hidden" name="remaining_amount" value="{{ item.remaining_amount }}">
+              <input type="hidden" name="start_date" value="{{ item.start_date }}">
+              <input type="hidden" name="due_date" value="{{ item.due_date }}">
+              <input type="hidden" name="description" value="{{ item.description }}">
+              <input type="hidden" name="account_id" value="{{ item.account_id or item.account }}">
+              <input type="hidden" name="status" value="cancelled">
+              <button type="submit" class="secondary-btn compact-btn" title="Archive/cancel receivable">Archive</button>
+            </form>
+
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="duplicate_receivable">
+              <input type="hidden" name="id" value="{{ item.id }}">
+              <button type="submit" class="secondary-btn compact-btn" title="Duplicate receivable">Duplicate</button>
+            </form>
 
             <form method="post" class="row-action-form">
               <input type="hidden" name="action" value="delete_receivable">
