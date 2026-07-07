@@ -541,7 +541,7 @@ def execute_credit_settlement(
         return {"ok": False, "error": "Credit settlement not found."}
     status = str(row.get("status") or "open").lower()
     if status == "executed":
-        effective_existing = _date_to_str(execution_date) or _date_to_str(row.get("due_date")) or date_cls.today().isoformat()
+        effective_existing = _date_to_str(execution_date) or date_cls.today().isoformat()
         tx_id = _append_settlement_transaction(row, effective_existing, user_id=user_id, automatic=automatic)
         return {"ok": True, "already_executed": True, "ledger_group_id": row.get("ledger_group_id", ""), "transaction_id": tx_id}
     if status not in EXECUTABLE_STATUSES:
@@ -550,7 +550,7 @@ def execute_credit_settlement(
     amount = _to_float(row.get("amount"))
     if amount <= 0:
         return {"ok": False, "error": "Settlement amount must be greater than zero."}
-    effective = _date_to_str(execution_date) or str(row.get("due_date") or date_cls.today().isoformat())
+    effective = _date_to_str(execution_date) or date_cls.today().isoformat()
     ledger_group_id = str(row.get("ledger_group_id") or f"cs_{uuid.uuid4().hex}")
     tx_uid = str(row.get("executed_transaction_uid") or f"credit_settlement:{row.get('id')}")
     movements = _settlement_ledger_drafts(row, status="posted", effective_date=effective, ledger_group_id=ledger_group_id, transaction_uid=tx_uid)

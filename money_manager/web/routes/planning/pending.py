@@ -1,4 +1,5 @@
 from flask import Blueprint, redirect, render_template, request, url_for
+from datetime import date
 
 from money_manager.services.payment_form_service import account_options_for_payment_forms, payment_method_options_for_forms
 from money_manager.services.custom_category_service import effective_categories_by_type, default_category_for
@@ -53,9 +54,12 @@ def pending_page():
         elif action == "discard_credit_settlement":
             discard_credit_settlement(request.form.get("settlement_id", ""))
         elif action == "execute_pending":
-            execute_pending_by_id(row_id, execution_date=request.form.get("date_due", ""))
+            execute_pending_by_id(row_id, execution_date=date.today().isoformat())
         elif action == "execute_credit_settlement":
-            execute_credit_settlement(request.form.get("settlement_id", ""), execution_date=request.form.get("execution_date", ""))
+            execute_credit_settlement(
+                request.form.get("settlement_id", ""),
+                execution_date=date.today().isoformat(),
+            )
         elif action == "process_due":
             process_pending()
         elif action == "update_pending":
@@ -64,7 +68,7 @@ def pending_page():
                 # Update the editable fields first, then create the real transaction.
                 payload["status"] = "pending"
                 update_pending(row_id, payload)
-                execute_pending_by_id(row_id, execution_date=request.form.get("date_due", ""))
+                execute_pending_by_id(row_id, execution_date=date.today().isoformat())
             else:
                 update_pending(row_id, payload)
 

@@ -63,8 +63,11 @@
       }
     });
 
-    document.querySelectorAll('[data-command-palette-open]').forEach(function (button) {
-      button.addEventListener('click', openPalette);
+    document.addEventListener('click', function (event) {
+      var opener = event.target && event.target.closest ? event.target.closest('[data-command-palette-open]') : null;
+      if (!opener) return;
+      event.preventDefault();
+      openPalette();
     });
     shell.querySelectorAll('[data-command-palette-close]').forEach(function (button) {
       button.addEventListener('click', closePalette);

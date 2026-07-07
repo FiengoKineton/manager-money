@@ -47,3 +47,157 @@
 .hidden-support-form {
   display: none;
 }
+/* Desktop fit for Parent Support tables.
+   Keep the horizontal scrollbar for smaller screens, but make the columns
+   behave like the fixed Tracked Debts table instead of stretching outside the
+   card. */
+@media (min-width: 761px) {
+  .parent-support-card:has(table.parent-support-rules-table),
+  .parent-support-card:has(table.parent-support-records-table),
+  .parent-support-card:has(table.parent-support-summary-table),
+  .transactions.parent-support-card:has(table) {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+  }
+
+  table.parent-support-rules-table,
+  table.parent-support-records-table,
+  table.parent-support-summary-table {
+    width: 100% !important;
+    max-width: none !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  table.parent-support-rules-table {
+    min-width: 1160px !important;
+  }
+
+  table.parent-support-records-table {
+    min-width: 1080px !important;
+  }
+
+  table.parent-support-summary-table {
+    min-width: 620px !important;
+  }
+
+  table.parent-support-rules-table th,
+  table.parent-support-rules-table td,
+  table.parent-support-records-table th,
+  table.parent-support-records-table td,
+  table.parent-support-summary-table th,
+  table.parent-support-summary-table td {
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    vertical-align: top !important;
+  }
+
+  table.parent-support-rules-table thead th,
+  table.parent-support-records-table thead th,
+  table.parent-support-summary-table thead th {
+    white-space: nowrap !important;
+  }
+
+  table.parent-support-rules-table input,
+  table.parent-support-rules-table select,
+  table.parent-support-rules-table textarea,
+  table.parent-support-records-table input,
+  table.parent-support-records-table select,
+  table.parent-support-records-table textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  table.parent-support-rules-table .table-note-input,
+  table.parent-support-records-table .table-note-input {
+    margin-top: .35rem !important;
+  }
+
+  table.parent-support-rules-table th:nth-child(1) { width: 24% !important; }
+  table.parent-support-rules-table th:nth-child(2) { width: 15% !important; }
+  table.parent-support-rules-table th:nth-child(3) { width: 11% !important; }
+  table.parent-support-rules-table th:nth-child(4) { width: 10% !important; }
+  table.parent-support-rules-table th:nth-child(5) { width: 10% !important; }
+  table.parent-support-rules-table th:nth-child(6) { width: 4% !important; }
+  table.parent-support-rules-table th:nth-child(7) { width: 8% !important; }
+  table.parent-support-rules-table th:nth-child(8) { width: 8% !important; }
+  table.parent-support-rules-table th:nth-child(9) { width: 10% !important; }
+
+  table.parent-support-rules-table td:nth-child(1) { width: 24% !important; }
+  table.parent-support-rules-table td:nth-child(2) { width: 15% !important; }
+  table.parent-support-rules-table td:nth-child(3) { width: 11% !important; }
+  table.parent-support-rules-table td:nth-child(4) { width: 10% !important; }
+  table.parent-support-rules-table td:nth-child(5) { width: 10% !important; }
+  table.parent-support-rules-table td:nth-child(6) { width: 4% !important; }
+  table.parent-support-rules-table td:nth-child(7) { width: 8% !important; }
+  table.parent-support-rules-table td:nth-child(8) { width: 8% !important; }
+  table.parent-support-rules-table td:nth-child(9) { width: 10% !important; }
+
+  table.parent-support-records-table th:nth-child(1),
+  table.parent-support-records-table td:nth-child(1) { width: 9% !important; }
+  table.parent-support-records-table th:nth-child(2),
+  table.parent-support-records-table td:nth-child(2) { width: 15% !important; }
+  table.parent-support-records-table th:nth-child(3),
+  table.parent-support-records-table td:nth-child(3) { width: 12% !important; }
+  table.parent-support-records-table th:nth-child(4),
+  table.parent-support-records-table td:nth-child(4) { width: 12% !important; }
+  table.parent-support-records-table th:nth-child(5),
+  table.parent-support-records-table td:nth-child(5) { width: 10% !important; }
+  table.parent-support-records-table th:nth-child(6),
+  table.parent-support-records-table td:nth-child(6) { width: 22% !important; }
+  table.parent-support-records-table th:nth-child(7),
+  table.parent-support-records-table td:nth-child(7) { width: 9% !important; }
+  table.parent-support-records-table th:nth-child(8),
+  table.parent-support-records-table td:nth-child(8) { width: 8% !important; }
+
+  table.parent-support-summary-table th,
+  table.parent-support-summary-table td {
+    width: 25% !important;
+  }
+
+  table.parent-support-rules-table th:last-child,
+  table.parent-support-rules-table td:last-child,
+  table.parent-support-records-table th:last-child,
+  table.parent-support-records-table td:last-child,
+  table.parent-support-rules-table td[data-label="Actions"],
+  table.parent-support-records-table td[data-label="Actions"] {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  table.parent-support-rules-table .checkbox-inline {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: .35rem !important;
+    margin-top: .35rem !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+  }
+
+  table.parent-support-rules-table .checkbox-inline input {
+    width: auto !important;
+    min-width: 16px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .support-mode-toggle {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .support-mode-btn {
+    flex: 1 0 max-content;
+  }
+}

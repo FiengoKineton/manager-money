@@ -143,6 +143,52 @@
     return text(document.querySelector("[data-notification-count]"), "0");
   }
 
+  function firstHref(selectors, fallback) {
+    for (const selector of selectors) {
+      const node = document.querySelector(selector);
+      const href = node ? node.getAttribute("href") : "";
+      if (href && href !== "#") return href;
+    }
+    return fallback || "/";
+  }
+
+  function calendarHref() {
+    return firstHref([
+      '.dashboard-hero-actions a[href*="calendar"]',
+      '.app-sidebar-nav a[href*="calendar"]',
+      '[data-command-item][data-keywords*="calendar"]',
+      'a[href*="/calendar"]'
+    ], "/calendar");
+  }
+
+  function notificationsCenterHref() {
+    return firstHref([
+      '.notification-center-open-link',
+      '.dashboard-hero-actions a[href*="notifications"]',
+      '.app-sidebar-nav a[href*="notifications"]',
+      '[data-command-item][data-keywords*="notifications"]',
+      'a[href*="/notifications"]'
+    ], "/notifications");
+  }
+
+  function plannedExpensesHref() {
+    return firstHref([
+      '.dashboard-hero-actions a[href*="planned"]',
+      '.app-sidebar-nav a[href*="planned"]',
+      '[data-command-item][data-keywords*="planned"]',
+      'a[href*="planned-expenses"]'
+    ], "/planned-expenses");
+  }
+
+  function savingsGoalsHref() {
+    return firstHref([
+      '.dashboard-hero-actions a[href*="goals"]',
+      '.app-sidebar-nav a[href*="goals"]',
+      '[data-command-item][data-keywords*="goals"]',
+      'a[href*="savings-goals"]'
+    ], "/savings-goals");
+  }
+
   function openSheet(name) {
     if (!isPhone()) return;
     ensureShell();
@@ -238,6 +284,13 @@
         <button class="phone-sheet-backdrop" type="button" data-phone-close aria-label="Close menu"></button>
         <div class="phone-sheet-panel phone-menu-panel">
           <header><strong>Menu</strong><button type="button" data-phone-close aria-label="Close">×</button></header>
+          <div class="phone-menu-shortcuts" aria-label="Quick planning links">
+            <a href="${htmlEscape(calendarHref())}"><span>📅</span><b>Calendar</b></a>
+            <a href="${htmlEscape(notificationsCenterHref())}"><span>🔔</span><b>Alerts</b></a>
+            <a href="${htmlEscape(plannedExpensesHref())}"><span>🧾</span><b>Planned</b></a>
+            <a href="${htmlEscape(savingsGoalsHref())}"><span>◎</span><b>Goals</b></a>
+            <button type="button" data-command-palette-open data-phone-close><span>⌘</span><b>Smart search</b></button>
+          </div>
           <nav class="phone-menu-list">${navCloneHtml()}</nav>
         </div>
       </section>
@@ -290,6 +343,8 @@
         <button type="button" class="phone-mini-nav-btn" data-browser-forward title="Forward" aria-label="Forward">›</button>
       </nav>
       <div class="phone-title-block"><small>Personal finance</small><strong>${htmlEscape(currentTitle())}</strong></div>
+      <a class="phone-icon-btn phone-calendar-btn" href="${htmlEscape(calendarHref())}" aria-label="Open financial calendar" title="Calendar">📅</a>
+      <button type="button" class="phone-icon-btn phone-command-btn" data-command-palette-open aria-label="Smart search" title="Smart search">⌘</button>
       <button type="button" class="phone-icon-btn" data-phone-open="search" aria-expanded="false" aria-label="Search">⌕</button>
       <button type="button" class="phone-icon-btn phone-alert-btn" data-phone-open="alerts" aria-expanded="false" aria-label="Alerts">🔔${unreadCount() !== "0" ? `<em>${htmlEscape(unreadCount())}</em>` : ""}</button>`;
 
@@ -345,6 +400,39 @@
 
   const compactInteractiveSelector = "a, button, input, select, textarea, label, summary, [role='button'], .icon-action-btn, .desktop-drawer-primary-action, .phone-form-open-card";
 
+  function compactSummaryText(card, selectors, fallback) {
+    for (const selector of selectors) {
+      const node = card.querySelector(selector);
+      const value = text(node, "");
+      if (value) return value;
+    }
+    return fallback || "Open details";
+  }
+
+  function ensureGeneratedCompactSummary(card) {
+    if (!card || card.matches("details, .phone-table-card") || card.querySelector(":scope > .phone-generated-card-summary")) return;
+    const title = compactSummaryText(card, [
+      ".panel-header h2", ".panel-header h3", ".feature-summary-toggle strong",
+      ".savings-goal-head strong", ".planned-expense-main strong",
+      ".notification-center-copy strong", ".calendar-timeline-main strong",
+      ".card-title", "h2", "h3", "strong", "span"
+    ], "Open details");
+    const meta = compactSummaryText(card, [
+      ".eyebrow", ".notification-center-label", ".notification-center-meta",
+      ".planned-expense-main small", ".goal-meta-row", ".calendar-timeline-date",
+      "small", "p", "label"
+    ], "Tap to expand");
+    const amount = compactSummaryText(card, [
+      ".payable-reminder-amount", ".planned-expense-main + strong", ".goal-money-row strong",
+      ".calendar-day-net", ".metric-pill strong", ".kpi-card strong", ".summary-card strong", "em"
+    ], "");
+    const summary = document.createElement("div");
+    summary.className = "phone-generated-card-summary";
+    summary.innerHTML = `<span><strong>${htmlEscape(title)}</strong><small>${htmlEscape(meta)}</small></span>${amount && amount !== title ? `<em>${htmlEscape(amount)}</em>` : ""}`;
+    card.classList.add("phone-generated-summary-card");
+    card.insertAdjacentElement("afterbegin", summary);
+  }
+
   function wirePhoneCompactCards() {
     if (!isPhone()) return;
     const selectors = [
@@ -357,7 +445,15 @@
       ".professional-table-card",
       ".phone-table-card",
       ".summary-card",
+      ".kpi-card",
+      ".metric-card",
+      ".panel-card",
+      ".transactions.panel-card",
+      ".form-section.panel-card",
+      ".parent-support-card",
       ".analysis-card",
+      ".analysis-decision-card",
+      ".useful-charts-card",
       ".mortgage-card",
       ".managed-recurring-card",
       ".bill-card",
@@ -365,20 +461,40 @@
       ".debt-card",
       ".payable-card",
       ".receivable-card",
-      ".project-card"
+      ".project-card",
+      ".dashboard-month-plan-card",
+      ".dashboard-conti-compact-card",
+      ".notification-center-section",
+      ".notification-center-card",
+      ".financial-calendar-card",
+      ".financial-calendar-side",
+      ".calendar-timeline-card",
+      ".planning-feature-form-card",
+      ".planning-closed-card",
+      ".savings-goal-card",
+      ".planned-expense-card",
+      ".automation-card",
+      ".account-reconciliation-card"
     ];
     document.querySelectorAll(selectors.join(",")).forEach((card) => {
       if (card.dataset.phoneCompactCardWired === "true") return;
+      if (card.closest(".phone-sheet, .phone-native-topbar, .phone-bottom-dock, .command-palette-backdrop, .phone-form-portal")) return;
       card.dataset.phoneCompactCardWired = "true";
       card.classList.add("phone-card-collapsible");
-      const compactByDefault = card.matches(".recurring-rule-card, .finished-rule-card, .payment-card, .special-item-card, .professional-table-card, .phone-table-card, .analysis-card, .mortgage-card, .managed-recurring-card, .bill-card, .work-income-card, .debt-card, .payable-card, .receivable-card, .project-card");
-      if (!compactByDefault) {
+      const compactByDefault = card.matches(".recurring-rule-card, .finished-rule-card, .payment-card, .special-item-card, .professional-table-card, .phone-table-card, .summary-card, .kpi-card, .metric-card, .panel-card, .transactions.panel-card, .form-section.panel-card, .parent-support-card, .analysis-card, .analysis-decision-card, .useful-charts-card, .mortgage-card, .managed-recurring-card, .bill-card, .work-income-card, .debt-card, .payable-card, .receivable-card, .project-card, .dashboard-month-plan-card, .dashboard-conti-compact-card, .notification-center-section, .notification-center-card, .financial-calendar-card, .financial-calendar-side, .calendar-timeline-card, .planning-feature-form-card, .planning-closed-card, .savings-goal-card, .planned-expense-card, .automation-card, .account-reconciliation-card");
+      const generatedSummaryNeeded = card.matches(".summary-card, .kpi-card, .metric-card, .panel-card, .transactions.panel-card, .form-section.panel-card, .parent-support-card, .analysis-decision-card, .useful-charts-card, .dashboard-month-plan-card, .dashboard-conti-compact-card, .notification-center-section, .notification-center-card, .financial-calendar-card, .financial-calendar-side, .calendar-timeline-card, .planning-feature-form-card, .planning-closed-card, .savings-goal-card, .planned-expense-card, .automation-card, .account-reconciliation-card");
+      if (compactByDefault) {
+        if (generatedSummaryNeeded) ensureGeneratedCompactSummary(card);
+      } else {
         card.classList.add("phone-card-expanded");
       }
       card.addEventListener("click", (event) => {
         if (!isPhone()) return;
         if (event.target.closest(compactInteractiveSelector)) return;
+        const nested = event.target.closest(".phone-card-collapsible");
+        if (nested && nested !== card && card.contains(nested)) return;
         event.preventDefault();
+        event.stopPropagation();
         card.classList.toggle("phone-card-expanded");
       });
     });

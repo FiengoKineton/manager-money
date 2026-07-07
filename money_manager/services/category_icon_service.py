@@ -12,6 +12,7 @@ DEFAULT_ICON = "💸"
 # independent from external icon CDNs/web scraping.
 DEFAULT_CATEGORY_ICONS: dict[str, str] = {
     # Expense defaults
+    "food": "🍔",
     "groceries": "🛒",
     "restaurants": "🍽️",
     "transport": "🚆",

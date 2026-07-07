@@ -173,7 +173,11 @@ def process_pending(today: date | None = None, credit_only: bool = False) -> int
             try:
                 from money_manager.services.credit_settlement_service import execute_credit_settlement
 
-                result = execute_credit_settlement(tx.get("source_id", ""), execution_date=tx.get("date_due") or today.isoformat(), automatic=True)
+                result = execute_credit_settlement(
+                    tx.get("source_id", ""),
+                    execution_date=today.isoformat(),
+                    automatic=True,
+                )
                 if result.get("ok"):
                     executed_count += 1
             except Exception:
@@ -205,14 +209,16 @@ def process_pending(today: date | None = None, credit_only: bool = False) -> int
     for (due_date, account_value), total in credit_group.items():
         label = _credit_pending_label(account_value)
 
+        execution_date = today.isoformat()
+
         append_transaction({
             "type": "expense",
-            "date": due_date,
+            "date": execution_date,
             "category": CREDIT_CARD_PAYMENT_CATEGORY,
             "sub_category": label,
             "amount": total,
             "account": _credit_execution_account_value(account_value),
-            "description": f"{label} payment ({due_date})",
+            "description": f"{label} payment ({execution_date})",
         })
 
         for tx_id in credit_ids.get((due_date, account_value), []):
@@ -352,7 +358,7 @@ def sync_credit_account_statements(today: date | None = None) -> int:
 
 
 def _execute_pending_row(tx: dict, execution_date: str | None = None, *, automatic: bool = False) -> None:
-    execution_date = execution_date or tx.get("date_due", date.today().isoformat())
+    execution_date = execution_date or date.today().isoformat()
     account_value = str(tx.get("account", "")).strip().lower()
 
     if tx.get("source") == "debt":

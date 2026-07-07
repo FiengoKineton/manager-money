@@ -11,6 +11,7 @@ TRANSACTION_TYPES = ["expense", "income", "investment"]
 
 CATEGORY_OPTIONS = {
     "expense": sorted([
+        "Food",
         "Groceries",
         "Restaurants",
         "Transport",
@@ -51,7 +52,7 @@ CATEGORY_OPTIONS = {
 }
 
 DEFAULT_CATEGORY_BY_TYPE = {
-    "expense": "Other",
+    "expense": "Food",
     "income": "Other",
     "investment": "Deposit",
 }

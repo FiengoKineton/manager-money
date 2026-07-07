@@ -303,7 +303,10 @@ def execute_pending_from_form(form: Mapping[str, Any], user_id: str | None = Non
             event_action="execute_check",
         )
 
-    ok = execute_pending_by_id(pending_id, execution_date=form.get("execution_date") or form.get("checked_due_date"))
+    ok = execute_pending_by_id(
+        pending_id,
+        execution_date=form.get("execution_date") or date.today().isoformat(),
+    )
     if ok and item_id:
         _clear_next_due_amount(item_id, user_id=user_id)
     return {"ok": ok, "message": "Pending payment executed with the checked amount." if ok else "Pending payment was not executed."}

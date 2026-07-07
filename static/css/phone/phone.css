@@ -904,3 +904,609 @@ html.phone-native-active.phone-scope-menu-open .app-content-stage,
 html.phone-native-active.phone-scope-menu-open .container {
   overflow: visible !important;
 }
+
+/* v18: phone shortcuts for planning/search plus compact new planning pages. */
+html.phone-native-active .phone-native-topbar {
+  grid-template-columns: auto minmax(0, 1fr) 34px 34px 34px 34px !important;
+  gap: 4px !important;
+}
+
+html.phone-native-active .phone-icon-btn {
+  display: grid !important;
+  place-items: center !important;
+  text-decoration: none !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+html.phone-native-active .phone-calendar-btn,
+html.phone-native-active .phone-command-btn {
+  font-size: .96rem !important;
+}
+
+html.phone-native-active .phone-menu-shortcuts {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+  margin: 0 0 10px !important;
+}
+
+html.phone-native-active .phone-menu-shortcuts a,
+html.phone-native-active .phone-menu-shortcuts button {
+  min-width: 0 !important;
+  min-height: 54px !important;
+  display: grid !important;
+  place-items: center !important;
+  gap: 2px !important;
+  padding: 7px 4px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(44, 96, 140, .13) !important;
+  background: rgba(255, 255, 255, .82) !important;
+  color: var(--phone-text) !important;
+  text-decoration: none !important;
+  box-shadow: 0 12px 26px rgba(31, 65, 105, .08) !important;
+  font: inherit !important;
+}
+
+html.phone-native-active .phone-menu-shortcuts span {
+  font-size: 1.05rem !important;
+  line-height: 1 !important;
+}
+
+html.phone-native-active .phone-menu-shortcuts b {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: .58rem !important;
+  letter-spacing: .035em !important;
+}
+
+html.phone-native-active .phone-generated-summary-card.phone-card-collapsible {
+  position: relative !important;
+  padding: 10px 38px 10px 10px !important;
+  border-radius: 16px !important;
+  cursor: pointer !important;
+}
+
+html.phone-native-active .phone-generated-summary-card.phone-card-collapsible::after {
+  content: "⌄" !important;
+  position: absolute !important;
+  right: 10px !important;
+  top: 10px !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  background: rgba(13, 110, 253, .10) !important;
+  color: var(--phone-brand) !important;
+  font-weight: 900 !important;
+  transition: transform .16s ease !important;
+}
+
+html.phone-native-active .phone-generated-summary-card.phone-card-expanded::after {
+  transform: rotate(180deg) !important;
+}
+
+html.phone-native-active .phone-generated-card-summary {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  align-items: start !important;
+  min-width: 0 !important;
+}
+
+html.phone-native-active .phone-generated-card-summary span {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 2px !important;
+}
+
+html.phone-native-active .phone-generated-card-summary strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: .96rem !important;
+  line-height: 1.15 !important;
+}
+
+html.phone-native-active .phone-generated-card-summary small {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: var(--phone-muted) !important;
+  font-size: .72rem !important;
+}
+
+html.phone-native-active .phone-generated-card-summary em {
+  justify-self: end !important;
+  white-space: nowrap !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
+  font-size: .9rem !important;
+}
+
+html.phone-native-active .phone-generated-summary-card.phone-card-collapsible:not(.phone-card-expanded) > :not(.phone-generated-card-summary) {
+  display: none !important;
+}
+
+html.phone-native-active .phone-generated-summary-card.phone-card-expanded > .phone-generated-card-summary {
+  margin-bottom: 10px !important;
+  padding-bottom: 9px !important;
+  border-bottom: 1px solid rgba(44, 96, 140, .10) !important;
+}
+
+html.phone-native-active .notification-center-grid,
+html.phone-native-active .financial-calendar-layout,
+html.phone-native-active .feature-summary-grid,
+html.phone-native-active .analysis-command-grid,
+html.phone-native-active .analysis-kpi-grid,
+html.phone-native-active .savings-goals-grid,
+html.phone-native-active .planned-expense-list {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+
+html.phone-native-active .financial-calendar-summary,
+html.phone-native-active .notification-center-summary {
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+
+html.phone-native-active .financial-calendar-grid {
+  gap: 4px !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+html.phone-native-active .calendar-day {
+  min-width: 42px !important;
+  min-height: 58px !important;
+  padding: 5px !important;
+  border-radius: 12px !important;
+}
+
+html.phone-native-active .calendar-day-events {
+  max-height: 34px !important;
+  overflow: hidden !important;
+}
+
+html.phone-native-active .command-palette-backdrop {
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)) !important;
+  align-items: flex-start !important;
+}
+
+html.phone-native-active .command-palette {
+  width: 100% !important;
+  max-width: none !important;
+  max-height: min(86svh, 700px) !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 12px !important;
+  border-radius: 22px !important;
+}
+
+html.phone-native-active .command-palette-list {
+  max-height: min(58svh, 470px) !important;
+}
+
+html.phone-native-active .command-palette-list a {
+  grid-template-columns: 38px minmax(0, 1fr) !important;
+  padding: 9px !important;
+  border-radius: 15px !important;
+}
+
+html.phone-native-active .command-palette-list a span {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 14px !important;
+}
+
+@media (max-width: 380px) {
+  html.phone-native-active .phone-native-topbar {
+    grid-template-columns: auto minmax(0, 1fr) 31px 31px 31px 31px !important;
+    gap: 3px !important;
+  }
+
+  html.phone-native-active .phone-icon-btn {
+    width: 31px !important;
+    height: 33px !important;
+    border-radius: 12px !important;
+    font-size: .84rem !important;
+  }
+
+  html.phone-native-active .phone-menu-shortcuts {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+/* v19: native-phone polish after planning/traceability additions.
+   This keeps all desktop logic intact, but makes phone pages behave like stacked,
+   tap-to-open mobile cards instead of PC panels squeezed into a small viewport. */
+html.phone-native-active {
+  --phone-top-height: 50px;
+  --phone-dock-height: 62px;
+  --phone-page-pad: 8px;
+  --phone-radius: 16px;
+}
+
+html.phone-native-active body {
+  overflow-x: hidden !important;
+}
+
+html.phone-native-active .app-main {
+  padding-top: calc(var(--phone-top-height) + env(safe-area-inset-top, 0px) + 6px) !important;
+  padding-left: var(--phone-page-pad) !important;
+  padding-right: var(--phone-page-pad) !important;
+  padding-bottom: calc(var(--phone-dock-height) + env(safe-area-inset-bottom, 0px) + 7rem) !important;
+}
+
+html.phone-native-active .app-content-stage,
+html.phone-native-active .container,
+html.phone-native-active .content-container,
+html.phone-native-active main {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+}
+
+html.phone-native-active .phone-native-topbar {
+  min-height: var(--phone-top-height) !important;
+  padding: max(5px, env(safe-area-inset-top, 0px)) 7px 5px !important;
+  grid-template-columns: auto minmax(0, 1fr) 34px 34px 34px 34px !important;
+  gap: 4px !important;
+  border-radius: 0 0 20px 20px !important;
+}
+
+html.phone-native-active .phone-title-block {
+  min-width: 0 !important;
+  gap: 0 !important;
+}
+
+html.phone-native-active .phone-title-block small {
+  font-size: .54rem !important;
+  letter-spacing: .11em !important;
+}
+
+html.phone-native-active .phone-title-block strong {
+  display: block !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: .98rem !important;
+  line-height: 1.05 !important;
+}
+
+html.phone-native-active .phone-icon-btn,
+html.phone-native-active .phone-mini-nav-btn {
+  min-width: 0 !important;
+  width: 34px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  border-radius: 14px !important;
+  font-size: .9rem !important;
+  box-shadow: 0 9px 20px rgba(31, 65, 105, .08) !important;
+}
+
+html.phone-native-active .phone-history-nav {
+  grid-template-columns: repeat(3, 28px) !important;
+  gap: 3px !important;
+}
+
+html.phone-native-active .page-heading,
+html.phone-native-active .transactions-hero,
+html.phone-native-active .professional-heading {
+  padding: .72rem .78rem !important;
+  margin: 0 0 .55rem !important;
+  border-radius: 18px !important;
+}
+
+html.phone-native-active .page-heading p,
+html.phone-native-active .transactions-hero p,
+html.phone-native-active .professional-heading p {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+html.phone-native-active .panel-card,
+html.phone-native-active .transactions.panel-card,
+html.phone-native-active .form-section.panel-card,
+html.phone-native-active .summary-card,
+html.phone-native-active .kpi-card,
+html.phone-native-active .metric-card,
+html.phone-native-active .parent-support-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  padding: .68rem !important;
+  margin: 0 0 .55rem !important;
+  border-radius: var(--phone-radius) !important;
+  box-shadow: 0 12px 32px rgba(31, 65, 105, .08) !important;
+}
+
+html.phone-native-active .panel-header,
+html.phone-native-active .card-header,
+html.phone-native-active .section-header {
+  gap: .45rem !important;
+  margin-bottom: .45rem !important;
+}
+
+html.phone-native-active .panel-header h2,
+html.phone-native-active .panel-header h3,
+html.phone-native-active .card-header h2,
+html.phone-native-active .card-header h3,
+html.phone-native-active .section-header h2,
+html.phone-native-active .section-header h3 {
+  margin: 0 !important;
+  font-size: .96rem !important;
+  line-height: 1.08 !important;
+}
+
+html.phone-native-active .eyebrow {
+  font-size: .6rem !important;
+  letter-spacing: .11em !important;
+}
+
+html.phone-native-active .dashboard-grid,
+html.phone-native-active .dashboard-grid-large-left,
+html.phone-native-active .support-kpis,
+html.phone-native-active .kpi-grid,
+html.phone-native-active .summary-grid,
+html.phone-native-active .metrics-grid,
+html.phone-native-active .forecast-grid,
+html.phone-native-active .notification-center-grid,
+html.phone-native-active .financial-calendar-layout,
+html.phone-native-active .analysis-summary-grid,
+html.phone-native-active .savings-goals-grid,
+html.phone-native-active .planning-grid,
+html.phone-native-active .overview-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: .55rem !important;
+}
+
+html.phone-native-active .dashboard-kpi-grid,
+html.phone-native-active .transactions-summary-grid,
+html.phone-native-active .support-kpis {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+html.phone-native-active .phone-generated-summary-card.phone-card-collapsible {
+  min-height: 54px !important;
+  padding: 10px 38px 10px 10px !important;
+  background: rgba(255, 255, 255, .86) !important;
+  border: 1px solid rgba(44, 96, 140, .12) !important;
+}
+
+html.phone-native-active .phone-generated-summary-card.phone-card-expanded {
+  background: rgba(255, 255, 255, .94) !important;
+}
+
+html.phone-native-active .phone-generated-card-summary strong {
+  font-size: .94rem !important;
+}
+
+html.phone-native-active .phone-generated-card-summary small {
+  font-size: .68rem !important;
+}
+
+html.phone-native-active .phone-generated-card-summary em {
+  align-self: center !important;
+  padding: .25rem .45rem !important;
+  border-radius: 999px !important;
+  background: rgba(13, 110, 253, .08) !important;
+  color: var(--phone-text) !important;
+}
+
+html.phone-native-active .phone-table-card-list {
+  display: grid !important;
+  gap: 8px !important;
+  margin-top: 8px !important;
+}
+
+html.phone-native-active .phone-table-card {
+  position: relative !important;
+  min-height: 58px !important;
+  padding: 10px 38px 10px 10px !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, .88) !important;
+  border: 1px solid rgba(44, 96, 140, .12) !important;
+  box-shadow: 0 10px 24px rgba(31, 65, 105, .07) !important;
+}
+
+html.phone-native-active .phone-table-card::after {
+  content: "⌄" !important;
+  position: absolute !important;
+  right: 10px !important;
+  top: 10px !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  background: rgba(13, 110, 253, .10) !important;
+  color: var(--phone-brand) !important;
+  font-weight: 900 !important;
+  transition: transform .16s ease !important;
+}
+
+html.phone-native-active .phone-table-card.phone-card-expanded::after {
+  transform: rotate(180deg) !important;
+}
+
+html.phone-native-active .phone-table-card-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+html.phone-native-active .phone-table-card-head strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: .94rem !important;
+  line-height: 1.12 !important;
+}
+
+html.phone-native-active .phone-table-card-head em {
+  white-space: nowrap !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
+  font-size: .9rem !important;
+}
+
+html.phone-native-active .phone-table-card-detail {
+  grid-template-columns: 1fr !important;
+  gap: 6px !important;
+  margin-top: 9px !important;
+  padding-top: 9px !important;
+  border-top: 1px solid rgba(44, 96, 140, .10) !important;
+}
+
+html.phone-native-active .phone-table-card-detail span {
+  display: grid !important;
+  grid-template-columns: minmax(84px, .45fr) minmax(0, 1fr) !important;
+  gap: 8px !important;
+  align-items: baseline !important;
+}
+
+html.phone-native-active .phone-table-card-detail small {
+  color: var(--phone-muted) !important;
+  font-size: .66rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: .06em !important;
+}
+
+html.phone-native-active .phone-table-card-detail b {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: .78rem !important;
+}
+
+html.phone-native-active .phone-hidden-table {
+  display: none !important;
+}
+
+html.phone-native-active input,
+html.phone-native-active select,
+html.phone-native-active textarea {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 38px !important;
+  padding: .55rem .65rem !important;
+  border-radius: 13px !important;
+  font-size: .84rem !important;
+}
+
+html.phone-native-active button,
+html.phone-native-active .primary-btn,
+html.phone-native-active .secondary-btn,
+html.phone-native-active .compact-btn,
+html.phone-native-active .btn {
+  min-height: 38px !important;
+  border-radius: 13px !important;
+  font-size: .82rem !important;
+}
+
+html.phone-native-active .filters-form,
+html.phone-native-active .compact-filters,
+html.phone-native-active .date-inputs,
+html.phone-native-active .form-grid,
+html.phone-native-active .entry-form,
+html.phone-native-active .designer-form,
+html.phone-native-active .support-form {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: .55rem !important;
+}
+
+html.phone-native-active .support-mode-toggle {
+  width: 100% !important;
+  display: flex !important;
+  overflow-x: auto !important;
+  padding: .25rem !important;
+  margin: .55rem 0 !important;
+}
+
+html.phone-native-active .support-mode-btn {
+  flex: 1 0 max-content !important;
+  min-height: 36px !important;
+  padding: .45rem .75rem !important;
+}
+
+html.phone-native-active .phone-form-open-card {
+  min-height: 58px !important;
+  padding: 10px !important;
+  border-radius: 16px !important;
+}
+
+html.phone-native-active .phone-bottom-dock {
+  min-height: var(--phone-dock-height) !important;
+  border-radius: 22px !important;
+}
+
+html.phone-native-active .phone-dock-item {
+  min-height: 48px !important;
+}
+
+html.phone-native-active .phone-dock-item span {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 430px) {
+  html.phone-native-active .phone-native-topbar {
+    grid-template-columns: auto minmax(0, 1fr) 32px 32px 32px 32px !important;
+    gap: 3px !important;
+  }
+
+  html.phone-native-active .phone-history-nav {
+    grid-template-columns: repeat(2, 27px) !important;
+  }
+
+  html.phone-native-active .phone-history-nav [data-browser-forward] {
+    display: none !important;
+  }
+
+  html.phone-native-active .phone-mini-nav-btn,
+  html.phone-native-active .phone-icon-btn {
+    width: 32px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    border-radius: 13px !important;
+  }
+
+  html.phone-native-active .phone-title-block small {
+    display: none !important;
+  }
+
+  html.phone-native-active .dashboard-kpi-grid,
+  html.phone-native-active .transactions-summary-grid,
+  html.phone-native-active .support-kpis {
+    grid-template-columns: 1fr 1fr !important;
+    gap: .45rem !important;
+  }
+}
+
+@media (max-width: 350px) {
+  html.phone-native-active .phone-history-nav {
+    display: none !important;
+  }
+
+  html.phone-native-active .phone-native-topbar {
+    grid-template-columns: minmax(0, 1fr) 31px 31px 31px 31px !important;
+  }
+}

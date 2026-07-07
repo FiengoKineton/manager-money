@@ -8,10 +8,10 @@
     <h2>Search Money Manager</h2>
     <p>Find accounts, cards/payment methods, transactions, pending items, recurring rules, payables, contacts and safe document metadata.</p>
   </div>
-  <form method="get" action="{{ url_for('search.search_page') }}" class="global-search-page-form">
-    <input type="search" name="q" value="{{ q }}" placeholder="Search accounts, cards, transactions..." autofocus>
-    <button class="primary-btn" type="submit">Search</button>
-  </form>
+  <div class="search-hero-actions">
+    <span class="soft-chip">Use the top search bar</span>
+    <span class="soft-chip">or press Ctrl + K</span>
+  </div>
 </section>
 
 {% if locked %}
@@ -47,6 +47,6 @@
     {% endfor %}
   </section>
 {% else %}
-  <section class="panel-card"><p class="empty">Type something to search across the app.</p></section>
+  <section class="panel-card"><p class="empty">Use the top search bar or press Ctrl + K to search across the app.</p></section>
 {% endif %}
 {% endblock %}

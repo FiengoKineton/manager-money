@@ -4131,3 +4131,40 @@ html[data-theme="night"] .bill-items-list div {
   .all-conti-foldout-row > summary .all-conti-expand-cue { display: none; }
   .all-conti-board-search { grid-template-columns: 1fr; }
 }
+
+
+/* Patch: centered sidebar groups and consistent icons for all navigation areas. */
+.app-sidebar-nav-clean .app-nav-group > summary,
+.app-sidebar-nav-clean .nav-subgroup > summary {
+  position: relative;
+  justify-content: center !important;
+  text-align: center;
+  padding-right: 2.35rem;
+  padding-left: 2.35rem;
+}
+.app-sidebar-nav-clean .app-nav-group > summary::after,
+.app-sidebar-nav-clean .nav-subgroup > summary::after {
+  position: absolute;
+  right: .95rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.app-sidebar-nav-clean .app-nav-group[open] > summary::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+.app-sidebar-nav-clean .nav-subgroup[open] > summary::after {
+  transform: translateY(-50%) rotate(90deg);
+}
+.app-sidebar-nav-clean .app-nav-group > summary .nav-icon,
+.app-sidebar-nav-clean .nav-subgroup > summary .nav-icon {
+  flex: 0 0 auto;
+  margin-right: .42rem;
+}
+.app-sidebar-nav-clean .nav-subitems a,
+.app-sidebar-nav-clean .nav-items > a {
+  gap: .35rem;
+}
+.app-sidebar-nav-clean .nav-link-icon {
+  flex: 0 0 1.35em;
+  margin-right: .2rem;
+}
