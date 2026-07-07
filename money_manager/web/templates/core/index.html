@@ -12,6 +12,8 @@
       <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense', account_id=selected_account_id) if selected_account_id else url_for('transactions.add_transaction', type='expense') }}">+ Add expense</a>
       <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page', account_id=selected_account_id) if selected_account_id else url_for('transactions.transactions_page') }}">Transactions</a>
       <a class="secondary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=selected_account_id) if selected_account_id else url_for('accounts.accounts_page') }}">{{ 'Conto home' if scope_is_account else 'All Conti home' }}</a>
+      {% if endpoint_exists('notifications.center') %}<a class="secondary-btn compact-btn" href="{{ url_for('notifications.center', account_id=selected_account_id) if selected_account_id else url_for('notifications.center') }}">Alerts center</a>{% endif %}
+      {% if endpoint_exists('financial_calendar.calendar_page') %}<a class="secondary-btn compact-btn" href="{{ url_for('financial_calendar.calendar_page', account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page') }}">Calendar</a>{% endif %}
     </div>
   </div>
 
@@ -35,56 +37,74 @@
 {% if dashboard_new_notifications or dashboard_payable_reminders %}
 <section class="dashboard-home-reminders" aria-label="Home reminders">
   {% if dashboard_new_notifications %}
-  <article class="panel-card dashboard-home-reminder-card dashboard-home-notifications-card">
-    <div class="panel-header compact-panel-header">
-      <div>
+  <details class="panel-card dashboard-home-reminder-card dashboard-home-collapse-card dashboard-home-notifications-card">
+    <summary class="dashboard-home-collapse-summary">
+      <span>
         <span class="eyebrow">New alerts</span>
-        <h3>Notifications to read</h3>
-        <p>Long reminder view from Alerts, shown here before the monthly plan.</p>
+        <strong>Notifications to read</strong>
+        <small>{{ dashboard_new_notifications|length }} unread/current reminders · closed by default</small>
+      </span>
+      <span class="dashboard-collapse-open-label">Open</span>
+    </summary>
+    <div class="dashboard-home-collapse-body">
+      <div class="panel-header compact-panel-header dashboard-home-inner-header">
+        <div>
+          <h3>Notifications to read</h3>
+          <p>Long reminder view from Alerts, shown here before the monthly plan.</p>
+        </div>
+        <a class="secondary-btn compact-btn" href="{{ url_for('notifications.center', account_id=selected_account_id) if selected_account_id and endpoint_exists('notifications.center') else (url_for('notifications.center') if endpoint_exists('notifications.center') else url_for('pending.pending_page')) }}">Open center</a>
       </div>
-      <a class="secondary-btn compact-btn" href="{{ url_for('pending.pending_page') }}">Open planning</a>
+      <div class="dashboard-long-reminder-list">
+        {% for item in dashboard_new_notifications %}
+          <a class="dashboard-long-reminder dashboard-long-reminder-{{ item.tone|default('info') }}" href="{{ url_for(item.href_endpoint) }}">
+            <span class="dashboard-long-reminder-icon" aria-hidden="true">{{ item.icon }}</span>
+            <span class="dashboard-long-reminder-copy">
+              <span class="dashboard-long-reminder-meta">{{ item.label }} · {{ item.meta }}</span>
+              <strong>{{ item.title }}</strong>
+              <small>{{ item.summary }}</small>
+              <em>{{ item.detail }}</em>
+            </span>
+            <span class="dashboard-long-reminder-action">{{ item.href_label }}</span>
+          </a>
+        {% endfor %}
+      </div>
     </div>
-    <div class="dashboard-long-reminder-list">
-      {% for item in dashboard_new_notifications %}
-        <a class="dashboard-long-reminder dashboard-long-reminder-{{ item.tone|default('info') }}" href="{{ url_for(item.href_endpoint) }}">
-          <span class="dashboard-long-reminder-icon" aria-hidden="true">{{ item.icon }}</span>
-          <span class="dashboard-long-reminder-copy">
-            <span class="dashboard-long-reminder-meta">{{ item.label }} · {{ item.meta }}</span>
-            <strong>{{ item.title }}</strong>
-            <small>{{ item.summary }}</small>
-            <em>{{ item.detail }}</em>
-          </span>
-          <span class="dashboard-long-reminder-action">{{ item.href_label }}</span>
-        </a>
-      {% endfor %}
-    </div>
-  </article>
+  </details>
   {% endif %}
 
   {% if dashboard_payable_reminders %}
-  <article class="panel-card dashboard-home-reminder-card dashboard-home-payables-card">
-    <div class="panel-header compact-panel-header">
-      <div>
+  <details class="panel-card dashboard-home-reminder-card dashboard-home-collapse-card dashboard-home-payables-card">
+    <summary class="dashboard-home-collapse-summary">
+      <span>
         <span class="eyebrow">Payable reminders</span>
-        <h3>Most immediate payables</h3>
-        <p>Active payables ordered by closest due date, also when they are not urgent enough to become an alert.</p>
+        <strong>Most immediate payables</strong>
+        <small>{{ dashboard_payable_reminders|length }} active payable reminders · closed by default</small>
+      </span>
+      <span class="dashboard-collapse-open-label">Open</span>
+    </summary>
+    <div class="dashboard-home-collapse-body">
+      <div class="panel-header compact-panel-header dashboard-home-inner-header">
+        <div>
+          <h3>Most immediate payables</h3>
+          <p>Active payables ordered by closest due date, also when they are not urgent enough to become an alert.</p>
+        </div>
+        <a class="secondary-btn compact-btn" href="{{ url_for('payables.payables_page', account_id=selected_account_id) if selected_account_id else url_for('payables.payables_page') }}">Payables</a>
       </div>
-      <a class="secondary-btn compact-btn" href="{{ url_for('payables.payables_page', account_id=selected_account_id) if selected_account_id else url_for('payables.payables_page') }}">Payables</a>
+      <div class="dashboard-payable-reminder-list">
+        {% for item in dashboard_payable_reminders %}
+          <a class="dashboard-payable-reminder row-{{ item.tone|default('neutral') }}" href="{{ url_for('payables.payables_page', account_id=selected_account_id) if selected_account_id else url_for('payables.payables_page') }}">
+            <span class="payable-reminder-date">{{ item.due_label }}</span>
+            <span class="payable-reminder-main">
+              <strong>{{ item.name|text_masked }}</strong>
+              <small>{{ item.payee|text_masked }} · {{ item.category }}{% if item.account_label %} · {{ item.account_label|text_masked }}{% endif %}</small>
+              {% if item.description %}<em>{{ item.description|text_masked }}</em>{% endif %}
+            </span>
+            <strong class="payable-reminder-amount">{{ item.remaining_amount|money_masked }}</strong>
+          </a>
+        {% endfor %}
+      </div>
     </div>
-    <div class="dashboard-payable-reminder-list">
-      {% for item in dashboard_payable_reminders %}
-        <a class="dashboard-payable-reminder row-{{ item.tone|default('neutral') }}" href="{{ url_for('payables.payables_page', account_id=selected_account_id) if selected_account_id else url_for('payables.payables_page') }}">
-          <span class="payable-reminder-date">{{ item.due_label }}</span>
-          <span class="payable-reminder-main">
-            <strong>{{ item.name|text_masked }}</strong>
-            <small>{{ item.payee|text_masked }} · {{ item.category }}{% if item.account_label %} · {{ item.account_label|text_masked }}{% endif %}</small>
-            {% if item.description %}<em>{{ item.description|text_masked }}</em>{% endif %}
-          </span>
-          <strong class="payable-reminder-amount">{{ item.remaining_amount|money_masked }}</strong>
-        </a>
-      {% endfor %}
-    </div>
-  </article>
+  </details>
   {% endif %}
 </section>
 {% endif %}

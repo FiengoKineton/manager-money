@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block page_title %}Notifications Center{% endblock %}
+
+{% block content %}
+{% include "components/scope_switcher.html" %}
+<section class="notification-center-hero panel-card">
+  <div>
+    <span class="eyebrow">Smart reminders</span>
+    <h2>Notifications Center</h2>
+    <p>One page for alerts, upcoming obligations, expected income, subscriptions, low-balance warnings and old unpaid items.</p>
+    <div class="notification-center-actions">
+      <a class="primary-btn compact-btn" href="{{ url_for('financial_calendar.calendar_page', account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page') }}">Open financial calendar</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('pending.pending_page', account_id=selected_account_id) if selected_account_id else url_for('pending.pending_page') }}">Open pending</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('payables.payables_page', account_id=selected_account_id) if selected_account_id else url_for('payables.payables_page') }}">Payables</a>
+    </div>
+  </div>
+  <div class="notification-center-summary">
+    <article><span>Total reminders</span><strong>{{ notification_center_summary.total }}</strong></article>
+    <article><span>Unread/current</span><strong>{{ notification_center_summary.unread }}</strong></article>
+    <article><span>Critical</span><strong>{{ notification_center_summary.critical }}</strong></article>
+    <article><span>Warnings</span><strong>{{ notification_center_summary.warning }}</strong></article>
+  </div>
+</section>
+
+<section class="notification-center-grid" data-notification-center>
+  {% for category in notification_center_categories %}
+    <article class="panel-card notification-center-section" data-notification-section="{{ category.key }}">
+      <div class="panel-header compact-panel-header">
+        <div>
+          <span class="eyebrow">{{ category.eyebrow }}</span>
+          <h3>{{ category.title }}</h3>
+          <p>{{ category.description }}</p>
+        </div>
+        <span class="notification-section-count">{{ category.count }}</span>
+      </div>
+
+      {% if category.items %}
+        <div class="notification-center-list">
+          {% for item in category.items %}
+            <article class="notification-center-card card-{{ item.tone|default('info') }} {{ 'is-unread' if item.is_unread else 'is-read' }}" data-center-notification-card data-center-notification-id="{{ item.id }}">
+              <div class="notification-center-icon" aria-hidden="true">{{ item.icon }}</div>
+              <div class="notification-center-copy">
+                <span class="notification-center-label">{{ item.label }}</span>
+                <h4>{{ item.title|text_masked }}</h4>
+                <div class="notification-center-meta">
+                  {% if item.amount_label %}<strong>{{ item.amount_label|text_masked }}</strong>{% endif %}
+                  {% if item.date_label %}<span>{{ item.date_label }}</span>{% endif %}
+                  {% if item.meta %}<span>{{ item.meta|text_masked }}</span>{% endif %}
+                </div>
+                <p>{{ item.detail|text_masked }}</p>
+                <div class="notification-center-quick-actions">
+                  {% if item.href_endpoint and endpoint_exists(item.href_endpoint) %}
+                    <a class="secondary-btn compact-btn" href="{{ url_for(item.href_endpoint, account_id=selected_account_id) if selected_account_id and item.href_endpoint not in ['debts.debts_page', 'receivables.receivables_page', 'expense_projects.expense_projects_page', 'transactions.transactions_page'] else url_for(item.href_endpoint) }}">{{ item.href_label or 'Open' }}</a>
+                  {% endif %}
+                  {% if 'pay_now' in item.actions %}
+                    <a class="primary-btn compact-btn" href="{{ url_for(item.href_endpoint, account_id=selected_account_id) if selected_account_id and item.href_endpoint in ['payables.payables_page', 'pending.pending_page'] else url_for(item.href_endpoint) }}">Pay now</a>
+                  {% endif %}
+                  {% if 'convert_payable' in item.actions %}
+                    <a class="secondary-btn compact-btn" href="{{ url_for('payables.payables_page', account_id=selected_account_id) if selected_account_id else url_for('payables.payables_page') }}">Convert to payable</a>
+                  {% endif %}
+                  {% if 'convert_debt' in item.actions %}
+                    <a class="secondary-btn compact-btn" href="{{ url_for('debts.debts_page') }}">Convert to debt</a>
+                  {% endif %}
+                  {% if 'snooze' in item.actions %}
+                    <button type="button" class="secondary-btn compact-btn" data-center-snooze-days="3">Snooze 3d</button>
+                  {% endif %}
+                  {% if 'ignore' in item.actions %}
+                    <button type="button" class="secondary-btn compact-btn" data-center-ignore>Mark ignored</button>
+                  {% endif %}
+                  {% if 'reminder_date' in item.actions %}
+                    <label class="notification-reminder-date">Reminder date <input type="date" data-center-reminder-date></label>
+                    <button type="button" class="secondary-btn compact-btn" data-center-set-reminder>Set</button>
+                  {% endif %}
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty compact-empty">{{ category.empty }}</p>
+      {% endif %}
+    </article>
+  {% endfor %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/notification-center.js') }}?v=notification-center-1"></script>
+{% endblock %}

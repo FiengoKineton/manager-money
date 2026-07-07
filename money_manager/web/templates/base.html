@@ -184,7 +184,7 @@
           </details>
         {% endif %}
 
-        {% set planning_monthly_open = request.endpoint in ['pending.pending_page', 'pending.recurring_page'] %}
+        {% set planning_monthly_open = request.endpoint in ['pending.pending_page', 'pending.recurring_page', 'financial_calendar.calendar_page'] %}
         {% set planning_common_open = request.endpoint in ['managed_recurring.bills_page', 'managed_recurring.work_income_page'] %}
         {% set planning_loans_open = request.endpoint in ['mortgages.mortgages_page', 'payables.payables_page', 'debts.debts_page', 'receivables.receivables_page'] %}
         {% set planning_projects_open = request.endpoint == 'forecast.forecast' or (request.endpoint and request.endpoint.startswith('expense_projects.')) %}
@@ -196,6 +196,7 @@
               <div class="nav-subitems">
                 {% if endpoint_exists('pending.pending_page') %}<a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if request.endpoint == 'pending.pending_page' else '' }}">Pending</a>{% endif %}
                 {% if endpoint_exists('pending.recurring_page') %}<a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if request.endpoint == 'pending.recurring_page' else '' }}">Recurring</a>{% endif %}
+                {% if endpoint_exists('financial_calendar.calendar_page') %}<a href="{{ url_for('financial_calendar.calendar_page') }}" class="{{ 'active' if request.endpoint == 'financial_calendar.calendar_page' else '' }}">Calendar</a>{% endif %}
               </div>
             </details>
 
@@ -233,12 +234,13 @@
           </div>
         </details>
 
-        {% set analysis_group_open = request.endpoint in ['dashboard.index', 'analysis.analysis', 'investments.investments_page', 'yearly_summary.yearly_summary_page'] %}
+        {% set analysis_group_open = request.endpoint in ['dashboard.index', 'analysis.analysis', 'investments.investments_page', 'yearly_summary.yearly_summary_page', 'notifications.center'] %}
         {% set overview_nav_account_id = selected_account_id|default('', true) %}
         <details class="nav-group app-nav-group {{ 'is-active' if analysis_group_open else '' }}" {{ 'open' if analysis_group_open else '' }}>
           <summary>Analysis & wealth</summary>
           <div class="nav-items">
             {% if endpoint_exists('dashboard.index') %}<a href="{{ url_for('dashboard.index', account_id=overview_nav_account_id) if overview_nav_account_id else url_for('dashboard.index') }}" class="{{ 'active' if request.endpoint == 'dashboard.index' else '' }}">Overview</a>{% endif %}
+            {% if endpoint_exists('notifications.center') %}<a href="{{ url_for('notifications.center', account_id=overview_nav_account_id) if overview_nav_account_id else url_for('notifications.center') }}" class="{{ 'active' if request.endpoint == 'notifications.center' else '' }}">Alerts center</a>{% endif %}
             {% if endpoint_exists('analysis.analysis') %}<a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if request.endpoint == 'analysis.analysis' else '' }}">Analysis</a>{% endif %}
             {% if endpoint_exists('investments.investments_page') %}<a href="{{ url_for('investments.investments_page') }}" class="{{ 'active' if request.endpoint == 'investments.investments_page' else '' }}">Investments</a>{% endif %}
             {% if endpoint_exists('yearly_summary.yearly_summary_page') %}<a href="{{ url_for('yearly_summary.yearly_summary_page') }}" class="{{ 'active' if request.endpoint == 'yearly_summary.yearly_summary_page' else '' }}">Yearly summary</a>{% endif %}
@@ -333,6 +335,7 @@
                   <strong>{{ t("notifications.title") }}</strong>
                 </div>
                 <div class="notification-panel-actions">
+                  {% if endpoint_exists('notifications.center') %}<a class="notification-small-action notification-center-open-link" href="{{ url_for('notifications.center', account_id=selected_account_id) if selected_account_id else url_for('notifications.center') }}">Open center</a>{% endif %}
                   <button type="button" class="notification-small-action" data-notification-mark-read>{{ t("notifications.mark_all_read") }}</button>
                   <button type="button" class="notification-close" data-notification-close aria-label="{{ t('notifications.close') }}">×</button>
                 </div>

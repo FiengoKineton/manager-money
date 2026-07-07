@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block page_title %}Financial Calendar{% endblock %}
+
+{% block content %}
+{% include "components/scope_switcher.html" %}
+<section class="financial-calendar-hero panel-card">
+  <div>
+    <span class="eyebrow">Future money view</span>
+    <h2>Financial Calendar</h2>
+    <p>Expected salary, recurring expenses, debts, payables, receivables, subscriptions and one-time planned expenses in one month view.</p>
+    <div class="calendar-nav-actions">
+      <a class="secondary-btn compact-btn" href="{{ url_for('financial_calendar.calendar_page', month=calendar_prev_month, account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page', month=calendar_prev_month) }}">← Previous</a>
+      <form method="get" action="{{ url_for('financial_calendar.calendar_page') }}" class="calendar-month-form">
+        {% if selected_account_id %}<input type="hidden" name="account_id" value="{{ selected_account_id }}">{% endif %}
+        <input type="month" name="month" value="{{ calendar_month }}">
+        <button type="submit" class="primary-btn compact-btn">Open month</button>
+      </form>
+      <a class="secondary-btn compact-btn" href="{{ url_for('financial_calendar.calendar_page', month=calendar_next_month, account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page', month=calendar_next_month) }}">Next →</a>
+      <a class="secondary-btn compact-btn" href="{{ url_for('notifications.center', account_id=selected_account_id) if selected_account_id else url_for('notifications.center') }}">Notifications center</a>
+    </div>
+  </div>
+  <div class="financial-calendar-summary">
+    <article><span>{{ calendar_month_label }}</span><strong>{{ calendar_summary.count }}</strong><small>events</small></article>
+    <article class="calendar-income"><span>Expected in</span><strong>{{ calendar_summary.income|money_masked }}</strong></article>
+    <article class="calendar-out"><span>Expected out</span><strong>{{ calendar_summary.outflow|money_masked }}</strong></article>
+    <article class="calendar-net"><span>Net impact</span><strong>{{ calendar_summary.net|money_masked }}</strong></article>
+  </div>
+</section>
+
+<section class="financial-calendar-layout">
+  <article class="panel-card financial-calendar-card">
+    <div class="financial-calendar-weekdays" aria-hidden="true">
+      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+    </div>
+    <div class="financial-calendar-grid">
+      {% for week in calendar_weeks %}
+        {% for day in week %}
+          <button type="button" class="calendar-day {{ 'is-muted' if not day.is_current_month else '' }} {{ 'is-today' if day.is_today else '' }} {{ 'has-events' if day.events else '' }}" data-calendar-day="{{ day.date }}">
+            <span class="calendar-day-number">{{ day.day }}</span>
+            {% if day.net_total %}
+              <strong class="calendar-day-net {{ 'positive' if day.net_total > 0 else 'negative' }}">{{ day.net_total|money_masked }}</strong>
+            {% endif %}
+            <span class="calendar-day-events">
+              {% for event in day.events %}
+                <span class="calendar-event-pill event-{{ event.tone }}" title="{{ event.title }} · {{ event.amount_label }}">{{ event.title|text_masked }}</span>
+              {% endfor %}
+              {% if day.more_count %}<span class="calendar-event-more">+{{ day.more_count }} more</span>{% endif %}
+            </span>
+          </button>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </article>
+
+  <aside class="panel-card financial-calendar-side">
+    <div class="panel-header compact-panel-header">
+      <div>
+        <span class="eyebrow">Breakdown</span>
+        <h3>{{ calendar_month_label }}</h3>
+        <p>Grouped by source.</p>
+      </div>
+    </div>
+    {% if calendar_totals_by_kind %}
+      <div class="calendar-kind-list">
+        {% for row in calendar_totals_by_kind %}
+          <div class="calendar-kind-row">
+            <span>{{ row.label }}</span>
+            <strong>{{ row.count }}</strong>
+            <small>In {{ row.income|money_masked }} · Out {{ row.outflow|money_masked }}</small>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty compact-empty">No events found for this month.</p>
+    {% endif %}
+  </aside>
+</section>
+
+<section class="panel-card calendar-timeline-card">
+  <div class="panel-header compact-panel-header">
+    <div>
+      <span class="eyebrow">Timeline</span>
+      <h3>All planned movements</h3>
+      <p>Click an item to open the original page.</p>
+    </div>
+  </div>
+  {% if calendar_events %}
+    <div class="calendar-timeline-list">
+      {% for event in calendar_events %}
+        <a class="calendar-timeline-row event-{{ event.tone }}" href="{{ url_for(event.href_endpoint, account_id=selected_account_id) if selected_account_id and event.href_endpoint in ['payables.payables_page', 'pending.pending_page'] else url_for(event.href_endpoint) }}">
+          <span class="calendar-timeline-date">{{ event.date }}</span>
+          <span class="calendar-timeline-main">
+            <strong>{{ event.title|text_masked }}</strong>
+            <small>{{ event.kind_label }} · {{ event.source }}{% if event.detail %} · {{ event.detail|text_masked }}{% endif %}</small>
+          </span>
+          <b class="{{ 'incoming' if event.direction == 'in' else 'outgoing' }}">{{ '+' if event.direction == 'in' else '-' }}{{ event.amount_label|text_masked }}</b>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty compact-empty">No planned movements for this month.</p>
+  {% endif %}
+</section>
+{% endblock %}

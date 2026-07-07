@@ -555,3 +555,548 @@
     font-size: 1.05rem;
   }
 }
+
+/* Collapsible dashboard reminder strips: closed by default so overview stays compact. */
+.dashboard-home-collapse-card {
+  padding: 0;
+}
+
+.dashboard-home-collapse-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.dashboard-home-collapse-summary::-webkit-details-marker {
+  display: none;
+}
+
+.dashboard-home-collapse-summary > span:first-child {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.dashboard-home-collapse-summary strong {
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.dashboard-home-collapse-summary small {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.dashboard-collapse-open-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.42rem 0.72rem;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+
+.dashboard-home-collapse-card[open] .dashboard-collapse-open-label::before {
+  content: "Close";
+}
+
+.dashboard-home-collapse-card[open] .dashboard-collapse-open-label {
+  font-size: 0;
+}
+
+.dashboard-home-collapse-card[open] .dashboard-collapse-open-label::before {
+  font-size: 0.76rem;
+}
+
+.dashboard-home-collapse-body {
+  padding: 0 1rem 1rem;
+}
+
+.dashboard-home-inner-header {
+  margin-bottom: 0.7rem;
+}
+
+/* Notifications Center */
+.notification-center-hero,
+.financial-calendar-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+  gap: 1rem;
+  align-items: stretch;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.18), transparent 26rem),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(239, 246, 255, 0.9));
+}
+
+.notification-center-hero h2,
+.financial-calendar-hero h2 {
+  margin: 0.25rem 0 0;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  letter-spacing: -0.07em;
+}
+
+.notification-center-hero p,
+.financial-calendar-hero p {
+  max-width: 72ch;
+  color: var(--muted);
+}
+
+.notification-center-actions,
+.calendar-nav-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.notification-center-summary,
+.financial-calendar-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.notification-center-summary article,
+.financial-calendar-summary article {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 0.95rem;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow-sm);
+}
+
+.notification-center-summary span,
+.financial-calendar-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.notification-center-summary strong,
+.financial-calendar-summary strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: clamp(1.45rem, 3vw, 2.2rem);
+  letter-spacing: -0.06em;
+}
+
+.notification-center-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.notification-center-section {
+  padding: 1rem;
+}
+
+.notification-center-section .panel-header p {
+  margin: 0.32rem 0 0;
+  color: var(--muted);
+}
+
+.notification-section-count {
+  display: inline-flex;
+  min-width: 2.35rem;
+  height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  font-weight: 950;
+}
+
+.notification-center-list {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.notification-center-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 0.78rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 0.85rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-sm);
+}
+
+.notification-center-card.card-critical { border-color: rgba(239, 68, 68, 0.34); }
+.notification-center-card.card-warning { border-color: rgba(245, 158, 11, 0.34); }
+.notification-center-card.card-income,
+.notification-center-card.card-good { border-color: rgba(16, 185, 129, 0.28); }
+.notification-center-card.card-info { border-color: rgba(59, 130, 246, 0.22); }
+
+.notification-center-icon {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: var(--surface-soft);
+  font-weight: 950;
+}
+
+.notification-center-copy {
+  min-width: 0;
+}
+
+.notification-center-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.notification-center-copy h4 {
+  margin: 0.15rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-center-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.28rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.notification-center-meta strong {
+  color: var(--ink);
+}
+
+.notification-center-copy p {
+  margin: 0.45rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.42;
+}
+
+.notification-center-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  margin-top: 0.7rem;
+}
+
+.notification-center-quick-actions .compact-btn {
+  min-height: 34px;
+  padding: 0.38rem 0.62rem;
+}
+
+.notification-reminder-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.notification-reminder-date input {
+  width: 138px;
+  min-height: 34px;
+  border-radius: 12px;
+  padding: 0.3rem 0.45rem;
+}
+
+.notification-center-section.is-empty-after-client-filter::after {
+  content: "All items in this section are hidden, snoozed or ignored.";
+  display: block;
+  margin-top: 0.6rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* Financial Calendar */
+.calendar-month-form {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.calendar-month-form input[type="month"] {
+  min-height: 38px;
+  border-radius: 14px;
+  padding: 0.38rem 0.65rem;
+}
+
+.financial-calendar-summary small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--muted);
+}
+
+.financial-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.28fr);
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.financial-calendar-card,
+.financial-calendar-side,
+.calendar-timeline-card {
+  padding: 1rem;
+}
+
+.financial-calendar-weekdays,
+.financial-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.financial-calendar-weekdays {
+  margin-bottom: 0.55rem;
+}
+
+.financial-calendar-weekdays span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.calendar-day {
+  min-height: 142px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 0.65rem;
+  background: rgba(255, 255, 255, 0.86);
+  color: inherit;
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.calendar-day.is-muted {
+  opacity: 0.45;
+}
+
+.calendar-day.is-today {
+  border-color: rgba(37, 99, 235, 0.48);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12), var(--shadow-sm);
+}
+
+.calendar-day-number {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  font-weight: 950;
+}
+
+.calendar-day-net {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  letter-spacing: -0.02em;
+}
+
+.calendar-day-net.positive { color: var(--good); }
+.calendar-day-net.negative { color: var(--danger); }
+
+.calendar-day-events {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.calendar-event-pill {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 0.22rem 0.42rem;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.calendar-event-pill.event-income { background: var(--good-soft); color: var(--good); }
+.calendar-event-pill.event-pending,
+.calendar-event-pill.event-subscription { background: var(--warning-soft); color: var(--warning); }
+.calendar-event-pill.event-debt,
+.calendar-event-pill.event-payable { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
+.calendar-event-pill.event-planned { background: rgba(59, 130, 246, 0.12); color: var(--brand); }
+
+.calendar-event-more {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.calendar-kind-list,
+.calendar-timeline-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.calendar-kind-row,
+.calendar-timeline-row {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--shadow-sm);
+}
+
+.calendar-kind-row {
+  padding: 0.72rem;
+}
+
+.calendar-kind-row span,
+.calendar-kind-row strong,
+.calendar-kind-row small {
+  display: block;
+}
+
+.calendar-kind-row span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.calendar-kind-row strong {
+  margin-top: 0.1rem;
+  font-size: 1.25rem;
+}
+
+.calendar-kind-row small {
+  margin-top: 0.12rem;
+  color: var(--muted);
+}
+
+.calendar-timeline-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) minmax(100px, auto);
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.75rem 0.85rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.calendar-timeline-row:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.calendar-timeline-date {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 0.42rem 0.5rem;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.calendar-timeline-main {
+  min-width: 0;
+}
+
+.calendar-timeline-main strong,
+.calendar-timeline-main small {
+  display: block;
+}
+
+.calendar-timeline-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-timeline-main small {
+  margin-top: 0.12rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.calendar-timeline-row b {
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.calendar-timeline-row b.incoming { color: var(--good); }
+.calendar-timeline-row b.outgoing { color: var(--ink); }
+
+@media (max-width: 1180px) {
+  .notification-center-hero,
+  .financial-calendar-hero,
+  .notification-center-grid,
+  .financial-calendar-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .financial-calendar-weekdays {
+    display: none;
+  }
+
+  .financial-calendar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-day {
+    min-height: auto;
+  }
+
+  .calendar-timeline-row {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-timeline-row b {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 680px) {
+  .notification-center-summary,
+  .financial-calendar-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .notification-center-card {
+    grid-template-columns: 1fr;
+  }
+}
