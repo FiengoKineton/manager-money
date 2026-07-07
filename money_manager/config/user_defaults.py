@@ -309,6 +309,20 @@ DEFAULT_PAYMENT_METHODS: dict[str, Any] = {
     ],
 }
 
+DEFAULT_SAVINGS_GOALS: dict[str, Any] = {
+    "schema_version": 1,
+    "goals": [],
+    "events": [],
+    "updated_at": "",
+}
+
+DEFAULT_PLANNED_EXPENSES: dict[str, Any] = {
+    "schema_version": 1,
+    "planned_expenses": [],
+    "events": [],
+    "updated_at": "",
+}
+
 DEFAULT_CATEGORY_ICONS: dict[str, Any] = {
     "schema_version": 1,
     "icons": {},
@@ -345,6 +359,8 @@ USER_CONFIG_DEFAULTS: dict[str, dict[str, Any]] = {
     "document_types.json": DEFAULT_DOCUMENT_TYPES,
     "receipts.json": DEFAULT_RECEIPTS,
     "discount_balances.json": DEFAULT_DISCOUNT_BALANCES,
+    "savings_goals.json": DEFAULT_SAVINGS_GOALS,
+    "planned_expenses.json": DEFAULT_PLANNED_EXPENSES,
 }
 
 

@@ -723,5 +723,11 @@
   "updates.update_incompatible": "Aggiornamento incompatibile",
   "updates.update_staged": "Aggiornamento preparato. Riavvia il launcher per applicarlo.",
   "updates.version": "Versione",
-  "yearly.title": "Riepilogo Annuale"
+  "yearly.title": "Riepilogo Annuale",
+  "nav": {
+    "notifications_center": "Centro notifiche",
+    "financial_calendar": "Calendario finanziario",
+    "planned_expenses": "Spese pianificate",
+    "savings_goals": "Obiettivi di risparmio"
+  }
 }

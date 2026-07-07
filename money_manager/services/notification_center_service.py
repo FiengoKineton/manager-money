@@ -15,6 +15,7 @@ from money_manager.services.account_scope_service import (
 )
 from money_manager.services.notification_service import build_notification_context_cached
 from money_manager.services.payable_service import immediate_payable_reminders
+from money_manager.services.planned_expense_service import upcoming_planned_expense_reminders
 from money_manager.services.recurring_service import recurring_forecast_for_period
 from money_manager.services.transaction_service import load_transactions
 
@@ -28,6 +29,7 @@ def build_notification_center_context(
     categories = [
         _current_alerts(today),
         _upcoming_payables(selected_scope, today),
+        _planned_expenses(selected_scope, today),
         _upcoming_debts(selected_scope, today),
         _pending_recurring(selected_scope, today),
         _expected_incomes(selected_scope, today),
@@ -114,6 +116,40 @@ def _upcoming_payables(scope, today: date) -> dict[str, Any]:
         description="Active payables ordered by closest due date, including rows without urgent alerts.",
         empty="No active payable reminders.",
         items=items,
+    )
+
+
+def _planned_expenses(scope, today: date) -> dict[str, Any]:
+    items = []
+    try:
+        reminders = upcoming_planned_expense_reminders(limit=12)
+    except Exception:
+        reminders = []
+    for row in reminders:
+        if not _row_matches_scope(row, scope):
+            continue
+        due = _date(row.get("due_date"))
+        items.append(_item(
+            raw_id=f"planned-expense:{row.get('id')}",
+            tone=_tone_from_due(due, today, default=str(row.get("tone") or "info")),
+            label=_due_label(due, today, fallback="Planned expense"),
+            title=str(row.get("title") or "Planned expense"),
+            amount_label=_money(row.get("remaining_amount") or row.get("expected_amount")),
+            date_label=due.isoformat() if due else "No due date",
+            meta=f"{row.get('vendor', '') or 'No vendor'} · {row.get('category', 'Planned')} · {row.get('account_id', '')}",
+            detail=str(row.get("description") or "One-time planned expense. Pay it, reschedule it, or keep it as a forecast reminder."),
+            icon="🧾",
+            href_endpoint="planned_expenses.planned_expenses_page",
+            href_label="Open planned expenses",
+            actions=["pay_now", "snooze", "ignore", "reminder_date"],
+        ))
+    return _category(
+        key="planned_expenses",
+        eyebrow="Planned",
+        title="Planned one-time expenses",
+        description="Standalone future expenses such as trips, repairs and gifts, separate from debts and payables.",
+        empty="No planned one-time expenses.",
+        items=items[:12],
     )
 
 
@@ -613,6 +649,21 @@ def _looks_like_subscription(*parts: object) -> bool:
     text = " ".join(str(part or "") for part in parts).casefold()
     keywords = ["subscription", "subscriptions", "abbon", "onedrive", "netflix", "spotify", "icloud", "google", "adobe", "canva", "prime", "storage"]
     return any(keyword in text for keyword in keywords)
+
+
+def _row_matches_scope(row: Mapping[str, Any], scope: Mapping[str, Any] | str | None) -> bool:
+    if not _scope_is_limited(scope):
+        return True
+    account_id = str(row.get("account_id") or row.get("account") or "").strip()
+    if not account_id:
+        return True
+    if isinstance(scope, Mapping):
+        allowed = {str(value) for value in scope.get("included_account_ids") or [] if value}
+        selected = str(scope.get("account_id") or "").strip()
+        if selected:
+            allowed.add(selected)
+        return account_id in allowed if allowed else True
+    return account_id == str(scope).strip()
 
 
 def _scope_is_limited(scope: Mapping[str, Any] | str | None) -> bool:

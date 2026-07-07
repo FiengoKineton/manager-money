@@ -17,6 +17,7 @@ from money_manager.services.account_scope_service import (
     recurring_rows_for_scope,
 )
 from money_manager.services.debt_service import next_due_date_for_rule
+from money_manager.services.planned_expense_service import active_planned_expenses_for_forecast
 from money_manager.services.recurring_service import recurring_forecast_for_period
 
 
@@ -303,6 +304,31 @@ def build_calendar_events(
     except Exception:
         pass
 
+    # Standalone planned expenses.
+    try:
+        for row in active_planned_expenses_for_forecast():
+            if not _row_matches_scope(row, selected_scope):
+                continue
+            due = _parse_date(row.get("due_date"))
+            if not _inside(due, window_start, window_end):
+                continue
+            _add_event(
+                events,
+                due,
+                title=str(row.get("title") or "Planned expense"),
+                amount=_amount(row.get("remaining_amount") or row.get("expected_amount")),
+                direction="out",
+                kind="planned_expense",
+                kind_label="Planned expense",
+                tone="planned",
+                source="Planned expenses",
+                endpoint="planned_expenses.planned_expenses_page",
+                detail=f"{row.get('vendor', '') or row.get('category', '')} · one-time plan",
+                sort_priority=24,
+            )
+    except Exception:
+        pass
+
     # One-time planned expenses from projects.
     try:
         for row in load_planned_items():
@@ -430,6 +456,21 @@ def _looks_like_subscription(*parts: object) -> bool:
     text = " ".join(str(part or "") for part in parts).casefold()
     keywords = ["subscription", "subscriptions", "abbon", "onedrive", "netflix", "spotify", "icloud", "google", "adobe", "canva", "prime", "storage"]
     return any(keyword in text for keyword in keywords)
+
+
+def _row_matches_scope(row: Mapping[str, Any], scope: Mapping[str, Any] | str | None) -> bool:
+    if not _scope_is_limited(scope):
+        return True
+    account_id = str(row.get("account_id") or row.get("account") or "").strip()
+    if not account_id:
+        return True
+    if isinstance(scope, Mapping):
+        allowed = {str(value) for value in scope.get("included_account_ids") or [] if value}
+        selected = str(scope.get("account_id") or "").strip()
+        if selected:
+            allowed.add(selected)
+        return account_id in allowed if allowed else True
+    return account_id == str(scope).strip()
 
 
 def _scope_is_limited(scope: Mapping[str, Any] | str | None) -> bool:

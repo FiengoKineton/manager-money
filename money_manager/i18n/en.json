@@ -723,5 +723,11 @@
   "updates.update_incompatible": "Update incompatible",
   "updates.update_staged": "Update staged. Restart the launcher to apply it.",
   "updates.version": "Version",
-  "yearly.title": "Yearly Summary"
+  "yearly.title": "Yearly Summary",
+  "nav": {
+    "notifications_center": "Notifications center",
+    "financial_calendar": "Financial calendar",
+    "planned_expenses": "Planned expenses",
+    "savings_goals": "Savings goals"
+  }
 }

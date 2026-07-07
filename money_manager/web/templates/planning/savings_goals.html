@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block page_title %}Savings Goals{% endblock %}
+
+{% block content %}
+<section class="planning-feature-hero panel-card savings-goals-hero">
+  <div>
+    <span class="eyebrow">Savings system</span>
+    <h2>Savings Goals</h2>
+    <p>Track emergency funds, phones, trips or any target with progress bars and suggested monthly contributions.</p>
+    <div class="feature-action-row">
+      {% if endpoint_exists('financial_calendar.calendar_page') %}<a class="secondary-btn compact-btn" href="{{ url_for('financial_calendar.calendar_page') }}">📅 Calendar</a>{% endif %}
+      {% if endpoint_exists('forecast.forecast') %}<a class="secondary-btn compact-btn" href="{{ url_for('forecast.forecast') }}">↗ Forecast</a>{% endif %}
+      {% if endpoint_exists('planned_expenses.planned_expenses_page') %}<a class="secondary-btn compact-btn" href="{{ url_for('planned_expenses.planned_expenses_page') }}">🧾 Planned expenses</a>{% endif %}
+    </div>
+  </div>
+  <div class="feature-summary-grid compact-summary-grid">
+    <article><span>Active goals</span><strong>{{ goal_totals.active_count }}</strong></article>
+    <article><span>Saved</span><strong>{{ goal_totals.current_amount|money_masked }}</strong></article>
+    <article><span>Remaining</span><strong>{{ goal_totals.remaining_amount|money_masked }}</strong></article>
+    <article><span>Monthly plan</span><strong>{{ goal_totals.monthly_contribution|money_masked }}</strong></article>
+  </div>
+</section>
+
+{% if message %}<section class="panel-card compact-notice success-notice">{{ message }}</section>{% endif %}
+{% if error %}<section class="panel-card compact-notice error-notice">{{ error }}</section>{% endif %}
+
+<section class="panel-card planning-feature-form-card">
+  <details>
+    <summary class="feature-summary-toggle"><span><span class="eyebrow">New goal</span><strong>Add savings goal</strong><small>Example: Emergency fund, New phone, Trip to Rome</small></span><span>Open</span></summary>
+    <form method="post" class="planning-feature-form">
+      <input type="hidden" name="action" value="create_goal">
+      <div><label>Name</label><input name="title" placeholder="Emergency fund" required></div>
+      <div><label>Target amount (€)</label><input type="number" step="0.01" min="0" name="target_amount" placeholder="3000.00" required></div>
+      <div><label>Already saved (€)</label><input type="number" step="0.01" min="0" name="current_amount" placeholder="1000.00"></div>
+      <div><label>Suggested monthly contribution (€)</label><input type="number" step="0.01" min="0" name="monthly_contribution" placeholder="150.00"></div>
+      <div><label>Target date</label><input type="date" name="due_date"></div>
+      <div><label>Category</label><input name="category" value="Savings"></div>
+      <div class="form-field-wide"><label>Notes</label><textarea name="description" rows="2" placeholder="Why this goal matters or how you plan to fund it."></textarea></div>
+      <div class="form-actions-row form-field-wide"><button class="primary-btn" type="submit">Save goal</button></div>
+    </form>
+  </details>
+</section>
+
+<section class="savings-goals-grid">
+  {% for goal in active_goals %}
+    <article class="panel-card savings-goal-card goal-{{ goal.tone }}">
+      <div class="savings-goal-head">
+        <div>
+          <span class="eyebrow">{{ goal.status_label }} · {{ goal.category }}</span>
+          <h3>{{ goal.title|text_masked }}</h3>
+          {% if goal.description %}<p>{{ goal.description|text_masked }}</p>{% endif %}
+        </div>
+        <strong>{{ goal.progress_label }}</strong>
+      </div>
+      <div class="goal-progress-track"><span style="width: {{ goal.progress }}%"></span></div>
+      <div class="goal-money-row">
+        <span>Saved <b>{{ goal.current_amount|money_masked }}</b></span>
+        <span>Target <b>{{ goal.target_amount|money_masked }}</b></span>
+        <span>Left <b>{{ goal.remaining_amount|money_masked }}</b></span>
+      </div>
+      <div class="goal-meta-row">
+        <span>Due: {{ goal.due_label }}</span>
+        <span>{{ goal.monthly_contribution_label }}</span>
+        <span>{{ goal.months_left_label }}</span>
+      </div>
+      <div class="goal-action-grid">
+        <form method="post" class="inline-action-form">
+          <input type="hidden" name="action" value="add_contribution">
+          <input type="hidden" name="id" value="{{ goal.id }}">
+          <input type="number" step="0.01" min="0" name="amount" placeholder="Contribution">
+          <button class="primary-btn compact-btn" type="submit">Add</button>
+        </form>
+        <details class="inline-edit-details">
+          <summary class="secondary-btn compact-btn">Edit</summary>
+          <form method="post" class="planning-feature-form nested-feature-form">
+            <input type="hidden" name="action" value="update_goal">
+            <input type="hidden" name="id" value="{{ goal.id }}">
+            <div><label>Name</label><input name="title" value="{{ goal.title }}"></div>
+            <div><label>Target</label><input type="number" step="0.01" min="0" name="target_amount" value="{{ '%.2f'|format(goal.target_amount) }}"></div>
+            <div><label>Saved</label><input type="number" step="0.01" min="0" name="current_amount" value="{{ '%.2f'|format(goal.current_amount) }}"></div>
+            <div><label>Monthly</label><input type="number" step="0.01" min="0" name="monthly_contribution" value="{{ '%.2f'|format(goal.monthly_contribution) }}"></div>
+            <div><label>Due date</label><input type="date" name="due_date" value="{{ goal.due_date }}"></div>
+            <div><label>Status</label><select name="status">{% for value, label in goal_status_options %}<option value="{{ value }}" {% if goal.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div class="form-field-wide"><label>Notes</label><textarea name="description" rows="2">{{ goal.description }}</textarea></div>
+            <div class="form-actions-row form-field-wide"><button class="primary-btn compact-btn" type="submit">Save</button></div>
+          </form>
+        </details>
+        <form method="post" onsubmit="return confirm('Delete this savings goal?')">
+          <input type="hidden" name="action" value="delete_goal">
+          <input type="hidden" name="id" value="{{ goal.id }}">
+          <button class="secondary-btn compact-btn danger-btn" type="submit">Delete</button>
+        </form>
+      </div>
+    </article>
+  {% else %}
+    <article class="panel-card empty-state-card"><h3>No active savings goals yet.</h3><p>Add one above to start tracking progress.</p></article>
+  {% endfor %}
+</section>
+
+{% if completed_goals or archived_goals %}
+<section class="panel-card planning-closed-card">
+  <details>
+    <summary class="feature-summary-toggle"><span><span class="eyebrow">History</span><strong>Completed / archived goals</strong></span><span>{{ completed_goals|length + archived_goals|length }}</span></summary>
+    <div class="compact-history-list">
+      {% for goal in completed_goals + archived_goals %}
+        <div><strong>{{ goal.title|text_masked }}</strong><span>{{ goal.status_label }} · {{ goal.current_amount|money_masked }} / {{ goal.target_amount|money_masked }}</span></div>
+      {% endfor %}
+    </div>
+  </details>
+</section>
+{% endif %}
+{% endblock %}

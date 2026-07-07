@@ -12,8 +12,10 @@
       <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense', account_id=selected_account_id) if selected_account_id else url_for('transactions.add_transaction', type='expense') }}">+ Add expense</a>
       <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page', account_id=selected_account_id) if selected_account_id else url_for('transactions.transactions_page') }}">Transactions</a>
       <a class="secondary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=selected_account_id) if selected_account_id else url_for('accounts.accounts_page') }}">{{ 'Conto home' if scope_is_account else 'All Conti home' }}</a>
-      {% if endpoint_exists('notifications.center') %}<a class="secondary-btn compact-btn" href="{{ url_for('notifications.center', account_id=selected_account_id) if selected_account_id else url_for('notifications.center') }}">Alerts center</a>{% endif %}
-      {% if endpoint_exists('financial_calendar.calendar_page') %}<a class="secondary-btn compact-btn" href="{{ url_for('financial_calendar.calendar_page', account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page') }}">Calendar</a>{% endif %}
+      {% if endpoint_exists('notifications.center') %}<a class="secondary-btn compact-btn" href="{{ url_for('notifications.center', account_id=selected_account_id) if selected_account_id else url_for('notifications.center') }}">🔔 Alerts center</a>{% endif %}
+      {% if endpoint_exists('financial_calendar.calendar_page') %}<a class="secondary-btn compact-btn" href="{{ url_for('financial_calendar.calendar_page', account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page') }}">📅 Calendar</a>{% endif %}
+      {% if endpoint_exists('planned_expenses.planned_expenses_page') %}<a class="secondary-btn compact-btn" href="{{ url_for('planned_expenses.planned_expenses_page') }}">🧾 Planned</a>{% endif %}
+      {% if endpoint_exists('savings_goals.savings_goals_page') %}<a class="secondary-btn compact-btn" href="{{ url_for('savings_goals.savings_goals_page') }}">◎ Goals</a>{% endif %}
     </div>
   </div>
 

@@ -69,6 +69,83 @@
       <small>{{ t("onboarding.initial_balance_hint") }}</small>
     </div>
 
+    <div class="profile-section-title form-field-wide">
+      <span class="eyebrow">Starter plan</span>
+      <h3>Income, recurring payments and debts</h3>
+      <p class="onboarding-step-hint">Optional. Add the first recurring salary, up to three recurring expenses and up to two debts. You can edit everything later.</p>
+    </div>
+
+    <div>
+      <label for="salary_name">Salary name</label>
+      <input id="salary_name" type="text" name="salary_name" placeholder="Kineton salary">
+    </div>
+    <div>
+      <label for="salary_amount">Salary amount (€)</label>
+      <input id="salary_amount" type="number" step="0.01" name="salary_amount" placeholder="1900.00">
+    </div>
+    <div>
+      <label for="salary_day">Salary day</label>
+      <input id="salary_day" type="number" min="1" max="31" name="salary_day" placeholder="10">
+    </div>
+    <div>
+      <label for="salary_category">Salary category</label>
+      <input id="salary_category" type="text" name="salary_category" placeholder="Salary">
+    </div>
+
+    <div class="onboarding-mini-grid form-field-wide">
+      {% for idx in [1, 2, 3] %}
+        <fieldset class="onboarding-mini-card">
+          <legend>Recurring expense {{ idx }}</legend>
+          <input type="text" name="recurring_name_{{ idx }}" placeholder="Name, e.g. OneDrive">
+          <input type="number" step="0.01" name="recurring_amount_{{ idx }}" placeholder="Amount">
+          <input type="number" min="1" max="31" name="recurring_day_{{ idx }}" placeholder="Day">
+          <input type="text" name="recurring_category_{{ idx }}" placeholder="Category">
+        </fieldset>
+      {% endfor %}
+    </div>
+
+    <div class="onboarding-mini-grid two-cols form-field-wide">
+      {% for idx in [1, 2] %}
+        <fieldset class="onboarding-mini-card">
+          <legend>Debt {{ idx }}</legend>
+          <input type="text" name="debt_name_{{ idx }}" placeholder="Debt name">
+          <input type="text" name="debt_creditor_{{ idx }}" placeholder="Creditor">
+          <input type="number" step="0.01" name="debt_amount_{{ idx }}" placeholder="Amount">
+          <input type="date" name="debt_due_date_{{ idx }}">
+        </fieldset>
+      {% endfor %}
+    </div>
+
+    <div class="profile-section-title form-field-wide">
+      <span class="eyebrow">Savings goal</span>
+      <h3>Create your first savings goal</h3>
+    </div>
+
+    <div>
+      <label for="goal_title">Goal name</label>
+      <input id="goal_title" type="text" name="goal_title" placeholder="Emergency fund">
+    </div>
+    <div>
+      <label for="goal_target_amount">Target amount (€)</label>
+      <input id="goal_target_amount" type="number" step="0.01" name="goal_target_amount" placeholder="1000.00">
+    </div>
+    <div>
+      <label for="goal_current_amount">Current saved (€)</label>
+      <input id="goal_current_amount" type="number" step="0.01" name="goal_current_amount" placeholder="0.00">
+    </div>
+    <div>
+      <label for="goal_monthly_contribution">Monthly contribution (€)</label>
+      <input id="goal_monthly_contribution" type="number" step="0.01" name="goal_monthly_contribution" placeholder="100.00">
+    </div>
+    <div>
+      <label for="goal_due_date">Goal date</label>
+      <input id="goal_due_date" type="date" name="goal_due_date">
+    </div>
+    <div>
+      <label for="goal_category">Goal category</label>
+      <input id="goal_category" type="text" name="goal_category" placeholder="Savings">
+    </div>
+
     <div class="form-actions-row form-field-wide onboarding-actions">
       <button type="submit" name="action" value="complete" class="primary-btn">{{ t("onboarding.complete") }}</button>
       <button type="submit" name="action" value="skip" class="secondary-btn">{{ t("onboarding.skip") }}</button>

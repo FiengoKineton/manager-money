@@ -23,7 +23,26 @@
   <article><span>Monthly spending</span><strong>€ {{ '%.2f'|format(params.monthly_spending) }}</strong><small>{{ defaults.spending_habit.method }}</small></article>
   <article><span>Monthly net investment</span><strong>€ {{ '%.2f'|format(params.monthly_net_investment) }}</strong><small>{{ defaults.investment_habits.habit_method }}</small></article>
   <article><span>Investment value</span><strong>€ {{ '%.2f'|format(params.starting_investment_value) }}</strong><small>From current investment proxy</small></article>
+  <article><span>Planned one-time expenses</span><strong>€ {{ '%.2f'|format(planned_expense_summary.total) }}</strong><small>{{ planned_expense_summary.dated_count }} dated · included in forecast</small></article>
 </section>
+
+{% if planned_expenses %}
+<section class="forecast-planned-strip panel-card">
+  <div>
+    <span class="eyebrow">Planned expenses</span>
+    <h3>One-time planned expenses are included automatically</h3>
+    <p>Dated active planned expenses are subtracted in the month they are due, separate from your normal monthly spending habit.</p>
+  </div>
+  <div class="forecast-planned-list">
+    {% for item in planned_expenses[:4] %}
+      <span>{{ item.due_label }} · <strong>{{ item.title|text_masked }}</strong> · {{ item.remaining_amount|money_masked }}</span>
+    {% endfor %}
+  </div>
+  {% if endpoint_exists('planned_expenses.planned_expenses_page') %}
+    <a class="secondary-btn compact-btn" href="{{ url_for('planned_expenses.planned_expenses_page') }}">Manage planned expenses</a>
+  {% endif %}
+</section>
+{% endif %}
 
 <section class="forecast-control-card">
   <div class="panel-header">
@@ -109,6 +128,7 @@
   <article><span>Projected cash</span><strong>€ {{ '%.2f'|format(result.final.cash) }}</strong></article>
   <article><span>Investment value</span><strong>€ {{ '%.2f'|format(result.final.investment_value) }}</strong></article>
   <article><span>Investment P/L</span><strong>€ {{ '%.2f'|format(result.final.investment_profit_loss) }}</strong></article>
+  <article><span>Planned expenses included</span><strong>€ {{ '%.2f'|format(result.planned_expenses_total) }}</strong><small>{{ result.planned_expenses_included }} dated item(s)</small></article>
 </section>
 
 {% if result.warnings %}

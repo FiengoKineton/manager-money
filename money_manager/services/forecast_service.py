@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date as date_class
 from math import isfinite
 
 import pandas as pd
@@ -8,6 +9,7 @@ import plotly.graph_objects as go
 
 from money_manager.services.account_service import auxiliary_total, main_account_transactions
 from money_manager.services.investment_service import investment_habit_snapshot, overview_snapshot
+from money_manager.services.planned_expense_service import active_planned_expenses_for_forecast
 from money_manager.utils.stats import monthly_summary, summary_totals
 
 PLOT_CONFIG = {"displaylogo": False, "responsive": True, "modeBarButtonsToRemove": ["lasso2d", "select2d"]}
@@ -59,17 +61,21 @@ class ForecastParams:
 
 def build_forecast_page_context(form=None) -> dict:
     defaults = build_forecast_defaults()
+    planned_expenses = active_planned_expenses_for_forecast()
+    planned_expense_summary = _planned_expense_summary(planned_expenses)
     result = None
     params = defaults["params"]
 
     if form is not None:
         params = _params_from_form(form, defaults["params"])
-        result = project_financial_future(params)
+        result = project_financial_future(params, planned_expenses=planned_expenses)
 
     return {
         "defaults": defaults,
         "params": params,
         "result": result,
+        "planned_expenses": planned_expenses,
+        "planned_expense_summary": planned_expense_summary,
     }
 
 
@@ -160,7 +166,7 @@ def _build_forecast_defaults_uncached() -> dict:
     }
 
 
-def project_financial_future(params: ForecastParams) -> dict:
+def project_financial_future(params: ForecastParams, planned_expenses: list[dict] | None = None) -> dict:
     months = max(1, int(params.years) * 12)
     monthly_return = _monthly_rate(params.annual_return_pct)
     monthly_income_growth = _monthly_rate(params.annual_income_growth_pct)
@@ -175,17 +181,21 @@ def project_financial_future(params: ForecastParams) -> dict:
     dividends = _safe_float(params.monthly_dividends)
 
     today = pd.Timestamp.today().normalize()
+    planned_expenses = planned_expenses or []
+    planned_by_month = _planned_expenses_by_month(planned_expenses, months, today.date())
+    planned_total = sum(sum(item.get("amount", 0.0) for item in rows) for rows in planned_by_month.values())
     rows = []
 
     for month in range(1, months + 1):
         date = today + pd.DateOffset(months=month)
+        planned_outflow = sum(item.get("amount", 0.0) for item in planned_by_month.get(month, []))
 
         investment_market_gain = investment_value * monthly_return
         investment_value += investment_market_gain
 
         # Positive net investment means cash is moved into investments. Negative
         # means net selling/withdrawal and cash comes back out.
-        cash += current_income + dividends - current_spending - current_net_investment
+        cash += current_income + dividends - current_spending - planned_outflow - current_net_investment
         investment_value += current_net_investment
         invested_capital += current_net_investment
 
@@ -201,7 +211,9 @@ def project_financial_future(params: ForecastParams) -> dict:
             "investment_profit_loss": investment_pl,
             "total_value": total_value,
             "monthly_income": current_income,
-            "monthly_spending": current_spending,
+            "base_monthly_spending": current_spending,
+            "planned_expense_outflow": planned_outflow,
+            "monthly_spending": current_spending + planned_outflow,
             "monthly_net_investment": current_net_investment,
             "monthly_dividends": dividends,
             "market_gain": investment_market_gain,
@@ -232,8 +244,45 @@ def project_financial_future(params: ForecastParams) -> dict:
         "final": final,
         "yearly": yearly,
         "charts": charts,
-        "warnings": _forecast_warnings(params, final),
+        "planned_expenses_total": planned_total,
+        "planned_expenses_included": sum(len(rows) for rows in planned_by_month.values()),
+        "warnings": _forecast_warnings(params, final, planned_total=planned_total),
     }
+
+
+def _planned_expense_summary(planned_expenses: list[dict]) -> dict:
+    total = sum(_safe_float(row.get("remaining_amount") or row.get("expected_amount")) for row in planned_expenses)
+    dated = [row for row in planned_expenses if str(row.get("due_date") or "").strip()]
+    return {"count": len(planned_expenses), "dated_count": len(dated), "total": total}
+
+
+def _planned_expenses_by_month(planned_expenses: list[dict], months: int, today: date_class) -> dict[int, list[dict]]:
+    out: dict[int, list[dict]] = {}
+    for row in planned_expenses or []:
+        due_raw = str(row.get("due_date") or "").strip()
+        if not due_raw:
+            continue
+        try:
+            due = date_class.fromisoformat(due_raw[:10])
+        except ValueError:
+            continue
+        month_index = (due.year - today.year) * 12 + (due.month - today.month)
+        if due <= today:
+            month_index = 1
+        if month_index < 1:
+            month_index = 1
+        if month_index > months:
+            continue
+        amount = _safe_float(row.get("remaining_amount") or row.get("expected_amount"))
+        if amount <= 0:
+            continue
+        out.setdefault(month_index, []).append({
+            "id": str(row.get("id") or ""),
+            "title": str(row.get("title") or "Planned expense"),
+            "due_date": due.isoformat(),
+            "amount": amount,
+        })
+    return out
 
 
 def _params_from_form(form, defaults: ForecastParams) -> ForecastParams:
@@ -520,13 +569,15 @@ def _yearly_rows(projection: pd.DataFrame) -> list[dict]:
     return rows
 
 
-def _forecast_warnings(params: ForecastParams, final: dict) -> list[str]:
+def _forecast_warnings(params: ForecastParams, final: dict, *, planned_total: float = 0.0) -> list[str]:
     warnings = []
     monthly_free_cash = params.monthly_income + params.monthly_dividends - params.monthly_spending - params.monthly_net_investment
     if monthly_free_cash < 0:
         warnings.append("Your default monthly plan consumes more cash than it produces. The forecast still runs, but cash may trend down.")
     if params.annual_return_pct > 15:
         warnings.append("The annual return assumption is high. It is copied from recent market behaviour, not guaranteed future performance.")
+    if planned_total > 0:
+        warnings.append(f"This forecast includes € {planned_total:.2f} of dated planned one-time expenses.")
     if final.get("cash", 0.0) < 0:
         warnings.append("Projected cash becomes negative by the end of the horizon. Reduce spending or investment contributions in this scenario.")
     return warnings
@@ -546,8 +597,11 @@ def _chart_cashflow_projection(df: pd.DataFrame) -> str:
     if df.empty:
         return _empty_chart("Monthly cash-flow assumptions")
     fig = go.Figure()
+    base_spending = df["base_monthly_spending"] if "base_monthly_spending" in df else df["monthly_spending"]
     fig.add_trace(go.Bar(x=df["date"], y=df["monthly_income"], name="Income", marker_color=GREEN))
-    fig.add_trace(go.Bar(x=df["date"], y=-df["monthly_spending"], name="Spending", marker_color=RED))
+    fig.add_trace(go.Bar(x=df["date"], y=-base_spending, name="Habit spending", marker_color=RED))
+    if "planned_expense_outflow" in df and df["planned_expense_outflow"].abs().sum() > 0:
+        fig.add_trace(go.Bar(x=df["date"], y=-df["planned_expense_outflow"], name="Planned one-time expenses", marker_color="#f59e0b"))
     fig.add_trace(go.Bar(x=df["date"], y=-df["monthly_net_investment"], name="Net investment cash flow", marker_color=BLUE))
     if df["monthly_dividends"].abs().sum() > 0:
         fig.add_trace(go.Bar(x=df["date"], y=df["monthly_dividends"], name="Dividends", marker_color=MUTED))

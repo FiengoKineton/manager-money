@@ -43,6 +43,14 @@ DEFAULT_NAVIGATION: list[dict[str, Any]] = [
                 "active_endpoints": ["dashboard.index"],
             },
             {
+                "page_id": "notifications_center",
+                "endpoint": "notifications.center",
+                "label_key": "nav.notifications_center",
+                "default_visible": True,
+                "default_order": 35,
+                "active_endpoints": ["notifications.center"],
+            },
+            {
                 "page_id": "transactions",
                 "endpoint": "transactions.transactions_page",
                 "label_key": "nav.transactions",
@@ -87,6 +95,15 @@ DEFAULT_NAVIGATION: list[dict[str, Any]] = [
                 "default_visible": True,
                 "default_order": 20,
                 "active_endpoints": ["pending.recurring_page"],
+            },
+            {
+                "page_id": "financial_calendar",
+                "endpoint": "financial_calendar.calendar_page",
+                "label_key": "nav.financial_calendar",
+                "section_label_key": "nav.scheduled_money",
+                "default_visible": True,
+                "default_order": 22,
+                "active_endpoints": ["financial_calendar.calendar_page"],
             },
 
             {
@@ -136,6 +153,24 @@ DEFAULT_NAVIGATION: list[dict[str, Any]] = [
                 "default_visible": True,
                 "default_order": 40,
                 "active_endpoints": ["forecast.forecast"],
+            },
+            {
+                "page_id": "planned_expenses",
+                "endpoint": "planned_expenses.planned_expenses_page",
+                "label_key": "nav.planned_expenses",
+                "section_label_key": "nav.projects_forecast",
+                "default_visible": True,
+                "default_order": 45,
+                "active_endpoints": ["planned_expenses.planned_expenses_page"],
+            },
+            {
+                "page_id": "savings_goals",
+                "endpoint": "savings_goals.savings_goals_page",
+                "label_key": "nav.savings_goals",
+                "section_label_key": "nav.projects_forecast",
+                "default_visible": True,
+                "default_order": 46,
+                "active_endpoints": ["savings_goals.savings_goals_page"],
             },
             {
                 "page_id": "payables",

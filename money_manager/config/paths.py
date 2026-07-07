@@ -38,6 +38,8 @@ DOCUMENTS_DIR = user_documents_dir()
 PLOTS_DIR = user_plots_dir()
 CACHE_DIR = user_cache_dir()
 NOTIFICATIONS_STATE_JSON = user_data_path("notification_state.json")
+SAVINGS_GOALS_JSON = user_data_path("savings_goals.json")
+PLANNED_EXPENSES_JSON = user_data_path("planned_expenses.json")
 
 TRANSACTION_FILES = {
     "expense": user_data_path("expenses.csv"),

@@ -21,6 +21,8 @@ SENSITIVE_USER_FILE_NAMES = {
     "document_types.json",
     "currencies.json",
     "notification_state.json",
+    "savings_goals.json",
+    "planned_expenses.json",
     "account_events.json",
     "expenses.csv",
     "incomes.csv",

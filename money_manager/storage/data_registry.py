@@ -171,6 +171,8 @@ USER_JSON_DEFINITIONS: tuple[DataFileDefinition, ...] = (
     _json("document_types", "document_types.json", _config_default("document_types.json"), description="Document folders/types visible in the document registry.", sensitive="personal", encrypted_by_default=True),
     _json("currencies", "currencies.json", {}, description="Currency settings and exchange-rate metadata.", sensitive="personal"),
     _json("notification_state", "notification_state.json", {"version": 1, "read": {}, "history": []}, description="Read/unread notification state.", sensitive="personal", backup="include_optional"),
+    _json("savings_goals", "savings_goals.json", _config_default("savings_goals.json"), description="Savings goals, targets, progress and goal history.", sensitive="financial", encrypted_by_default=True),
+    _json("planned_expenses", "planned_expenses.json", _config_default("planned_expenses.json"), description="One-time planned expenses used by the calendar and cashflow forecast.", sensitive="financial", encrypted_by_default=True),
     _json("investment_market_cache", "investment_market_cache.json", {"symbols": {}, "last_refresh_attempt": ""}, description="Market-data cache for investment views.", sensitive="financial", backup="exclude", cache="cache_file"),
     _json("account_events", "account_events.json", {"schema_version": 1, "events": []}, description="Account lifecycle and closure/replacement event log.", sensitive="financial", encrypted_by_default=True),
     _json("documents_metadata", "documents/_metadata.json", {"schema_version": 1, "documents": []}, description="Document registry metadata.", sensitive="personal", encrypted_by_default=True),

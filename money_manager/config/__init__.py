@@ -72,6 +72,8 @@ from money_manager.config.paths import (
     CREDIT_SETTLEMENTS_CSV,
     ACCOUNT_EVENTS_JSON,
     CURRENCIES_JSON,
+    SAVINGS_GOALS_JSON,
+    PLANNED_EXPENSES_JSON,
     CACHE_DIR,
     TRANSACTION_FILES,
     ensure_runtime_directories,

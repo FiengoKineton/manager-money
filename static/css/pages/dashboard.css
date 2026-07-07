@@ -1100,3 +1100,303 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Planning additions: goals, planned expenses, command palette and nav icons */
+.nav-icon,
+.nav-link-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35em;
+  margin-right: .35rem;
+  opacity: .85;
+}
+.topbar-icon-shortcut {
+  min-width: 54px;
+  height: 46px;
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 18px;
+  background: rgba(255,255,255,.72);
+  box-shadow: 0 16px 36px rgba(15,23,42,.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+  font-weight: 900;
+  color: #0f172a;
+  text-decoration: none;
+  cursor: pointer;
+}
+.topbar-icon-shortcut:hover { transform: translateY(-1px); }
+.command-palette-backdrop[hidden] { display: none !important; }
+.command-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15,23,42,.32);
+  backdrop-filter: blur(10px);
+  display: grid;
+  align-items: start;
+  justify-content: center;
+  padding: 9vh 1rem 1rem;
+}
+.command-palette {
+  width: min(720px, calc(100vw - 2rem));
+  max-height: 78vh;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(255,255,255,.72);
+  background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(228,250,251,.93));
+  box-shadow: 0 32px 90px rgba(15,23,42,.22);
+  padding: 1rem;
+}
+.command-palette-head,
+.command-palette-search {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.command-palette-head button {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,.35);
+  background: rgba(255,255,255,.72);
+  cursor: pointer;
+  font-size: 1.3rem;
+}
+.command-palette input[type="search"] {
+  width: 100%;
+  margin: .75rem 0;
+  padding: 1rem 1.1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(148,163,184,.35);
+  background: rgba(255,255,255,.9);
+  font-size: 1.05rem;
+  outline: none;
+}
+.command-palette-list {
+  display: grid;
+  gap: .5rem;
+  max-height: 48vh;
+  overflow: auto;
+  padding-right: .25rem;
+}
+.command-palette-list a {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  grid-template-areas: "icon title" "icon hint";
+  align-items: center;
+  gap: .1rem .8rem;
+  padding: .85rem;
+  border-radius: 18px;
+  text-decoration: none;
+  color: #0f172a;
+  background: rgba(255,255,255,.66);
+  border: 1px solid rgba(255,255,255,.58);
+}
+.command-palette-list a:hover { background: rgba(59,130,246,.12); }
+.command-palette-list a span { grid-area: icon; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 16px; background: rgba(224,242,254,.9); }
+.command-palette-list a strong { grid-area: title; }
+.command-palette-list a small { grid-area: hint; color: #52627a; }
+.command-palette-search { margin-top: .8rem; }
+.command-palette-search button { margin-left: auto; }
+.planning-feature-hero,
+.savings-goals-hero,
+.planned-expenses-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr);
+  gap: 1.25rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.feature-action-row,
+.goal-action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  align-items: center;
+}
+.compact-summary-grid,
+.feature-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+}
+.feature-summary-grid article {
+  border-radius: 20px;
+  padding: 1rem;
+  background: rgba(255,255,255,.68);
+  border: 1px solid rgba(255,255,255,.7);
+}
+.feature-summary-grid span { display: block; color: #52627a; font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.feature-summary-grid strong { display: block; margin-top: .3rem; font-size: 1.35rem; color: #0f172a; }
+.compact-notice { margin-bottom: .8rem; padding: .85rem 1rem; font-weight: 800; }
+.success-notice { border-color: rgba(16,185,129,.3); }
+.error-notice { border-color: rgba(244,63,94,.3); }
+.planning-feature-form-card,
+.planning-closed-card { margin-bottom: 1rem; }
+.feature-summary-toggle {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.feature-summary-toggle::-webkit-details-marker { display: none; }
+.feature-summary-toggle strong,
+.feature-summary-toggle small { display: block; }
+.feature-summary-toggle small { color: #52627a; font-weight: 600; margin-top: .2rem; }
+.planning-feature-form {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .9rem;
+}
+.planning-feature-form label {
+  display: block;
+  margin-bottom: .35rem;
+  font-weight: 900;
+  color: #23334d;
+}
+.planning-feature-form input,
+.planning-feature-form select,
+.planning-feature-form textarea,
+.inline-action-form input {
+  width: 100%;
+  border: 1px solid rgba(148,163,184,.25);
+  border-radius: 16px;
+  background: rgba(255,255,255,.82);
+  padding: .75rem .85rem;
+  font: inherit;
+}
+.form-field-wide { grid-column: 1 / -1; }
+.savings-goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.savings-goal-card,
+.planned-expense-card { display: grid; gap: .9rem; }
+.savings-goal-head,
+.planned-expense-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+}
+.planned-expense-main { grid-template-columns: 130px minmax(0,1fr) auto; align-items: center; }
+.savings-goal-head h3,
+.planned-expense-main h3 { margin: .2rem 0; }
+.savings-goal-head p,
+.planned-expense-main p { margin: 0; color: #52627a; }
+.planned-expense-date,
+.goal-meta-row span {
+  padding: .75rem .9rem;
+  border-radius: 16px;
+  background: rgba(224,242,254,.7);
+  font-weight: 900;
+  color: #19324f;
+  text-align: center;
+}
+.goal-progress-track {
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(224,242,254,.82);
+  overflow: hidden;
+}
+.goal-progress-track span {
+  display: block;
+  min-width: 2%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #10b981);
+}
+.goal-money-row,
+.goal-meta-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .5rem;
+}
+.goal-money-row span {
+  padding: .7rem .8rem;
+  border-radius: 16px;
+  background: rgba(255,255,255,.62);
+  color: #52627a;
+}
+.goal-money-row b { color: #0f172a; }
+.inline-action-form {
+  display: flex;
+  flex: 1 1 280px;
+  gap: .5rem;
+  align-items: center;
+}
+.inline-edit-details { position: relative; }
+.nested-feature-form {
+  position: absolute;
+  right: 0;
+  z-index: 20;
+  width: min(720px, calc(100vw - 4rem));
+  padding: 1rem;
+  border-radius: 22px;
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(148,163,184,.28);
+  box-shadow: 0 24px 70px rgba(15,23,42,.18);
+}
+.danger-btn { color: #be123c; }
+.planned-expense-list { display: grid; gap: 1rem; margin-bottom: 1rem; }
+.compact-history-list { display: grid; gap: .55rem; margin-top: 1rem; }
+.compact-history-list div { display: flex; justify-content: space-between; gap: 1rem; padding: .8rem; border-radius: 16px; background: rgba(255,255,255,.62); }
+.forecast-planned-strip { margin: 1rem 0; }
+.forecast-planned-list { display: grid; gap: .55rem; }
+.forecast-planned-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 1rem; border-radius: 16px; background: rgba(255,255,255,.68); color: inherit; text-decoration: none; }
+.forecast-planned-row span { color: #52627a; }
+@media (max-width: 900px) {
+  .planning-feature-hero { grid-template-columns: 1fr; }
+  .planning-feature-form { grid-template-columns: 1fr; }
+  .planned-expense-main { grid-template-columns: 1fr; }
+  .goal-money-row,
+  .goal-meta-row { grid-template-columns: 1fr; }
+  .nested-feature-form { position: static; width: 100%; margin-top: .6rem; }
+}
+
+/* Onboarding wizard additions */
+.onboarding-step-hint {
+  margin: 0.35rem 0 0;
+  color: var(--muted, #52657a);
+  max-width: 62rem;
+}
+.onboarding-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.onboarding-mini-grid.two-cols {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.onboarding-mini-card {
+  border: 1px solid rgba(100, 116, 139, 0.22);
+  border-radius: 1.15rem;
+  padding: 1rem;
+  background: rgba(255,255,255,0.42);
+  display: grid;
+  gap: .65rem;
+}
+.onboarding-mini-card legend {
+  padding: 0 .35rem;
+  color: var(--muted, #52657a);
+  font-weight: 800;
+  font-size: .8rem;
+  letter-spacing: .04em;
+}
+.onboarding-mini-card input {
+  width: 100%;
+}
+@media (max-width: 960px) {
+  .onboarding-mini-grid,
+  .onboarding-mini-grid.two-cols {
+    grid-template-columns: 1fr;
+  }
+}
