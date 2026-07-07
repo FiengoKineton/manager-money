@@ -79,13 +79,33 @@
     });
   }
 
+  let expandedChartState = null;
+
+  function resizePlotlyIn(card) {
+    if (!card || !window.Plotly) return;
+    card.querySelectorAll(".js-plotly-plot").forEach((plot) => {
+      window.Plotly.Plots.resize(plot);
+    });
+  }
+
   function closeExpandedCharts() {
+    const state = expandedChartState;
+
     document.querySelectorAll(".chart-card.chart-expanded").forEach((card) => {
       card.classList.remove("chart-expanded");
       const btn = card.querySelector(".expand-chart-btn");
       if (btn) btn.innerText = "Expand";
     });
+
+    if (state && state.card && state.placeholder && state.placeholder.parentNode) {
+      state.placeholder.parentNode.insertBefore(state.card, state.placeholder);
+      state.placeholder.remove();
+      window.setTimeout(() => resizePlotlyIn(state.card), 80);
+    }
+
+    document.querySelectorAll(".chart-expanded-backdrop").forEach((backdrop) => backdrop.remove());
     document.body.classList.remove("chart-expanded-open");
+    expandedChartState = null;
   }
 
   window.toggleChartSize = function toggleChartSize(button) {
@@ -96,18 +116,22 @@
     closeExpandedCharts();
 
     if (shouldExpand) {
+      const placeholder = document.createComment("chart-card-placeholder");
+      const parent = card.parentNode;
+      if (parent) parent.insertBefore(placeholder, card);
+
+      const backdrop = document.createElement("div");
+      backdrop.className = "chart-expanded-backdrop";
+      document.body.appendChild(backdrop);
+      document.body.appendChild(card);
+
+      expandedChartState = { card, placeholder, backdrop };
       card.classList.add("chart-expanded");
       document.body.classList.add("chart-expanded-open");
       button.innerText = "Close";
     }
 
-    setTimeout(() => {
-      card.querySelectorAll(".js-plotly-plot").forEach((plot) => {
-        if (window.Plotly) {
-          window.Plotly.Plots.resize(plot);
-        }
-      });
-    }, 100);
+    window.setTimeout(() => resizePlotlyIn(card), 120);
   };
 
   document.addEventListener("keydown", (event) => {

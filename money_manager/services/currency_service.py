@@ -1,16 +1,29 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from money_manager.config.paths import CURRENCIES_JSON
 from money_manager.security.secure_storage import read_json_secure, write_json_secure
 
 BASE_CURRENCY = "EUR"
-FRANKFURTER_V2_RATES_URL = "https://api.frankfurter.dev/v2/rates"
-FRANKFURTER_V1_LATEST_URL = "https://api.frankfurter.dev/v1/latest"
+FRANKFURTER_PUBLIC_URL = "https://frankfurter.dev/"
+FRANKFURTER_API_BASE_URL = "https://api.frankfurter.dev"
+FRANKFURTER_V2_RATES_URL = f"{FRANKFURTER_API_BASE_URL}/v2/rates"
+FRANKFURTER_V1_LATEST_URL = f"{FRANKFURTER_API_BASE_URL}/v1/latest"
+
+CURRENCY_HISTORY_PERIODS = {
+    "30d": {"label": "30 days", "days": 30},
+    "90d": {"label": "90 days", "days": 90},
+    "1y": {"label": "1 year", "days": 365},
+    "2y": {"label": "2 years", "days": 730},
+    "5y": {"label": "5 years", "days": 1825},
+}
+DEFAULT_HISTORY_CODES = ("USD", "GBP", "CHF", "SEK")
+MAX_HISTORY_CODES = 8
 
 DEFAULT_CURRENCIES = [
     {"code": "EUR", "name": "Euro", "rate_to_eur": 1.0, "correction_to_eur": 0.0, "source": "fixed", "active": True},
@@ -78,6 +91,11 @@ def page_context() -> dict:
         "last_refresh_attempt": payload.get("last_refresh_attempt", ""),
         "last_successful_refresh": payload.get("last_successful_refresh", ""),
         "last_error": payload.get("last_error", ""),
+        "source_name": "Frankfurter",
+        "source_url": FRANKFURTER_PUBLIC_URL,
+        "history_periods": CURRENCY_HISTORY_PERIODS,
+        "history_default_period": "90d",
+        "history_currency_codes": default_history_codes(rows),
     }
 
 
@@ -119,6 +137,90 @@ def refresh_currency_rates(force: bool = True) -> dict:
     payload["last_error"] = ""
     _write_payload(payload)
     return payload
+
+
+def default_history_codes(rows: list[dict] | None = None) -> list[str]:
+    rows = rows if rows is not None else load_currencies(active_only=False)
+    active_codes = [row["code"] for row in rows if row.get("active", True) and row.get("code") != BASE_CURRENCY]
+    preferred = [code for code in DEFAULT_HISTORY_CODES if code in active_codes]
+    extras = [code for code in active_codes if code not in preferred]
+    return (preferred + extras)[:4]
+
+
+def fetch_currency_history(codes: list[str] | tuple[str, ...] | set[str] | str | None = None, period: str = "90d", group: str = "auto") -> dict:
+    """Fetch historical EUR value series for selected currencies from Frankfurter.
+
+    Values are normalized to the app convention: 1 unit of the foreign currency is
+    worth N EUR. Frankfurter's EUR-base quotes are therefore inverted.
+    """
+    cleaned_codes = _clean_history_codes(codes)
+    period_key = period if period in CURRENCY_HISTORY_PERIODS else "90d"
+    days = int(CURRENCY_HISTORY_PERIODS[period_key]["days"])
+    today = datetime.now(timezone.utc).date()
+    start_date = today - timedelta(days=days)
+    group_value = _resolve_history_group(group, days)
+
+    query = {
+        "base": BASE_CURRENCY,
+        "quotes": ",".join(cleaned_codes),
+        "from": start_date.isoformat(),
+        "to": today.isoformat(),
+    }
+    if group_value:
+        query["group"] = group_value
+    url = f"{FRANKFURTER_V2_RATES_URL}?{urlencode(query)}"
+
+    try:
+        payload = _request_json(url, timeout=8)
+        values_by_code = _parse_frankfurter_history_payload(payload, set(cleaned_codes))
+    except Exception as exc:
+        return _empty_history_payload(
+            cleaned_codes,
+            period_key,
+            group_value or "day",
+            str(exc) or "Could not load historical exchange rates.",
+        )
+
+    labels = sorted({date for by_date in values_by_code.values() for date in by_date})
+    series = []
+    currency_lookup = {row["code"]: row for row in load_currencies(active_only=False)}
+    for code in cleaned_codes:
+        by_date = values_by_code.get(code, {})
+        values = [by_date.get(date) for date in labels]
+        numeric_values = [value for value in values if isinstance(value, (int, float))]
+        first = numeric_values[0] if numeric_values else None
+        latest = numeric_values[-1] if numeric_values else None
+        change_pct = ((latest - first) / first * 100.0) if first not in (None, 0) and latest is not None else None
+        series.append({
+            "code": code,
+            "name": currency_lookup.get(code, {}).get("name", code),
+            "values": values,
+            "latest": latest,
+            "change_pct": change_pct,
+        })
+
+    if not labels or not any(item["latest"] is not None for item in series):
+        return _empty_history_payload(
+            cleaned_codes,
+            period_key,
+            group_value or "day",
+            "No historical points were returned for the selected currencies.",
+        )
+
+    return {
+        "labels": labels,
+        "series": series,
+        "period": period_key,
+        "period_label": CURRENCY_HISTORY_PERIODS[period_key]["label"],
+        "group": group_value or "day",
+        "base_currency": BASE_CURRENCY,
+        "metric_label": "EUR per 1 currency unit",
+        "source_name": "Frankfurter",
+        "source_url": FRANKFURTER_PUBLIC_URL,
+        "api_url": url,
+        "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "error": "",
+    }
 
 
 def update_currency_from_form(form) -> None:
@@ -250,14 +352,139 @@ def effective_rate(row: dict) -> float:
     return max(0.0, rate + correction)
 
 
+def _clean_history_codes(codes: list[str] | tuple[str, ...] | set[str] | str | None) -> list[str]:
+    if isinstance(codes, str):
+        raw_codes = codes.split(",")
+    elif codes:
+        raw_codes = list(codes)
+    else:
+        raw_codes = default_history_codes()
+
+    cleaned: list[str] = []
+    for value in raw_codes:
+        code = _clean_code(value)
+        if code and code != BASE_CURRENCY and code not in cleaned:
+            cleaned.append(code)
+    if not cleaned:
+        cleaned = default_history_codes()
+    return cleaned[:MAX_HISTORY_CODES]
+
+
+def _resolve_history_group(group: str | None, days: int) -> str:
+    clean = str(group or "auto").strip().lower()
+    if clean in {"day", "week", "month"}:
+        return "" if clean == "day" else clean
+    if clean != "auto":
+        return ""
+    if days >= 730:
+        return "month"
+    if days >= 180:
+        return "week"
+    return ""
+
+
+def _request_json(url: str, timeout: int = 5):
+    req = Request(url, headers={"User-Agent": "MoneyManager/1.0", "Accept": "application/json"})
+    with urlopen(req, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _parse_frankfurter_history_payload(payload, codes: set[str]) -> dict[str, dict[str, float]]:
+    result = {code: {} for code in codes}
+
+    for item in _iter_frankfurter_history_items(payload):
+        if not isinstance(item, dict):
+            continue
+        date_key = _clean_history_date(item)
+        if not date_key:
+            continue
+
+        nested_rates = item.get("rates")
+        if isinstance(nested_rates, dict):
+            base = _clean_code(item.get("base")) or BASE_CURRENCY
+            for code, raw_rate in nested_rates.items():
+                quote = _clean_code(code)
+                rate = _safe_float(raw_rate, 0.0)
+                value = _history_rate_to_eur_value(base, quote, rate, codes)
+                if value is not None:
+                    result.setdefault(quote if base == BASE_CURRENCY else base, {})[date_key] = value
+            continue
+
+        base = _clean_code(item.get("base"))
+        quote = _clean_code(item.get("quote") or item.get("currency") or item.get("target"))
+        rate = _safe_float(item.get("rate") or item.get("value"), 0.0)
+        value = _history_rate_to_eur_value(base, quote, rate, codes)
+        if value is not None:
+            code = quote if base == BASE_CURRENCY else base
+            result.setdefault(code, {})[date_key] = value
+
+    return result
+
+
+def _iter_frankfurter_history_items(payload):
+    if isinstance(payload, list):
+        yield from payload
+        return
+    if not isinstance(payload, dict):
+        return
+
+    data = payload.get("data") or payload.get("results") or payload.get("items")
+    if isinstance(data, list):
+        yield from data
+        return
+
+    raw_rates = payload.get("rates")
+    if isinstance(raw_rates, list):
+        yield from raw_rates
+        return
+    if isinstance(raw_rates, dict):
+        base = payload.get("base") or BASE_CURRENCY
+        for date_key, rate_map in raw_rates.items():
+            if isinstance(rate_map, dict):
+                yield {"date": date_key, "base": base, "rates": rate_map}
+
+
+def _clean_history_date(item: dict) -> str:
+    value = item.get("date") or item.get("time") or item.get("timestamp") or item.get("day")
+    text = str(value or "").strip()
+    if len(text) >= 10:
+        return text[:10]
+    return text
+
+
+def _history_rate_to_eur_value(base: str, quote: str, rate: float, codes: set[str]) -> float | None:
+    if rate <= 0:
+        return None
+    if base == BASE_CURRENCY and quote in codes:
+        return round(1.0 / rate, 8)
+    if quote == BASE_CURRENCY and base in codes:
+        return round(rate, 8)
+    return None
+
+
+def _empty_history_payload(codes: list[str], period_key: str, group: str, error: str) -> dict:
+    return {
+        "labels": [],
+        "series": [{"code": code, "name": code, "values": [], "latest": None, "change_pct": None} for code in codes],
+        "period": period_key,
+        "period_label": CURRENCY_HISTORY_PERIODS.get(period_key, CURRENCY_HISTORY_PERIODS["90d"])["label"],
+        "group": group,
+        "base_currency": BASE_CURRENCY,
+        "metric_label": "EUR per 1 currency unit",
+        "source_name": "Frankfurter",
+        "source_url": FRANKFURTER_PUBLIC_URL,
+        "api_url": "",
+        "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "error": error,
+    }
+
+
 def _fetch_frankfurter_rates(codes: set[str]) -> dict[str, float]:
     if not codes:
         return {}
     for url in (FRANKFURTER_V2_RATES_URL, FRANKFURTER_V1_LATEST_URL):
         try:
-            req = Request(url, headers={"User-Agent": "MoneyManager/1.0"})
-            with urlopen(req, timeout=5) as response:
-                payload = json.loads(response.read().decode("utf-8"))
+            payload = _request_json(url, timeout=5)
         except Exception:
             continue
         rates = _parse_frankfurter_payload(payload, codes)

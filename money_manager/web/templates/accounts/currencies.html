@@ -2,15 +2,20 @@
 {% block page_title %}{{ t("currency.title") }}{% endblock %}
 
 {% block content %}
-<section class="page-heading currency-heading">
+<section class="page-heading currency-heading currency-heading-modern">
   <div>
     <h2>{{ t("currency.title") }}</h2>
     <p>{{ t("currency.description") }}</p>
   </div>
-  <form method="post" class="inline-form">
-    <input type="hidden" name="action" value="refresh_rates">
-    <button type="submit" class="secondary-btn">{{ t("currency.refresh_rates") }}</button>
-  </form>
+  <div class="currency-heading-actions">
+    <a class="secondary-btn currency-source-link" href="{{ source_url }}" target="_blank" rel="noopener noreferrer">
+      {{ source_name }} source ↗
+    </a>
+    <form method="post" class="inline-form">
+      <input type="hidden" name="action" value="refresh_rates">
+      <button type="submit" class="secondary-btn">{{ t("currency.refresh_rates") }}</button>
+    </form>
+  </div>
 </section>
 
 <section class="summary currency-summary">
@@ -32,6 +37,54 @@
     <h3>{{ t("currency.last_issue") }}</h3>
     <p class="currency-small-value">{{ last_error or t('common.none') }}</p>
   </div>
+</section>
+
+<section class="panel-card currency-history-card">
+  <div class="panel-header currency-history-header">
+    <div>
+      <span class="eyebrow">History chart</span>
+      <h3>Main currencies against EUR</h3>
+      <p>Pick currencies and a period. Values use the same app logic: how many EUR 1 unit of the foreign currency is worth.</p>
+    </div>
+    <div class="currency-history-controls">
+      <label>
+        Period
+        <select data-currency-period>
+          {% for key, item in history_periods.items() %}
+            <option value="{{ key }}" {% if key == history_default_period %}selected{% endif %}>{{ item.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Group
+        <select data-currency-group>
+          <option value="auto" selected>Auto</option>
+          <option value="day">Daily</option>
+          <option value="week">Weekly</option>
+          <option value="month">Monthly</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="currency-history-picker" aria-label="Currency history selector">
+    {% for row in currencies %}
+      {% if row.code != base_currency and row.active %}
+        <label class="currency-history-chip {% if row.code in history_currency_codes %}is-selected{% endif %}">
+          <input type="checkbox" value="{{ row.code }}" data-currency-code {% if row.code in history_currency_codes %}checked{% endif %}>
+          <span>{{ row.code }}</span>
+          <small>{{ row.name }}</small>
+        </label>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="currency-history-meta">
+    <span data-currency-history-status>Loading history from {{ source_name }}…</span>
+    <span>Metric: EUR per 1 currency unit</span>
+  </div>
+  <div id="currency-history-chart" class="currency-history-chart" role="img" aria-label="Historical currency values against EUR"></div>
+  <div class="currency-history-snapshots" data-currency-snapshots></div>
 </section>
 
 <section class="dashboard-grid dashboard-grid-even">
@@ -140,4 +193,17 @@
     </div>
   </article>
 </section>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    window.moneyManagerCurrencyHistory = {
+      endpoint: {{ url_for('currencies.currency_history_data')|tojson }},
+      defaultPeriod: {{ history_default_period|tojson }},
+      sourceName: {{ source_name|tojson }},
+      sourceUrl: {{ source_url|tojson }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='js/currencies.js') }}?v=currency-history-1" defer></script>
 {% endblock %}

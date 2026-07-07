@@ -1400,3 +1400,517 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Dashboard home command-hub refresh. Scoped to the initial dashboard only. */
+.dashboard-hero-intent {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  padding: 0.48rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.dashboard-hero-intent b {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.dashboard-command-hub {
+  display: grid;
+  grid-template-columns: 1.25fr repeat(4, minmax(150px, 1fr));
+  grid-auto-flow: dense;
+  gap: 0.82rem;
+  margin: 0 0 1rem;
+}
+
+.command-tile {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.78rem;
+  min-height: 92px;
+  padding: 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 9rem),
+    rgba(255, 255, 255, 0.82);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.command-tile::after {
+  content: "";
+  position: absolute;
+  inset: auto 1rem 0.72rem 1rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.75), rgba(20, 184, 166, 0.72));
+  opacity: 0;
+  transform: scaleX(0.45);
+  transform-origin: left;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.command-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(37, 99, 235, 0.34);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.1);
+}
+
+.command-tile:hover::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.command-tile-primary {
+  grid-row: span 2;
+  min-height: 188px;
+  align-content: end;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.32), transparent 8rem),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.94), rgba(20, 184, 166, 0.9));
+  color: white;
+}
+
+.command-tile-wide {
+  grid-column: span 2;
+}
+
+.command-tile-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--brand);
+  font-size: 1.25rem;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+}
+
+.command-tile-primary .command-tile-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 22px;
+  color: white;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.26);
+}
+
+.command-tile-copy {
+  min-width: 0;
+}
+
+.command-tile-copy strong,
+.command-tile-copy small {
+  display: block;
+}
+
+.command-tile-copy strong {
+  font-size: 1rem;
+  letter-spacing: -0.035em;
+}
+
+.command-tile-primary .command-tile-copy strong {
+  font-size: clamp(1.25rem, 2.2vw, 1.85rem);
+}
+
+.command-tile-copy small {
+  margin-top: 0.18rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.command-tile-primary .command-tile-copy small {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.dashboard-wallet-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-wallet-stat {
+  min-height: 118px;
+}
+
+.dashboard-charts-home.dashboard-charts-redesigned {
+  grid-template-columns: minmax(260px, 0.9fr) minmax(260px, 0.9fr) minmax(380px, 1.25fr);
+  align-items: stretch;
+}
+
+.dashboard-charts-home.dashboard-charts-redesigned .chart-card {
+  min-height: 360px;
+  padding: 0.75rem;
+  overflow: hidden;
+}
+
+.dashboard-charts-home.dashboard-charts-redesigned .chart-card .js-plotly-plot,
+.dashboard-charts-home.dashboard-charts-redesigned .chart-card .plotly-graph-div {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.dashboard-charts-home.dashboard-charts-redesigned .chart-card-trend {
+  min-height: 360px;
+}
+
+body.chart-expanded-open {
+  overflow: hidden;
+}
+
+.chart-card.chart-expanded {
+  box-sizing: border-box;
+  inset: max(20px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  width: auto;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  display: grid;
+  align-content: stretch;
+}
+
+.chart-card.chart-expanded::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(4px);
+}
+
+.chart-card.chart-expanded .js-plotly-plot,
+.chart-card.chart-expanded .plotly-graph-div {
+  width: 100% !important;
+  height: calc(100vh - 96px) !important;
+  max-height: calc(100vh - 96px) !important;
+}
+
+@media (max-width: 1280px) {
+  .dashboard-command-hub {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .command-tile-primary,
+  .command-tile-wide {
+    grid-column: span 1;
+    grid-row: span 1;
+    min-height: 112px;
+  }
+
+  .dashboard-wallet-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-charts-home.dashboard-charts-redesigned {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-charts-home.dashboard-charts-redesigned .chart-card-trend {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 860px) {
+  .dashboard-command-hub,
+  .dashboard-wallet-strip,
+  .dashboard-charts-home.dashboard-charts-redesigned {
+    grid-template-columns: 1fr;
+  }
+
+  .command-tile,
+  .command-tile-primary,
+  .command-tile-wide {
+    min-height: 94px;
+  }
+
+  .dashboard-charts-home.dashboard-charts-redesigned .chart-card-trend {
+    grid-column: span 1;
+  }
+}
+
+/* Dashboard home v2: playful command bubbles + larger bounded chart board. */
+.dashboard-command-hub {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: minmax(86px, auto);
+  grid-auto-flow: dense;
+  gap: clamp(0.75rem, 1vw, 1rem);
+  align-items: stretch;
+  margin: 0.35rem 0 1.25rem;
+  padding: 0.25rem 0.15rem 0.6rem;
+}
+
+.dashboard-command-hub .command-tile {
+  --tile-lift: 0px;
+  --tile-tilt: 0deg;
+  --tile-radius: 999px;
+  grid-column: span 3;
+  min-height: 88px;
+  border-radius: var(--tile-radius);
+  padding: 0.9rem 1rem;
+  transform: translateY(var(--tile-lift)) rotate(var(--tile-tilt));
+  transform-origin: center;
+  will-change: transform;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(255, 255, 255, 0.94), transparent 4.5rem),
+    radial-gradient(circle at 92% 14%, rgba(20, 184, 166, 0.14), transparent 7rem),
+    rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.075);
+  transition:
+    transform 0.22s cubic-bezier(.2,.8,.2,1),
+    box-shadow 0.22s ease,
+    border-color 0.22s ease,
+    background 0.22s ease,
+    filter 0.22s ease;
+}
+
+.dashboard-command-hub .command-tile::before {
+  content: "";
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  right: -18px;
+  top: -16px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.11);
+  z-index: -1;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+.dashboard-command-hub .command-tile::after {
+  inset: auto 1.25rem 0.62rem 1.25rem;
+}
+
+.dashboard-command-hub .command-tile:hover,
+.dashboard-command-hub .command-tile:focus-visible {
+  transform: translateY(calc(var(--tile-lift) - 8px)) rotate(0deg) scale(1.035);
+  border-color: rgba(37, 99, 235, 0.4);
+  background:
+    radial-gradient(circle at 16% 18%, rgba(255, 255, 255, 1), transparent 4.8rem),
+    radial-gradient(circle at 90% 14%, rgba(20, 184, 166, 0.2), transparent 7.2rem),
+    rgba(255, 255, 255, 0.96);
+  box-shadow: 0 28px 72px rgba(15, 23, 42, 0.14);
+  filter: saturate(1.04);
+  z-index: 5;
+}
+
+.dashboard-command-hub .command-tile:hover::before,
+.dashboard-command-hub .command-tile:focus-visible::before {
+  transform: scale(1.8);
+  opacity: 0.85;
+}
+
+.dashboard-command-hub .command-tile-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    inset 0 0 0 1px rgba(148, 163, 184, 0.2),
+    0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-command-hub .command-tile-primary {
+  grid-column: span 3;
+  grid-row: span 2;
+  min-height: 188px;
+  border-radius: 42px 88px 48px 58px;
+  align-content: center;
+  padding: 1.25rem;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.34), transparent 8rem),
+    radial-gradient(circle at 88% 92%, rgba(255, 255, 255, 0.18), transparent 6rem),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(20, 184, 166, 0.92));
+}
+
+.dashboard-command-hub .command-tile-primary:hover,
+.dashboard-command-hub .command-tile-primary:focus-visible {
+  transform: translateY(-7px) rotate(0deg) scale(1.025);
+}
+
+.dashboard-command-hub .command-tile-primary .command-tile-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+}
+
+.dashboard-command-hub .command-tile-wide {
+  grid-column: span 4;
+  border-radius: 32px 999px 999px 32px;
+}
+
+.dashboard-command-hub .command-tile:nth-child(2) { --tile-lift: -7px; --tile-tilt: -0.45deg; --tile-radius: 32px 999px 999px 32px; }
+.dashboard-command-hub .command-tile:nth-child(3) { --tile-lift: 5px; --tile-tilt: 0.55deg; --tile-radius: 999px 36px 36px 999px; }
+.dashboard-command-hub .command-tile:nth-child(4) { --tile-lift: -11px; --tile-tilt: 0.35deg; }
+.dashboard-command-hub .command-tile:nth-child(5) { --tile-lift: 4px; --tile-tilt: -0.75deg; --tile-radius: 40px 999px 42px 999px; }
+.dashboard-command-hub .command-tile:nth-child(6) { --tile-lift: -3px; --tile-tilt: 0.7deg; --tile-radius: 999px 40px 999px 40px; }
+.dashboard-command-hub .command-tile:nth-child(7) { --tile-lift: 8px; --tile-tilt: -0.35deg; --tile-radius: 34px 999px 999px 34px; }
+.dashboard-command-hub .command-tile:nth-child(8) { --tile-lift: -6px; --tile-tilt: 0.6deg; --tile-radius: 999px; }
+.dashboard-command-hub .command-tile:nth-child(9) { --tile-lift: 6px; --tile-tilt: -0.5deg; --tile-radius: 999px 42px 42px 999px; }
+.dashboard-command-hub .command-tile:nth-child(10) { --tile-lift: -2px; --tile-tilt: 0.45deg; --tile-radius: 999px; }
+
+.dashboard-charts-home.dashboard-charts-redesigned {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(390px, 1fr)) !important;
+  gap: clamp(0.95rem, 1.25vw, 1.25rem) !important;
+  align-items: stretch;
+}
+
+.dashboard-charts-home.dashboard-charts-redesigned .chart-card,
+.dashboard-charts-home.dashboard-charts-redesigned .chart-card-trend,
+.dashboard-charts-home.dashboard-charts-redesigned .chart-card-cashflow {
+  grid-column: span 1 !important;
+  min-height: clamp(410px, 42vh, 520px);
+  padding: 1rem;
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.dashboard-charts-home.dashboard-charts-redesigned .chart-card .js-plotly-plot,
+.dashboard-charts-home.dashboard-charts-redesigned .chart-card .plotly-graph-div,
+.dashboard-charts-home.dashboard-charts-redesigned .chart-card .svg-container {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.chart-expanded-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147482998;
+  background: rgba(15, 23, 42, 0.34);
+  backdrop-filter: blur(6px);
+}
+
+body.chart-expanded-open {
+  overflow: hidden !important;
+}
+
+body > .chart-card.chart-expanded,
+.chart-card.chart-expanded {
+  position: fixed !important;
+  inset: 1rem !important;
+  z-index: 2147483000 !important;
+  width: calc(100dvw - 2rem) !important;
+  height: calc(100dvh - 2rem) !important;
+  max-width: calc(100dvw - 2rem) !important;
+  max-height: calc(100dvh - 2rem) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column;
+  padding: 1rem !important;
+  border-radius: 1.4rem !important;
+  background: rgba(255, 255, 255, 0.985) !important;
+  box-shadow: 0 44px 150px rgba(15, 23, 42, 0.42) !important;
+}
+
+body > .chart-card.chart-expanded .expand-chart-btn,
+.chart-card.chart-expanded .expand-chart-btn {
+  position: absolute !important;
+  top: 0.85rem !important;
+  right: 0.85rem !important;
+  z-index: 3 !important;
+  min-width: 5.6rem;
+  background: #0f172a !important;
+  color: #fff !important;
+  border-color: rgba(15, 23, 42, 0.18) !important;
+}
+
+body > .chart-card.chart-expanded .js-plotly-plot,
+body > .chart-card.chart-expanded .plotly-graph-div,
+body > .chart-card.chart-expanded .svg-container,
+.chart-card.chart-expanded .js-plotly-plot,
+.chart-card.chart-expanded .plotly-graph-div,
+.chart-card.chart-expanded .svg-container {
+  flex: 1 1 auto;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: calc(100dvh - 5.4rem) !important;
+  max-height: calc(100dvh - 5.4rem) !important;
+  min-height: 0 !important;
+}
+
+body > .chart-card.chart-expanded img,
+body > .chart-card.chart-expanded .static-chart-img,
+.chart-card.chart-expanded img,
+.chart-card.chart-expanded .static-chart-img {
+  width: 100% !important;
+  height: calc(100dvh - 5.4rem) !important;
+  max-height: calc(100dvh - 5.4rem) !important;
+  object-fit: contain !important;
+}
+
+@media (max-width: 1320px) {
+  .dashboard-command-hub {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .dashboard-command-hub .command-tile,
+  .dashboard-command-hub .command-tile-wide {
+    grid-column: span 3;
+  }
+  .dashboard-command-hub .command-tile-primary {
+    grid-column: span 3;
+    grid-row: span 2;
+  }
+  .dashboard-charts-home.dashboard-charts-redesigned {
+    grid-template-columns: repeat(2, minmax(320px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 880px) {
+  .dashboard-command-hub,
+  .dashboard-charts-home.dashboard-charts-redesigned {
+    grid-template-columns: 1fr !important;
+  }
+  .dashboard-command-hub .command-tile,
+  .dashboard-command-hub .command-tile-primary,
+  .dashboard-command-hub .command-tile-wide {
+    grid-column: span 1;
+    grid-row: span 1;
+    min-height: 92px;
+    transform: none;
+  }
+  .dashboard-command-hub .command-tile:hover,
+  .dashboard-command-hub .command-tile:focus-visible {
+    transform: translateY(-5px) scale(1.015);
+  }
+  .dashboard-charts-home.dashboard-charts-redesigned .chart-card,
+  .dashboard-charts-home.dashboard-charts-redesigned .chart-card-trend,
+  .dashboard-charts-home.dashboard-charts-redesigned .chart-card-cashflow {
+    min-height: 360px;
+  }
+  body > .chart-card.chart-expanded,
+  .chart-card.chart-expanded {
+    inset: 0.5rem !important;
+    width: calc(100dvw - 1rem) !important;
+    height: calc(100dvh - 1rem) !important;
+    max-width: calc(100dvw - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-command-hub .command-tile,
+  .dashboard-command-hub .command-tile:hover,
+  .dashboard-command-hub .command-tile:focus-visible {
+    transform: none;
+    transition: none;
+  }
+}

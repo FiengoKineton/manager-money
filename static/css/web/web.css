@@ -4405,3 +4405,43 @@ html[data-theme="night"] .bill-items-list div {
     --nav-icon-col: 1.75rem;
   }
 }
+
+/* Desktop sidebar collapse. Default is open; collapsed state is stored in localStorage. */
+.sidebar-toggle-btn {
+  font-size: 0.95rem;
+}
+
+html.sidebar-collapsed:not(.phone-native-active) .app-layout {
+  grid-template-columns: 0 minmax(0, 1fr) !important;
+}
+
+html.sidebar-collapsed:not(.phone-native-active) .app-sidebar {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  opacity: 0;
+  transform: translateX(-110%);
+  pointer-events: none;
+  overflow: hidden !important;
+}
+
+html.sidebar-collapsed:not(.phone-native-active) .app-workspace,
+html.sidebar-collapsed:not(.phone-native-active) .app-main,
+html.sidebar-collapsed:not(.phone-native-active) .container,
+html.sidebar-collapsed:not(.phone-native-active) .app-content-stage {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html.sidebar-collapsed:not(.phone-native-active) .sidebar-toggle-btn {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.28);
+  color: var(--brand);
+}
+
+@media (max-width: 700px) {
+  .sidebar-toggle-btn { display: none !important; }
+}

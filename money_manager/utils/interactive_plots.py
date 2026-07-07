@@ -135,6 +135,136 @@ def chart_cumulative_balance(df_cum):
     return _to_html(fig)
 
 
+
+def _positive_items(labels, values):
+    items = []
+    for label, value in zip(labels, values):
+        try:
+            amount = float(value or 0.0)
+        except (TypeError, ValueError):
+            amount = 0.0
+        if amount > 1e-9:
+            items.append((str(label), amount))
+    return items
+
+
+def _compact_euro(value):
+    try:
+        value = float(value or 0.0)
+    except (TypeError, ValueError):
+        value = 0.0
+    sign = "-" if value < 0 else ""
+    value = abs(value)
+    if value >= 1_000_000:
+        return f"{sign}€{value / 1_000_000:.1f}M"
+    if value >= 1_000:
+        return f"{sign}€{value / 1_000:.1f}k"
+    return f"{sign}€{value:.0f}"
+
+
+def chart_dashboard_money_mix(totals):
+    totals = totals or {}
+    items = _positive_items(
+        ["Income", "Expenses", "Investments"],
+        [totals.get("income"), totals.get("expenses"), totals.get("investments")],
+    )
+    if not items:
+        return _empty_chart("Money mix")
+
+    labels = [label for label, _ in items]
+    values = [value for _, value in items]
+    total = sum(values)
+
+    fig = go.Figure(
+        go.Pie(
+            labels=labels,
+            values=values,
+            hole=0.58,
+            sort=False,
+            textinfo="label+percent",
+            hovertemplate="%{label}<br>€%{value:,.2f}<br>%{percent}<extra></extra>",
+        )
+    )
+    fig.update_traces(marker={"line": {"color": "rgba(255,255,255,0.9)", "width": 2}})
+    fig.update_layout(
+        title="Money mix",
+        height=410,
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.16, xanchor="center", x=0.5),
+        annotations=[dict(text=f"Total<br>{_compact_euro(total)}", x=0.5, y=0.5, showarrow=False, font={"size": 16})],
+    )
+    return _to_html(fig)
+
+
+def chart_dashboard_expense_donut(df_cat, max_slices=7):
+    if df_cat is None or df_cat.empty:
+        return _empty_chart("Expense split")
+
+    df = df_cat.copy().sort_values("total", ascending=False)
+    df["total"] = df["total"].astype(float)
+    head = df.head(max_slices)
+    other_total = float(df.iloc[max_slices:]["total"].sum()) if len(df) > max_slices else 0.0
+    labels = head["category"].astype(str).tolist()
+    values = head["total"].astype(float).tolist()
+    if other_total > 1e-9:
+        labels.append("Other")
+        values.append(other_total)
+
+    items = _positive_items(labels, values)
+    if not items:
+        return _empty_chart("Expense split")
+
+    labels = [label for label, _ in items]
+    values = [value for _, value in items]
+    total = sum(values)
+
+    fig = go.Figure(
+        go.Pie(
+            labels=labels,
+            values=values,
+            hole=0.54,
+            sort=False,
+            textinfo="percent",
+            hovertemplate="%{label}<br>Expenses: €%{value:,.2f}<br>%{percent}<extra></extra>",
+        )
+    )
+    fig.update_traces(marker={"line": {"color": "rgba(255,255,255,0.9)", "width": 2}})
+    fig.update_layout(
+        title="Expense split",
+        height=410,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
+        annotations=[dict(text=f"Spent<br>{_compact_euro(total)}", x=0.5, y=0.5, showarrow=False, font={"size": 16})],
+    )
+    return _to_html(fig)
+
+
+def chart_dashboard_balance_area(df_cum):
+    if df_cum is None or df_cum.empty:
+        return _empty_chart("Balance path")
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=df_cum["date"],
+            y=df_cum["balance"],
+            mode="lines",
+            name="Balance",
+            fill="tozeroy",
+            line=dict(color=TYPE_COLORS["balance"], width=3),
+            hovertemplate="%{x}<br>Balance: €%{y:,.2f}<extra></extra>",
+        )
+    )
+
+    latest = float(df_cum["balance"].iloc[-1]) if not df_cum.empty else 0.0
+    fig.update_layout(
+        title="Balance path",
+        height=410,
+        yaxis_title="Balance (€)",
+        showlegend=False,
+        annotations=[dict(text=f"Now {_compact_euro(latest)}", xref="paper", yref="paper", x=0.02, y=0.98, showarrow=False, align="left", font={"size": 14})],
+    )
+    return _to_html(fig)
+
 def chart_rolling_net_flow(df_roll):
     if df_roll is None or df_roll.empty:
         return _empty_chart("Net cash flow")
@@ -220,7 +350,7 @@ def chart_cashflow_waterfall(statement):
     )
     fig.update_layout(
         title="Cashflow bridge",
-        height=360,
+        height=410,
         yaxis_title="Amount (€)",
     )
     return _to_html(fig)

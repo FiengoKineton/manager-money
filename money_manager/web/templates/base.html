@@ -19,6 +19,17 @@
   </script>
   <script>
     (function () {
+      try {
+        if (window.localStorage.getItem("moneyManagerSidebarCollapsed") === "1") {
+          document.documentElement.classList.add("sidebar-collapsed");
+        }
+      } catch (error) {
+        // The sidebar simply stays open when localStorage is unavailable.
+      }
+    })();
+  </script>
+  <script>
+    (function () {
       function isForcedPhone() {
         try {
           var params = new URLSearchParams(window.location.search || "");
@@ -88,17 +99,18 @@
     html.phone-native-active .app-content-stage { width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0 !important; overflow-x: hidden !important; box-sizing: border-box !important; }
     html.phone-native-active .app-topbar { display: none !important; }
   </style>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=smart-save-2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=sidebar-collapse-1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/instant-nav.css') }}?v=instant-nav-1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/ui-refinement.css') }}?v=ui-account-brand-3">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dashboard.css') }}?v=dashboard-planning-2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dashboard.css') }}?v=dashboard-home-hub-1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=phone-ui-18-planning-mobile">
   {% set plotly_endpoints = [
     'dashboard.index',
     'analysis.analysis',
     'yearly_summary.yearly_summary_page',
     'forecast.forecast',
-    'investments.investments_page'
+    'investments.investments_page',
+    'currencies.currencies_page'
   ] %}
   {% if ep in plotly_endpoints %}
     <script src="{{ url_for('static', filename='js/vendor/plotly.min.js') }}?v=plotly-6.5.2"></script>
@@ -109,7 +121,7 @@
   {% set profile_open = ep.startswith('profile.') %}
 
   <div class="app-layout">
-    <aside class="app-sidebar" aria-label="{{ t('nav.overview') }}">
+    <aside id="app-sidebar" class="app-sidebar" aria-label="{{ t('nav.overview') }}">
       <a class="app-brand {{ 'is-active' if profile_open else '' }}" href="{{ url_for('profile.profile_page') if endpoint_exists('profile.profile_page') else url_for('accounts.accounts_page') }}">
         <span class="app-brand-avatar">
           {% if current_user_profile.profile_image and endpoint_exists('profile.avatar') %}
@@ -284,6 +296,7 @@
     <div class="app-workspace">
       <header class="app-topbar">
         <nav class="topbar-nav-buttons" aria-label="Page navigation">
+          <button type="button" class="topbar-nav-btn sidebar-toggle-btn" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="true" title="Toggle left navigation" aria-label="Toggle left navigation">☰</button>
           <a class="topbar-nav-btn" href="{{ (url_for('dashboard.index', account_id=selected_account_id) if selected_account_id else url_for('dashboard.index')) if endpoint_exists('dashboard.index') else url_for('accounts.accounts_page') }}" title="Home" aria-label="Home">⌂</a>
           <button type="button" class="topbar-nav-btn" data-browser-back title="Back" aria-label="Back">‹</button>
           <button type="button" class="topbar-nav-btn" data-browser-forward title="Forward" aria-label="Forward">›</button>
@@ -463,7 +476,7 @@
   <script src="{{ url_for('static', filename='js/shared/smart-floating-submit.js') }}?v=smart-save-3" defer></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/command-palette.js') }}?v=command-palette-2" defer></script>
-  <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=wallet-shell-18"></script>
+  <script src="{{ url_for('static', filename='js/web/web-shell.js') }}?v=sidebar-collapse-1"></script>
   <script src="{{ url_for('static', filename='js/phone/phone-shell.js') }}?v=phone-ui-18-planning-mobile" defer></script>
   {% block scripts %}{% endblock %}
 </body>

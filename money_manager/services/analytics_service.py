@@ -18,6 +18,9 @@ from money_manager.utils.filters import filter_by_amount_range, filter_by_catego
 from money_manager.utils.interactive_plots import (
     chart_cashflow_waterfall,
     chart_cumulative_balance,
+    chart_dashboard_balance_area,
+    chart_dashboard_expense_donut,
+    chart_dashboard_money_mix,
     chart_expenses_by_category,
     chart_income_sources,
     chart_monthly_savings_rate,
@@ -107,9 +110,10 @@ def build_dashboard_metrics(
         "expenses_by_category": df_cat,
         "cumulative_balance": df_cum,
         "charts": {
-            "monthly_summary": chart_monthly_summary(df_month),
-            "expenses_by_category": chart_expenses_by_category(df_cat),
-            "cumulative_balance": chart_cumulative_balance(df_cum),
+            "monthly_summary": chart_dashboard_money_mix(totals),
+            "expenses_by_category": chart_dashboard_expense_donut(df_cat),
+            "cumulative_balance": chart_dashboard_balance_area(df_cum),
+            "cashflow_bridge": chart_cashflow_waterfall(totals),
         },
     }
 

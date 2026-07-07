@@ -8,14 +8,9 @@
     <span class="eyebrow">{{ 'Selected Conto' if scope_is_account else 'All Conti dashboard' }}</span>
     <h2>{{ scope_label if scope_is_account else 'All Conti' }}</h2>
     <p>{{ 'Minimal view for this account. Tap any card for the full explanation.' if scope_is_account else 'Minimal command view across all independent Conti. Tap any card for the full explanation.' }}</p>
-    <div class="dashboard-hero-actions">
-      <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', type='expense', account_id=selected_account_id) if selected_account_id else url_for('transactions.add_transaction', type='expense') }}">+ Add expense</a>
-      <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page', account_id=selected_account_id) if selected_account_id else url_for('transactions.transactions_page') }}">Transactions</a>
-      <a class="secondary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=selected_account_id) if selected_account_id else url_for('accounts.accounts_page') }}">{{ 'Conto home' if scope_is_account else 'All Conti home' }}</a>
-      {% if endpoint_exists('notifications.center') %}<a class="secondary-btn compact-btn" href="{{ url_for('notifications.center', account_id=selected_account_id) if selected_account_id else url_for('notifications.center') }}">🔔 Alerts center</a>{% endif %}
-      {% if endpoint_exists('financial_calendar.calendar_page') %}<a class="secondary-btn compact-btn" href="{{ url_for('financial_calendar.calendar_page', account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page') }}">📅 Calendar</a>{% endif %}
-      {% if endpoint_exists('planned_expenses.planned_expenses_page') %}<a class="secondary-btn compact-btn" href="{{ url_for('planned_expenses.planned_expenses_page') }}">🧾 Planned</a>{% endif %}
-      {% if endpoint_exists('savings_goals.savings_goals_page') %}<a class="secondary-btn compact-btn" href="{{ url_for('savings_goals.savings_goals_page') }}">◎ Goals</a>{% endif %}
+    <div class="dashboard-hero-intent">
+      <span>Start from a task, not from a table.</span>
+      <b>{{ visual_scope_label }}</b>
     </div>
   </div>
 
@@ -25,6 +20,68 @@
     <small>After open pending: {{ net_after_pending|money_masked }}</small>
     <small>{{ money_calculation_label|default('full history') }}</small>
   </button>
+</section>
+
+<section class="dashboard-command-hub" aria-label="Fast dashboard routes">
+  <a class="command-tile command-tile-primary" href="{{ url_for('transactions.add_transaction', type='expense', account_id=selected_account_id) if selected_account_id else url_for('transactions.add_transaction', type='expense') }}">
+    <span class="command-tile-icon" aria-hidden="true">＋</span>
+    <span class="command-tile-copy"><strong>Add expense</strong><small>Register spending in one tap</small></span>
+  </a>
+
+  <a class="command-tile" href="{{ url_for('transactions.transactions_page', account_id=selected_account_id) if selected_account_id else url_for('transactions.transactions_page') }}">
+    <span class="command-tile-icon" aria-hidden="true">↕</span>
+    <span class="command-tile-copy"><strong>Transactions</strong><small>Search, edit, execute</small></span>
+  </a>
+
+  <a class="command-tile" href="{{ url_for('accounts.account_detail', account_key=selected_account_id) if selected_account_id else url_for('accounts.accounts_page') }}">
+    <span class="command-tile-icon" aria-hidden="true">🏦</span>
+    <span class="command-tile-copy"><strong>{{ 'Conto home' if scope_is_account else 'All Conti' }}</strong><small>Balances and account details</small></span>
+  </a>
+
+  {% if endpoint_exists('financial_calendar.calendar_page') %}
+  <a class="command-tile command-tile-wide" href="{{ url_for('financial_calendar.calendar_page', account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page') }}">
+    <span class="command-tile-icon" aria-hidden="true">📅</span>
+    <span class="command-tile-copy"><strong>Calendar</strong><small>Upcoming bills, salary and planned movements</small></span>
+  </a>
+  {% endif %}
+
+  <a class="command-tile" href="{{ url_for('pending.pending_page', account_id=selected_account_id) if selected_account_id else url_for('pending.pending_page') }}">
+    <span class="command-tile-icon" aria-hidden="true">⏳</span>
+    <span class="command-tile-copy"><strong>Pending</strong><small>Forecast and execute open movements</small></span>
+  </a>
+
+  {% if endpoint_exists('notifications.center') %}
+  <a class="command-tile" href="{{ url_for('notifications.center', account_id=selected_account_id) if selected_account_id else url_for('notifications.center') }}">
+    <span class="command-tile-icon" aria-hidden="true">🔔</span>
+    <span class="command-tile-copy"><strong>Alerts</strong><small>{{ dashboard_new_notifications|length }} unread reminders</small></span>
+  </a>
+  {% endif %}
+
+  {% if endpoint_exists('planned_expenses.planned_expenses_page') %}
+  <a class="command-tile" href="{{ url_for('planned_expenses.planned_expenses_page') }}">
+    <span class="command-tile-icon" aria-hidden="true">🧾</span>
+    <span class="command-tile-copy"><strong>Planned</strong><small>Trips, gifts and future expenses</small></span>
+  </a>
+  {% endif %}
+
+  <a class="command-tile" href="{{ url_for('analysis.analysis', account_id=selected_account_id) if selected_account_id else url_for('analysis.analysis') }}">
+    <span class="command-tile-icon" aria-hidden="true">📊</span>
+    <span class="command-tile-copy"><strong>Analysis</strong><small>Habits and categories</small></span>
+  </a>
+
+  {% if endpoint_exists('investments.investments_page') %}
+  <a class="command-tile" href="{{ url_for('investments.investments_page', account_id=selected_account_id) if selected_account_id else url_for('investments.investments_page') }}">
+    <span class="command-tile-icon" aria-hidden="true">📈</span>
+    <span class="command-tile-copy"><strong>Investments</strong><small>Capital and P/L</small></span>
+  </a>
+  {% endif %}
+
+  {% if endpoint_exists('savings_goals.savings_goals_page') %}
+  <a class="command-tile" href="{{ url_for('savings_goals.savings_goals_page') }}">
+    <span class="command-tile-icon" aria-hidden="true">◎</span>
+    <span class="command-tile-copy"><strong>Goals</strong><small>Targets and progress</small></span>
+  </a>
+  {% endif %}
 </section>
 
 <section class="dashboard-wallet-strip" aria-label="Dashboard quick cards">
@@ -228,19 +285,21 @@
 </section>
 {% endif %}
 
-<section class="panel-header dashboard-chart-heading"><div><span class="eyebrow">Visual analysis</span><h2>Charts</h2><p class="muted">Charts stay below the command cards so the dashboard is quick to scan first.</p></div></section>
+<section class="panel-header dashboard-chart-heading"><div><span class="eyebrow">Visual analysis</span><h2>Quick visuals</h2><p class="muted">Bigger 2×2 visuals: two fast split charts, one balance trend and one cashflow bridge. Use Analysis for the full chart suite.</p></div></section>
 
 {% if charts is defined and charts %}
 <section class="dashboard-charts dashboard-charts-home dashboard-charts-redesigned">
-  <div class="chart-card chart-full"><button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>{{ charts.monthly_summary|safe }}</div>
-  <div class="chart-card"><button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>{{ charts.expenses_by_category|safe }}</div>
-  <div class="chart-card"><button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>{{ charts.cumulative_balance|safe }}</div>
+  <div class="chart-card chart-card-donut"><button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>{{ charts.monthly_summary|safe }}</div>
+  <div class="chart-card chart-card-donut"><button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>{{ charts.expenses_by_category|safe }}</div>
+  <div class="chart-card chart-card-trend"><button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>{{ charts.cumulative_balance|safe }}</div>
+  <div class="chart-card chart-card-cashflow"><button type="button" class="expand-chart-btn" onclick="toggleChartSize(this)">Expand</button>{% if charts.cashflow_bridge is defined %}{{ charts.cashflow_bridge|safe }}{% else %}{{ charts.monthly_summary|safe }}{% endif %}</div>
 </section>
 {% else %}
 <section class="dashboard-charts dashboard-charts-home dashboard-charts-redesigned">
-  <div class="chart-card chart-full"><img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='monthly_summary.png') }}" alt="Monthly summary"></div>
-  <div class="chart-card"><img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='expenses_by_category.png') }}" alt="Expenses by category"></div>
-  <div class="chart-card"><img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='cumulative_balance.png') }}" alt="Cumulative balance"></div>
+  <div class="chart-card chart-card-donut"><img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='monthly_summary.png') }}" alt="Income and expense mix"></div>
+  <div class="chart-card chart-card-donut"><img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='expenses_by_category.png') }}" alt="Expenses by category"></div>
+  <div class="chart-card chart-card-trend"><img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='cumulative_balance.png') }}" alt="Cumulative balance"></div>
+  <div class="chart-card chart-card-cashflow"><img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='monthly_summary.png') }}" alt="Cashflow bridge"></div>
 </section>
 {% endif %}
 
