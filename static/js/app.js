@@ -1255,18 +1255,30 @@
 })();
 
 /* --------------------------------------------------------------------------
-   Day / night color mode toggle
+   Light / Dark / Eye comfort color mode controls
 -------------------------------------------------------------------------- */
 (function () {
   const storageKey = "moneyManagerColorMode";
 
+  function normalizeMode(mode) {
+    const clean = String(mode || "day").trim().toLowerCase().replace(/[\s-]+/g, "_");
+    if (clean === "night" || clean === "dark") return "night";
+    if (clean === "comfort" || clean === "eye" || clean === "eye_comfort") return "comfort";
+    return "day";
+  }
+
+  function modeLabel(mode) {
+    if (mode === "night") return "Dark";
+    if (mode === "comfort") return "Eye comfort";
+    return "Light";
+  }
+
   function getMode() {
-    const mode = document.documentElement.dataset.theme || "day";
-    return mode === "night" ? "night" : "day";
+    return normalizeMode(document.documentElement.dataset.theme || "day");
   }
 
   function setMode(mode) {
-    const nextMode = mode === "night" ? "night" : "day";
+    const nextMode = normalizeMode(mode);
     document.documentElement.dataset.theme = nextMode;
     try {
       window.localStorage.setItem(storageKey, nextMode);
@@ -1280,10 +1292,20 @@
     const mode = getMode();
     document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
       const targetMode = mode === "night" ? "day" : "night";
-      button.setAttribute("aria-label", `Switch to ${targetMode} mode`);
-      button.setAttribute("title", `Switch to ${targetMode} mode`);
+      button.setAttribute("aria-label", `Switch to ${modeLabel(targetMode)} mode`);
+      button.setAttribute("title", `Switch to ${modeLabel(targetMode)} mode`);
       const label = button.querySelector("[data-theme-toggle-label]");
-      if (label) label.textContent = targetMode === "night" ? "Night" : "Day";
+      if (label) label.textContent = modeLabel(targetMode);
+    });
+
+    document.querySelectorAll("[data-theme-comfort]").forEach((button) => {
+      const isComfort = mode === "comfort";
+      const targetMode = isComfort ? "day" : "comfort";
+      button.classList.toggle("is-active", isComfort);
+      button.setAttribute("aria-label", `Switch to ${modeLabel(targetMode)} mode`);
+      button.setAttribute("title", `Switch to ${modeLabel(targetMode)} mode`);
+      const label = button.querySelector("[data-theme-comfort-label]");
+      if (label) label.textContent = isComfort ? "Light" : "Comfort";
     });
   }
 
@@ -1294,6 +1316,14 @@
       button.dataset.themeToggleWired = "true";
       button.addEventListener("click", () => {
         setMode(getMode() === "night" ? "day" : "night");
+      });
+    });
+
+    document.querySelectorAll("[data-theme-comfort]").forEach((button) => {
+      if (button.dataset.themeComfortWired === "true") return;
+      button.dataset.themeComfortWired = "true";
+      button.addEventListener("click", () => {
+        setMode(getMode() === "comfort" ? "day" : "comfort");
       });
     });
   });

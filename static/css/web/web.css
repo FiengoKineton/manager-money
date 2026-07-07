@@ -4445,3 +4445,105 @@ html.sidebar-collapsed:not(.phone-native-active) .sidebar-toggle-btn {
 @media (max-width: 700px) {
   .sidebar-toggle-btn { display: none !important; }
 }
+
+/* --------------------------------------------------------------------------
+   Dark mode v3: calmer global palette
+   The older dark layer kept the UI too close to black and left a visible
+   pointer spotlight. This final layer softens the contrast and disables
+   pointer-driven glare across the desktop shell.
+-------------------------------------------------------------------------- */
+html[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #151d27;
+  --ink: #d8e2ec;
+  --ink-soft: #bfccd8;
+  --muted: #96a6b6;
+  --surface: rgba(24, 34, 45, 0.88);
+  --surface-soft: rgba(29, 41, 54, 0.78);
+  --surface-muted: rgba(35, 48, 62, 0.64);
+  --line: rgba(165, 181, 197, 0.14);
+  --line-strong: rgba(143, 176, 213, 0.22);
+  --brand: #8fb0d5;
+  --brand-dark: #7296bf;
+  --brand-soft: rgba(143, 176, 213, 0.16);
+  --good: #89bfa8;
+  --bad: #d89991;
+  --warning: #d9bd85;
+  --color-income: #89bfa8;
+  --color-expense: #d89991;
+  --color-investment: #b5a8dc;
+  --color-net: #8fb0d5;
+  --glass-main: rgba(24, 34, 45, 0.76);
+  --glass-main-strong: rgba(29, 39, 51, 0.88);
+  --glass-border: rgba(186, 201, 216, 0.13);
+  --glass-line: rgba(165, 181, 197, 0.11);
+  --glass-shadow: 0 20px 58px rgba(0, 0, 0, 0.30), 0 8px 22px rgba(5, 11, 18, 0.22);
+}
+
+html[data-theme="night"] body.app-body-clean {
+  color: var(--ink) !important;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(80, 104, 132, 0.075), transparent 24rem),
+    radial-gradient(circle at 88% 14%, rgba(68, 116, 115, 0.055), transparent 27rem),
+    linear-gradient(135deg, #131b25 0%, #17212b 46%, #141e28 100%) !important;
+}
+
+html[data-theme="night"] body.app-body-clean::before,
+html[data-theme="night"] body.app-body-clean::after,
+html[data-theme="night"] body.app-body-clean .app-layout::before,
+html[data-theme="night"] body.app-body-clean .app-layout::after,
+html[data-theme="night"] .desktop-pointer-glow {
+  opacity: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html[data-theme="night"] .app-sidebar,
+html[data-theme="night"] .app-topbar,
+html[data-theme="night"] .panel-card,
+html[data-theme="night"] .form-section,
+html[data-theme="night"] .transactions,
+html[data-theme="night"] .chart-card,
+html[data-theme="night"] .summary-card,
+html[data-theme="night"] .card,
+html[data-theme="night"] .filters,
+html[data-theme="night"] .table-panel,
+html[data-theme="night"] .normal-add-polished,
+html[data-theme="night"] .quick-add-panel,
+html[data-theme="night"] .bill-candidate-card,
+html[data-theme="night"] .bill-save-routing-card,
+html[data-theme="night"] .bill-upload-dropzone,
+html[data-theme="night"] .bill-items-details,
+html[data-theme="night"] .bill-text-details {
+  color: var(--ink) !important;
+  background:
+    linear-gradient(135deg, rgba(27, 38, 50, 0.88), rgba(21, 31, 43, 0.78)) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.045) !important;
+}
+
+html[data-theme="night"] .app-topbar::before {
+  background: linear-gradient(90deg, rgba(20, 30, 41, 0.94), rgba(25, 37, 49, 0.88), rgba(21, 35, 43, 0.82)) !important;
+  border-bottom-color: rgba(186, 201, 216, 0.12) !important;
+}
+
+html[data-theme="night"] .primary-btn,
+html[data-theme="night"] .transaction-form button[type="submit"],
+html[data-theme="night"] .quick-add-menu summary.primary-btn {
+  background: linear-gradient(135deg, #587da5 0%, #4b8d91 62%, #568a75 100%) !important;
+  color: #eef4f8 !important;
+  box-shadow: 0 12px 28px rgba(31, 49, 69, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+html[data-theme="night"] .secondary-btn,
+html[data-theme="night"] .main-account-shortcut,
+html[data-theme="night"] .topbar-net-pill,
+html[data-theme="night"] .notification-trigger,
+html[data-theme="night"] .scope-group-direct,
+html[data-theme="night"] .grouped-scope-switcher .scope-switcher-group summary {
+  background: rgba(31, 44, 57, 0.76) !important;
+  border-color: rgba(186, 201, 216, 0.14) !important;
+  color: var(--ink) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255,255,255,0.045) !important;
+}

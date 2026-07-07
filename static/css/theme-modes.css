@@ -1,7 +1,7 @@
 /* --------------------------------------------------------------------------
-   Color mode + stronger colorful glass polish
-   Imported last so it fixes the drawer layering regression and controls the
-   final day/night color personality without touching backend logic.
+   Color modes + calmer glass polish
+   Imported late so it controls the final Light / Dark / Eye comfort palette
+   without touching page structure.
 -------------------------------------------------------------------------- */
 :root,
 html[data-theme="day"] {
@@ -32,7 +32,7 @@ html[data-theme="day"] {
   --glass-border: rgba(255, 255, 255, 0.78);
   --glass-line: rgba(125, 211, 252, 0.34);
   --glass-shadow: 0 24px 70px rgba(15, 23, 42, 0.13), 0 10px 32px rgba(37, 99, 235, 0.10);
-  --mode-accent-a: rgba(37, 99, 235, 0.38);
+  --mode-accent-a: rgba(12, 18, 28, 0.38);
   --mode-accent-b: rgba(6, 182, 212, 0.34);
   --mode-accent-c: rgba(16, 185, 129, 0.28);
   --mode-accent-d: rgba(124, 58, 237, 0.18);
@@ -41,54 +41,75 @@ html[data-theme="day"] {
 html[data-theme="night"] {
   color-scheme: dark;
 
-  /* Core dark palette */
-  --bg: #121212;
-  --surface: rgba(30, 30, 30, 0.88);
-  --surface-soft: rgba(36, 36, 36, 0.84);
-  --surface-muted: rgba(44, 44, 44, 0.78);
+  /* Dark mode: dark grey / muted navy instead of black, with low-saturation accents. */
+  --bg: #111822;
+  --surface: rgba(20, 28, 39, 0.90);
+  --surface-soft: rgba(26, 36, 50, 0.86);
+  --surface-muted: rgba(32, 43, 58, 0.78);
+  --ink: #e6edf3;
+  --ink-soft: #c8d1dc;
+  --muted: #99a6b8;
+  --line: rgba(148, 163, 184, 0.15);
+  --line-strong: rgba(122, 162, 247, 0.26);
+  --brand: #7aa2f7;
+  --brand-dark: #5b7fc7;
+  --brand-soft: rgba(122, 162, 247, 0.15);
+  --good: #7ac9a7;
+  --good-soft: rgba(122, 201, 167, 0.13);
+  --bad: #f28b82;
+  --bad-soft: rgba(242, 139, 130, 0.14);
+  --warning: #f2cc8f;
+  --warning-soft: rgba(242, 204, 143, 0.14);
+  --color-income: #7ac9a7;
+  --color-expense: #f28b82;
+  --color-investment: #b9a7ff;
+  --color-net: #7aa2f7;
+  --glass-main: rgba(18, 26, 36, 0.76);
+  --glass-main-strong: rgba(24, 34, 48, 0.90);
+  --glass-border: rgba(203, 213, 225, 0.14);
+  --glass-line: rgba(148, 163, 184, 0.13);
+  --glass-shadow: 0 28px 82px rgba(0, 0, 0, 0.40), 0 12px 34px rgba(3, 7, 18, 0.26);
+  --mode-accent-a: rgba(122, 162, 247, 0.07);
+  --mode-accent-b: rgba(109, 213, 194, 0.05);
+  --mode-accent-c: rgba(185, 167, 255, 0.045);
+  --mode-accent-d: rgba(242, 204, 143, 0.035);
+}
 
-  /* Text */
-  --ink: #e0e0e0;
-  --ink-soft: #c7c7c7;
-  --muted: #a8a8a8;
+html[data-theme="comfort"] {
+  color-scheme: light;
 
-  /* Lines */
-  --line: rgba(255, 255, 255, 0.10);
-  --line-strong: rgba(255, 255, 255, 0.18);
-
-  /* Main brand */
-  --brand: #3b82f6;
-  --brand-dark: #2563eb;
-  --brand-soft: rgba(59, 130, 246, 0.18);
-
-  /* Status colors */
-  --good: #10b981;
-  --good-soft: rgba(16, 185, 129, 0.16);
-
-  --bad: #ef4444;
-  --bad-soft: rgba(239, 68, 68, 0.16);
-
-  --warning: #f59e0b;
-  --warning-soft: rgba(245, 158, 11, 0.16);
-
-  /* Finance semantic colors */
-  --color-income: #10b981;
-  --color-expense: #ef4444;
-  --color-investment: #8b5cf6;
-  --color-net: #3b82f6;
-
-  /* Glass system, darker and calmer */
-  --glass-main: rgba(30, 30, 30, 0.74);
-  --glass-main-strong: rgba(36, 36, 36, 0.88);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-line: rgba(255, 255, 255, 0.10);
-  --glass-shadow: 0 28px 80px rgba(0, 0, 0, 0.46), 0 8px 28px rgba(0, 0, 0, 0.22);
-
-  /* Background accent glows, very subtle */
-  --mode-accent-a: rgba(59, 130, 246, 0.16);
-  --mode-accent-b: rgba(139, 92, 246, 0.11);
-  --mode-accent-c: rgba(16, 185, 129, 0.08);
-  --mode-accent-d: rgba(6, 182, 212, 0.07);
+  /* Eye comfort: warm, low-blue, low-saturation light palette. */
+  --bg: #f6f0e3;
+  --surface: rgba(255, 250, 238, 0.74);
+  --surface-soft: rgba(250, 244, 229, 0.66);
+  --surface-muted: rgba(239, 236, 215, 0.58);
+  --ink: #25312a;
+  --ink-soft: #3b493f;
+  --muted: #69735f;
+  --line: rgba(128, 118, 92, 0.22);
+  --line-strong: rgba(79, 111, 99, 0.28);
+  --brand: #4f6f63;
+  --brand-dark: #405d53;
+  --brand-soft: rgba(214, 226, 202, 0.86);
+  --good: #357a5b;
+  --good-soft: rgba(205, 224, 195, 0.80);
+  --bad: #b45b4d;
+  --bad-soft: rgba(244, 218, 204, 0.76);
+  --warning: #a16f2b;
+  --warning-soft: rgba(242, 226, 192, 0.84);
+  --color-income: #357a5b;
+  --color-expense: #b45b4d;
+  --color-investment: #75669b;
+  --color-net: #4d6f96;
+  --glass-main: rgba(255, 250, 238, 0.60);
+  --glass-main-strong: rgba(255, 252, 242, 0.78);
+  --glass-border: rgba(255, 252, 242, 0.84);
+  --glass-line: rgba(128, 118, 92, 0.20);
+  --glass-shadow: 0 22px 62px rgba(77, 65, 44, 0.12), 0 8px 24px rgba(79, 111, 99, 0.08);
+  --mode-accent-a: rgba(165, 137, 82, 0.15);
+  --mode-accent-b: rgba(79, 111, 99, 0.13);
+  --mode-accent-c: rgba(139, 156, 99, 0.12);
+  --mode-accent-d: rgba(117, 102, 155, 0.07);
 }
 
 html[data-theme="day"] body.app-body-clean {
@@ -103,10 +124,19 @@ html[data-theme="day"] body.app-body-clean {
 
 html[data-theme="night"] body.app-body-clean {
   background:
-    radial-gradient(circle at 12% 8%, rgba(59, 130, 246, 0.14), transparent 24rem),
-    radial-gradient(circle at 82% 12%, rgba(139, 92, 246, 0.10), transparent 25rem),
-    radial-gradient(circle at 88% 78%, rgba(16, 185, 129, 0.07), transparent 27rem),
-    linear-gradient(135deg, #101010 0%, #121212 42%, #16181c 100%);
+    radial-gradient(circle at 12% 8%, rgba(122, 162, 247, 0.08), transparent 23rem),
+    radial-gradient(circle at 86% 10%, rgba(109, 213, 194, 0.055), transparent 24rem),
+    radial-gradient(circle at 92% 84%, rgba(185, 167, 255, 0.04), transparent 25rem),
+    linear-gradient(135deg, #0f151d 0%, #111822 46%, #151b24 100%);
+}
+
+html[data-theme="comfort"] body.app-body-clean {
+  background:
+    radial-gradient(circle at 9% 8%, rgba(179, 146, 87, 0.18), transparent 24rem),
+    radial-gradient(circle at 78% 0%, rgba(110, 138, 103, 0.14), transparent 25rem),
+    radial-gradient(circle at 100% 54%, rgba(133, 151, 104, 0.12), transparent 28rem),
+    radial-gradient(circle at 20% 95%, rgba(160, 121, 90, 0.10), transparent 22rem),
+    linear-gradient(135deg, #f7f0df 0%, #f3eddd 36%, #eef0df 70%, #f5eadb 100%);
 }
 
 body.app-body-clean::before {
@@ -120,12 +150,21 @@ body.app-body-clean::before {
 }
 
 html[data-theme="night"] body.app-body-clean::before {
-  opacity: 0.38;
+  opacity: 0.22;
   background:
-    radial-gradient(ellipse at 18% 18%, rgba(59, 130, 246, 0.10), transparent 30rem),
-    radial-gradient(ellipse at 82% 22%, rgba(139, 92, 246, 0.08), transparent 28rem),
-    radial-gradient(ellipse at 64% 90%, rgba(16, 185, 129, 0.05), transparent 29rem),
-    radial-gradient(circle at var(--pointer-x, 55%) var(--pointer-y, 30%), rgba(59, 130, 246, 0.08), transparent 15rem);
+    radial-gradient(ellipse at 18% 18%, rgba(122, 162, 247, 0.055), transparent 30rem),
+    radial-gradient(ellipse at 82% 22%, rgba(109, 213, 194, 0.04), transparent 28rem),
+    radial-gradient(ellipse at 64% 90%, rgba(185, 167, 255, 0.035), transparent 29rem),
+    radial-gradient(circle at var(--pointer-x, 55%) var(--pointer-y, 30%), rgba(255, 255, 255, 0), transparent 0);
+}
+
+html[data-theme="comfort"] body.app-body-clean::before {
+  opacity: 0.34;
+  background:
+    radial-gradient(ellipse at 18% 18%, rgba(166, 128, 76, 0.13), transparent 30rem),
+    radial-gradient(ellipse at 82% 22%, rgba(79, 111, 99, 0.10), transparent 28rem),
+    radial-gradient(ellipse at 64% 90%, rgba(139, 156, 99, 0.095), transparent 29rem),
+    radial-gradient(circle at var(--pointer-x, 55%) var(--pointer-y, 30%), rgba(255, 244, 214, 0.24), transparent 12rem);
 }
 
 .app-sidebar,
@@ -180,9 +219,9 @@ html[data-theme="night"] body.app-body-clean::before {
 
 html[data-theme="night"] .app-topbar {
   background:
-    linear-gradient(100deg, rgba(24, 24, 24, 0.92), rgba(30, 30, 30, 0.86)),
-    radial-gradient(circle at 12% 0%, rgba(59, 130, 246, 0.08), transparent 16rem) !important;
-  border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+    linear-gradient(100deg, rgba(18, 26, 36, 0.92), rgba(24, 34, 48, 0.86)),
+    radial-gradient(circle at 12% 0%, rgba(122, 162, 247, 0.055), transparent 16rem) !important;
+  border-bottom-color: rgba(203, 213, 225, 0.12) !important;
 }
 
 html[data-theme="night"] .app-sidebar,
@@ -202,10 +241,42 @@ html[data-theme="night"] .priority-card,
 html[data-theme="night"] .mini-priority-card,
 html[data-theme="night"] .standard-table {
   background:
-    linear-gradient(135deg, rgba(30, 30, 30, 0.88), rgba(36, 36, 36, 0.76)),
-    radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.055), transparent 18rem) !important;
-  border-color: rgba(255, 255, 255, 0.11) !important;
+    linear-gradient(135deg, rgba(20, 28, 39, 0.88), rgba(26, 36, 50, 0.76)),
+    radial-gradient(circle at 0% 0%, rgba(122, 162, 247, 0.04), transparent 18rem) !important;
+  border-color: rgba(203, 213, 225, 0.12) !important;
   box-shadow: 0 22px 64px rgba(0, 0, 0, 0.34) !important;
+}
+
+html[data-theme="comfort"] .app-topbar {
+  background:
+    linear-gradient(100deg, rgba(255, 250, 238, 0.80), rgba(244, 239, 221, 0.66) 50%, rgba(238, 241, 224, 0.56)),
+    radial-gradient(circle at 12% 0%, rgba(164, 136, 83, 0.13), transparent 16rem),
+    radial-gradient(circle at 86% 80%, rgba(79, 111, 99, 0.12), transparent 16rem) !important;
+  border-bottom-color: rgba(128, 118, 92, 0.18) !important;
+}
+
+html[data-theme="comfort"] .app-sidebar,
+html[data-theme="comfort"] .mobile-bottom-nav,
+html[data-theme="comfort"] .mobile-add-panel,
+html[data-theme="comfort"] .quick-add-panel,
+html[data-theme="comfort"] .desktop-detail-shell,
+html[data-theme="comfort"] .page-heading,
+html[data-theme="comfort"] .panel-card,
+html[data-theme="comfort"] .card,
+html[data-theme="comfort"] .filters,
+html[data-theme="comfort"] .form-section,
+html[data-theme="comfort"] .transactions,
+html[data-theme="comfort"] .chart-card,
+html[data-theme="comfort"] .summary-card,
+html[data-theme="comfort"] .priority-card,
+html[data-theme="comfort"] .mini-priority-card,
+html[data-theme="comfort"] .standard-table {
+  background:
+    linear-gradient(135deg, rgba(255, 250, 238, 0.80), rgba(240, 236, 217, 0.62)),
+    radial-gradient(circle at 0% 0%, rgba(164, 136, 83, 0.08), transparent 18rem),
+    radial-gradient(circle at 100% 100%, rgba(79, 111, 99, 0.07), transparent 18rem) !important;
+  border-color: rgba(255, 252, 242, 0.76) !important;
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.38) !important;
 }
 
 /* Final fix: drawer must be fixed above the blurred backdrop. The previous
@@ -222,7 +293,11 @@ html[data-theme="night"] .standard-table {
   }
 
   html[data-theme="night"] .desktop-detail-backdrop {
-    background: rgba(0, 7, 18, 0.55) !important;
+    background: rgba(4, 9, 15, 0.62) !important;
+  }
+
+  html[data-theme="comfort"] .desktop-detail-backdrop {
+    background: rgba(80, 67, 44, 0.26) !important;
   }
 
   .desktop-detail-drawer {
@@ -282,7 +357,7 @@ html[data-theme="night"] .standard-table {
     radial-gradient(circle at 100% 0%, rgba(16,185,129,0.13), transparent 13rem) !important;
 }
 
-/* Day / night toggle button */
+/* Light / dark and eye comfort buttons */
 .theme-toggle-btn {
   position: relative;
   isolation: isolate;
@@ -331,19 +406,72 @@ html[data-theme="night"] .standard-table {
 }
 
 html[data-theme="night"] .theme-toggle-btn {
-  color: #e0f7ff;
+  color: #e6edf3;
   background:
-    linear-gradient(135deg, rgba(15, 35, 60, 0.88), rgba(13, 60, 76, 0.54)),
-    radial-gradient(circle at 16% 20%, rgba(96,165,250,0.36), transparent 2rem),
-    radial-gradient(circle at 88% 85%, rgba(52,211,153,0.22), transparent 2.6rem);
-  border-color: rgba(125, 211, 252, 0.28);
-  box-shadow: 0 18px 46px rgba(0,0,0,0.30), 0 8px 28px rgba(34,211,238,0.13), inset 0 1px 0 rgba(255,255,255,0.20);
+    linear-gradient(135deg, rgba(24, 34, 48, 0.92), rgba(28, 42, 56, 0.66)),
+    radial-gradient(circle at 16% 20%, rgba(122, 162, 247, 0.16), transparent 2rem),
+    radial-gradient(circle at 88% 85%, rgba(109, 213, 194, 0.10), transparent 2.6rem);
+  border-color: rgba(203, 213, 225, 0.14);
+  box-shadow: 0 18px 46px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 html[data-theme="night"] .theme-toggle-orb {
   background:
     radial-gradient(circle at 65% 32%, rgba(255,255,255,0.92) 0 12%, transparent 13% 100%),
-    radial-gradient(circle at 45% 42%, #e0f2fe 0 12%, #93c5fd 13% 54%, #2563eb 55% 100%);
-  box-shadow: 0 0 0 5px rgba(96, 165, 250, 0.16), 0 8px 20px rgba(37, 99, 235, 0.38);
+    radial-gradient(circle at 45% 42%, #dbe7f2 0 12%, #7aa2f7 13% 54%, #3c567d 55% 100%);
+  box-shadow: 0 0 0 5px rgba(122, 162, 247, 0.12), 0 8px 20px rgba(12, 18, 28, 0.38);
+}
+
+
+.theme-mode-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.theme-comfort-btn {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.48rem;
+  padding: 0.45rem 0.78rem;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  background:
+    linear-gradient(135deg, rgba(255, 250, 238, 0.74), rgba(238, 241, 224, 0.56)),
+    radial-gradient(circle at 18% 18%, rgba(161, 111, 43, 0.18), transparent 1.9rem),
+    radial-gradient(circle at 88% 82%, rgba(79, 111, 99, 0.18), transparent 2.4rem);
+  box-shadow: 0 16px 38px rgba(77, 65, 44, 0.12), inset 0 1px 0 rgba(255,255,255,0.78);
+}
+.theme-comfort-btn:hover { transform: translateY(-1px); }
+.theme-comfort-icon {
+  width: 31px;
+  height: 31px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(255, 250, 238, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.80), 0 0 0 5px rgba(161,111,43,0.08);
+}
+.theme-comfort-btn.is-active,
+html[data-theme="comfort"] .theme-comfort-btn {
+  color: #25312a;
+  border-color: rgba(79, 111, 99, 0.28);
+  background:
+    linear-gradient(135deg, rgba(245, 238, 216, 0.92), rgba(224, 231, 204, 0.72)),
+    radial-gradient(circle at 16% 20%, rgba(161, 111, 43, 0.20), transparent 2rem),
+    radial-gradient(circle at 88% 85%, rgba(79, 111, 99, 0.20), transparent 2.6rem);
+}
+html[data-theme="night"] .theme-comfort-btn {
+  color: #e6edf3;
+  border-color: rgba(203, 213, 225, 0.14);
+  background:
+    linear-gradient(135deg, rgba(24, 34, 48, 0.90), rgba(26, 36, 50, 0.70)),
+    radial-gradient(circle at 20% 20%, rgba(242, 204, 143, 0.08), transparent 2rem),
+    radial-gradient(circle at 88% 85%, rgba(122, 201, 167, 0.07), transparent 2.6rem);
+  box-shadow: 0 18px 46px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 /* Color accents: less pale/pink, more blue-cyan-green personality. */
@@ -372,10 +500,17 @@ html[data-theme="night"] .theme-toggle-orb {
   box-shadow: inset 3px 0 0 var(--brand), 0 10px 24px rgba(37, 99, 235, 0.10);
 }
 html[data-theme="night"] .nav-items a.active {
-  color: #f0f9ff !important;
+  color: #e6edf3 !important;
   background:
-    linear-gradient(135deg, rgba(29, 78, 216, 0.34), rgba(6, 95, 70, 0.22)),
-    radial-gradient(circle at 12% 15%, rgba(34,211,238,0.18), transparent 5rem) !important;
+    linear-gradient(135deg, rgba(63, 83, 128, 0.34), rgba(49, 83, 78, 0.20)),
+    radial-gradient(circle at 12% 15%, rgba(122, 162, 247, 0.12), transparent 5rem) !important;
+}
+html[data-theme="comfort"] .nav-items a.active {
+  color: #25312a !important;
+  background:
+    linear-gradient(135deg, rgba(223, 228, 198, 0.78), rgba(245, 232, 205, 0.58)),
+    radial-gradient(circle at 12% 15%, rgba(79,111,99,0.14), transparent 5rem) !important;
+  box-shadow: inset 3px 0 0 var(--brand), 0 10px 24px rgba(79, 111, 99, 0.09);
 }
 
 .standard-table th {
@@ -385,18 +520,29 @@ html[data-theme="night"] .nav-items a.active {
 }
 html[data-theme="night"] .standard-table th {
   background:
-    linear-gradient(135deg, rgba(30, 64, 175, 0.34), rgba(8, 145, 178, 0.22)) !important;
-  color: #dbeafe !important;
+    linear-gradient(135deg, rgba(63, 83, 128, 0.24), rgba(49, 83, 78, 0.16)) !important;
+  color: #dbe7f2 !important;
+}
+html[data-theme="comfort"] .standard-table th {
+  background:
+    linear-gradient(135deg, rgba(231, 226, 205, 0.76), rgba(222, 231, 205, 0.60)) !important;
+  color: #3b493f !important;
 }
 html[data-theme="night"] td,
 html[data-theme="night"] .clickable-row td,
 html[data-theme="night"] .desktop-detail-row td {
   color: var(--ink-soft);
-  border-bottom-color: rgba(125, 211, 252, 0.12) !important;
+  border-bottom-color: rgba(148, 163, 184, 0.12) !important;
+}
+html[data-theme="comfort"] td,
+html[data-theme="comfort"] .clickable-row td,
+html[data-theme="comfort"] .desktop-detail-row td {
+  color: var(--ink-soft);
+  border-bottom-color: rgba(128, 118, 92, 0.16) !important;
 }
 html[data-theme="night"] .clickable-row:hover td,
 html[data-theme="night"] .desktop-detail-row:hover td {
-  background: rgba(34, 211, 238, 0.10) !important;
+  background: rgba(122, 162, 247, 0.08) !important;
 }
 
 input[type="text"],
@@ -421,27 +567,49 @@ html[data-theme="night"] select {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
 }
 html[data-theme="night"] option {
-  color: #e0e0e0;
-  background: #1e1e1e;
+  color: #e6edf3;
+  background: #182230;
+}
+html[data-theme="comfort"] input[type="text"],
+html[data-theme="comfort"] input[type="date"],
+html[data-theme="comfort"] input[type="number"],
+html[data-theme="comfort"] input[type="email"],
+html[data-theme="comfort"] textarea,
+html[data-theme="comfort"] select {
+  background: rgba(255, 250, 238, 0.72) !important;
+  color: #25312a !important;
+  border-color: rgba(128, 118, 92, 0.22) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.50) !important;
+}
+html[data-theme="comfort"] option {
+  color: #25312a;
+  background: #fffaf0;
 }
 html[data-theme="night"] small,
 html[data-theme="night"] .hint,
-html[data-theme="night"] .muted { color: var(--muted) !important; }
+html[data-theme="night"] .muted,
+html[data-theme="comfort"] small,
+html[data-theme="comfort"] .hint,
+html[data-theme="comfort"] .muted { color: var(--muted) !important; }
 
 @media (max-width: 1000px) {
-  .theme-toggle-btn {
+  .theme-toggle-btn,
+  .theme-comfort-btn {
     min-height: 42px;
     padding-right: 0.68rem;
   }
-  .theme-toggle-btn b { display: none; }
+  .theme-toggle-btn b,
+  .theme-comfort-btn b { display: none; }
 }
 
 @media (max-width: 760px) {
-  .theme-toggle-btn {
+  .theme-toggle-btn,
+  .theme-comfort-btn {
     width: 44px;
     height: 44px;
     padding: 0.35rem;
     justify-content: center;
   }
-  .theme-toggle-orb { width: 29px; height: 29px; }
+  .theme-toggle-orb,
+  .theme-comfort-icon { width: 29px; height: 29px; }
 }

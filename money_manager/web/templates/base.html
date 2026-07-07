@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="{{ current_language or selected_language or 'en' }}" data-theme="{{ selected_theme if selected_theme in ['day', 'night'] else 'day' }}">
+<html lang="{{ current_language or selected_language or 'en' }}" data-theme="{{ selected_theme if selected_theme in ['day', 'night', 'comfort'] else 'day' }}">
 <head>
   <meta charset="utf-8">
   <title>{{ t("app.name") }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% set ep = request.endpoint or '' %}
-  {% set server_theme = selected_theme if selected_theme in ['day', 'night'] else 'day' %}
+  {% set server_theme = selected_theme if selected_theme in ['day', 'night', 'comfort'] else 'day' %}
   <script>
     (function () {
       var serverTheme = {{ server_theme|tojson }};
-      document.documentElement.dataset.theme = serverTheme === "night" ? "night" : "day";
+      document.documentElement.dataset.theme = ["night", "comfort"].indexOf(serverTheme) >= 0 ? serverTheme : "day";
       try {
         window.localStorage.setItem("moneyManagerColorMode", document.documentElement.dataset.theme);
       } catch (error) {
@@ -99,7 +99,7 @@
     html.phone-native-active .app-content-stage { width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0 !important; overflow-x: hidden !important; box-sizing: border-box !important; }
     html.phone-native-active .app-topbar { display: none !important; }
   </style>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=sidebar-collapse-1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=theme-comfort-2">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/instant-nav.css') }}?v=instant-nav-1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/ui-refinement.css') }}?v=ui-account-brand-3">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dashboard.css') }}?v=dashboard-home-hub-1">
@@ -331,6 +331,24 @@
           {% if endpoint_exists('financial_calendar.calendar_page') %}
             <a class="topbar-icon-shortcut" href="{{ url_for('financial_calendar.calendar_page', account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page') }}" title="Open financial calendar" aria-label="Open financial calendar">📅</a>
           {% endif %}
+          {% set current_theme_mode = selected_theme if selected_theme in ['day', 'night', 'comfort'] else 'day' %}
+          <form method="post" action="{{ url_for('profile.preferences_quick') }}" class="theme-mode-form">
+            <input type="hidden" name="action" value="toggle_theme">
+            <input type="hidden" name="next" value="{{ request.full_path }}">
+            <button type="submit" class="theme-toggle-btn" data-theme-toggle title="{{ t('theme.day') if current_theme_mode == 'night' else t('theme.night') }}" aria-label="{{ t('theme.day') if current_theme_mode == 'night' else t('theme.night') }}">
+              <span class="theme-toggle-orb" aria-hidden="true"></span>
+              <b data-theme-toggle-label>{{ t('theme.day') if current_theme_mode == 'night' else t('theme.night') }}</b>
+            </button>
+          </form>
+          <form method="post" action="{{ url_for('profile.preferences_quick') }}" class="theme-mode-form">
+            <input type="hidden" name="action" value="set_theme">
+            <input type="hidden" name="theme" value="{{ 'day' if current_theme_mode == 'comfort' else 'comfort' }}">
+            <input type="hidden" name="next" value="{{ request.full_path }}">
+            <button type="submit" class="theme-comfort-btn {{ 'is-active' if current_theme_mode == 'comfort' else '' }}" data-theme-comfort title="{{ t('theme.day') if current_theme_mode == 'comfort' else t('theme.comfort') }}" aria-label="{{ t('theme.day') if current_theme_mode == 'comfort' else t('theme.comfort') }}">
+              <span class="theme-comfort-icon" aria-hidden="true">👁</span>
+              <b data-theme-comfort-label>{{ t('theme.day') if current_theme_mode == 'comfort' else t('theme.comfort') }}</b>
+            </button>
+          </form>
           <button type="button" class="topbar-icon-shortcut" data-command-palette-open title="Command palette" aria-label="Open command palette">⌘K</button>
 
           <div class="notification-menu" data-notification-menu>
@@ -471,7 +489,7 @@
   </div>
 
   <script src="{{ url_for('static', filename='js/shared/instant-nav.js') }}?v=instant-nav-3" defer></script>
-  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=ui-credit-12"></script>
+  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=theme-comfort-2"></script>
   <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-lazy-2"></script>
   <script src="{{ url_for('static', filename='js/shared/smart-floating-submit.js') }}?v=smart-save-3" defer></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>

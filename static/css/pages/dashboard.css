@@ -1914,3 +1914,197 @@ body > .chart-card.chart-expanded .static-chart-img,
     transition: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Dashboard dark-mode glare fix
+   Keep the new command layout, but remove the light-mode white spotlights in
+   Dark mode and lower the contrast between cards and background.
+-------------------------------------------------------------------------- */
+html[data-theme="night"] body.app-body-clean::before,
+html[data-theme="night"] body.app-body-clean::after,
+html[data-theme="night"] body.app-body-clean .app-layout::before,
+html[data-theme="night"] body.app-body-clean .app-layout::after,
+html[data-theme="night"] .desktop-pointer-glow {
+  opacity: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html[data-theme="night"] .dashboard-hero,
+html[data-theme="night"] .notification-center-hero,
+html[data-theme="night"] .financial-calendar-hero {
+  color: var(--ink) !important;
+  background:
+    linear-gradient(135deg, rgba(30, 42, 54, 0.88), rgba(24, 35, 47, 0.78)) !important;
+  border-color: rgba(186, 201, 216, 0.13) !important;
+  box-shadow: 0 20px 58px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255,255,255,0.045) !important;
+}
+
+html[data-theme="night"] .dashboard-hero h2,
+html[data-theme="night"] .notification-center-hero h2,
+html[data-theme="night"] .financial-calendar-hero h2 {
+  color: #d8e2ec !important;
+  background: none !important;
+  -webkit-text-fill-color: #d8e2ec !important;
+  text-shadow: none !important;
+}
+
+html[data-theme="night"] .dashboard-hero p,
+html[data-theme="night"] .notification-center-hero p,
+html[data-theme="night"] .financial-calendar-hero p {
+  color: #96a6b6 !important;
+}
+
+html[data-theme="night"] .dashboard-hero-intent {
+  color: #aab8c6 !important;
+  background: rgba(38, 51, 64, 0.72) !important;
+  border-color: rgba(186, 201, 216, 0.13) !important;
+}
+
+html[data-theme="night"] .dashboard-hero-intent b {
+  color: #d8e2ec !important;
+}
+
+html[data-theme="night"] .dashboard-hero-balance {
+  color: #dfe7ef !important;
+  background: linear-gradient(135deg, rgba(19, 27, 40, 0.90), rgba(23, 34, 48, 0.82)) !important;
+  border: 1px solid rgba(186, 201, 216, 0.13) !important;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+}
+
+html[data-theme="night"] .dashboard-hero-balance span,
+html[data-theme="night"] .dashboard-hero-balance small {
+  color: #9aa8b6 !important;
+}
+
+html[data-theme="night"] .dashboard-command-hub .command-tile {
+  color: #d8e2ec !important;
+  background:
+    linear-gradient(135deg, rgba(34, 47, 60, 0.86), rgba(28, 40, 52, 0.74)) !important;
+  border-color: rgba(186, 201, 216, 0.13) !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255,255,255,0.045) !important;
+  filter: none !important;
+}
+
+html[data-theme="night"] .dashboard-command-hub .command-tile:hover,
+html[data-theme="night"] .dashboard-command-hub .command-tile:focus-visible {
+  color: #edf3f8 !important;
+  background:
+    linear-gradient(135deg, rgba(42, 56, 70, 0.92), rgba(32, 48, 60, 0.82)) !important;
+  border-color: rgba(143, 176, 213, 0.24) !important;
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255,255,255,0.06) !important;
+}
+
+html[data-theme="night"] .dashboard-command-hub .command-tile::before,
+html[data-theme="night"] .dashboard-command-hub .command-tile::after {
+  opacity: 0 !important;
+  background: none !important;
+}
+
+html[data-theme="night"] .dashboard-command-hub .command-tile-icon {
+  color: #9fbada !important;
+  background: rgba(223, 231, 239, 0.075) !important;
+  box-shadow: inset 0 0 0 1px rgba(186, 201, 216, 0.12), 0 8px 20px rgba(0, 0, 0, 0.20) !important;
+}
+
+html[data-theme="night"] .dashboard-command-hub .command-tile-copy strong {
+  color: #d8e2ec !important;
+}
+
+html[data-theme="night"] .dashboard-command-hub .command-tile-copy small {
+  color: #93a4b3 !important;
+}
+
+html[data-theme="night"] .dashboard-command-hub .command-tile-primary {
+  color: #f3f7fb !important;
+  background:
+    linear-gradient(135deg, #496f9d 0%, #438589 58%, #4f826f 100%) !important;
+  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+}
+
+html[data-theme="night"] .dashboard-command-hub .command-tile-primary .command-tile-icon {
+  color: #f5f9fc !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14), 0 10px 24px rgba(0,0,0,0.18) !important;
+}
+
+html[data-theme="night"] .dashboard-command-hub .command-tile-primary .command-tile-copy strong,
+html[data-theme="night"] .dashboard-command-hub .command-tile-primary .command-tile-copy small {
+  color: #f3f7fb !important;
+}
+
+html[data-theme="night"] .dashboard-kpi,
+html[data-theme="night"] .dashboard-wallet-stat,
+html[data-theme="night"] .dashboard-month-plan-card,
+html[data-theme="night"] .dashboard-conti-compact-card,
+html[data-theme="night"] .dashboard-home-reminder-card,
+html[data-theme="night"] .dashboard-home-collapse-card,
+html[data-theme="night"] .notification-center-summary article,
+html[data-theme="night"] .financial-calendar-summary article,
+html[data-theme="night"] .calendar-day,
+html[data-theme="night"] .calendar-kind-row,
+html[data-theme="night"] .calendar-timeline-row,
+html[data-theme="night"] .dashboard-charts-home.dashboard-charts-redesigned .chart-card,
+html[data-theme="night"] .dashboard-charts-home.dashboard-charts-redesigned .chart-card-trend,
+html[data-theme="night"] .dashboard-charts-home.dashboard-charts-redesigned .chart-card-cashflow {
+  color: #d8e2ec !important;
+  background: linear-gradient(135deg, rgba(32, 44, 57, 0.86), rgba(26, 38, 50, 0.76)) !important;
+  border-color: rgba(186, 201, 216, 0.13) !important;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255,255,255,0.045) !important;
+}
+
+html[data-theme="night"] .dashboard-kpi h3,
+html[data-theme="night"] .dashboard-wallet-stat h3,
+html[data-theme="night"] .dashboard-charts-home.dashboard-charts-redesigned .chart-card h3 {
+  color: #a5b3c1 !important;
+}
+
+html[data-theme="night"] .dashboard-kpi p,
+html[data-theme="night"] .dashboard-wallet-stat p,
+html[data-theme="night"] .dashboard-month-plan-card p,
+html[data-theme="night"] .dashboard-conti-compact-card p {
+  color: #93a4b3 !important;
+}
+
+html[data-theme="night"] .dashboard-plan-row,
+html[data-theme="night"] .dashboard-conti-row,
+html[data-theme="night"] .dashboard-long-reminder,
+html[data-theme="night"] .dashboard-payable-reminder {
+  color: #d8e2ec !important;
+  background: rgba(38, 51, 64, 0.70) !important;
+  border-color: rgba(186, 201, 216, 0.12) !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18) !important;
+}
+
+html[data-theme="night"] .chart-expanded-backdrop {
+  background: rgba(10, 16, 23, 0.72) !important;
+  backdrop-filter: blur(8px) saturate(0.9) !important;
+}
+
+html[data-theme="night"] body > .chart-card.chart-expanded,
+html[data-theme="night"] .chart-card.chart-expanded {
+  background: linear-gradient(135deg, rgba(28, 40, 52, 0.98), rgba(22, 32, 43, 0.98)) !important;
+  border-color: rgba(186, 201, 216, 0.16) !important;
+  box-shadow: 0 34px 110px rgba(0, 0, 0, 0.52) !important;
+}
+
+/* Eye comfort: make the main balance block readable and less black */
+html[data-theme="comfort"] .dashboard-hero-balance {
+  background:
+    linear-gradient(135deg, rgba(248, 244, 229, 0.96), rgba(222, 235, 218, 0.92)) !important;
+  color: #233025 !important;
+  border: 1px solid rgba(92, 110, 82, 0.22) !important;
+  box-shadow:
+    0 16px 34px rgba(76, 84, 62, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.70) !important;
+}
+
+html[data-theme="comfort"] .dashboard-hero-balance strong {
+  color: #223126 !important;
+}
+
+html[data-theme="comfort"] .dashboard-hero-balance span,
+html[data-theme="comfort"] .dashboard-hero-balance small {
+  color: #596653 !important;
+}

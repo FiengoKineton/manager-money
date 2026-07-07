@@ -23,7 +23,7 @@ from money_manager.services.navigation_service import (
     set_group_collapsed,
     show_page,
 )
-from money_manager.services.preferences_service import load_preferences, update_preferences
+from money_manager.services.preferences_service import load_preferences, normalize_theme_value, update_preferences
 from money_manager.services.profile_service import (
     display_name_from_profile,
     initials_from_profile,
@@ -56,8 +56,9 @@ DATE_FORMAT_OPTIONS = [
     {"value": "mm/dd/yyyy", "label": "MM/DD/YYYY"},
 ]
 THEME_OPTIONS = [
-    {"value": "day", "label": "Day"},
-    {"value": "night", "label": "Night"},
+    {"value": "day", "label": "Light"},
+    {"value": "night", "label": "Dark"},
+    {"value": "comfort", "label": "Eye comfort"},
 ]
 
 
@@ -91,7 +92,7 @@ def preferences():
     language = request.form.get("language", "en")
 
     updates = {
-        "theme": "night" if theme == "night" else "day",
+        "theme": normalize_theme_value(theme),
         "language": language if language in available_language_codes() else "en",
         "privacy_mode": _checkbox_on("privacy_mode"),
         "show_sensitive_data": _checkbox_on("show_sensitive_data"),
@@ -104,12 +105,16 @@ def preferences():
 def preferences_quick():
     preferences = load_preferences()
     action = str(request.form.get("action") or "").strip()
+    next_url = _safe_next(request.form.get("next"))
 
     updates = {}
 
     if action == "toggle_theme":
-        current_theme = str(preferences.get("theme") or "day")
-        updates["theme"] = "night" if current_theme != "night" else "day"
+        current_theme = normalize_theme_value(preferences.get("theme"))
+        updates["theme"] = "day" if current_theme == "night" else "night"
+
+    elif action == "set_theme":
+        updates["theme"] = normalize_theme_value(request.form.get("theme"))
 
     elif action == "toggle_language":
         current_language = str(preferences.get("language") or "en")
@@ -127,7 +132,7 @@ def preferences_quick():
     if updates:
         update_preferences(updates, allow_future_fields=False)
 
-    return redirect(url_for("profile.profile_page", saved="preferences"))
+    return redirect(next_url or url_for("profile.profile_page", saved="preferences"))
 
 @bp.post("/navigation/hide")
 def navigation_hide():
@@ -268,6 +273,13 @@ def _profile_account_summary(preferences: dict) -> list[dict]:
             "balance_display": "••••" if mask_sensitive else "",
         })
     return rows[:12]
+
+
+def _safe_next(value: str | None) -> str:
+    clean = str(value or "").strip()
+    if clean.startswith("/") and not clean.startswith("//"):
+        return clean
+    return ""
 
 
 def _profile_navigation_url(*, saved: str) -> str:

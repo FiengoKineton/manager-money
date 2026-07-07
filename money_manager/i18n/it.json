@@ -655,8 +655,8 @@
   "security.unlock_vault": "Sblocca vault",
   "security.unlocked": "Sbloccato",
   "security.vault": "Vault",
-  "theme.day": "Giorno",
-  "theme.night": "Notte",
+  "theme.day": "Chiaro",
+  "theme.night": "Scuro",
   "transaction.bank_name_snapshot": "Snapshot banca",
   "transaction.bic_swift_snapshot": "Snapshot BIC / SWIFT",
   "transaction.bonifico_metadata": "Metadati bonifico",
@@ -729,5 +729,6 @@
     "financial_calendar": "Calendario finanziario",
     "planned_expenses": "Spese pianificate",
     "savings_goals": "Obiettivi di risparmio"
-  }
+  },
+  "theme.comfort": "Comfort occhi"
 }

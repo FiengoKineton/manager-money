@@ -1,9 +1,9 @@
 /* --------------------------------------------------------------------------
-   Final UI corrections: compact project tables, icon-only mode toggle, and
-   stronger high-contrast night palette. Visual only; no backend logic touched.
+   Final UI corrections: compact project tables, icon-only mode toggle,
+   Dark mode palette and Eye comfort mode. Visual only; no backend logic touched.
 -------------------------------------------------------------------------- */
 
-/* Icon-only Day/Night button: keep the accessible label/title, remove text. */
+/* Icon-only Light/Dark button: keep the accessible label/title, remove text. */
 .theme-toggle-btn {
   width: 54px;
   min-width: 54px;
@@ -138,38 +138,95 @@
   }
 }
 
-/* High-contrast night mode: text becomes truly light, while cards keep colored
-   glass patches so the UI does not turn into flat black. */
+/* Final color-mode polish: Dark avoids black/cyan glare; Eye comfort keeps
+   the light layout but warms and desaturates surfaces for evening use. */
 html[data-theme="night"] {
-  --bg: #06121f;
-  --surface: rgba(8, 20, 34, 0.80);
-  --surface-soft: rgba(10, 29, 50, 0.78);
-  --surface-muted: rgba(13, 42, 64, 0.68);
-  --ink: #f8fbff;
-  --ink-soft: #e6f2ff;
-  --muted: #adc3d9;
-  --line: rgba(125, 211, 252, 0.22);
-  --line-strong: rgba(56, 189, 248, 0.38);
-  --brand: #67e8f9;
-  --brand-dark: #38bdf8;
-  --brand-soft: rgba(14, 165, 233, 0.22);
-  --good: #4ade80;
-  --bad: #fb7185;
-  --warning: #facc15;
-  --glass-main: rgba(8, 22, 38, 0.76);
-  --glass-main-strong: rgba(10, 32, 55, 0.86);
-  --glass-border: rgba(125, 211, 252, 0.32);
-  --glass-shadow: 0 30px 92px rgba(0, 0, 0, 0.48), 0 12px 42px rgba(14, 165, 233, 0.16);
+  --bg: #111822;
+  --surface: rgba(20, 28, 39, 0.90);
+  --surface-soft: rgba(26, 36, 50, 0.86);
+  --surface-muted: rgba(32, 43, 58, 0.78);
+  --ink: #e6edf3;
+  --ink-soft: #c8d1dc;
+  --muted: #99a6b8;
+  --line: rgba(148, 163, 184, 0.15);
+  --line-strong: rgba(122, 162, 247, 0.26);
+  --brand: #7aa2f7;
+  --brand-dark: #5b7fc7;
+  --brand-soft: rgba(122, 162, 247, 0.15);
+  --good: #7ac9a7;
+  --bad: #f28b82;
+  --warning: #f2cc8f;
+  --color-income: #7ac9a7;
+  --color-expense: #f28b82;
+  --color-investment: #b9a7ff;
+  --color-net: #7aa2f7;
+  --glass-main: rgba(18, 26, 36, 0.76);
+  --glass-main-strong: rgba(24, 34, 48, 0.90);
+  --glass-border: rgba(203, 213, 225, 0.14);
+  --glass-shadow: 0 28px 82px rgba(0, 0, 0, 0.40), 0 12px 34px rgba(3, 7, 18, 0.26);
+}
+
+html[data-theme="comfort"] {
+  --bg: #f6f0e3;
+  --surface: rgba(255, 250, 238, 0.74);
+  --surface-soft: rgba(250, 244, 229, 0.66);
+  --surface-muted: rgba(239, 236, 215, 0.58);
+  --ink: #25312a;
+  --ink-soft: #3b493f;
+  --muted: #69735f;
+  --line: rgba(128, 118, 92, 0.22);
+  --line-strong: rgba(79, 111, 99, 0.28);
+  --brand: #4f6f63;
+  --brand-dark: #405d53;
+  --brand-soft: rgba(214, 226, 202, 0.86);
+  --good: #357a5b;
+  --bad: #b45b4d;
+  --warning: #a16f2b;
+  --color-income: #357a5b;
+  --color-expense: #b45b4d;
+  --color-investment: #75669b;
+  --color-net: #4d6f96;
+  --glass-main: rgba(255, 250, 238, 0.60);
+  --glass-main-strong: rgba(255, 252, 242, 0.78);
+  --glass-border: rgba(255, 252, 242, 0.84);
+  --glass-shadow: 0 22px 62px rgba(77, 65, 44, 0.12), 0 8px 24px rgba(79, 111, 99, 0.08);
 }
 
 html[data-theme="night"] body.app-body-clean {
   color: var(--ink) !important;
   background:
-    radial-gradient(circle at 8% 9%, rgba(37, 99, 235, 0.46), transparent 23rem),
-    radial-gradient(circle at 82% 4%, rgba(34, 211, 238, 0.32), transparent 25rem),
-    radial-gradient(circle at 100% 50%, rgba(16, 185, 129, 0.24), transparent 27rem),
-    radial-gradient(circle at 18% 92%, rgba(132, 204, 22, 0.16), transparent 22rem),
-    linear-gradient(135deg, #050b16 0%, #061b2d 38%, #06302b 70%, #0e1735 100%) !important;
+    radial-gradient(circle at 12% 8%, rgba(122, 162, 247, 0.08), transparent 23rem),
+    radial-gradient(circle at 86% 10%, rgba(109, 213, 194, 0.055), transparent 24rem),
+    radial-gradient(circle at 92% 84%, rgba(185, 167, 255, 0.04), transparent 25rem),
+    linear-gradient(135deg, #0f151d 0%, #111822 46%, #151b24 100%) !important;
+}
+
+html[data-theme="night"] body.app-body-clean::before {
+  opacity: 0.18 !important;
+  background:
+    radial-gradient(ellipse at 18% 18%, rgba(122, 162, 247, 0.055), transparent 30rem),
+    radial-gradient(ellipse at 82% 22%, rgba(109, 213, 194, 0.04), transparent 28rem),
+    radial-gradient(ellipse at 64% 90%, rgba(185, 167, 255, 0.035), transparent 29rem),
+    radial-gradient(circle at var(--pointer-x, 55%) var(--pointer-y, 30%), rgba(255, 255, 255, 0), transparent 0) !important;
+}
+
+html[data-theme="comfort"] body.app-body-clean {
+  color: var(--ink) !important;
+  background:
+    radial-gradient(circle at 9% 8%, rgba(179, 146, 87, 0.18), transparent 24rem),
+    radial-gradient(circle at 78% 0%, rgba(110, 138, 103, 0.14), transparent 25rem),
+    radial-gradient(circle at 100% 54%, rgba(133, 151, 104, 0.12), transparent 28rem),
+    radial-gradient(circle at 20% 95%, rgba(160, 121, 90, 0.10), transparent 22rem),
+    linear-gradient(135deg, #f7f0df 0%, #f3eddd 36%, #eef0df 70%, #f5eadb 100%) !important;
+}
+
+html[data-theme="comfort"] body.app-body-clean::before {
+  opacity: 0.30 !important;
+  background:
+    radial-gradient(ellipse at 18% 18%, rgba(166, 128, 76, 0.13), transparent 30rem),
+    radial-gradient(ellipse at 82% 22%, rgba(79, 111, 99, 0.10), transparent 28rem),
+    radial-gradient(ellipse at 64% 90%, rgba(139, 156, 99, 0.095), transparent 29rem),
+    radial-gradient(circle at var(--pointer-x, 55%) var(--pointer-y, 30%), rgba(255, 244, 214, 0.22), transparent 12rem) !important;
 }
 
 html[data-theme="night"] .app-sidebar,
@@ -208,25 +265,80 @@ html[data-theme="night"] .smart-log-studio,
 html[data-theme="night"] .normal-add-polished {
   color: var(--ink) !important;
   background:
-    linear-gradient(135deg, rgba(8, 22, 38, 0.84), rgba(9, 39, 58, 0.58)),
-    radial-gradient(circle at 0 0, rgba(59, 130, 246, 0.22), transparent 18rem),
-    radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.14), transparent 18rem) !important;
+    linear-gradient(135deg, rgba(20, 28, 39, 0.88), rgba(26, 36, 50, 0.76)),
+    radial-gradient(circle at 0 0, rgba(122, 162, 247, 0.055), transparent 18rem),
+    radial-gradient(circle at 100% 100%, rgba(109, 213, 194, 0.04), transparent 18rem) !important;
   border-color: var(--glass-border) !important;
-  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+
+html[data-theme="comfort"] .app-sidebar,
+html[data-theme="comfort"] .app-topbar,
+html[data-theme="comfort"] .mobile-bottom-nav,
+html[data-theme="comfort"] .mobile-add-panel,
+html[data-theme="comfort"] .quick-add-panel,
+html[data-theme="comfort"] .desktop-detail-shell,
+html[data-theme="comfort"] .page-heading,
+html[data-theme="comfort"] .panel-card,
+html[data-theme="comfort"] .card,
+html[data-theme="comfort"] .filters,
+html[data-theme="comfort"] .form-section,
+html[data-theme="comfort"] .transactions,
+html[data-theme="comfort"] .chart-card,
+html[data-theme="comfort"] .summary-card,
+html[data-theme="comfort"] .priority-card,
+html[data-theme="comfort"] .mini-priority-card,
+html[data-theme="comfort"] .standard-table,
+html[data-theme="comfort"] .account-overview-card,
+html[data-theme="comfort"] .analysis-decision-card,
+html[data-theme="comfort"] .analysis-kpi,
+html[data-theme="comfort"] .analysis-health-card,
+html[data-theme="comfort"] .investment-behaviour-card,
+html[data-theme="comfort"] .payment-card,
+html[data-theme="comfort"] .recurring-rule-card,
+html[data-theme="comfort"] .document-card,
+html[data-theme="comfort"] .asset-card,
+html[data-theme="comfort"] .year-card,
+html[data-theme="comfort"] .initial-condition-card,
+html[data-theme="comfort"] .flow-card,
+html[data-theme="comfort"] .top-category-card,
+html[data-theme="comfort"] .investment-card,
+html[data-theme="comfort"] .quick-special-panel,
+html[data-theme="comfort"] .smart-log-studio,
+html[data-theme="comfort"] .normal-add-polished {
+  color: var(--ink) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 250, 238, 0.80), rgba(240, 236, 217, 0.62)),
+    radial-gradient(circle at 0 0, rgba(164, 136, 83, 0.08), transparent 18rem),
+    radial-gradient(circle at 100% 100%, rgba(79, 111, 99, 0.07), transparent 18rem) !important;
+  border-color: rgba(255, 252, 242, 0.76) !important;
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.38) !important;
 }
 
 html[data-theme="night"] .app-topbar {
   background:
-    linear-gradient(100deg, rgba(5, 13, 26, 0.90), rgba(5, 38, 59, 0.72), rgba(5, 53, 42, 0.62)),
-    radial-gradient(circle at 12% 0%, rgba(59, 130, 246, 0.35), transparent 16rem),
-    radial-gradient(circle at 86% 80%, rgba(52, 211, 153, 0.23), transparent 16rem) !important;
+    linear-gradient(100deg, rgba(18, 26, 36, 0.92), rgba(24, 34, 48, 0.86)),
+    radial-gradient(circle at 12% 0%, rgba(122, 162, 247, 0.055), transparent 16rem) !important;
+}
+
+html[data-theme="comfort"] .app-topbar {
+  background:
+    linear-gradient(100deg, rgba(255, 250, 238, 0.80), rgba(244, 239, 221, 0.66) 50%, rgba(238, 241, 224, 0.56)),
+    radial-gradient(circle at 12% 0%, rgba(164, 136, 83, 0.13), transparent 16rem),
+    radial-gradient(circle at 86% 80%, rgba(79, 111, 99, 0.12), transparent 16rem) !important;
 }
 
 html[data-theme="night"] .app-sidebar {
   background:
-    linear-gradient(180deg, rgba(4, 13, 28, 0.94), rgba(6, 30, 49, 0.84)),
-    radial-gradient(circle at 18% 0%, rgba(59, 130, 246, 0.26), transparent 16rem),
-    radial-gradient(circle at 95% 65%, rgba(16, 185, 129, 0.17), transparent 15rem) !important;
+    linear-gradient(180deg, rgba(17, 24, 34, 0.94), rgba(21, 31, 43, 0.86)),
+    radial-gradient(circle at 18% 0%, rgba(122, 162, 247, 0.055), transparent 16rem) !important;
+}
+
+html[data-theme="comfort"] .app-sidebar {
+  background:
+    linear-gradient(180deg, rgba(255, 250, 238, 0.86), rgba(238, 241, 224, 0.70)),
+    radial-gradient(circle at 18% 0%, rgba(164, 136, 83, 0.10), transparent 16rem),
+    radial-gradient(circle at 95% 65%, rgba(79, 111, 99, 0.09), transparent 15rem) !important;
 }
 
 html[data-theme="night"] h1,
@@ -249,6 +361,26 @@ html[data-theme="night"] .analysis-kpi strong {
   color: var(--ink) !important;
 }
 
+html[data-theme="comfort"] h1,
+html[data-theme="comfort"] h2,
+html[data-theme="comfort"] h3,
+html[data-theme="comfort"] h4,
+html[data-theme="comfort"] p,
+html[data-theme="comfort"] label,
+html[data-theme="comfort"] td,
+html[data-theme="comfort"] th,
+html[data-theme="comfort"] strong,
+html[data-theme="comfort"] b,
+html[data-theme="comfort"] span,
+html[data-theme="comfort"] .amount,
+html[data-theme="comfort"] .desktop-detail-title,
+html[data-theme="comfort"] .desktop-detail-amount,
+html[data-theme="comfort"] .desktop-detail-line-value,
+html[data-theme="comfort"] .summary-card p,
+html[data-theme="comfort"] .analysis-kpi strong {
+  color: var(--ink) !important;
+}
+
 html[data-theme="night"] small,
 html[data-theme="night"] .hint,
 html[data-theme="night"] .muted,
@@ -256,7 +388,15 @@ html[data-theme="night"] .desktop-detail-subtitle,
 html[data-theme="night"] .desktop-detail-line-label,
 html[data-theme="night"] .summary-card h3,
 html[data-theme="night"] .analysis-kpi span,
-html[data-theme="night"] .nav-subfolder-label {
+html[data-theme="night"] .nav-subfolder-label,
+html[data-theme="comfort"] small,
+html[data-theme="comfort"] .hint,
+html[data-theme="comfort"] .muted,
+html[data-theme="comfort"] .desktop-detail-subtitle,
+html[data-theme="comfort"] .desktop-detail-line-label,
+html[data-theme="comfort"] .summary-card h3,
+html[data-theme="comfort"] .analysis-kpi span,
+html[data-theme="comfort"] .nav-subfolder-label {
   color: var(--muted) !important;
 }
 
@@ -265,17 +405,33 @@ html[data-theme="night"] .page-heading h2,
 html[data-theme="night"] .smart-log-hero h2,
 html[data-theme="night"] .normal-add-header h2 {
   background: none !important;
-  color: #f8fbff !important;
-  -webkit-text-fill-color: #f8fbff !important;
-  text-shadow: 0 0 26px rgba(56, 189, 248, 0.28);
+  color: #e6edf3 !important;
+  -webkit-text-fill-color: #e6edf3 !important;
+  text-shadow: none !important;
+}
+
+html[data-theme="comfort"] .app-topbar-title h1,
+html[data-theme="comfort"] .page-heading h2,
+html[data-theme="comfort"] .smart-log-hero h2,
+html[data-theme="comfort"] .normal-add-header h2 {
+  background: none !important;
+  color: #25312a !important;
+  -webkit-text-fill-color: #25312a !important;
+  text-shadow: none !important;
 }
 
 html[data-theme="night"] .eyebrow,
 html[data-theme="night"] .desktop-detail-eyebrow {
-  color: #a7f3d0 !important;
-  background:
-    linear-gradient(135deg, rgba(14, 165, 233, 0.22), rgba(16, 185, 129, 0.16)) !important;
-  border-color: rgba(125, 211, 252, 0.34) !important;
+  color: #cfe1ef !important;
+  background: linear-gradient(135deg, rgba(122, 162, 247, 0.13), rgba(109, 213, 194, 0.08)) !important;
+  border-color: rgba(203, 213, 225, 0.14) !important;
+}
+
+html[data-theme="comfort"] .eyebrow,
+html[data-theme="comfort"] .desktop-detail-eyebrow {
+  color: #405d53 !important;
+  background: linear-gradient(135deg, rgba(223, 228, 198, 0.72), rgba(245, 232, 205, 0.58)) !important;
+  border-color: rgba(128, 118, 92, 0.18) !important;
 }
 
 html[data-theme="night"] .app-brand,
@@ -285,10 +441,21 @@ html[data-theme="night"] .logout-action,
 html[data-theme="night"] .app-nav-group[open],
 html[data-theme="night"] .app-nav-group.is-active {
   color: var(--ink) !important;
-  background:
-    linear-gradient(135deg, rgba(15, 35, 60, 0.78), rgba(9, 53, 57, 0.44)) !important;
-  border-color: rgba(125, 211, 252, 0.28) !important;
-  box-shadow: 0 18px 46px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.12) !important;
+  background: linear-gradient(135deg, rgba(24, 34, 48, 0.86), rgba(26, 41, 52, 0.56)) !important;
+  border-color: rgba(203, 213, 225, 0.12) !important;
+  box-shadow: 0 18px 46px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+
+html[data-theme="comfort"] .app-brand,
+html[data-theme="comfort"] .net-pill,
+html[data-theme="comfort"] .topbar-net-pill,
+html[data-theme="comfort"] .logout-action,
+html[data-theme="comfort"] .app-nav-group[open],
+html[data-theme="comfort"] .app-nav-group.is-active {
+  color: var(--ink) !important;
+  background: linear-gradient(135deg, rgba(255, 250, 238, 0.82), rgba(236, 238, 216, 0.58)) !important;
+  border-color: rgba(128, 118, 92, 0.16) !important;
+  box-shadow: 0 14px 34px rgba(77,65,44,0.10), inset 0 1px 0 rgba(255,255,255,0.44) !important;
 }
 
 html[data-theme="night"] .app-nav-group summary,
@@ -296,24 +463,42 @@ html[data-theme="night"] .nav-items a,
 html[data-theme="night"] .mobile-bottom-nav a,
 html[data-theme="night"] .mobile-add-panel a,
 html[data-theme="night"] .quick-add-panel a {
-  color: #e6f2ff !important;
+  color: #c8d1dc !important;
 }
 
-html[data-theme="night"] .nav-items a:not(.active) {
-  color: #c7d9ec !important;
+html[data-theme="comfort"] .app-nav-group summary,
+html[data-theme="comfort"] .nav-items a,
+html[data-theme="comfort"] .mobile-bottom-nav a,
+html[data-theme="comfort"] .mobile-add-panel a,
+html[data-theme="comfort"] .quick-add-panel a {
+  color: #3b493f !important;
 }
+
+html[data-theme="night"] .nav-items a:not(.active) { color: #b5c0cc !important; }
+html[data-theme="comfort"] .nav-items a:not(.active) { color: #596757 !important; }
 
 html[data-theme="night"] .nav-items a:hover,
 html[data-theme="night"] .mobile-bottom-nav a.active {
-  color: #ffffff !important;
-  background: rgba(34, 211, 238, 0.12) !important;
+  color: #e6edf3 !important;
+  background: rgba(122, 162, 247, 0.08) !important;
+}
+
+html[data-theme="comfort"] .nav-items a:hover,
+html[data-theme="comfort"] .mobile-bottom-nav a.active {
+  color: #25312a !important;
+  background: rgba(79, 111, 99, 0.10) !important;
 }
 
 html[data-theme="night"] .nav-items a.active {
-  color: #ffffff !important;
-  background:
-    linear-gradient(135deg, rgba(37, 99, 235, 0.48), rgba(16, 185, 129, 0.28)) !important;
-  box-shadow: inset 4px 0 0 #67e8f9, 0 14px 34px rgba(14, 165, 233, 0.18) !important;
+  color: #e6edf3 !important;
+  background: linear-gradient(135deg, rgba(63, 83, 128, 0.34), rgba(49, 83, 78, 0.20)) !important;
+  box-shadow: inset 4px 0 0 #7aa2f7, 0 14px 34px rgba(0,0,0,0.18) !important;
+}
+
+html[data-theme="comfort"] .nav-items a.active {
+  color: #25312a !important;
+  background: linear-gradient(135deg, rgba(223, 228, 198, 0.78), rgba(245, 232, 205, 0.58)) !important;
+  box-shadow: inset 4px 0 0 #4f6f63, 0 10px 24px rgba(79, 111, 99, 0.09) !important;
 }
 
 html[data-theme="night"] input[type="text"],
@@ -322,88 +507,162 @@ html[data-theme="night"] input[type="number"],
 html[data-theme="night"] input[type="email"],
 html[data-theme="night"] textarea,
 html[data-theme="night"] select {
-  color: #f8fbff !important;
-  background:
-    linear-gradient(135deg, rgba(3, 13, 27, 0.74), rgba(10, 41, 58, 0.62)) !important;
-  border-color: rgba(125, 211, 252, 0.30) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(14,165,233,0.04) !important;
+  color: #e6edf3 !important;
+  background: linear-gradient(135deg, rgba(18, 26, 36, 0.92), rgba(24, 34, 48, 0.76)) !important;
+  border-color: rgba(203, 213, 225, 0.14) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.055) !important;
+}
+
+html[data-theme="comfort"] input[type="text"],
+html[data-theme="comfort"] input[type="date"],
+html[data-theme="comfort"] input[type="number"],
+html[data-theme="comfort"] input[type="email"],
+html[data-theme="comfort"] textarea,
+html[data-theme="comfort"] select {
+  color: #25312a !important;
+  background: rgba(255, 250, 238, 0.72) !important;
+  border-color: rgba(128, 118, 92, 0.22) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.50) !important;
 }
 
 html[data-theme="night"] input::placeholder,
-html[data-theme="night"] textarea::placeholder { color: #98abc0 !important; }
-html[data-theme="night"] option { color: #0f172a !important; background: #f8fbff !important; }
+html[data-theme="night"] textarea::placeholder { color: #8794a4 !important; }
+html[data-theme="comfort"] input::placeholder,
+html[data-theme="comfort"] textarea::placeholder { color: #7d826e !important; }
+html[data-theme="night"] option { color: #e6edf3 !important; background: #182230 !important; }
+html[data-theme="comfort"] option { color: #25312a !important; background: #fffaf0 !important; }
 
 html[data-theme="night"] .standard-table th {
-  color: #dff8ff !important;
-  background:
-    linear-gradient(135deg, rgba(30, 64, 175, 0.52), rgba(8, 145, 178, 0.34), rgba(6, 95, 70, 0.26)) !important;
-  border-bottom-color: rgba(125, 211, 252, 0.26) !important;
+  color: #dbe7f2 !important;
+  background: linear-gradient(135deg, rgba(63, 83, 128, 0.24), rgba(49, 83, 78, 0.16)) !important;
+  border-bottom-color: rgba(203, 213, 225, 0.14) !important;
+}
+
+html[data-theme="comfort"] .standard-table th {
+  color: #3b493f !important;
+  background: linear-gradient(135deg, rgba(231, 226, 205, 0.76), rgba(222, 231, 205, 0.60)) !important;
+  border-bottom-color: rgba(128, 118, 92, 0.18) !important;
 }
 
 html[data-theme="night"] .standard-table td,
 html[data-theme="night"] td,
 html[data-theme="night"] .clickable-row td,
 html[data-theme="night"] .desktop-detail-row td {
-  color: #f0f7ff !important;
-  border-bottom-color: rgba(125, 211, 252, 0.14) !important;
+  color: #c8d1dc !important;
+  border-bottom-color: rgba(148, 163, 184, 0.12) !important;
+}
+
+html[data-theme="comfort"] .standard-table td,
+html[data-theme="comfort"] td,
+html[data-theme="comfort"] .clickable-row td,
+html[data-theme="comfort"] .desktop-detail-row td {
+  color: #3b493f !important;
+  border-bottom-color: rgba(128, 118, 92, 0.16) !important;
 }
 
 html[data-theme="night"] .standard-table tbody tr:hover td,
 html[data-theme="night"] .clickable-row:hover td,
-html[data-theme="night"] .desktop-detail-row:hover td {
-  background: rgba(34, 211, 238, 0.12) !important;
-}
+html[data-theme="night"] .desktop-detail-row:hover td { background: rgba(122, 162, 247, 0.08) !important; }
+html[data-theme="comfort"] .standard-table tbody tr:hover td,
+html[data-theme="comfort"] .clickable-row:hover td,
+html[data-theme="comfort"] .desktop-detail-row:hover td { background: rgba(79, 111, 99, 0.10) !important; }
 
 html[data-theme="night"] tr.row-expense td {
-  background: rgba(251, 113, 133, 0.16) !important;
-  color: #ffe4e6 !important;
+  background: rgba(242, 139, 130, 0.12) !important;
+  color: #f4c1ba !important;
 }
 html[data-theme="night"] tr.row-income td {
-  background: rgba(74, 222, 128, 0.15) !important;
-  color: #dcfce7 !important;
+  background: rgba(122, 201, 167, 0.12) !important;
+  color: #c9eadb !important;
 }
 html[data-theme="night"] tr.row-investment td {
-  background: rgba(196, 181, 253, 0.14) !important;
-  color: #ede9fe !important;
+  background: rgba(185, 167, 255, 0.11) !important;
+  color: #ddd4ff !important;
+}
+html[data-theme="comfort"] tr.row-expense td {
+  background: rgba(180, 91, 77, 0.10) !important;
+  color: #7d342c !important;
+}
+html[data-theme="comfort"] tr.row-income td {
+  background: rgba(53, 122, 91, 0.10) !important;
+  color: #2e5f49 !important;
+}
+html[data-theme="comfort"] tr.row-investment td {
+  background: rgba(117, 102, 155, 0.10) !important;
+  color: #554878 !important;
 }
 
 html[data-theme="night"] .pill,
 html[data-theme="night"] .badge,
 html[data-theme="night"] .status-badge,
 html[data-theme="night"] .linked-payable-note {
-  color: #ffffff !important;
-  border-color: rgba(255,255,255,0.18) !important;
-  background:
-    linear-gradient(135deg, rgba(37, 99, 235, 0.54), rgba(16, 185, 129, 0.34)) !important;
-  box-shadow: 0 10px 24px rgba(14,165,233,0.14), inset 0 1px 0 rgba(255,255,255,0.16) !important;
+  color: #e6edf3 !important;
+  border-color: rgba(203,213,225,0.15) !important;
+  background: linear-gradient(135deg, rgba(63, 83, 128, 0.32), rgba(49, 83, 78, 0.20)) !important;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+
+html[data-theme="comfort"] .pill,
+html[data-theme="comfort"] .badge,
+html[data-theme="comfort"] .status-badge,
+html[data-theme="comfort"] .linked-payable-note {
+  color: #25312a !important;
+  border-color: rgba(128,118,92,0.16) !important;
+  background: linear-gradient(135deg, rgba(223, 228, 198, 0.78), rgba(245, 232, 205, 0.58)) !important;
+  box-shadow: 0 10px 24px rgba(77,65,44,0.08), inset 0 1px 0 rgba(255,255,255,0.36) !important;
 }
 
 html[data-theme="night"] .summary-card:nth-child(4n + 1),
 html[data-theme="night"] .analysis-kpi:nth-child(4n + 1),
 html[data-theme="night"] .priority-card:nth-child(4n + 1) {
-  background: linear-gradient(135deg, rgba(15, 47, 92, 0.78), rgba(8, 22, 38, 0.64)) !important;
-  box-shadow: var(--glass-shadow), inset 4px 0 0 #60a5fa !important;
+  background: linear-gradient(135deg, rgba(35, 47, 72, 0.78), rgba(18, 26, 36, 0.64)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #7aa2f7 !important;
 }
 html[data-theme="night"] .summary-card:nth-child(4n + 2),
 html[data-theme="night"] .analysis-kpi:nth-child(4n + 2),
 html[data-theme="night"] .priority-card:nth-child(4n + 2) {
-  background: linear-gradient(135deg, rgba(8, 75, 75, 0.70), rgba(8, 22, 38, 0.64)) !important;
-  box-shadow: var(--glass-shadow), inset 4px 0 0 #22d3ee !important;
+  background: linear-gradient(135deg, rgba(28, 58, 58, 0.64), rgba(18, 26, 36, 0.64)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #6dd5c2 !important;
 }
 html[data-theme="night"] .summary-card:nth-child(4n + 3),
 html[data-theme="night"] .analysis-kpi:nth-child(4n + 3),
 html[data-theme="night"] .priority-card:nth-child(4n + 3) {
-  background: linear-gradient(135deg, rgba(6, 78, 59, 0.70), rgba(8, 22, 38, 0.64)) !important;
-  box-shadow: var(--glass-shadow), inset 4px 0 0 #34d399 !important;
+  background: linear-gradient(135deg, rgba(44, 60, 49, 0.64), rgba(18, 26, 36, 0.64)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #7ac9a7 !important;
 }
 html[data-theme="night"] .summary-card:nth-child(4n),
 html[data-theme="night"] .analysis-kpi:nth-child(4n),
 html[data-theme="night"] .priority-card:nth-child(4n) {
-  background: linear-gradient(135deg, rgba(76, 29, 149, 0.62), rgba(8, 22, 38, 0.64)) !important;
-  box-shadow: var(--glass-shadow), inset 4px 0 0 #a78bfa !important;
+  background: linear-gradient(135deg, rgba(53, 46, 77, 0.62), rgba(18, 26, 36, 0.64)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #b9a7ff !important;
 }
 
-/* Day mode gets a little more blue/green and less pale-pink without becoming loud. */
+html[data-theme="comfort"] .summary-card:nth-child(4n + 1),
+html[data-theme="comfort"] .analysis-kpi:nth-child(4n + 1),
+html[data-theme="comfort"] .priority-card:nth-child(4n + 1) {
+  background: linear-gradient(135deg, rgba(255,250,238,0.78), rgba(230,224,200,0.52)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #4d6f96 !important;
+}
+html[data-theme="comfort"] .summary-card:nth-child(4n + 2),
+html[data-theme="comfort"] .analysis-kpi:nth-child(4n + 2),
+html[data-theme="comfort"] .priority-card:nth-child(4n + 2) {
+  background: linear-gradient(135deg, rgba(255,250,238,0.78), rgba(222,231,205,0.52)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #4f6f63 !important;
+}
+html[data-theme="comfort"] .summary-card:nth-child(4n + 3),
+html[data-theme="comfort"] .analysis-kpi:nth-child(4n + 3),
+html[data-theme="comfort"] .priority-card:nth-child(4n + 3) {
+  background: linear-gradient(135deg, rgba(255,250,238,0.78), rgba(232,222,202,0.52)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #a16f2b !important;
+}
+html[data-theme="comfort"] .summary-card:nth-child(4n),
+html[data-theme="comfort"] .analysis-kpi:nth-child(4n),
+html[data-theme="comfort"] .priority-card:nth-child(4n) {
+  background: linear-gradient(135deg, rgba(255,250,238,0.78), rgba(226,221,211,0.52)) !important;
+  box-shadow: var(--glass-shadow), inset 4px 0 0 #75669b !important;
+}
+
+/* Light mode keeps the existing blue/green tint, just with labels renamed in UI. */
 html[data-theme="day"] .summary-card:nth-child(4n + 1),
 html[data-theme="day"] .priority-card:nth-child(4n + 1),
 html[data-theme="day"] .analysis-kpi:nth-child(4n + 1) {

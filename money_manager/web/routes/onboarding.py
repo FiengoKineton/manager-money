@@ -14,7 +14,7 @@ from money_manager.services.onboarding_service import (
     mark_onboarding_incomplete,
     onboarding_state,
 )
-from money_manager.services.preferences_service import update_preferences
+from money_manager.services.preferences_service import normalize_theme_value, update_preferences
 from money_manager.services.profile_service import update_profile
 from money_manager.services.savings_goal_service import create_goal_from_form
 from money_manager.web.routes.profile import DATE_FORMAT_OPTIONS, THEME_OPTIONS
@@ -45,7 +45,7 @@ def onboarding_page():
         update_preferences(
             {
                 "language": language if language in available_language_codes() else "en",
-                "theme": "night" if theme == "night" else "day",
+                "theme": normalize_theme_value(theme),
                 "currency": str(currency or "EUR").upper(),
                 "onboarding_completed": True,
             },
