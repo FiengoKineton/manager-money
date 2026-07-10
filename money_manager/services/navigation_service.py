@@ -3,8 +3,13 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Mapping, Sequence
 
-from money_manager.config.navigation_registry import DEFAULT_NAVIGATION as NAVIGATION_REGISTRY
-from money_manager.config.navigation_registry import navigation_registry, registry_group_ids, registry_page_ids
+from money_manager.config.navigation_registry import (
+    DEFAULT_NAVIGATION as NAVIGATION_REGISTRY,
+    navigation_registry,
+    registry_group_ids,
+    registry_page_ids,
+    registry_subgroup_ids,
+)
 from money_manager.config.user_defaults import DEFAULT_NAVIGATION
 from money_manager.services._user_config import load_user_config, save_user_config
 
@@ -21,29 +26,47 @@ def save_navigation_config(config: Mapping[str, Any], user_id: str | None = None
 
 
 def validate_navigation_config(config: Mapping[str, Any] | None) -> dict[str, Any]:
-    """Clean user navigation settings against the current registry.
-
-    Unknown/deleted page IDs and groups are discarded so a stale
-    ``navigation.json`` can never break the app. New registry pages remain
-    visible by default because only explicit hidden page IDs are stored.
-    """
+    """Clean stale navigation preferences against the current grouped registry."""
     incoming = dict(config or {})
     valid_pages = registry_page_ids()
     valid_groups = registry_group_ids()
+    valid_subgroups = registry_subgroup_ids()
+    valid_containers = _registry_container_ids()
 
     hidden_pages = [page_id for page_id in _unique_keys(incoming.get("hidden_pages", [])) if page_id in valid_pages]
     hidden_pages = [page_id for page_id in hidden_pages if page_id not in PROTECTED_PAGE_IDS]
 
-    custom_order = _normalize_custom_order(incoming.get("custom_order", {}), valid_groups=valid_groups, valid_pages=valid_pages)
-    group_order = _normalize_group_order(incoming.get("group_order", []), valid_groups=valid_groups)
+    custom_order = _normalize_custom_order(
+        incoming.get("custom_order", {}),
+        valid_containers=valid_containers,
+        valid_pages=valid_pages,
+    )
+    group_order = _normalize_order(incoming.get("group_order", []), valid_ids=valid_groups)
+    subgroup_order = _normalize_subgroup_order(incoming.get("subgroup_order", {}), valid_groups=valid_groups, valid_subgroups=valid_subgroups)
     collapsed_groups = [group_id for group_id in _unique_keys(incoming.get("collapsed_groups", [])) if group_id in valid_groups]
+    expanded_groups = [group_id for group_id in _unique_keys(incoming.get("expanded_groups", [])) if group_id in valid_groups and group_id not in collapsed_groups]
+    collapsed_subgroups = [
+        subgroup_id
+        for subgroup_id in _unique_keys(incoming.get("collapsed_subgroups", []))
+        if subgroup_id in valid_subgroups
+    ]
+
+    expanded_subgroups = [
+        subgroup_id
+        for subgroup_id in _unique_keys(incoming.get("expanded_subgroups", []))
+        if subgroup_id in valid_subgroups and subgroup_id not in collapsed_subgroups
+    ]
 
     return {
-        "schema_version": int(incoming.get("schema_version") or DEFAULT_NAVIGATION.get("schema_version") or 1),
+        "schema_version": max(2, int(incoming.get("schema_version") or DEFAULT_NAVIGATION.get("schema_version") or 2)),
         "hidden_pages": hidden_pages,
         "custom_order": custom_order,
         "group_order": group_order,
+        "subgroup_order": subgroup_order,
         "collapsed_groups": collapsed_groups,
+        "expanded_groups": expanded_groups,
+        "collapsed_subgroups": collapsed_subgroups,
+        "expanded_subgroups": expanded_subgroups,
     }
 
 
@@ -53,48 +76,66 @@ def get_effective_navigation(
     current_endpoint: str | None = None,
     user_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Return registry groups merged with the current user's preferences."""
+    """Return the current sidebar groups, subgroups, pages, and user preferences."""
     config = load_navigation_config(user_id=user_id)
     hidden = set(config.get("hidden_pages", []))
-    collapsed = set(config.get("collapsed_groups", []))
+    collapsed_groups = set(config.get("collapsed_groups", []))
+    expanded_groups = set(config.get("expanded_groups", []))
+    collapsed_subgroups = set(config.get("collapsed_subgroups", []))
+    expanded_subgroups = set(config.get("expanded_subgroups", []))
     endpoint = str(current_endpoint or "")
 
-    groups = _ordered_groups(navigation_registry(), config.get("group_order", []))
     effective_groups: list[dict[str, Any]] = []
+    groups = _ordered_records(navigation_registry(), config.get("group_order", []), id_field="group_id")
 
     for group in groups:
         group_id = str(group.get("group_id") or "")
-        ordered_items = _ordered_items(group, config.get("custom_order", {}).get(group_id, []))
-        effective_items: list[dict[str, Any]] = []
+        direct_items = _effective_items(
+            group.get("items", []),
+            order=config.get("custom_order", {}).get(group_id, []),
+            hidden=hidden,
+            include_hidden=include_hidden,
+            current_endpoint=endpoint,
+        )
 
-        for item in ordered_items:
-            page_id = str(item.get("page_id") or "")
-            default_visible = bool(item.get("default_visible", True))
-            is_hidden = page_id in hidden or not default_visible
-            if is_hidden and not include_hidden:
+        subgroup_order = config.get("subgroup_order", {}).get(group_id, [])
+        ordered_subgroups = _ordered_records(group.get("subgroups", []), subgroup_order, id_field="subgroup_id")
+        effective_subgroups: list[dict[str, Any]] = []
+        for subgroup in ordered_subgroups:
+            subgroup_id = str(subgroup.get("subgroup_id") or "")
+            items = _effective_items(
+                subgroup.get("items", []),
+                order=config.get("custom_order", {}).get(subgroup_id, []),
+                hidden=hidden,
+                include_hidden=include_hidden,
+                current_endpoint=endpoint,
+            )
+            if not items and not include_hidden:
                 continue
+            subgroup_active = any(bool(item.get("is_active")) for item in items)
+            clean_subgroup = deepcopy(subgroup)
+            clean_subgroup["items"] = items
+            clean_subgroup["is_active"] = subgroup_active
+            clean_subgroup["is_collapsed"] = subgroup_id in collapsed_subgroups
+            clean_subgroup["is_open"] = subgroup_active or subgroup_id in expanded_subgroups or (
+                bool(subgroup.get("default_open", False)) and subgroup_id not in collapsed_subgroups
+            )
+            effective_subgroups.append(clean_subgroup)
 
-            active_endpoints = [str(ep) for ep in item.get("active_endpoints", []) if ep]
-            if not active_endpoints:
-                active_endpoints = [str(item.get("endpoint") or "")]
-
-            clean_item = deepcopy(item)
-            clean_item["is_visible"] = not is_hidden
-            clean_item["is_hidden"] = is_hidden
-            clean_item["is_active"] = endpoint in active_endpoints
-            clean_item["can_hide"] = page_id not in PROTECTED_PAGE_IDS
-            clean_item["active_endpoints"] = active_endpoints
-            effective_items.append(clean_item)
-
-        if not effective_items and not include_hidden:
+        if not direct_items and not effective_subgroups and not include_hidden:
             continue
 
-        is_active = any(item.get("is_active") for item in effective_items)
+        group_active = any(bool(item.get("is_active")) for item in direct_items) or any(
+            bool(subgroup.get("is_active")) for subgroup in effective_subgroups
+        )
         clean_group = deepcopy(group)
-        clean_group["items"] = effective_items
-        clean_group["is_collapsed"] = group_id in collapsed
-        clean_group["is_open"] = bool(group.get("default_open", False)) and group_id not in collapsed
-        clean_group["is_active"] = is_active
+        clean_group["items"] = direct_items
+        clean_group["subgroups"] = effective_subgroups
+        clean_group["is_active"] = group_active
+        clean_group["is_collapsed"] = group_id in collapsed_groups
+        clean_group["is_open"] = group_active or group_id in expanded_groups or (
+            bool(group.get("default_open", False)) and group_id not in collapsed_groups
+        )
         effective_groups.append(clean_group)
 
     return effective_groups
@@ -124,7 +165,6 @@ def show_page(page_id: str, user_id: str | None = None) -> dict[str, Any]:
 
 
 def restore_page(page_id: str, user_id: str | None = None) -> dict[str, Any]:
-    # Backward-compatible alias for older code.
     return show_page(page_id, user_id=user_id)
 
 
@@ -135,29 +175,63 @@ def move_page(
     user_id: str | None = None,
 ) -> dict[str, Any]:
     key = _safe_key(page_id)
-    if key not in registry_page_ids():
+    found = _find_container_for_page(key)
+    if not found:
         return load_navigation_config(user_id=user_id)
 
-    registry_group = _find_group_for_page(key)
-    if not registry_group:
-        return load_navigation_config(user_id=user_id)
-
-    group_id = str(registry_group.get("group_id") or "")
+    container_id, items = found
     config = load_navigation_config(user_id=user_id)
-    current_order = [item["page_id"] for item in _ordered_items(registry_group, config.get("custom_order", {}).get(group_id, []))]
-    if key not in current_order:
-        return config
+    current_order = [
+        str(item.get("page_id") or "")
+        for item in _ordered_records(items, config.get("custom_order", {}).get(container_id, []), id_field="page_id")
+    ]
+    _move_key(current_order, key, direction=direction, target_index=target_index)
+    config.setdefault("custom_order", {})[container_id] = current_order
+    return save_navigation_config(config, user_id=user_id)
 
-    old_index = current_order.index(key)
-    if target_index is not None:
-        new_index = max(0, min(int(target_index), len(current_order) - 1))
-    else:
-        step = -1 if str(direction or "").casefold() == "up" else 1 if str(direction or "").casefold() == "down" else 0
-        new_index = max(0, min(old_index + step, len(current_order) - 1))
 
-    if new_index != old_index:
-        current_order.insert(new_index, current_order.pop(old_index))
-        config.setdefault("custom_order", {})[group_id] = current_order
+def move_group(
+    group_id: str,
+    direction: str | None = None,
+    target_index: int | None = None,
+    user_id: str | None = None,
+) -> dict[str, Any]:
+    key = _safe_key(group_id)
+    if key not in registry_group_ids():
+        return load_navigation_config(user_id=user_id)
+    config = load_navigation_config(user_id=user_id)
+    current_order = [
+        str(group.get("group_id") or "")
+        for group in _ordered_records(navigation_registry(), config.get("group_order", []), id_field="group_id")
+    ]
+    _move_key(current_order, key, direction=direction, target_index=target_index)
+    config["group_order"] = current_order
+    return save_navigation_config(config, user_id=user_id)
+
+
+def move_subgroup(
+    group_id: str,
+    subgroup_id: str,
+    direction: str | None = None,
+    target_index: int | None = None,
+    user_id: str | None = None,
+) -> dict[str, Any]:
+    group_key = _safe_key(group_id)
+    subgroup_key = _safe_key(subgroup_id)
+    group = _find_group(group_key)
+    if not group or subgroup_key not in {str(item.get("subgroup_id") or "") for item in group.get("subgroups", [])}:
+        return load_navigation_config(user_id=user_id)
+    config = load_navigation_config(user_id=user_id)
+    current_order = [
+        str(item.get("subgroup_id") or "")
+        for item in _ordered_records(
+            group.get("subgroups", []),
+            config.get("subgroup_order", {}).get(group_key, []),
+            id_field="subgroup_id",
+        )
+    ]
+    _move_key(current_order, subgroup_key, direction=direction, target_index=target_index)
+    config.setdefault("subgroup_order", {})[group_key] = current_order
     return save_navigation_config(config, user_id=user_id)
 
 
@@ -170,10 +244,18 @@ def set_group_collapsed(group_id: str, collapsed: bool, user_id: str | None = No
     config = load_navigation_config(user_id=user_id)
     if key not in registry_group_ids():
         return config
-    current = [item for item in config.get("collapsed_groups", []) if item != key]
-    if collapsed:
-        current.append(key)
-    config["collapsed_groups"] = current
+    config["collapsed_groups"] = _toggle_key(config.get("collapsed_groups", []), key, collapsed)
+    config["expanded_groups"] = _toggle_key(config.get("expanded_groups", []), key, not collapsed)
+    return save_navigation_config(config, user_id=user_id)
+
+
+def set_subgroup_collapsed(subgroup_id: str, collapsed: bool, user_id: str | None = None) -> dict[str, Any]:
+    key = _safe_key(subgroup_id)
+    config = load_navigation_config(user_id=user_id)
+    if key not in registry_subgroup_ids():
+        return config
+    config["collapsed_subgroups"] = _toggle_key(config.get("collapsed_subgroups", []), key, collapsed)
+    config["expanded_subgroups"] = _toggle_key(config.get("expanded_subgroups", []), key, not collapsed)
     return save_navigation_config(config, user_id=user_id)
 
 
@@ -189,7 +271,7 @@ def set_custom_order(order: Mapping[str, Any], user_id: str | None = None) -> di
     config = load_navigation_config(user_id=user_id)
     config["custom_order"] = _normalize_custom_order(
         order,
-        valid_groups=registry_group_ids(),
+        valid_containers=_registry_container_ids(),
         valid_pages=registry_page_ids(),
     )
     return save_navigation_config(config, user_id=user_id)
@@ -197,7 +279,7 @@ def set_custom_order(order: Mapping[str, Any], user_id: str | None = None) -> di
 
 def set_group_order(order: Sequence[Any] | Mapping[str, Any], user_id: str | None = None) -> dict[str, Any]:
     config = load_navigation_config(user_id=user_id)
-    config["group_order"] = _normalize_group_order(order, valid_groups=registry_group_ids())
+    config["group_order"] = _normalize_order(order, valid_ids=registry_group_ids())
     return save_navigation_config(config, user_id=user_id)
 
 
@@ -206,64 +288,112 @@ def ensure_navigation_config(user_id: str | None = None) -> dict[str, Any]:
 
 
 def navigation_registry_structure() -> list[dict[str, Any]]:
-    """Expose the full registry for debugging/tests/documentation."""
     return deepcopy(NAVIGATION_REGISTRY)
 
 
-def _ordered_groups(groups: list[dict[str, Any]], custom_group_order: Sequence[str]) -> list[dict[str, Any]]:
-    group_by_id = {str(group.get("group_id") or ""): group for group in groups}
+def _effective_items(
+    items: Sequence[Mapping[str, Any]],
+    *,
+    order: Sequence[str],
+    hidden: set[str],
+    include_hidden: bool,
+    current_endpoint: str,
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for item in _ordered_records(items, order, id_field="page_id"):
+        page_id = str(item.get("page_id") or "")
+        is_hidden = page_id in hidden or not bool(item.get("default_visible", True))
+        if is_hidden and not include_hidden:
+            continue
+        active_endpoints = [str(value) for value in item.get("active_endpoints", []) if value]
+        if not active_endpoints:
+            active_endpoints = [str(item.get("endpoint") or "")]
+        clean_item = deepcopy(dict(item))
+        clean_item["is_visible"] = not is_hidden
+        clean_item["is_hidden"] = is_hidden
+        clean_item["is_active"] = current_endpoint in active_endpoints
+        clean_item["can_hide"] = page_id not in PROTECTED_PAGE_IDS
+        clean_item["active_endpoints"] = active_endpoints
+        result.append(clean_item)
+    return result
+
+
+def _ordered_records(records: Sequence[Mapping[str, Any]], custom_order: Sequence[str], *, id_field: str) -> list[dict[str, Any]]:
+    rows = [deepcopy(dict(item)) for item in records]
+    by_id = {str(item.get(id_field) or ""): item for item in rows}
     ordered: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for group_id in custom_group_order:
-        group = group_by_id.get(group_id)
-        if group and group_id not in seen:
-            ordered.append(group)
-            seen.add(group_id)
-    leftovers = [group for group in groups if str(group.get("group_id") or "") not in seen]
-    leftovers.sort(key=lambda group: int(group.get("default_order") or 0))
+    for raw_id in custom_order or []:
+        key = _safe_key(raw_id)
+        if key in by_id and key not in seen:
+            ordered.append(by_id[key])
+            seen.add(key)
+    leftovers = [item for item in rows if str(item.get(id_field) or "") not in seen]
+    leftovers.sort(key=lambda item: (int(item.get("default_order") or 0), str(item.get("label") or "")))
     return ordered + leftovers
 
 
-def _ordered_items(group: Mapping[str, Any], custom_item_order: Sequence[str]) -> list[dict[str, Any]]:
-    items = [deepcopy(item) for item in group.get("items", [])]
-    item_by_id = {str(item.get("page_id") or ""): item for item in items}
-    ordered: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for page_id in custom_item_order:
-        item = item_by_id.get(page_id)
-        if item and page_id not in seen:
-            ordered.append(item)
-            seen.add(page_id)
-    leftovers = [item for item in items if str(item.get("page_id") or "") not in seen]
-    leftovers.sort(key=lambda item: int(item.get("default_order") or 0))
-    return ordered + leftovers
-
-
-def _find_group_for_page(page_id: str) -> dict[str, Any] | None:
+def _find_group(group_id: str) -> dict[str, Any] | None:
     for group in navigation_registry():
-        if any(str(item.get("page_id") or "") == page_id for item in group.get("items", [])):
+        if str(group.get("group_id") or "") == group_id:
             return group
     return None
 
 
-def _normalize_custom_order(value: Any, *, valid_groups: set[str], valid_pages: set[str]) -> dict[str, list[str]]:
+def _find_container_for_page(page_id: str) -> tuple[str, list[dict[str, Any]]] | None:
+    for group in navigation_registry():
+        group_id = str(group.get("group_id") or "")
+        direct_items = list(group.get("items", []))
+        if any(str(item.get("page_id") or "") == page_id for item in direct_items):
+            return group_id, direct_items
+        for subgroup in group.get("subgroups", []):
+            subgroup_id = str(subgroup.get("subgroup_id") or "")
+            items = list(subgroup.get("items", []))
+            if any(str(item.get("page_id") or "") == page_id for item in items):
+                return subgroup_id, items
+    return None
+
+
+def _registry_container_ids() -> set[str]:
+    result = registry_group_ids()
+    result.update(registry_subgroup_ids())
+    return result
+
+
+def _move_key(order: list[str], key: str, *, direction: str | None, target_index: int | None) -> None:
+    if key not in order:
+        return
+    old_index = order.index(key)
+    if target_index is not None:
+        new_index = max(0, min(int(target_index), len(order) - 1))
+    else:
+        direction_key = str(direction or "").strip().casefold()
+        step = -1 if direction_key == "up" else 1 if direction_key == "down" else 0
+        new_index = max(0, min(old_index + step, len(order) - 1))
+    if new_index != old_index:
+        order.insert(new_index, order.pop(old_index))
+
+
+def _toggle_key(values: Sequence[Any], key: str, enabled: bool) -> list[str]:
+    result = [item for item in _unique_keys(list(values or [])) if item != key]
+    if enabled:
+        result.append(key)
+    return result
+
+
+def _normalize_custom_order(value: Any, *, valid_containers: set[str], valid_pages: set[str]) -> dict[str, list[str]]:
     if not isinstance(value, dict):
         return {}
-
     result: dict[str, list[str]] = {}
-
-    # New shape: {"group_id": ["page_id", ...]}.
-    for raw_group_id, raw_order in value.items():
-        group_id = _safe_key(raw_group_id)
-        if group_id not in valid_groups:
+    for raw_container_id, raw_order in value.items():
+        container_id = _safe_key(raw_container_id)
+        if container_id not in valid_containers:
             continue
-
         page_order: list[str] = []
         if isinstance(raw_order, list):
             page_order = _unique_keys(raw_order)
         elif isinstance(raw_order, dict):
-            # Backward-compatible shape: {"page_id": order_number}.
-            ranked = []
+            ranked: list[tuple[int, str]] = []
             for raw_page_id, rank in raw_order.items():
                 page_id = _safe_key(raw_page_id)
                 try:
@@ -271,46 +401,57 @@ def _normalize_custom_order(value: Any, *, valid_groups: set[str], valid_pages: 
                 except (TypeError, ValueError):
                     continue
             page_order = [page_id for _, page_id in sorted(ranked)]
-
         page_order = [page_id for page_id in page_order if page_id in valid_pages]
         if page_order:
-            result[group_id] = page_order
+            result[container_id] = page_order
 
-    # Older v08 shape: {"page_id": order_number}. Convert it by page group.
-    if not result:
-        legacy_ranked: list[tuple[int, str]] = []
-        for raw_page_id, rank in value.items():
-            page_id = _safe_key(raw_page_id)
-            if page_id not in valid_pages:
+    # Backward compatibility: old files used group IDs for all pages. Move each
+    # page to its current subgroup/direct-item container without losing order.
+    for raw_container_id, raw_order in value.items():
+        if _safe_key(raw_container_id) not in registry_group_ids() or not isinstance(raw_order, list):
+            continue
+        for page_id in _unique_keys(raw_order):
+            found = _find_container_for_page(page_id)
+            if not found:
                 continue
-            try:
-                legacy_ranked.append((int(rank), page_id))
-            except (TypeError, ValueError):
-                continue
-        for _, page_id in sorted(legacy_ranked):
-            group = _find_group_for_page(page_id)
-            if not group:
-                continue
-            group_id = str(group.get("group_id") or "")
-            result.setdefault(group_id, []).append(page_id)
-
+            container_id, _ = found
+            result.setdefault(container_id, [])
+            if page_id not in result[container_id]:
+                result[container_id].append(page_id)
     return result
 
 
-def _normalize_group_order(value: Any, *, valid_groups: set[str]) -> list[str]:
+def _normalize_subgroup_order(value: Any, *, valid_groups: set[str], valid_subgroups: set[str]) -> dict[str, list[str]]:
+    if not isinstance(value, dict):
+        return {}
+    result: dict[str, list[str]] = {}
+    for raw_group_id, raw_order in value.items():
+        group_id = _safe_key(raw_group_id)
+        if group_id not in valid_groups:
+            continue
+        order = [subgroup_id for subgroup_id in _normalize_order(raw_order, valid_ids=valid_subgroups)]
+        group = _find_group(group_id)
+        group_subgroups = {str(item.get("subgroup_id") or "") for item in (group or {}).get("subgroups", [])}
+        order = [subgroup_id for subgroup_id in order if subgroup_id in group_subgroups]
+        if order:
+            result[group_id] = order
+    return result
+
+
+def _normalize_order(value: Any, *, valid_ids: set[str]) -> list[str]:
     if isinstance(value, list):
-        return [group_id for group_id in _unique_keys(value) if group_id in valid_groups]
+        return [key for key in _unique_keys(value) if key in valid_ids]
     if isinstance(value, dict):
-        ranked = []
-        for raw_group_id, rank in value.items():
-            group_id = _safe_key(raw_group_id)
-            if group_id not in valid_groups:
+        ranked: list[tuple[int, str]] = []
+        for raw_key, rank in value.items():
+            key = _safe_key(raw_key)
+            if key not in valid_ids:
                 continue
             try:
-                ranked.append((int(rank), group_id))
+                ranked.append((int(rank), key))
             except (TypeError, ValueError):
                 continue
-        return [group_id for _, group_id in sorted(ranked)]
+        return [key for _, key in sorted(ranked)]
     return []
 
 
@@ -318,17 +459,12 @@ def _unique_keys(values: Any) -> list[str]:
     if not isinstance(values, list):
         return []
     result: list[str] = []
-    seen: set[str] = set()
     for value in values:
         key = _safe_key(value)
-        if key and key not in seen:
+        if key and key not in result:
             result.append(key)
-            seen.add(key)
     return result
 
 
 def _safe_key(value: Any) -> str:
-    text = str(value or "").strip().lower().replace(" ", "_")
-    if ".." in text or "/" in text or "\\" in text:
-        return ""
-    return "".join(char for char in text if char.isalnum() or char in {"_", "-", ".", ":"})[:120]
+    return str(value or "").strip()

@@ -11,12 +11,27 @@ from copy import deepcopy
 from typing import Any
 
 DEFAULT_PROFILE: dict[str, Any] = {
-    "schema_version": 2,
+    "schema_version": 3,
     # Personal identity. Profile represents the user, not a single bank account.
     "first_name": "",
     "last_name": "",
     "display_name": "",
     "birth_year": "",
+    "birth_date": "",
+    "birth_place": "",
+    "nationality": "",
+    "fiscal_code": "",
+    "vat_number": "",
+    "tax_residence_country": "",
+    "address_line1": "",
+    "address_line2": "",
+    "postal_code": "",
+    "city": "",
+    "province": "",
+    "country": "",
+    "phone_number": "",
+    "email": "",
+    "pec_email": "",
     "profile_image": "",
     "profile_notes": "",
     # User-level defaults that point to the account/payment architecture.
@@ -61,11 +76,15 @@ DEFAULT_CONTACTS: dict[str, Any] = {
 }
 
 DEFAULT_NAVIGATION: dict[str, Any] = {
-    "schema_version": 1,
+    "schema_version": 2,
     "hidden_pages": [],
     "custom_order": {},
     "group_order": [],
+    "subgroup_order": {},
     "collapsed_groups": [],
+    "expanded_groups": [],
+    "collapsed_subgroups": [],
+    "expanded_subgroups": [],
 }
 
 DEFAULT_DOCUMENT_TYPES: dict[str, Any] = {

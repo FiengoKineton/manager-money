@@ -18,6 +18,21 @@ PROFILE_UPDATE_FIELDS = {
     "last_name",
     "display_name",
     "birth_year",
+    "birth_date",
+    "birth_place",
+    "nationality",
+    "fiscal_code",
+    "vat_number",
+    "tax_residence_country",
+    "address_line1",
+    "address_line2",
+    "postal_code",
+    "city",
+    "province",
+    "country",
+    "phone_number",
+    "email",
+    "pec_email",
     "profile_image",
     "profile_notes",
     # Professional account/payment defaults.
@@ -232,6 +247,21 @@ def _normalize_profile(profile: Mapping[str, Any]) -> dict[str, Any]:
         "last_name",
         "display_name",
         "birth_year",
+        "birth_date",
+        "birth_place",
+        "nationality",
+        "fiscal_code",
+        "vat_number",
+        "tax_residence_country",
+        "address_line1",
+        "address_line2",
+        "postal_code",
+        "city",
+        "province",
+        "country",
+        "phone_number",
+        "email",
+        "pec_email",
         "bank_name",
         "iban",
         "bic_swift",
@@ -247,6 +277,13 @@ def _normalize_profile(profile: Mapping[str, Any]) -> dict[str, Any]:
             clean[field] = ""
         clean[field] = str(clean.get(field) or "").strip()
 
+    clean["fiscal_code"] = re.sub(r"\s+", "", clean.get("fiscal_code", "")).upper()[:32]
+    clean["vat_number"] = re.sub(r"\s+", "", clean.get("vat_number", "")).upper()[:32]
+    clean["email"] = clean.get("email", "").casefold()[:254]
+    clean["pec_email"] = clean.get("pec_email", "").casefold()[:254]
+    clean["birth_date"] = clean.get("birth_date", "")[:10]
+    if not clean.get("birth_year") and re.fullmatch(r"\d{4}-\d{2}-\d{2}", clean.get("birth_date", "")):
+        clean["birth_year"] = clean["birth_date"][:4]
     clean["profile_image"] = _clean_profile_image(clean.get("profile_image"))
     if not clean.get("default_current_account_id"):
         clean["default_current_account_id"] = clean.get("default_main_account") or "main_bank"
@@ -254,7 +291,7 @@ def _normalize_profile(profile: Mapping[str, Any]) -> dict[str, Any]:
         clean["default_main_account"] = clean.get("default_current_account_id") or "main_bank"
     clean["onboarding_completed"] = _as_bool(clean.get("onboarding_completed", True), default=True)
     clean["deprecated_fields"] = sorted(set(clean.get("deprecated_fields") or []) | DEPRECATED_PROFILE_BANK_FIELDS)
-    if not clean.get("schema_version") or int(clean.get("schema_version") or 0) < 2:
+    if not clean.get("schema_version") or int(clean.get("schema_version") or 0) < int(DEFAULT_PROFILE["schema_version"]):
         clean["schema_version"] = DEFAULT_PROFILE["schema_version"]
     return clean
 

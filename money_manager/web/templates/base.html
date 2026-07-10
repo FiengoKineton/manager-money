@@ -99,10 +99,10 @@
     html.phone-native-active .app-content-stage { width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0 !important; overflow-x: hidden !important; box-sizing: border-box !important; }
     html.phone-native-active .app-topbar { display: none !important; }
   </style>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=theme-comfort-2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=navigation-profile-4">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/instant-nav.css') }}?v=instant-nav-1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/ui-refinement.css') }}?v=ui-account-brand-3">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dashboard.css') }}?v=dashboard-home-hub-1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dashboard.css') }}?v=dashboard-home-hub-2">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=phone-ui-18-planning-mobile">
   {% set plotly_endpoints = [
     'dashboard.index',
@@ -152,121 +152,62 @@
             </div>
           </details>
         {% else %}
-          {% set accounts_core_open = request.endpoint in ['accounts.accounts_page', 'transactions.transactions_page'] %}
-          {% set accounts_transfer_open = request.endpoint in ['internal_transfers.internal_transfers_page', 'bonifico.bonifico_page'] %}
-          {% set accounts_tools_open = (request.endpoint and request.endpoint.startswith('contacts.')) or request.endpoint in ['currencies.currencies_page', 'discount_balances.discount_balances_page', 'reconciliation.reconciliation_page'] %}
-          {% set accounts_records_open = request.endpoint in ['documents.documents', 'sparagnat.sparagnat_page', 'parent_support.parent_support_page'] %}
-          {% set accounts_group_open = accounts_core_open or accounts_transfer_open or accounts_tools_open or accounts_records_open %}
-          <details class="nav-group app-nav-group {{ 'is-active' if accounts_group_open else '' }}" {{ 'open' if accounts_group_open else '' }}>
-            <summary><span class="nav-icon" aria-hidden="true">🏦</span> Conti Correnti</summary>
-            <div class="nav-items nav-items-with-subgroups">
-              <details class="nav-subgroup {{ 'is-active' if accounts_core_open else '' }}" {{ 'open' if accounts_core_open else '' }}>
-                <summary><span class="nav-icon" aria-hidden="true">🏠</span> All Conti</summary>
-                <div class="nav-subitems">
-                  {% if endpoint_exists('accounts.accounts_page') %}<a href="{{ url_for('accounts.accounts_page') }}" class="{{ 'active' if request.endpoint == 'accounts.accounts_page' else '' }}"><span class="nav-link-icon">🏦</span> All Conti</a>{% endif %}
-                  {% if endpoint_exists('transactions.transactions_page') %}<a href="{{ url_for('transactions.transactions_page') }}" class="{{ 'active' if request.endpoint == 'transactions.transactions_page' else '' }}"><span class="nav-link-icon">↕</span> Transactions</a>{% endif %}
-                </div>
-              </details>
+          {% for group in sidebar_navigation %}
+            <details
+              class="nav-group app-nav-group {{ 'is-active' if group.is_active else '' }}"
+              data-navigation-group="{{ group.group_id }}"
+              {{ 'open' if group.is_open else '' }}
+            >
+              <summary>
+                <span class="nav-icon" aria-hidden="true">{{ group.icon or '•' }}</span>
+                <span class="nav-summary-label">{{ group.label or t(group.label_key) }}</span>
+              </summary>
+              <div class="nav-items {{ 'nav-items-with-subgroups' if group.subgroups else '' }}">
+                {% for item in group['items'] %}
+                  {% if endpoint_exists(item.endpoint) %}
+                    {% if item.preserve_account_scope and selected_account_id %}
+                      {% set item_url = url_for(item.endpoint, account_id=selected_account_id) %}
+                    {% else %}
+                      {% set item_url = url_for(item.endpoint) %}
+                    {% endif %}
+                    <a href="{{ item_url }}" class="{{ 'active' if item.is_active else '' }}" data-navigation-page="{{ item.page_id }}">
+                      <span class="nav-link-icon" aria-hidden="true">{{ item.icon or '•' }}</span>
+                      <span>{{ item.label or t(item.label_key) }}</span>
+                    </a>
+                  {% endif %}
+                {% endfor %}
 
-              <details class="nav-subgroup {{ 'is-active' if accounts_transfer_open else '' }}" {{ 'open' if accounts_transfer_open else '' }}>
-                <summary><span class="nav-icon" aria-hidden="true">⇄</span> Transfers</summary>
-                <div class="nav-subitems">
-                  {% if endpoint_exists('internal_transfers.internal_transfers_page') %}<a href="{{ url_for('internal_transfers.internal_transfers_page') }}" class="{{ 'active' if request.endpoint == 'internal_transfers.internal_transfers_page' else '' }}"><span class="nav-link-icon">⇄</span> Internal transfers</a>{% endif %}
-                  {% if endpoint_exists('bonifico.bonifico_page') %}<a href="{{ url_for('bonifico.bonifico_page') }}" class="{{ 'active' if request.endpoint == 'bonifico.bonifico_page' else '' }}"><span class="nav-link-icon">🏦</span> Bonifico</a>{% endif %}
-                </div>
-              </details>
-
-              <details class="nav-subgroup {{ 'is-active' if accounts_tools_open else '' }}" {{ 'open' if accounts_tools_open else '' }}>
-                <summary><span class="nav-icon" aria-hidden="true">🧰</span> Contacts & tools</summary>
-                <div class="nav-subitems">
-                  {% if endpoint_exists('contacts.contacts_page') %}<a href="{{ url_for('contacts.contacts_page') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('contacts.') else '' }}"><span class="nav-link-icon">👤</span> Contacts</a>{% endif %}
-                  {% if endpoint_exists('currencies.currencies_page') %}<a href="{{ url_for('currencies.currencies_page') }}" class="{{ 'active' if request.endpoint == 'currencies.currencies_page' else '' }}"><span class="nav-link-icon">💱</span> Currency exchange</a>{% endif %}
-                  {% if endpoint_exists('discount_balances.discount_balances_page') %}<a href="{{ url_for('discount_balances.discount_balances_page') }}" class="{{ 'active' if request.endpoint == 'discount_balances.discount_balances_page' else '' }}"><span class="nav-link-icon">🎟️</span> Gift cards & buoni</a>{% endif %}
-                  {% if endpoint_exists('reconciliation.reconciliation_page') %}<a href="{{ url_for('reconciliation.reconciliation_page') }}" class="{{ 'active' if request.endpoint == 'reconciliation.reconciliation_page' else '' }}"><span class="nav-link-icon">✓</span> Reconciliation</a>{% endif %}
-                </div>
-              </details>
-
-              <details class="nav-subgroup {{ 'is-active' if accounts_records_open else '' }}" {{ 'open' if accounts_records_open else '' }}>
-                <summary><span class="nav-icon" aria-hidden="true">🗂️</span> Records & support</summary>
-                <div class="nav-subitems">
-                  {% if endpoint_exists('documents.documents') %}<a href="{{ url_for('documents.documents') }}" class="{{ 'active' if request.endpoint == 'documents.documents' else '' }}"><span class="nav-link-icon">📄</span> Documents</a>{% endif %}
-                  {% if endpoint_exists('sparagnat.sparagnat_page') %}<a href="{{ url_for('sparagnat.sparagnat_page') }}" class="{{ 'active' if request.endpoint == 'sparagnat.sparagnat_page' else '' }}"><span class="nav-link-icon">🧾</span> Sparagnat e Fottut</a>{% endif %}
-                  {% if endpoint_exists('parent_support.parent_support_page') %}<a href="{{ url_for('parent_support.parent_support_page') }}" class="{{ 'active' if request.endpoint == 'parent_support.parent_support_page' else '' }}"><span class="nav-link-icon">👪</span> Parent Support</a>{% endif %}
-                </div>
-              </details>
-            </div>
-          </details>
+                {% for subgroup in group.subgroups %}
+                  <details
+                    class="nav-subgroup {{ 'is-active' if subgroup.is_active else '' }}"
+                    data-navigation-subgroup="{{ subgroup.subgroup_id }}"
+                    {{ 'open' if subgroup.is_open else '' }}
+                  >
+                    <summary>
+                      <span class="nav-icon" aria-hidden="true">{{ subgroup.icon or '•' }}</span>
+                      <span class="nav-summary-label">{{ subgroup.label or t(subgroup.label_key) }}</span>
+                    </summary>
+                    <div class="nav-subitems">
+                      {% for item in subgroup['items'] %}
+                        {% if endpoint_exists(item.endpoint) %}
+                          {% if item.preserve_account_scope and selected_account_id %}
+                            {% set item_url = url_for(item.endpoint, account_id=selected_account_id) %}
+                          {% else %}
+                            {% set item_url = url_for(item.endpoint) %}
+                          {% endif %}
+                          <a href="{{ item_url }}" class="{{ 'active' if item.is_active else '' }}" data-navigation-page="{{ item.page_id }}">
+                            <span class="nav-link-icon" aria-hidden="true">{{ item.icon or '•' }}</span>
+                            <span>{{ item.label or t(item.label_key) }}</span>
+                          </a>
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                  </details>
+                {% endfor %}
+              </div>
+            </details>
+          {% endfor %}
         {% endif %}
-
-        {% set planning_monthly_open = request.endpoint in ['pending.pending_page', 'pending.recurring_page', 'financial_calendar.calendar_page', 'notifications.center'] %}
-        {% set planning_common_open = request.endpoint in ['managed_recurring.bills_page', 'managed_recurring.work_income_page', 'automation.automation_page'] %}
-        {% set planning_loans_open = request.endpoint in ['mortgages.mortgages_page', 'payables.payables_page', 'debts.debts_page', 'receivables.receivables_page'] %}
-        {% set planning_projects_open = request.endpoint in ['forecast.forecast', 'planned_expenses.planned_expenses_page', 'savings_goals.savings_goals_page'] or (request.endpoint and request.endpoint.startswith('expense_projects.')) %}
-        <details class="nav-group app-nav-group {{ 'is-active' if planning_monthly_open or planning_common_open or planning_loans_open or planning_projects_open else '' }}" >
-          <summary><span class="nav-icon" aria-hidden="true">📅</span> Planning</summary>
-          <div class="nav-items nav-items-with-subgroups">
-            <details class="nav-subgroup {{ 'is-active' if planning_monthly_open else '' }}" {{ 'open' if planning_monthly_open else '' }}>
-              <summary><span class="nav-icon" aria-hidden="true">◴</span> Monthly planning</summary>
-              <div class="nav-subitems">
-                {% if endpoint_exists('financial_calendar.calendar_page') %}<a href="{{ url_for('financial_calendar.calendar_page') }}" class="{{ 'active' if request.endpoint == 'financial_calendar.calendar_page' else '' }}"><span class="nav-link-icon">📅</span> Calendar</a>{% endif %}
-                {% if endpoint_exists('notifications.center') %}<a href="{{ url_for('notifications.center') }}" class="{{ 'active' if request.endpoint == 'notifications.center' else '' }}"><span class="nav-link-icon">🔔</span> Alerts center</a>{% endif %}
-                {% if endpoint_exists('pending.pending_page') %}<a href="{{ url_for('pending.pending_page') }}" class="{{ 'active' if request.endpoint == 'pending.pending_page' else '' }}"><span class="nav-link-icon">◴</span> Pending</a>{% endif %}
-                {% if endpoint_exists('pending.recurring_page') %}<a href="{{ url_for('pending.recurring_page') }}" class="{{ 'active' if request.endpoint == 'pending.recurring_page' else '' }}"><span class="nav-link-icon">↻</span> Recurring</a>{% endif %}
-              </div>
-            </details>
-
-            <details class="nav-subgroup {{ 'is-active' if planning_common_open else '' }}" {{ 'open' if planning_common_open else '' }}>
-              <summary><span class="nav-icon" aria-hidden="true">↻</span> Common flows</summary>
-              <div class="nav-subitems">
-                {% if endpoint_exists('managed_recurring.bills_page') %}<a href="{{ url_for('managed_recurring.bills_page') }}" class="{{ 'active' if request.endpoint == 'managed_recurring.bills_page' else '' }}"><span class="nav-link-icon">💡</span> Bollette</a>{% endif %}
-                {% if endpoint_exists('managed_recurring.work_income_page') %}<a href="{{ url_for('managed_recurring.work_income_page') }}" class="{{ 'active' if request.endpoint == 'managed_recurring.work_income_page' else '' }}"><span class="nav-link-icon">💼</span> Stipendi / Cedolini</a>{% endif %}
-                {% if endpoint_exists('automation.automation_page') %}<a href="{{ url_for('automation.automation_page') }}" class="{{ 'active' if request.endpoint == 'automation.automation_page' else '' }}"><span class="nav-link-icon">⚙</span> Smart automation</a>{% endif %}
-              </div>
-            </details>
-
-            <details class="nav-subgroup {{ 'is-active' if planning_loans_open else '' }}" {{ 'open' if planning_loans_open else '' }}>
-              <summary><span class="nav-icon" aria-hidden="true">−</span> Loans & obligations</summary>
-              <div class="nav-subitems">
-                {% if endpoint_exists('mortgages.mortgages_page') %}<a href="{{ url_for('mortgages.mortgages_page') }}" class="{{ 'active' if request.endpoint == 'mortgages.mortgages_page' else '' }}"><span class="nav-link-icon">🏠</span> Mutui</a>{% endif %}
-                {% if endpoint_exists('payables.payables_page') %}<a href="{{ url_for('payables.payables_page') }}" class="{{ 'active' if request.endpoint == 'payables.payables_page' else '' }}"><span class="nav-link-icon">🧾</span> Payables</a>{% endif %}
-                {% if endpoint_exists('debts.debts_page') %}<a href="{{ url_for('debts.debts_page') }}" class="{{ 'active' if request.endpoint == 'debts.debts_page' else '' }}"><span class="nav-link-icon">−</span> Debts</a>{% endif %}
-                {% if endpoint_exists('receivables.receivables_page') %}<a href="{{ url_for('receivables.receivables_page') }}" class="{{ 'active' if request.endpoint == 'receivables.receivables_page' else '' }}"><span class="nav-link-icon">＋</span> Receivables</a>{% endif %}
-              </div>
-            </details>
-
-            {% if endpoint_exists('planned_expenses.planned_expenses_page') or endpoint_exists('savings_goals.savings_goals_page') or endpoint_exists('expense_projects.expense_projects_page') or endpoint_exists('forecast.forecast') %}
-              <details class="nav-subgroup {{ 'is-active' if planning_projects_open else '' }}" {{ 'open' if planning_projects_open else '' }}>
-                <summary><span class="nav-icon" aria-hidden="true">◎</span> Projects & goals</summary>
-                <div class="nav-subitems">
-                  {% if endpoint_exists('planned_expenses.planned_expenses_page') %}
-                    <a href="{{ url_for('planned_expenses.planned_expenses_page') }}" class="{{ 'active' if request.endpoint == 'planned_expenses.planned_expenses_page' else '' }}"><span class="nav-link-icon">🧾</span> Planned expenses</a>
-                  {% endif %}
-                  {% if endpoint_exists('savings_goals.savings_goals_page') %}
-                    <a href="{{ url_for('savings_goals.savings_goals_page') }}" class="{{ 'active' if request.endpoint == 'savings_goals.savings_goals_page' else '' }}"><span class="nav-link-icon">◎</span> Savings goals</a>
-                  {% endif %}
-                  {% if endpoint_exists('expense_projects.expense_projects_page') %}
-                    <a href="{{ url_for('expense_projects.expense_projects_page') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('expense_projects.') else '' }}"><span class="nav-link-icon">▤</span> Projects</a>
-                  {% endif %}
-                  {% if endpoint_exists('forecast.forecast') %}
-                    <a href="{{ url_for('forecast.forecast') }}" class="{{ 'active' if request.endpoint == 'forecast.forecast' else '' }}"><span class="nav-link-icon">↗</span> Forecast</a>
-                  {% endif %}
-                </div>
-              </details>
-            {% endif %}
-          </div>
-        </details>
-
-        {% set analysis_group_open = request.endpoint in ['dashboard.index', 'analysis.analysis', 'investments.investments_page', 'yearly_summary.yearly_summary_page'] %}
-        {% set overview_nav_account_id = selected_account_id|default('', true) %}
-        <details class="nav-group app-nav-group {{ 'is-active' if analysis_group_open else '' }}" {{ 'open' if analysis_group_open else '' }}>
-          <summary><span class="nav-icon" aria-hidden="true">📊</span> Analysis & wealth</summary>
-          <div class="nav-items">
-            {% if endpoint_exists('dashboard.index') %}<a href="{{ url_for('dashboard.index', account_id=overview_nav_account_id) if overview_nav_account_id else url_for('dashboard.index') }}" class="{{ 'active' if request.endpoint == 'dashboard.index' else '' }}"><span class="nav-link-icon">📌</span> Overview</a>{% endif %}
-                        {% if endpoint_exists('analysis.analysis') %}<a href="{{ url_for('analysis.analysis') }}" class="{{ 'active' if request.endpoint == 'analysis.analysis' else '' }}"><span class="nav-link-icon">📊</span> Analysis</a>{% endif %}
-            {% if endpoint_exists('investments.investments_page') %}<a href="{{ url_for('investments.investments_page') }}" class="{{ 'active' if request.endpoint == 'investments.investments_page' else '' }}"><span class="nav-link-icon">📈</span> Investments</a>{% endif %}
-            {% if endpoint_exists('yearly_summary.yearly_summary_page') %}<a href="{{ url_for('yearly_summary.yearly_summary_page') }}" class="{{ 'active' if request.endpoint == 'yearly_summary.yearly_summary_page' else '' }}"><span class="nav-link-icon">🗓️</span> Yearly summary</a>{% endif %}
-          </div>
-        </details>
       </nav>
 
       <div class="app-sidebar-footer app-sidebar-footer-clean">
@@ -298,6 +239,7 @@
         <nav class="topbar-nav-buttons" aria-label="Page navigation">
           <button type="button" class="topbar-nav-btn sidebar-toggle-btn" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="true" title="Toggle left navigation" aria-label="Toggle left navigation">☰</button>
           <a class="topbar-nav-btn" href="{{ (url_for('dashboard.index', account_id=selected_account_id) if selected_account_id else url_for('dashboard.index')) if endpoint_exists('dashboard.index') else url_for('accounts.accounts_page') }}" title="Home" aria-label="Home">⌂</a>
+          <button type="button" class="topbar-nav-btn" data-browser-refresh title="Refresh" aria-label="Refresh">↻</button>
           <button type="button" class="topbar-nav-btn" data-browser-back title="Back" aria-label="Back">‹</button>
           <button type="button" class="topbar-nav-btn" data-browser-forward title="Forward" aria-label="Forward">›</button>
         </nav>
@@ -315,7 +257,11 @@
           {% set lazy_topbar_account_id = selected_account_id|default('', true) %}
           {% set lazy_topbar_url = '' %}
           {% if endpoint_exists('dashboard.topbar_summary_api') %}
-            {% set lazy_topbar_url = url_for('dashboard.topbar_summary_api', account_id=lazy_topbar_account_id) if lazy_topbar_account_id else url_for('dashboard.topbar_summary_api') %}
+            {% if request.endpoint in ['dashboard.index', 'transactions.transactions_page'] and request.args.get('period_mode') == 'month' %}
+              {% set lazy_topbar_url = url_for('dashboard.topbar_summary_api', account_id=lazy_topbar_account_id, period_mode='month', period_month=request.args.get('period_month'), period_year=request.args.get('period_year')) if lazy_topbar_account_id else url_for('dashboard.topbar_summary_api', period_mode='month', period_month=request.args.get('period_month'), period_year=request.args.get('period_year')) %}
+            {% else %}
+              {% set lazy_topbar_url = url_for('dashboard.topbar_summary_api', account_id=lazy_topbar_account_id) if lazy_topbar_account_id else url_for('dashboard.topbar_summary_api') %}
+            {% endif %}
           {% endif %}
           <a class="net-pill topbar-net-pill {{ 'is-account-scope' if has_active_account else '' }}"
              href="{{ topbar_net_href or url_for('accounts.accounts_page') }}"
@@ -361,7 +307,6 @@
               aria-expanded="false"
             >
               <span class="notification-trigger-icon" aria-hidden="true">🔔</span>
-              <span class="notification-trigger-text">{{ t("notifications.alerts") }}</span>
               <span class="notification-dot" data-notification-dot aria-hidden="true"></span>
               <span class="notification-count" data-notification-count>{{ topbar_notifications['unread_count'] }}</span>
             </button>
@@ -489,7 +434,7 @@
   </div>
 
   <script src="{{ url_for('static', filename='js/shared/instant-nav.js') }}?v=instant-nav-3" defer></script>
-  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=theme-comfort-2"></script>
+  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=navigation-refresh-3"></script>
   <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-lazy-2"></script>
   <script src="{{ url_for('static', filename='js/shared/smart-floating-submit.js') }}?v=smart-save-3" defer></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>

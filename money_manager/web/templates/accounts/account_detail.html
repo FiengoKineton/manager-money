@@ -347,6 +347,7 @@
     <form method="post" action="{{ url_for('accounts.account_payment_method_detail', account_key=account.key, method_id=method.id) }}" class="custom-account-form spaced-form card-editor-form modal-form-grid">
       <input type="hidden" name="action" value="update_payment_method">
       <input type="hidden" name="payment_method_id" value="{{ method.id }}">
+      <input type="hidden" name="parent_account_id" value="{{ method.parent_account_id or account.key }}">
       <div><label>Name</label><input type="text" name="name" value="{{ method.name or method.label }}"></div>
       <div><label>Type</label><select name="method_type">
         {% for value in ['debit_card', 'credit_card', 'prepaid_card', 'wallet_linked_card'] %}<option value="{{ value }}" {% if method.method_type == value %}selected{% endif %}>{{ value|replace('_', ' ')|title }}</option>{% endfor %}

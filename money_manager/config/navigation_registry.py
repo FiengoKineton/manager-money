@@ -1,397 +1,253 @@
-"""Central desktop navigation registry.
+"""Central registry for the desktop navigation sidebar.
 
-The sidebar is intentionally data-driven: pages are registered here, while each
-user stores only preferences such as hidden pages and custom ordering in
-``data/users/{user_id}/navigation.json``. Hiding a page removes it from the
-sidebar only; routes stay registered and direct URL access continues to work.
+The visible sidebar and the Profile > Customise navigation editor both consume
+this structure. User preferences store only hidden page IDs, ordering, and the
+default collapsed state; routes remain registered even when a link is hidden.
 """
 
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any
+from typing import Any, Iterable
+
+
+def _item(
+    page_id: str,
+    endpoint: str,
+    label: str,
+    icon: str,
+    order: int,
+    *,
+    active_endpoints: Iterable[str] | None = None,
+    preserve_account_scope: bool = False,
+) -> dict[str, Any]:
+    return {
+        "page_id": page_id,
+        "endpoint": endpoint,
+        "label": label,
+        "icon": icon,
+        "default_visible": True,
+        "default_order": order,
+        "active_endpoints": list(active_endpoints or [endpoint]),
+        "preserve_account_scope": bool(preserve_account_scope),
+    }
+
+
+def _subgroup(
+    subgroup_id: str,
+    label: str,
+    icon: str,
+    order: int,
+    items: list[dict[str, Any]],
+    *,
+    default_open: bool = False,
+) -> dict[str, Any]:
+    return {
+        "subgroup_id": subgroup_id,
+        "label": label,
+        "icon": icon,
+        "default_order": order,
+        "default_open": bool(default_open),
+        "items": items,
+    }
+
 
 DEFAULT_NAVIGATION: list[dict[str, Any]] = [
     {
-        "group_id": "overview",
-        "label_key": "nav.overview",
-        "default_open": True,
+        "group_id": "accounts",
+        "label": "Conti Correnti",
+        "icon": "🏦",
+        "default_open": False,
         "default_order": 10,
-        "items": [
-            {
-                "page_id": "quick_overview",
-                "endpoint": "dashboard.overview",
-                "label_key": "nav.quick_overview",
-                "default_visible": True,
-                "default_order": 10,
-                "active_endpoints": ["dashboard.overview"],
-            },
-            {
-                "page_id": "detailed_overview",
-                "endpoint": "dashboard.overview_detailed",
-                "label_key": "nav.detailed_overview",
-                "default_visible": True,
-                "default_order": 20,
-                "active_endpoints": ["dashboard.overview_detailed"],
-            },
-            {
-                "page_id": "dashboard",
-                "endpoint": "dashboard.index",
-                "label_key": "nav.dashboard",
-                "default_visible": True,
-                "default_order": 30,
-                "active_endpoints": ["dashboard.index"],
-            },
-            {
-                "page_id": "notifications_center",
-                "endpoint": "notifications.center",
-                "label_key": "nav.notifications_center",
-                "default_visible": True,
-                "default_order": 35,
-                "active_endpoints": ["notifications.center"],
-            },
-            {
-                "page_id": "transactions",
-                "endpoint": "transactions.transactions_page",
-                "label_key": "nav.transactions",
-                "default_visible": True,
-                "default_order": 40,
-                "active_endpoints": [
-                    "transactions.transactions_page",
-                    "transactions.transaction_detail",
-                    "transactions.add_transaction",
+        "items": [],
+        "subgroups": [
+            _subgroup(
+                "accounts_all",
+                "All Conti",
+                "🏠",
+                10,
+                [
+                    _item(
+                        "accounts",
+                        "accounts.accounts_page",
+                        "All Conti",
+                        "🏦",
+                        10,
+                        active_endpoints=["accounts.accounts_page", "accounts.account_detail", "accounts.account_payment_method_detail"],
+                    ),
+                    _item(
+                        "transactions",
+                        "transactions.transactions_page",
+                        "Transactions",
+                        "↕",
+                        20,
+                        active_endpoints=[
+                            "transactions.transactions_page",
+                            "transactions.transaction_detail",
+                            "transactions.add_transaction",
+                            "transactions.edit_transaction",
+                        ],
+                    ),
                 ],
-            },
-            {
-                "page_id": "why_this_net",
-                "endpoint": "net_explanation.net_explanation",
-                "label_key": "nav.why_this_net",
-                "default_visible": True,
-                "default_order": 50,
-                "active_endpoints": ["net_explanation.net_explanation"],
-            },
+            ),
+            _subgroup(
+                "accounts_transfers",
+                "Transfers",
+                "⇄",
+                20,
+                [
+                    _item("internal_transfers", "internal_transfers.internal_transfers_page", "Internal transfers", "⇄", 10),
+                    _item(
+                        "bonifico",
+                        "bonifico.bonifico_page",
+                        "Bonifico",
+                        "🏦",
+                        20,
+                        active_endpoints=["bonifico.bonifico_page", "bonifico.contacts_search_api"],
+                    ),
+                ],
+            ),
+            _subgroup(
+                "accounts_tools",
+                "Contacts & tools",
+                "🧰",
+                30,
+                [
+                    _item(
+                        "contacts",
+                        "contacts.contacts_page",
+                        "Contacts",
+                        "👤",
+                        10,
+                        active_endpoints=[
+                            "contacts.contacts_page",
+                            "contacts.new_contact",
+                            "contacts.contact_detail",
+                            "contacts.edit_contact",
+                        ],
+                    ),
+                    _item("currencies", "currencies.currencies_page", "Currency exchange", "💱", 20),
+                    _item("discount_balances", "discount_balances.discount_balances_page", "Gift cards & buoni", "🎟️", 30),
+                    _item("reconciliation", "reconciliation.reconciliation_page", "Reconciliation", "✓", 40),
+                ],
+            ),
+            _subgroup(
+                "accounts_records",
+                "Records & support",
+                "🗂️",
+                40,
+                [
+                    _item("documents", "documents.documents", "Documents", "📄", 10),
+                    _item("sparagnat", "sparagnat.sparagnat_page", "Sparagnat e Fottut", "🧾", 20),
+                    _item("parent_support", "parent_support.parent_support_page", "Parent Support", "👪", 30),
+                ],
+            ),
         ],
     },
     {
         "group_id": "planning",
-        "label_key": "nav.planning",
+        "label": "Planning",
+        "icon": "📅",
+        "default_open": False,
+        "default_order": 20,
+        "items": [],
+        "subgroups": [
+            _subgroup(
+                "planning_monthly",
+                "Monthly planning",
+                "◴",
+                10,
+                [
+                    _item("financial_calendar", "financial_calendar.calendar_page", "Calendar", "📅", 10),
+                    _item("notifications_center", "notifications.center", "Alerts center", "🔔", 20),
+                    _item("pending_payments", "pending.pending_page", "Pending", "◴", 30),
+                    _item("recurring_rules", "pending.recurring_page", "Recurring", "↻", 40),
+                ],
+            ),
+            _subgroup(
+                "planning_common",
+                "Common flows",
+                "↻",
+                20,
+                [
+                    _item("bills", "managed_recurring.bills_page", "Bollette", "💡", 10),
+                    _item("work_income", "managed_recurring.work_income_page", "Stipendi / Cedolini", "💼", 20),
+                    _item("automation", "automation.automation_page", "Smart automation", "⚙", 30),
+                ],
+            ),
+            _subgroup(
+                "planning_obligations",
+                "Loans & obligations",
+                "−",
+                30,
+                [
+                    _item("mortgages", "mortgages.mortgages_page", "Mutui", "🏠", 10),
+                    _item("payables", "payables.payables_page", "Payables", "🧾", 20),
+                    _item("debts", "debts.debts_page", "Debts", "−", 30),
+                    _item("receivables", "receivables.receivables_page", "Receivables", "＋", 40),
+                ],
+            ),
+            _subgroup(
+                "planning_projects",
+                "Projects & goals",
+                "◎",
+                40,
+                [
+                    _item("planned_expenses", "planned_expenses.planned_expenses_page", "Planned expenses", "🧾", 10),
+                    _item("savings_goals", "savings_goals.savings_goals_page", "Savings goals", "◎", 20),
+                    _item(
+                        "expense_projects",
+                        "expense_projects.expense_projects_page",
+                        "Projects",
+                        "▤",
+                        30,
+                        active_endpoints=["expense_projects.expense_projects_page", "expense_projects.expense_project_detail"],
+                    ),
+                    _item("forecast", "forecast.forecast", "Forecast", "↗", 40),
+                ],
+            ),
+        ],
+    },
+    {
+        "group_id": "analysis",
+        "label": "Analysis & wealth",
+        "icon": "📊",
         "default_open": False,
         "default_order": 30,
+        "subgroups": [],
         "items": [
-            {
-                "page_id": "pending_payments",
-                "endpoint": "pending.pending_page",
-                "label_key": "nav.pending_payments",
-                "section_label_key": "nav.scheduled_money",
-                "default_visible": True,
-                "default_order": 10,
-                "active_endpoints": ["pending.pending_page"],
-            },
-            {
-                "page_id": "recurring_rules",
-                "endpoint": "pending.recurring_page",
-                "label_key": "nav.recurring_rules",
-                "section_label_key": "nav.scheduled_money",
-                "default_visible": True,
-                "default_order": 20,
-                "active_endpoints": ["pending.recurring_page"],
-            },
-            {
-                "page_id": "financial_calendar",
-                "endpoint": "financial_calendar.calendar_page",
-                "label_key": "nav.financial_calendar",
-                "section_label_key": "nav.scheduled_money",
-                "default_visible": True,
-                "default_order": 22,
-                "active_endpoints": ["financial_calendar.calendar_page"],
-            },
-
-            {
-                "page_id": "mortgages",
-                "endpoint": "mortgages.mortgages_page",
-                "label_key": "nav.mortgages",
-                "section_label_key": "nav.obligations",
-                "default_visible": True,
-                "default_order": 65,
-                "active_endpoints": ["mortgages.mortgages_page"],
-            },
-            {
-                "page_id": "bills",
-                "endpoint": "managed_recurring.bills_page",
-                "label_key": "nav.bills",
-                "section_label_key": "nav.scheduled_money",
-                "default_visible": True,
-                "default_order": 25,
-                "active_endpoints": ["managed_recurring.bills_page"],
-            },
-            {
-                "page_id": "work_income",
-                "endpoint": "managed_recurring.work_income_page",
-                "label_key": "nav.work_income",
-                "section_label_key": "nav.scheduled_money",
-                "default_visible": True,
-                "default_order": 26,
-                "active_endpoints": ["managed_recurring.work_income_page"],
-            },
-            {
-                "page_id": "expense_projects",
-                "endpoint": "expense_projects.expense_projects_page",
-                "label_key": "nav.expense_projects",
-                "section_label_key": "nav.projects_forecast",
-                "default_visible": True,
-                "default_order": 30,
-                "active_endpoints": [
-                    "expense_projects.expense_projects_page",
-                    "expense_projects.expense_project_detail",
-                ],
-            },
-            {
-                "page_id": "forecast",
-                "endpoint": "forecast.forecast",
-                "label_key": "nav.forecast",
-                "section_label_key": "nav.projects_forecast",
-                "default_visible": True,
-                "default_order": 40,
-                "active_endpoints": ["forecast.forecast"],
-            },
-            {
-                "page_id": "planned_expenses",
-                "endpoint": "planned_expenses.planned_expenses_page",
-                "label_key": "nav.planned_expenses",
-                "section_label_key": "nav.projects_forecast",
-                "default_visible": True,
-                "default_order": 45,
-                "active_endpoints": ["planned_expenses.planned_expenses_page"],
-            },
-            {
-                "page_id": "savings_goals",
-                "endpoint": "savings_goals.savings_goals_page",
-                "label_key": "nav.savings_goals",
-                "section_label_key": "nav.projects_forecast",
-                "default_visible": True,
-                "default_order": 46,
-                "active_endpoints": ["savings_goals.savings_goals_page"],
-            },
-            {
-                "page_id": "payables",
-                "endpoint": "payables.payables_page",
-                "label_key": "nav.payables",
-                "section_label_key": "nav.obligations",
-                "default_visible": True,
-                "default_order": 50,
-                "active_endpoints": ["payables.payables_page"],
-            },
-            {
-                "page_id": "debts",
-                "endpoint": "debts.debts_page",
-                "label_key": "nav.debts_i_owe",
-                "section_label_key": "nav.obligations",
-                "default_visible": True,
-                "default_order": 60,
-                "active_endpoints": ["debts.debts_page"],
-            },
-            {
-                "page_id": "receivables",
-                "endpoint": "receivables.receivables_page",
-                "label_key": "nav.money_owed_to_me",
-                "section_label_key": "nav.obligations",
-                "default_visible": True,
-                "default_order": 70,
-                "active_endpoints": ["receivables.receivables_page"],
-            },
+            _item("dashboard", "dashboard.index", "Overview", "📌", 10, preserve_account_scope=True),
+            _item("analysis", "analysis.analysis", "Analysis", "📊", 20),
+            _item("investments", "investments.investments_page", "Investments", "📈", 30),
+            _item("yearly_summary", "yearly_summary.yearly_summary_page", "Yearly summary", "🗓️", 40),
         ],
     },
-    {
-        "group_id": "accounts",
-        "label_key": "nav.accounts",
-        "default_open": True,
-        "default_order": 20,
-        "items": [
-            {
-                "page_id": "accounts",
-                "endpoint": "accounts.accounts_page",
-                "label_key": "nav.liquid_accounts",
-                "default_visible": True,
-                "default_order": 10,
-                "active_endpoints": ["accounts.accounts_page", "accounts.account_detail"],
-            },
-            {
-                "page_id": "contacts",
-                "endpoint": "contacts.contacts_page",
-                "label_key": "nav.contacts",
-                "default_visible": True,
-                "default_order": 40,
-                "active_endpoints": [
-                    "contacts.contacts_page",
-                    "contacts.new_contact",
-                    "contacts.contact_detail",
-                    "contacts.edit_contact",
-                ],
-            },
-            {
-                "page_id": "bonifico",
-                "endpoint": "bonifico.bonifico_page",
-                "label_key": "nav.bonifico",
-                "default_visible": True,
-                "default_order": 30,
-                "active_endpoints": ["bonifico.bonifico_page", "bonifico.contacts_search_api"],
-            },
-            {
-                "page_id": "internal_transfers",
-                "endpoint": "internal_transfers.internal_transfers_page",
-                "label_key": "nav.internal_transfers",
-                "default_visible": True,
-                "default_order": 20,
-                "active_endpoints": ["internal_transfers.internal_transfers_page"],
-            },
-            {
-                "page_id": "currencies",
-                "endpoint": "currencies.currencies_page",
-                "label_key": "nav.currency_exchange",
-                "default_visible": True,
-                "default_order": 50,
-                "active_endpoints": ["currencies.currencies_page"],
-            },
-            {
-                "page_id": "discount_balances",
-                "endpoint": "discount_balances.discount_balances_page",
-                "label_key": "nav.discount_balances",
-                "default_visible": True,
-                "default_order": 55,
-                "active_endpoints": ["discount_balances.discount_balances_page"],
-            },
-            {
-                "page_id": "documents",
-                "endpoint": "documents.documents",
-                "label_key": "nav.documents",
-                "default_visible": True,
-                "default_order": 60,
-                "active_endpoints": ["documents.documents"],
-            },
-            {
-                "page_id": "sparagnat",
-                "endpoint": "sparagnat.sparagnat_page",
-                "label_key": "nav.sparagnat",
-                "default_visible": True,
-                "default_order": 70,
-                "active_endpoints": ["sparagnat.sparagnat_page"],
-            },
-            {
-                "page_id": "parent_support",
-                "endpoint": "parent_support.parent_support_page",
-                "label_key": "nav.parent_support",
-                "default_visible": True,
-                "default_order": 80,
-                "active_endpoints": ["parent_support.parent_support_page"],
-            },
-        ],
-    },
-    {
-        "group_id": "analysis_wealth",
-        "label_key": "nav.analysis_wealth",
-        "default_open": False,
-        "default_order": 40,
-        "items": [
-            {
-                "page_id": "analysis",
-                "endpoint": "analysis.analysis",
-                "label_key": "nav.analysis",
-                "default_visible": True,
-                "default_order": 10,
-                "active_endpoints": ["analysis.analysis"],
-            },
-            {
-                "page_id": "investments",
-                "endpoint": "investments.investments_page",
-                "label_key": "nav.investments",
-                "default_visible": True,
-                "default_order": 20,
-                "active_endpoints": ["investments.investments_page"],
-            },
-            {
-                "page_id": "yearly_summary",
-                "endpoint": "yearly_summary.yearly_summary_page",
-                "label_key": "nav.yearly_summary",
-                "default_visible": True,
-                "default_order": 30,
-                "active_endpoints": ["yearly_summary.yearly_summary_page"],
-            },
-        ],
-    },
-    {
-        "group_id": "settings",
-        "label_key": "nav.settings",
-        "default_open": False,
-        "default_order": 90,
-        "items": [
-            {
-                "page_id": "integrity",
-                "endpoint": "integrity.integrity_page",
-                "label_key": "nav.integrity",
-                "default_visible": True,
-                "default_order": 10,
-                "active_endpoints": ["integrity.integrity_page"],
-            },
-            {
-                "page_id": "security",
-                "endpoint": "security.security_page",
-                "label_key": "nav.security",
-                "default_visible": True,
-                "default_order": 20,
-                "active_endpoints": ["security.security_page", "security.unlock"],
-            },
-            {
-                "page_id": "updates",
-                "endpoint": "settings_updates.updates_page",
-                "label_key": "nav.updates",
-                "default_visible": True,
-                "default_order": 30,
-                "active_endpoints": ["settings_updates.updates_page", "settings_updates.stage_update_route", "settings_updates.rollback_route"],
-            },
-            {
-                "page_id": "data_registry",
-                "endpoint": "settings_updates.data_registry_page",
-                "label_key": "nav.data_registry",
-                "default_visible": True,
-                "default_order": 40,
-                "active_endpoints": ["settings_updates.data_registry_page"],
-            },
-            {
-                "page_id": "cache",
-                "endpoint": "settings_cache.cache_page",
-                "label_key": "nav.cache",
-                "default_visible": True,
-                "default_order": 50,
-                "active_endpoints": ["settings_cache.cache_page", "settings_cache.clear_cache_route", "settings_cache.rebuild_cache_route", "settings_cache.cleanup_stale_route"],
-            },
-            {
-                "page_id": "categories",
-                "endpoint": "settings_categories.categories_page",
-                "label_key": "nav.categories",
-                "default_visible": True,
-                "default_order": 60,
-                "active_endpoints": [
-                    "settings_categories.categories_page",
-                    "settings_categories.add_category_route",
-                    "settings_categories.hide_category_route",
-                    "settings_categories.restore_category_route",
-                    "settings_categories.default_category_route",
-                ],
-            },
-        ],
-    },
-
 ]
 
 
 def navigation_registry() -> list[dict[str, Any]]:
-    """Return a mutable copy of the app navigation registry."""
     return deepcopy(DEFAULT_NAVIGATION)
 
 
+def _all_items() -> Iterable[dict[str, Any]]:
+    for group in DEFAULT_NAVIGATION:
+        yield from group.get("items", [])
+        for subgroup in group.get("subgroups", []):
+            yield from subgroup.get("items", [])
+
+
 def registry_page_ids() -> set[str]:
-    return {item["page_id"] for group in DEFAULT_NAVIGATION for item in group.get("items", [])}
+    return {str(item.get("page_id") or "") for item in _all_items() if item.get("page_id")}
 
 
 def registry_group_ids() -> set[str]:
-    return {group["group_id"] for group in DEFAULT_NAVIGATION}
+    return {str(group.get("group_id") or "") for group in DEFAULT_NAVIGATION if group.get("group_id")}
+
+
+def registry_subgroup_ids() -> set[str]:
+    return {
+        str(subgroup.get("subgroup_id") or "")
+        for group in DEFAULT_NAVIGATION
+        for subgroup in group.get("subgroups", [])
+        if subgroup.get("subgroup_id")
+    }

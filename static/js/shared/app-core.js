@@ -1393,6 +1393,13 @@
       return;
     }
 
+    const refresh = event.target.closest('[data-browser-refresh]');
+    if (refresh) {
+      event.preventDefault();
+      window.location.reload();
+      return;
+    }
+
     const forward = event.target.closest('[data-browser-forward]');
     if (forward) {
       event.preventDefault();

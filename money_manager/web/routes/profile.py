@@ -18,9 +18,12 @@ from money_manager.services.i18n_service import available_language_codes
 from money_manager.services.navigation_service import (
     get_effective_navigation,
     hide_page,
+    move_group,
     move_page,
+    move_subgroup,
     restore_default_navigation,
     set_group_collapsed,
+    set_subgroup_collapsed,
     show_page,
 )
 from money_manager.services.preferences_service import load_preferences, normalize_theme_value, update_preferences
@@ -44,6 +47,21 @@ PROFILE_FIELDS = {
     "last_name",
     "display_name",
     "birth_year",
+    "birth_date",
+    "birth_place",
+    "nationality",
+    "fiscal_code",
+    "vat_number",
+    "tax_residence_country",
+    "address_line1",
+    "address_line2",
+    "postal_code",
+    "city",
+    "province",
+    "country",
+    "phone_number",
+    "email",
+    "pec_email",
     "profile_notes",
     "default_current_account_id",
     "default_payment_method_id",
@@ -168,6 +186,36 @@ def navigation_group():
     set_group_collapsed(
         request.form.get("group_id", ""),
         collapsed=_checkbox_on("collapsed"),
+    )
+    return redirect(_profile_navigation_url(saved="navigation"))
+
+
+
+
+@bp.post("/navigation/group/move")
+def navigation_group_move():
+    move_group(
+        request.form.get("group_id", ""),
+        direction=request.form.get("direction", ""),
+    )
+    return redirect(_profile_navigation_url(saved="navigation"))
+
+
+@bp.post("/navigation/subgroup")
+def navigation_subgroup():
+    set_subgroup_collapsed(
+        request.form.get("subgroup_id", ""),
+        collapsed=_checkbox_on("collapsed"),
+    )
+    return redirect(_profile_navigation_url(saved="navigation"))
+
+
+@bp.post("/navigation/subgroup/move")
+def navigation_subgroup_move():
+    move_subgroup(
+        request.form.get("group_id", ""),
+        request.form.get("subgroup_id", ""),
+        direction=request.form.get("direction", ""),
     )
     return redirect(_profile_navigation_url(saved="navigation"))
 

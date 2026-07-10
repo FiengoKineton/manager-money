@@ -237,3 +237,22 @@
     padding-left: 0;
   }
 }
+
+/* Shared all-history/month control used by the Transactions route. */
+.transactions-period-control {
+  margin-bottom: 1rem;
+}
+
+.transactions-period-control .dashboard-period-header p {
+  max-width: 82ch;
+}
+
+.transactions-period-control .dashboard-advanced-filters {
+  margin-top: 0.15rem;
+}
+
+@media (max-width: 760px) {
+  .transactions-hero-actions button {
+    width: 100%;
+  }
+}

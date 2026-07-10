@@ -11,7 +11,7 @@ from money_manager.services.analytics_service import apply_transaction_filters
 from money_manager.services.calculation_service import cached_context
 from money_manager.services.account_scope_service import transactions_for_scope
 from money_manager.services.category_service import category_context
-from money_manager.services.custom_category_service import add_custom_category
+from money_manager.services.custom_category_service import add_custom_category, effective_categories_by_type
 from money_manager.services.category_icon_service import set_category_icon
 from money_manager.services.currency_service import currency_options_for_forms
 from money_manager.services.quick_log_service import handle_quick_log, quick_log_context
@@ -23,14 +23,8 @@ from money_manager.services.discount_balance_service import (
     validate_discount_source_form,
 )
 from money_manager.utils.stats import summary_totals
-from money_manager.services.transaction_window_service import (
-    split_transactions_at,
-    totals_with_initial_conditions,
-    transaction_default_date_range,
-    transaction_initial_conditions_for_frame,
-)
-from money_manager.web.transaction_filter_state import resolve_transaction_filter_state
 from money_manager.web.context import resolve_request_scope, scope_template_context
+from money_manager.web.dashboard_period import dashboard_query_filter_state
 from money_manager.services.receipt_service import (
     receipt_for_transaction,
     receipt_form_has_items,
@@ -101,13 +95,34 @@ def _positive_int_arg(name: str, default: int, *, minimum: int = 1, maximum: int
 
 
 
-@bp.route("/transactions")
+@bp.route("/transactions", methods=["GET", "POST"])
 def transactions_page():
     selected_scope = resolve_request_scope(request)
     scope_key = selected_scope["scope"]
 
-    start_default, end_default = transaction_default_date_range()
-    filter_state = resolve_transaction_filter_state(request.args, start_default, end_default, TRANSACTION_TYPES)
+    if request.method == "POST" and str(request.form.get("action") or "") == "add_custom_category":
+        transaction_type = str(request.form.get("transaction_type") or "expense").strip().casefold()
+        category_name = _clean_form_text(request.form.get("category_name", ""))
+        category_icon = _clean_form_text(request.form.get("category_icon", ""))
+        params = {}
+        account_id = str(request.form.get("account_id") or "").strip()
+        if account_id:
+            params["account_id"] = account_id
+        for name in ("period_mode", "period_month", "period_year"):
+            value = str(request.form.get(name) or "").strip()
+            if value:
+                params[name] = value
+        try:
+            add_custom_category(transaction_type, category_name)
+            if category_icon:
+                set_category_icon(category_name, category_icon, transaction_type)
+            params["category_added"] = category_name
+        except ValueError as exc:
+            params["category_error"] = str(exc)
+        return redirect(url_for("transactions.transactions_page", **params))
+
+    scoped_df = transactions_for_scope(load_transactions(), scope_key)
+    filter_state = dashboard_query_filter_state(request.args, scoped_df, TRANSACTION_TYPES)
 
     page_size = _positive_int_arg("page_size", DEFAULT_TRANSACTION_PAGE_SIZE, minimum=1, maximum=MAX_TRANSACTION_PAGE_SIZE)
 
@@ -115,10 +130,12 @@ def transactions_page():
     params.update({"page": 1, "page_size": page_size})
 
     context = cached_context(
-        "transaction_table_view_v4",
+        "transaction_table_view_v5",
         lambda: _build_transactions_page_context(scope_key, filter_state, page=1, page_size=page_size),
         params=params,
     )
+    context["category_added"] = str(request.args.get("category_added") or "")
+    context["category_error"] = str(request.args.get("category_error") or "")
 
     return render_template(
         "core/transactions.html",
@@ -138,6 +155,9 @@ def _transaction_cache_params(scope_key: str, filter_state: dict) -> dict:
         "amount_min": filter_state["amount_min"],
         "amount_max": filter_state["amount_max"],
         "has_effective_filters": bool(filter_state.get("has_effective_filters")),
+        "period_mode": str((filter_state.get("period") or {}).get("mode") or "all"),
+        "period_month": int((filter_state.get("period") or {}).get("month") or 0),
+        "period_year": int((filter_state.get("period") or {}).get("year") or 0),
     }
 
 
@@ -238,17 +258,24 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict, *, page
     amount_min = filter_state["amount_min"]
     amount_max = filter_state["amount_max"]
     has_effective_filters = bool(filter_state.get("has_effective_filters"))
+    period_state = dict(filter_state.get("period") or {})
 
-    historical_df, _recent_df = split_transactions_at(main_df, start)
-    initial_conditions = transaction_initial_conditions_for_frame(
-        historical_df,
-        scope=scope_key,
-        start=start,
+    # Type/category/search filters control the visible log only. Money totals use
+    # either all recorded rows or the explicitly selected month, exactly as the
+    # two-option period control states.
+    period_rows = apply_transaction_filters(
+        main_df,
+        start,
+        end,
+        TRANSACTION_TYPES,
+        [],
+        "",
+        "",
+        "",
     )
+    regular_period_rows, _period_credit_rows = _split_credit_purchase_rows(period_rows)
     regular_filtered, credit_purchase_frame = _split_credit_purchase_rows(filtered)
-    calculation_totals = summary_totals(regular_filtered)
-    if not has_effective_filters:
-        calculation_totals = totals_with_initial_conditions(regular_filtered, initial_conditions)
+    calculation_totals = summary_totals(regular_period_rows)
 
     rows, total_rows, _start_index, has_more = _slice_transactions_for_display(
         regular_filtered,
@@ -257,8 +284,24 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict, *, page
     )
     credit_purchase_rows = _credit_purchase_display_rows(credit_purchase_frame)
     credit_purchase_summary = _credit_purchase_summary(credit_purchase_frame)
-    all_categories = sorted(main_df["category"].dropna().unique().tolist()) if not main_df.empty and "category" in main_df.columns else []
+    configured_categories = effective_categories_by_type()
+    observed_categories = (
+        main_df["category"].dropna().astype(str).tolist()
+        if not main_df.empty and "category" in main_df.columns
+        else []
+    )
+    all_categories = sorted({
+        value
+        for value in [
+            *observed_categories,
+            *configured_categories.get("expense", []),
+            *configured_categories.get("income", []),
+            *configured_categories.get("investment", []),
+        ]
+        if str(value).strip()
+    }, key=lambda value: (str(value).casefold(), str(value)))
 
+    calculation_label = period_state.get("label") or "first log → latest log"
     transaction_summary = {
         "count": total_rows,
         "shown_count": len(rows),
@@ -266,13 +309,13 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict, *, page
         "expenses": calculation_totals["expenses"],
         "investments": calculation_totals["investments"],
         "net": calculation_totals["net"],
-        "opening_net": calculation_totals.get("opening_net", 0.0),
-        "recent_net": calculation_totals.get("recent_net", calculation_totals["net"]),
+        "opening_net": 0.0,
+        "recent_net": calculation_totals["net"],
         "savings_rate": calculation_totals["savings_rate"],
-        "scope_label": "selected filters" if has_effective_filters else "initial condition + rolling window",
-        "uses_full_history_for_calculations": False,
-        "uses_transaction_initial_conditions": not has_effective_filters,
-        "initial_condition_rows": int(initial_conditions.get("historical_rows", 0) or 0),
+        "scope_label": calculation_label,
+        "uses_full_history_for_calculations": period_state.get("mode") == "all",
+        "uses_transaction_initial_conditions": False,
+        "initial_condition_rows": 0,
     }
 
     return {
@@ -300,14 +343,15 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict, *, page
         "amount_max": amount_max,
         "has_effective_filters": has_effective_filters,
         "has_non_date_filters": bool(filter_state.get("has_non_date_filters")),
-        "uses_full_history_for_calculations": False,
-        "uses_transaction_initial_conditions": not has_effective_filters,
-        "visual_scope_label": filter_state.get("display_scope_label", "previous month + current month"),
+        "uses_full_history_for_calculations": period_state.get("mode") == "all",
+        "uses_transaction_initial_conditions": False,
+        "visual_scope_label": period_state.get("label", "first log → latest log"),
+        "dashboard_period": period_state,
         "transaction_window": {
             "start": start,
             "end": end,
-            "opening_net": float(initial_conditions.get("opening_net", 0.0) or 0.0),
-            "historical_rows": int(initial_conditions.get("historical_rows", 0) or 0),
+            "opening_net": 0.0,
+            "historical_rows": 0,
         },
     }
 
@@ -317,8 +361,8 @@ def transactions_page_slice():
     selected_scope = resolve_request_scope(request)
     scope_key = selected_scope["scope"]
 
-    start_default, end_default = transaction_default_date_range()
-    filter_state = resolve_transaction_filter_state(request.args, start_default, end_default, TRANSACTION_TYPES)
+    scoped_df = transactions_for_scope(load_transactions(), scope_key)
+    filter_state = dashboard_query_filter_state(request.args, scoped_df, TRANSACTION_TYPES)
     page = _positive_int_arg("page", 1, minimum=1)
     page_size = _positive_int_arg("page_size", DEFAULT_TRANSACTION_PAGE_SIZE, minimum=1, maximum=MAX_TRANSACTION_PAGE_SIZE)
 
@@ -326,7 +370,7 @@ def transactions_page_slice():
     params.update({"page": page, "page_size": page_size})
 
     payload = cached_context(
-        "transaction_table_page_v3",
+        "transaction_table_page_v4",
         lambda: _build_transactions_page_slice(scope_key, filter_state, page=page, page_size=page_size),
         params=params,
     )

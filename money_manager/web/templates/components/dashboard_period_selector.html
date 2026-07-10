@@ -1,0 +1,48 @@
+<section class="panel-card dashboard-period-control {{ period_section_class|default('') }}" aria-labelledby="{{ period_title_id|default('dashboard-period-title') }}">
+  <div class="panel-header compact-panel-header dashboard-period-header">
+    <div>
+      <span class="eyebrow">{{ period_eyebrow|default('Calculation window') }}</span>
+      <h3 id="{{ period_title_id|default('dashboard-period-title') }}">{{ period_title|default('Choose the time window') }}</h3>
+      <p>{{ period_help|default('Full history is the default. A month selection applies only to this page and disappears when you navigate elsewhere.') }}</p>
+    </div>
+    <span class="dashboard-period-status">{{ dashboard_period.label }}</span>
+  </div>
+
+  <form method="get" action="{{ period_form_action }}" class="dashboard-period-form" data-dashboard-period-form>
+    {% if selected_account_id %}<input type="hidden" name="account_id" value="{{ selected_account_id }}">{% endif %}
+    <div class="dashboard-period-choices" role="radiogroup" aria-label="Calculation period">
+      <label class="dashboard-period-choice {{ 'is-selected' if dashboard_period.mode == 'all' else '' }}">
+        <input type="radio" name="period_mode" value="all" {% if dashboard_period.mode == 'all' %}checked{% endif %}>
+        <span><strong>All logs</strong><small>First recorded movement through the latest one</small></span>
+      </label>
+      <label class="dashboard-period-choice {{ 'is-selected' if dashboard_period.mode == 'month' else '' }}">
+        <input type="radio" name="period_mode" value="month" {% if dashboard_period.mode == 'month' %}checked{% endif %}>
+        <span><strong>Specific month</strong><small>Temporary month-only income, expenses and net</small></span>
+      </label>
+    </div>
+
+    <div class="dashboard-period-fields" data-dashboard-month-fields>
+      <label><span>Month</span><select name="period_month">
+        {% for option in dashboard_period.month_options %}<option value="{{ option.value }}" {% if option.value == dashboard_period.month %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+      </select></label>
+      <label><span>Year</span><select name="period_year">
+        {% for year in dashboard_period.available_years|reverse %}<option value="{{ year }}" {% if year == dashboard_period.year %}selected{% endif %}>{{ year }}</option>{% endfor %}
+      </select></label>
+      <div class="dashboard-period-actions">
+        <button type="submit" class="primary-btn">{{ period_submit_label|default('Update') }}</button>
+        <a class="secondary-btn" href="{{ period_full_history_url }}">Full history</a>
+      </div>
+    </div>
+
+    <details class="dashboard-advanced-filters" {% if has_non_date_filters %}open{% endif %}>
+      <summary><strong>{{ advanced_filters_title|default('Advanced filters') }}</strong><span>{{ advanced_filters_help|default('Optional: type, category, search and amount') }}</span></summary>
+      <div class="filter-row dashboard-filter-row {{ advanced_filter_row_class|default('') }}">
+        <div class="filter-field"><label>Types</label><div class="types-group">{% for t in all_types %}<label class="checkbox-inline"><input type="checkbox" class="type-checkbox" name="types" value="{{ t }}" {% if t in active_types %}checked{% endif %}>{{ t.capitalize() }}</label>{% endfor %}</div></div>
+        <div class="filter-field"><label>Category</label><select name="category" id="{{ category_select_id|default('category-select') }}" multiple size="4">{% for c in categories_all %}<option value="{{ c }}" {% if c in categories_selected %}selected{% endif %}>{{ c }}</option>{% endfor %}</select><p class="hint">Hold Ctrl (Cmd) to select multiple.</p></div>
+        <div class="filter-field"><label>Search</label><input type="text" name="q" value="{{ q }}" placeholder="Description, category, account"></div>
+        <div class="filter-field amount-range-field"><label>Amount range (€)</label><div class="amount-range-inputs"><input type="number" step="0.01" min="0" name="amount_min" value="{{ amount_min }}" placeholder="Min"><input type="number" step="0.01" min="0" name="amount_max" value="{{ amount_max }}" placeholder="Max"></div><p class="hint">Uses the displayed absolute amount.</p></div>
+      </div>
+      <div class="filters-actions"><button type="submit" class="secondary-btn">{{ advanced_submit_label|default('Apply filters') }}</button></div>
+    </details>
+  </form>
+</section>

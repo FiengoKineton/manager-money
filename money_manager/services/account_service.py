@@ -503,6 +503,30 @@ def _payment_method_views(methods: list[dict]) -> list[dict]:
         row["card_expiry_year"] = str(card_meta.get("expiry_year") or "")
         row["card_expiry"] = "/".join(part for part in [row["card_expiry_month"], row["card_expiry_year"]] if part)
         row["is_credit"] = str(row.get("method_type") or "") == "credit_card" or str(row.get("settlement_mode") or "") == "delayed"
+        route_fields = [
+            ("parent_account_id", "Parent"),
+            ("linked_account_id", "Balance"),
+            ("funding_account_id", "Funding"),
+            ("settlement_account_id", "Settlement"),
+            ("liability_account_id", "Liability"),
+        ]
+        route_accounts: list[dict] = []
+        seen_route_keys: set[str] = set()
+        for field, role in route_fields:
+            route_key = str(row.get(field) or "").strip()
+            if not route_key or route_key in seen_route_keys:
+                continue
+            route_account = account_by_key(route_key, include_archived=True)
+            if not route_account:
+                continue
+            seen_route_keys.add(route_key)
+            route_accounts.append({
+                "key": route_key,
+                "label": str(route_account.get("label") or route_account.get("name") or route_key),
+                "role": role,
+                "is_active": bool(route_account.get("is_active", True)) and not bool(route_account.get("is_closed")),
+            })
+        row["route_accounts"] = route_accounts
         rows.append(row)
     return rows
 
@@ -680,8 +704,6 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
         row["is_cashflow_account"] = row["account_level"] == 2
         dependents = []
         for dep in dependent_accounts_for(center_id, include_archived=False):
-            if _is_internal_card_balance_account(dict(dep)):
-                continue
             dep_id = str(dep.get("key") or dep.get("id") or "")
             dep_summary = lightweight_summary_by_key.get(dep_id, {}) if dep_id else {}
             dependents.append(_account_identity_view(dict(dep), dep_summary))
@@ -741,8 +763,6 @@ def accounts_page_context(df: pd.DataFrame) -> dict:
     for account in scope_selectable_accounts(include_archived=False):
         key = str(account.get("key") or account.get("id") or "")
         if not key or key in seen_center_ids or key in all_dependents_by_key:
-            continue
-        if _is_internal_card_balance_account(dict(account)):
             continue
         if int(account_level(account) or 0) != 3:
             continue
@@ -1021,18 +1041,109 @@ def _exact_account_by_key(account_key: str, user_id: str | None = None) -> dict 
     return None
 
 def ensure_prepaid_card_balance_account(parent_account_key: str, card_name: str = "", user_id: str | None = None) -> str:
-    """Return/create the hidden stored-balance account used by one prepaid card.
+    """Return/create and repair the stored-balance account used by one prepaid card.
 
-    The payment method/card is managed from the parent current account.  This
-    hidden balance account exists only so top-ups and card spending do not reduce
-    the parent bank account twice.
+    The balance remains a real dependent account under the parent Conto. It is
+    directly openable so users can inspect top-ups and spending, while the card
+    itself stays managed from the parent account wallet.
     """
     parent_key = normalize_config_account_key(parent_account_key, user_id=user_id)
     base_name = str(card_name or "Prepaid card").strip() or "Prepaid card"
-    account_key = f"{parent_key}_{slugify(base_name)}_balance"
+    generated_key = f"{parent_key}_{slugify(base_name)}_balance"
 
-    existing = _exact_account_by_key(account_key, user_id=user_id)
+    # Prefer the deterministic generated key. For older installations, also
+    # recover a matching prepaid-balance account that was created under another
+    # key or lost its parent link. This reconnects the existing balance/history
+    # instead of silently creating a second empty account.
+    existing = _exact_account_by_key(generated_key, user_id=user_id)
+    account_key = generated_key
+    if not existing:
+        wanted_slug = slugify(base_name)
+        candidates: list[dict] = []
+        for candidate in all_accounts(user_id=user_id, include_archived=True, include_main=True):
+            kind = str(candidate.get("account_kind") or candidate.get("type") or "").strip().casefold()
+            if kind != "prepaid_balance":
+                continue
+            candidate_key = str(candidate.get("key") or candidate.get("id") or "").strip()
+            if not candidate_key:
+                continue
+            labels = [
+                candidate_key,
+                candidate.get("label") or "",
+                candidate.get("name") or "",
+                *(candidate.get("aliases") if isinstance(candidate.get("aliases"), list) else []),
+            ]
+            label_slugs = {slugify(value) for value in labels if str(value or "").strip()}
+            identity_match = any(
+                value == wanted_slug
+                or value.startswith(f"{wanted_slug}_")
+                or wanted_slug.startswith(f"{value}_")
+                for value in label_slugs
+            )
+            if not identity_match:
+                continue
+            candidate_parent = str(candidate.get("parent_account_id") or candidate.get("parent_key") or "").strip()
+            # A matching account already under this parent is strongest. A
+            # parentless legacy account may also be repaired, but never steal a
+            # prepaid balance that belongs to another current account.
+            if candidate_parent not in {"", parent_key}:
+                continue
+            candidates.append(dict(candidate))
+        if candidates:
+            candidates.sort(key=lambda row: (
+                0 if str(row.get("parent_account_id") or row.get("parent_key") or "") == parent_key else 1,
+                0 if bool(row.get("is_active", True)) and not bool(row.get("is_closed")) else 1,
+                str(row.get("key") or row.get("id") or ""),
+            ))
+            existing = candidates[0]
+            account_key = str(existing.get("key") or existing.get("id") or generated_key)
+
     if existing:
+        # Repair legacy/disconnected generated accounts in place. A prepaid card
+        # that is still active must not point to a closed or parentless balance.
+        try:
+            from money_manager.services.account_config_service import load_accounts_config, save_accounts_config
+
+            config = load_accounts_config(user_id=user_id)
+            changed = False
+            for account in config.get("accounts", []):
+                key = str(account.get("key") or account.get("id") or "").strip()
+                if key != account_key:
+                    continue
+                expected = {
+                    "parent_account_id": parent_key,
+                    "parent_key": parent_key,
+                    "account_kind": "prepaid_balance",
+                    "type": "prepaid_balance",
+                    "is_active": True,
+                    "is_archived": False,
+                    "is_closed": False,
+                    "is_dependent_account": True,
+                    "is_financial_center": False,
+                    "is_container": False,
+                    "is_liability": False,
+                    "liquidity_rollup_policy": "roll_up_to_parent",
+                    "main_net_policy": MAIN_NET_SEPARATE,
+                }
+                for field, value in expected.items():
+                    if account.get(field) != value:
+                        account[field] = value
+                        changed = True
+                if not str(account.get("label") or "").strip():
+                    account["label"] = f"{base_name} balance"
+                    changed = True
+                description = str(account.get("description") or "")
+                if not description or "hidden stored balance" in description.casefold():
+                    account["description"] = "Stored balance for a prepaid card. Reload it with Internal Transfer / Money Transfer; payments spend this balance only."
+                    changed = True
+                if changed:
+                    account["archived_at"] = ""
+                    account["closed_at"] = ""
+                break
+            if changed:
+                save_accounts_config(config, user_id=user_id)
+        except Exception:
+            pass
         return account_key
 
     create_config_account_from_form({
@@ -1044,7 +1155,7 @@ def ensure_prepaid_card_balance_account(parent_account_key: str, card_name: str 
         "iban": "",
         "bic_swift": "",
         "initial_balance": "0",
-        "description": "Hidden stored balance for a prepaid card. Reload it with Internal Transfer / Money Transfer; payments spend this balance only.",
+        "description": "Stored balance for a prepaid card. Reload it with Internal Transfer / Money Transfer; payments spend this balance only.",
         "aliases": f"{base_name}, {base_name} balance",
         "category_aliases": "",
         "category_match_enabled": "0",

@@ -86,6 +86,73 @@
         <label for="birth_year">{{ t("profile.birth_year") }}</label>
         <input id="birth_year" type="number" name="birth_year" value="{{ profile.birth_year }}" min="1900" max="2100" placeholder="{{ t('common.optional') }}">
       </div>
+      <div>
+        <label for="birth_date">Date of birth</label>
+        <input id="birth_date" type="date" name="birth_date" value="{{ profile.birth_date }}" autocomplete="bday">
+      </div>
+
+      <div class="profile-section-title form-field-wide">
+        <span class="eyebrow">Personal identity</span>
+        <h3>Personal and tax details</h3>
+        <p>Optional identity information stored in your encrypted profile file.</p>
+      </div>
+
+      <div>
+        <label for="birth_place">Place of birth</label>
+        <input id="birth_place" type="text" name="birth_place" value="{{ profile.birth_place }}" autocomplete="off">
+      </div>
+      <div>
+        <label for="nationality">Nationality</label>
+        <input id="nationality" type="text" name="nationality" value="{{ profile.nationality }}" autocomplete="country-name">
+      </div>
+      <div>
+        <label for="fiscal_code">Fiscal code</label>
+        <input id="fiscal_code" type="text" name="fiscal_code" value="{{ profile.fiscal_code }}" maxlength="32" autocomplete="off" spellcheck="false">
+      </div>
+      <div>
+        <label for="vat_number">Partita IVA / VAT number</label>
+        <input id="vat_number" type="text" name="vat_number" value="{{ profile.vat_number }}" maxlength="32" autocomplete="off" spellcheck="false">
+      </div>
+      <div>
+        <label for="tax_residence_country">Tax-residence country</label>
+        <input id="tax_residence_country" type="text" name="tax_residence_country" value="{{ profile.tax_residence_country }}" autocomplete="country-name">
+      </div>
+      <div>
+        <label for="country">Residence country</label>
+        <input id="country" type="text" name="country" value="{{ profile.country }}" autocomplete="country-name">
+      </div>
+      <div class="form-field-wide">
+        <label for="address_line1">Address</label>
+        <input id="address_line1" type="text" name="address_line1" value="{{ profile.address_line1 }}" autocomplete="address-line1">
+      </div>
+      <div class="form-field-wide">
+        <label for="address_line2">Address line 2</label>
+        <input id="address_line2" type="text" name="address_line2" value="{{ profile.address_line2 }}" autocomplete="address-line2" placeholder="Apartment, floor, additional information">
+      </div>
+      <div>
+        <label for="postal_code">Postal code</label>
+        <input id="postal_code" type="text" name="postal_code" value="{{ profile.postal_code }}" autocomplete="postal-code">
+      </div>
+      <div>
+        <label for="city">City</label>
+        <input id="city" type="text" name="city" value="{{ profile.city }}" autocomplete="address-level2">
+      </div>
+      <div>
+        <label for="province">Province / state</label>
+        <input id="province" type="text" name="province" value="{{ profile.province }}" autocomplete="address-level1">
+      </div>
+      <div>
+        <label for="phone_number">Phone</label>
+        <input id="phone_number" type="tel" name="phone_number" value="{{ profile.phone_number }}" autocomplete="tel">
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input id="email" type="email" name="email" value="{{ profile.email }}" autocomplete="email">
+      </div>
+      <div>
+        <label for="pec_email">PEC / certified email</label>
+        <input id="pec_email" type="email" name="pec_email" value="{{ profile.pec_email }}" autocomplete="off">
+      </div>
 
       <div class="form-field-wide">
         <label for="profile_notes">{{ t("profile.profile_notes") }}</label>
@@ -284,77 +351,162 @@
 </section>
 
 
-<section id="navigation" class="profile-navigation-panel panel-card">
-  <div class="panel-header navigation-settings-header">
-    <div>
-      <span class="eyebrow">{{ t("profile.navigation_eyebrow") }}</span>
-      <h3>{{ t("profile.navigation_title") }}</h3>
-      <p>{{ t("profile.navigation_description", file="navigation.json") }}</p>
+{% macro navigation_item_row(item, first_item, last_item) -%}
+  <div class="navigation-settings-row {{ 'is-hidden' if item.is_hidden else '' }}">
+    <div class="navigation-settings-copy">
+      <strong>
+        <span class="navigation-settings-icon" aria-hidden="true">{{ item.icon or '•' }}</span>
+        {{ item.label or t(item.label_key) }}
+        {% if item.is_hidden %}<span class="navigation-hidden-badge">Hidden</span>{% endif %}
+      </strong>
+      <small>{{ item.endpoint }}</small>
     </div>
-    <form method="post" action="{{ url_for('profile.navigation_restore') }}">
-      <button type="submit" class="secondary-btn">{{ t("profile.navigation_restore_defaults") }}</button>
-    </form>
+    <div class="navigation-settings-actions">
+      <form method="post" action="{{ url_for('profile.navigation_move') }}">
+        <input type="hidden" name="page_id" value="{{ item.page_id }}">
+        <input type="hidden" name="direction" value="up">
+        <button type="submit" class="icon-btn" {% if first_item %}disabled{% endif %} aria-label="Move up">↑</button>
+      </form>
+      <form method="post" action="{{ url_for('profile.navigation_move') }}">
+        <input type="hidden" name="page_id" value="{{ item.page_id }}">
+        <input type="hidden" name="direction" value="down">
+        <button type="submit" class="icon-btn" {% if last_item %}disabled{% endif %} aria-label="Move down">↓</button>
+      </form>
+      {% if item.is_hidden %}
+        <form method="post" action="{{ url_for('profile.navigation_show') }}">
+          <input type="hidden" name="page_id" value="{{ item.page_id }}">
+          <button type="submit" class="secondary-btn small-btn">Show</button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ url_for('profile.navigation_hide') }}">
+          <input type="hidden" name="page_id" value="{{ item.page_id }}">
+          <button type="submit" class="secondary-btn small-btn">Hide</button>
+        </form>
+      {% endif %}
+    </div>
   </div>
+{%- endmacro %}
 
-  <div class="navigation-settings-list">
-    {% for group in navigation_groups %}
-      <article class="navigation-settings-group">
-        <header class="navigation-settings-group-header">
-          <div>
-            <strong>{{ t(group.label_key) }}</strong>
-            <small>{{ t("profile.navigation_group_hint") }}</small>
-          </div>
-          <form method="post" action="{{ url_for('profile.navigation_group') }}">
-            <input type="hidden" name="group_id" value="{{ group.group_id }}">
-            {% if group.is_collapsed %}
-              <button type="submit" class="secondary-btn small-btn">{{ t("profile.navigation_expand_group") }}</button>
-            {% else %}
-              <input type="hidden" name="collapsed" value="1">
-              <button type="submit" class="secondary-btn small-btn">{{ t("profile.navigation_collapse_group") }}</button>
-            {% endif %}
-          </form>
-        </header>
+<details id="navigation" class="profile-navigation-panel panel-card navigation-customiser">
+  <summary class="navigation-customiser-summary">
+    <div>
+      <span class="eyebrow">Navigation</span>
+      <h3>Customise navigation</h3>
+      <p>Choose which sidebar pages are visible, reorder groups and pages, and set groups or subgroups to open by default.</p>
+    </div>
+    <span class="navigation-customiser-cue" aria-hidden="true">Open</span>
+  </summary>
 
-        <div class="navigation-settings-items">
-          {% for item in group['items'] %}
-            <div class="navigation-settings-row {{ 'is-hidden' if item.is_hidden else '' }}">
-              <div class="navigation-settings-copy">
-                <strong>{{ t(item.label_key) }}{% if item.is_hidden %}<span class="navigation-hidden-badge">{{ t("profile.navigation_hidden") }}</span>{% endif %}</strong>
-                <small>{{ item.endpoint }}</small>
-              </div>
-              <div class="navigation-settings-actions">
-                <form method="post" action="{{ url_for('profile.navigation_move') }}">
-                  <input type="hidden" name="page_id" value="{{ item.page_id }}">
+  <div class="navigation-customiser-body">
+    <div class="navigation-settings-header">
+      <p>The editor mirrors the current sidebar structure, including its groups and subgroups.</p>
+      <form method="post" action="{{ url_for('profile.navigation_restore') }}">
+        <button type="submit" class="secondary-btn">Restore defaults</button>
+      </form>
+    </div>
+
+    <div class="navigation-settings-list">
+      {% for group in navigation_groups %}
+        {% set group_loop = loop %}
+        <details class="navigation-settings-group">
+          <summary class="navigation-settings-group-summary">
+            <span class="navigation-settings-summary-icon" aria-hidden="true">{{ group.icon or '•' }}</span>
+            <span>
+              <strong>{{ group.label or t(group.label_key) }}</strong>
+              <small>{{ (group['items']|length) + (group.subgroups|length) }} entries</small>
+            </span>
+          </summary>
+
+          <div class="navigation-settings-group-body">
+            <div class="navigation-settings-level-actions">
+              <div class="navigation-settings-order-actions" aria-label="Move navigation group">
+                <form method="post" action="{{ url_for('profile.navigation_group_move') }}">
+                  <input type="hidden" name="group_id" value="{{ group.group_id }}">
                   <input type="hidden" name="direction" value="up">
-                  <button type="submit" class="icon-btn" {% if loop.first %}disabled{% endif %} aria-label="{{ t('profile.navigation_move_up') }}">↑</button>
+                  <button type="submit" class="icon-btn" {% if group_loop.first %}disabled{% endif %} aria-label="Move group up">↑</button>
                 </form>
-                <form method="post" action="{{ url_for('profile.navigation_move') }}">
-                  <input type="hidden" name="page_id" value="{{ item.page_id }}">
+                <form method="post" action="{{ url_for('profile.navigation_group_move') }}">
+                  <input type="hidden" name="group_id" value="{{ group.group_id }}">
                   <input type="hidden" name="direction" value="down">
-                  <button type="submit" class="icon-btn" {% if loop.last %}disabled{% endif %} aria-label="{{ t('profile.navigation_move_down') }}">↓</button>
+                  <button type="submit" class="icon-btn" {% if group_loop.last %}disabled{% endif %} aria-label="Move group down">↓</button>
                 </form>
-                {% if item.is_hidden %}
-                  <form method="post" action="{{ url_for('profile.navigation_show') }}">
-                    <input type="hidden" name="page_id" value="{{ item.page_id }}">
-                    <button type="submit" class="secondary-btn small-btn">{{ t("profile.navigation_show") }}</button>
-                  </form>
-                {% else %}
-                  <form method="post" action="{{ url_for('profile.navigation_hide') }}">
-                    <input type="hidden" name="page_id" value="{{ item.page_id }}">
-                    <button type="submit" class="secondary-btn small-btn">{{ t("profile.navigation_hide") }}</button>
-                  </form>
-                {% endif %}
               </div>
+              <form method="post" action="{{ url_for('profile.navigation_group') }}">
+                <input type="hidden" name="group_id" value="{{ group.group_id }}">
+                {% if group.is_open %}
+                  <input type="hidden" name="collapsed" value="1">
+                  <button type="submit" class="secondary-btn small-btn">Close by default</button>
+                {% else %}
+                  <button type="submit" class="secondary-btn small-btn">Open by default</button>
+                {% endif %}
+              </form>
             </div>
-          {% endfor %}
-        </div>
-      </article>
-    {% endfor %}
+
+            {% if group['items'] %}
+              <div class="navigation-settings-items navigation-settings-direct-items">
+                {% for item in group['items'] %}
+                  {{ navigation_item_row(item, loop.first, loop.last) }}
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if group.subgroups %}
+              <div class="navigation-settings-subgroups">
+                {% for subgroup in group.subgroups %}
+                  {% set subgroup_loop = loop %}
+                  <details class="navigation-settings-subgroup">
+                    <summary class="navigation-settings-subgroup-summary">
+                      <span class="navigation-settings-summary-icon" aria-hidden="true">{{ subgroup.icon or '•' }}</span>
+                      <span>
+                        <strong>{{ subgroup.label or t(subgroup.label_key) }}</strong>
+                        <small>{{ subgroup['items']|length }} pages</small>
+                      </span>
+                    </summary>
+                    <div class="navigation-settings-subgroup-body">
+                      <div class="navigation-settings-level-actions">
+                        <div class="navigation-settings-order-actions" aria-label="Move navigation subgroup">
+                          <form method="post" action="{{ url_for('profile.navigation_subgroup_move') }}">
+                            <input type="hidden" name="group_id" value="{{ group.group_id }}">
+                            <input type="hidden" name="subgroup_id" value="{{ subgroup.subgroup_id }}">
+                            <input type="hidden" name="direction" value="up">
+                            <button type="submit" class="icon-btn" {% if subgroup_loop.first %}disabled{% endif %} aria-label="Move subgroup up">↑</button>
+                          </form>
+                          <form method="post" action="{{ url_for('profile.navigation_subgroup_move') }}">
+                            <input type="hidden" name="group_id" value="{{ group.group_id }}">
+                            <input type="hidden" name="subgroup_id" value="{{ subgroup.subgroup_id }}">
+                            <input type="hidden" name="direction" value="down">
+                            <button type="submit" class="icon-btn" {% if subgroup_loop.last %}disabled{% endif %} aria-label="Move subgroup down">↓</button>
+                          </form>
+                        </div>
+                        <form method="post" action="{{ url_for('profile.navigation_subgroup') }}">
+                          <input type="hidden" name="subgroup_id" value="{{ subgroup.subgroup_id }}">
+                          {% if subgroup.is_open %}
+                            <input type="hidden" name="collapsed" value="1">
+                            <button type="submit" class="secondary-btn small-btn">Close by default</button>
+                          {% else %}
+                            <button type="submit" class="secondary-btn small-btn">Open by default</button>
+                          {% endif %}
+                        </form>
+                      </div>
+                      <div class="navigation-settings-items">
+                        {% for item in subgroup['items'] %}
+                          {{ navigation_item_row(item, loop.first, loop.last) }}
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </details>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </details>
+      {% endfor %}
+    </div>
   </div>
-</section>
+</details>
 
 {% endblock %}
 
 {% block scripts %}
-  <script src="{{ url_for('static', filename='js/profile.js') }}?v=profile-1"></script>
+  <script src="{{ url_for('static', filename='js/profile.js') }}?v=profile-navigation-2"></script>
 {% endblock %}

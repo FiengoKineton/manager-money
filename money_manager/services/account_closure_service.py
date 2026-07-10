@@ -30,6 +30,7 @@ ACCOUNT_REFERENCE_FIELDS = [
     "funding_account_id",
     "settlement_account_id",
     "liability_account_id",
+    "parent_account_id",
 ]
 
 

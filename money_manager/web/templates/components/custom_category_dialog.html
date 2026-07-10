@@ -1,0 +1,25 @@
+<dialog id="{{ category_dialog_id }}" class="mm-modal dashboard-category-modal">
+  <div class="mm-modal-card compact-mm-modal-card">
+    <form method="dialog" class="mm-modal-close-form"><button type="submit" aria-label="Close">×</button></form>
+    <span class="eyebrow">Quick setup</span>
+    <h3>Create a custom category</h3>
+    <p>It is saved in the same category configuration used by the main Add Transaction route.</p>
+    <form method="post" action="{{ category_form_action }}" class="dashboard-category-form">
+      <input type="hidden" name="action" value="add_custom_category">
+      {% if selected_account_id %}<input type="hidden" name="account_id" value="{{ selected_account_id }}">{% endif %}
+      {% if dashboard_period is defined %}
+        <input type="hidden" name="period_mode" value="{{ dashboard_period.mode }}">
+        <input type="hidden" name="period_month" value="{{ dashboard_period.month }}">
+        <input type="hidden" name="period_year" value="{{ dashboard_period.year }}">
+      {% endif %}
+      <label><span>Transaction type</span><select name="transaction_type">
+        <option value="expense">Expense</option>
+        <option value="income">Income</option>
+        <option value="investment">Investment</option>
+      </select></label>
+      <label><span>Category name</span><input type="text" name="category_name" required maxlength="80" placeholder="Example: Work lunches"></label>
+      <label><span>Icon <small>(optional)</small></span><input type="text" name="category_icon" maxlength="12" placeholder="🍽️"></label>
+      <div class="form-actions-row"><button type="submit" class="primary-btn">Create category</button><button type="button" class="secondary-btn" onclick="this.closest('dialog').close()">Cancel</button></div>
+    </form>
+  </div>
+</dialog>

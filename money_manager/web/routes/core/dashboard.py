@@ -2,8 +2,8 @@ from flask import Blueprint, abort, jsonify, redirect, render_template, request,
 from time import monotonic
 import threading
 
+
 from money_manager.config import TRANSACTION_TYPES
-from money_manager.repositories.pending import load_pending
 from money_manager.services.analytics_service import apply_transaction_filters, build_dashboard_metrics, period_summaries
 from money_manager.services.calculation_service import cached_context
 from money_manager.services.debt_service import generate_debt_payments
@@ -12,17 +12,11 @@ from money_manager.services.pending_service import process_pending, sync_credit_
 from money_manager.services.recurring_service import generate_recurring, recurring_forecast_for_current_month
 from money_manager.services.transaction_service import load_transactions
 from money_manager.utils.stats import summary_totals
-from money_manager.services.transaction_window_service import (
-    split_transactions_at,
-    totals_with_initial_conditions,
-    transaction_default_date_range,
-    transaction_initial_conditions_for_frame,
-)
 from money_manager.web.context import resolve_request_scope, scope_template_context
+from money_manager.web.dashboard_period import dashboard_period_state, dashboard_query_filter_state
 from money_manager.web.auth import current_user
 from money_manager.config.user_paths import using_user
 from money_manager.utils.formatting import format_euro
-from money_manager.web.transaction_filter_state import resolve_transaction_filter_state
 
 bp = Blueprint("dashboard", __name__)
 
@@ -106,7 +100,20 @@ def home():
 def topbar_summary_api():
     selected_scope = resolve_request_scope(request)
     try:
-        if selected_scope.get("is_account") and selected_scope.get("account_id"):
+        # The dashboard may explicitly ask for a one-month net. This query-only
+        # override is never persisted, so every other page immediately returns
+        # to the normal full-history topbar balance.
+        if str(request.args.get("period_mode") or "").casefold() == "month":
+            from money_manager.services.account_scope_service import transactions_for_scope
+
+            scoped = transactions_for_scope(load_transactions(), selected_scope)
+            period = dashboard_period_state(request.args, scoped)
+            rows = apply_transaction_filters(
+                scoped, period["start"], period["end"], TRANSACTION_TYPES, [], "", "", ""
+            )
+            net = float(summary_totals(rows).get("net", 0.0) or 0.0)
+            label = f"{period['label']} net"
+        elif selected_scope.get("is_account") and selected_scope.get("account_id"):
             from money_manager.services.account_scope_service import scope_balance_summary
 
             summary = scope_balance_summary(selected_scope)
@@ -139,19 +146,52 @@ def overview_detailed():
     context.update(scope_template_context(selected_scope))
     return render_template("core/overview.html", **context)
 
-@bp.route("/dashboard")
+@bp.route("/dashboard", methods=["GET", "POST"])
 def index():
     _schedule_automatic_items_refresh()
 
+    if request.method == "POST":
+        action = str(request.form.get("action") or "")
+        if action in {"add_dashboard_category", "add_custom_category"}:
+            from money_manager.services.category_icon_service import set_category_icon
+            from money_manager.services.custom_category_service import add_custom_category
+
+            transaction_type = str(request.form.get("transaction_type") or "expense").strip().casefold()
+            category_name = " ".join(str(request.form.get("category_name") or "").split())
+            category_icon = str(request.form.get("category_icon") or "").strip()
+            account_id = str(request.form.get("account_id") or "").strip()
+            try:
+                add_custom_category(transaction_type, category_name)
+                if category_icon:
+                    set_category_icon(category_name, category_icon, transaction_type)
+                params = {"category_added": category_name}
+                if account_id:
+                    params["account_id"] = account_id
+                for name in ("period_mode", "period_month", "period_year"):
+                    value = str(request.form.get(name) or "").strip()
+                    if value:
+                        params[name] = value
+                return redirect(url_for("dashboard.index", **params))
+            except ValueError as exc:
+                params = {"category_error": str(exc)}
+                if account_id:
+                    params["account_id"] = account_id
+                for name in ("period_mode", "period_month", "period_year"):
+                    value = str(request.form.get(name) or "").strip()
+                    if value:
+                        params[name] = value
+                return redirect(url_for("dashboard.index", **params))
+
     selected_scope = resolve_request_scope(request)
     from money_manager.services.account_scope_service import pending_total_for_scope, scope_balance_summary, transactions_for_scope
+    from money_manager.services.custom_category_service import effective_categories_by_type
 
     df = load_transactions()
     scoped_df = transactions_for_scope(df, selected_scope)
     stats_this_month, stats_3_months = period_summaries(scoped_df)
 
-    start_default, end_default = transaction_default_date_range()
-    filter_state = resolve_transaction_filter_state(request.args, start_default, end_default, TRANSACTION_TYPES)
+    filter_state = dashboard_query_filter_state(request.args, scoped_df, TRANSACTION_TYPES)
+    period_state = filter_state["period"]
     start = filter_state["start"]
     end = filter_state["end"]
     types = filter_state["types"]
@@ -159,40 +199,48 @@ def index():
     query = filter_state["query"]
     amount_min = filter_state["amount_min"]
     amount_max = filter_state["amount_max"]
-    has_effective_filters = bool(filter_state.get("has_effective_filters"))
-    has_non_date_filters = bool(filter_state.get("has_non_date_filters"))
+    has_non_date_filters = bool(filter_state["has_non_date_filters"])
+    has_effective_filters = bool(filter_state["has_effective_filters"])
 
-    historical_df, _recent_df = split_transactions_at(scoped_df, start)
-    initial_conditions = transaction_initial_conditions_for_frame(
-        historical_df,
-        scope=selected_scope["scope"],
-        start=start,
+    # Period-only rows determine the dashboard hero net. Advanced category/type
+    # filters affect cards/charts but do not silently redefine the account net.
+    period_df = apply_transaction_filters(
+        scoped_df,
+        start,
+        end,
+        TRANSACTION_TYPES,
+        [],
+        "",
+        "",
+        "",
+    )
+    filtered = apply_transaction_filters(
+        scoped_df,
+        start,
+        end,
+        types,
+        categories,
+        query,
+        amount_min,
+        amount_max,
     )
 
-    # Display rows/charts use the rolling active visual filters. Rows before the
-    # rolling window are treated as an opening condition for cumulative plots.
-    filtered = apply_transaction_filters(scoped_df, start, end, types, categories, query, amount_min, amount_max)
-    filtered_main = filtered
-
-    calculation_main = filtered_main if has_effective_filters else filtered_main
-    display_totals = summary_totals(filtered_main)
-    if not has_effective_filters:
-        display_totals = totals_with_initial_conditions(filtered_main, initial_conditions)
-
+    display_totals = summary_totals(filtered)
     metrics = cached_context(
         "dashboard_overview",
         lambda: build_dashboard_metrics(
-            filtered_main,
+            filtered,
             start,
             end,
-            totals_df=calculation_main,
-            opening_source_df=scoped_df,
-            include_opening_balance=not has_non_date_filters,
-            opening_balance_override=(float(initial_conditions.get("opening_net", 0.0) or 0.0) if not has_effective_filters and not has_non_date_filters else None),
+            totals_df=filtered,
+            opening_source_df=None,
+            include_opening_balance=False,
+            opening_balance_override=None,
         ),
         params={
-            "view": "dashboard_metrics",
+            "view": "dashboard_metrics_v2",
             "scope": selected_scope["scope"],
+            "period_mode": period_state["mode"],
             "start": start,
             "end": end,
             "types": tuple(types),
@@ -200,15 +248,38 @@ def index():
             "query": query,
             "amount_min": amount_min,
             "amount_max": amount_max,
-            "has_effective_filters": has_effective_filters,
         },
     )
 
-    all_categories = sorted(scoped_df["category"].dropna().unique().tolist()) if not scoped_df.empty else []
+    configured_categories = effective_categories_by_type()
+    observed_categories = (
+        scoped_df["category"].dropna().astype(str).tolist()
+        if not scoped_df.empty and "category" in scoped_df.columns
+        else []
+    )
+    all_categories = sorted({
+        value
+        for value in [
+            *observed_categories,
+            *configured_categories.get("expense", []),
+            *configured_categories.get("income", []),
+            *configured_categories.get("investment", []),
+        ]
+        if str(value).strip()
+    }, key=lambda value: (str(value).casefold(), str(value)))
+
     current_pending_total = pending_total_for_scope(selected_scope)
     scope_summary = scope_balance_summary(selected_scope, df=df)
-    scoped_net = float(scope_summary.get("net_balance", metrics["totals"].get("net", 0.0)) or 0.0)
-    scoped_net_after_pending = float(scope_summary.get("net_after_pending", scoped_net - current_pending_total) or 0.0)
+    full_history_net = float(scope_summary.get("net_balance", metrics["totals"].get("net", 0.0)) or 0.0)
+
+    if period_state["mode"] == "month":
+        dashboard_net = float(summary_totals(period_df).get("net", 0.0) or 0.0)
+        dashboard_net_after_pending = dashboard_net
+        money_calculation_label = f"{period_state['label']} only · dashboard"
+    else:
+        dashboard_net = full_history_net
+        dashboard_net_after_pending = float(scope_summary.get("net_after_pending", full_history_net - current_pending_total) or 0.0)
+        money_calculation_label = "full history · first log to latest log"
 
     current_month_recurring = recurring_forecast_for_current_month()
 
@@ -258,13 +329,8 @@ def index():
         ]
     dashboard_current_accounts = dashboard_current_accounts[:4]
 
-    # The dashboard charts and income/expense cards can follow the visible date
-    # window, but the hero balance must be the actual selected Conto/global net.
-    # Otherwise an account with an initial balance of €100 and €23.95 expenses
-    # incorrectly shows -€23.95 instead of €76.05/its real scoped balance.
-    metrics["totals"]["net"] = scoped_net
-    metrics["totals"]["total_availability"] = scoped_net
-    money_calculation_label = "selected filters" if has_effective_filters else ("selected Conto balance" if selected_scope.get("is_account") else "All Conti balance")
+    metrics["totals"]["net"] = dashboard_net
+    metrics["totals"]["total_availability"] = dashboard_net
 
     return render_template(
         "core/index.html",
@@ -281,7 +347,8 @@ def index():
         amount_max=amount_max,
         stats_this_month=stats_this_month,
         stats_3_months=stats_3_months,
-        net_after_pending=scoped_net_after_pending,
+        net_after_pending=dashboard_net_after_pending,
+        full_history_net=full_history_net,
         scope_balance=scope_summary,
         pending_this_month=current_pending_total,
         current_month_recurring=current_month_recurring,
@@ -294,16 +361,20 @@ def index():
         charts=metrics["charts"],
         has_effective_filters=has_effective_filters,
         has_non_date_filters=has_non_date_filters,
-        uses_full_history_for_calculations=False,
-        uses_transaction_initial_conditions=not has_effective_filters,
+        uses_full_history_for_calculations=period_state["mode"] == "all",
+        uses_transaction_initial_conditions=False,
         money_calculation_label=money_calculation_label,
-        visual_scope_label=filter_state.get("display_scope_label", "previous month + current month"),
-        cumulative_balance_uses_opening=not has_non_date_filters,
+        visual_scope_label=period_state["label"],
+        cumulative_balance_uses_opening=False,
+        dashboard_period=period_state,
+        category_added=str(request.args.get("category_added") or ""),
+        category_error=str(request.args.get("category_error") or ""),
         transaction_window={
             "start": start,
             "end": end,
-            "opening_net": float(initial_conditions.get("opening_net", 0.0) or 0.0),
-            "historical_rows": int(initial_conditions.get("historical_rows", 0) or 0),
+            "opening_net": 0.0,
+            "historical_rows": 0,
         },
         **scope_template_context(selected_scope),
     )
+

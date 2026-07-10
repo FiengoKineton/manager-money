@@ -98,7 +98,7 @@ CACHE_DEFINITIONS: dict[str, CacheDefinition] = {
     # User/app context
     "profile_context": _def("profile_context", "v2", "Profile settings context.", ("profile", "accounts", "payment_methods"), ttl=LONG_TTL_SECONDS),
     "preferences_context": _def("preferences_context", "v2", "Preferences context.", ("preferences",), ttl=LONG_TTL_SECONDS),
-    "navigation_context": _def("navigation_context", "v2", "Navigation context.", ("navigation", "preferences"), ttl=LONG_TTL_SECONDS, sensitive=False, encrypted=False),
+    "navigation_context": _def("navigation_context", "v3", "Navigation context.", ("navigation", "preferences"), ttl=LONG_TTL_SECONDS, sensitive=False, encrypted=False),
     "i18n_language_file": _def("i18n_language_file", "v1", "Loaded i18n language file.", ("i18n", "preferences"), ttl=LONG_TTL_SECONDS, sensitive=False, encrypted=False),
     "documents_summary": _def("documents_summary", "v1", "Documents registry summary.", ("documents", "document_types")),
     "contacts_summary": _def("contacts_summary", "v1", "Contacts summary.", ("contacts",)),

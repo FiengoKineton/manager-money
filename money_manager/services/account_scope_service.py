@@ -165,8 +165,9 @@ def scope_selectable_accounts(user_id: str | None = None, include_archived: bool
     Scope selectors are different: the user must still be able to open dependent
     wallets such as PayPal, Glovo or EasyPark and inspect only their rows.
 
-    Hidden card implementation balances are excluded here because prepaid-card
-    balances are managed from the parent Conto card list, not as normal wallets.
+    Prepaid-card balance accounts are selectable too: they remain dependent on
+    their parent Conto, but users must be able to open them and inspect reloads
+    and card spending directly.
     """
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -177,12 +178,6 @@ def scope_selectable_accounts(user_id: str | None = None, include_archived: bool
         if not _is_active(account, include_archived=include_archived):
             continue
         if _is_technical_account(account) or not _is_liquid_account(account):
-            continue
-
-        kind = str(account.get("account_kind") or account.get("type") or "")
-        parent = str(account.get("parent_account_id") or account.get("parent_key") or "").strip()
-        if parent and kind == "prepaid_balance":
-            # Hidden implementation account for one prepaid card.
             continue
 
         rows.append(dict(account))
@@ -278,7 +273,16 @@ def _method_owner_account_ids(
         return {value for value in {linked or parent} if value}
 
     if method_type == "prepaid_card":
-        ids = {value for value in {linked, parent} if value}
+        ids = {
+            value
+            for value in {
+                linked,
+                parent,
+                str(method.get("funding_account_id") or "").strip(),
+                str(method.get("settlement_account_id") or "").strip(),
+            }
+            if value
+        }
         for account_id in list(ids):
             try:
                 account = account_by_key(account_id, user_id=user_id, include_archived=True) or {}
@@ -1133,7 +1137,25 @@ def scope_options(user_id: str | None = None) -> list[dict[str, Any]]:
         }
     ]
 
-    for account in scope_selectable_accounts(user_id=user_id, include_archived=False):
+    selectable_accounts = scope_selectable_accounts(user_id=user_id, include_archived=False)
+    preferred_account_id = MAIN_ACCOUNT_KEY
+    try:
+        from money_manager.services.profile_service import load_profile
+
+        preferred_account_id = str(load_profile(user_id=user_id).get("default_current_account_id") or MAIN_ACCOUNT_KEY).strip()
+    except Exception:
+        preferred_account_id = MAIN_ACCOUNT_KEY
+
+    selectable_accounts.sort(
+        key=lambda account: (
+            0 if _account_id(account) == preferred_account_id else 1,
+            account_level(account) if account_level(account) > 0 else 99,
+            int(float(account.get("display_order") or 1000)),
+            str(account.get("label") or account.get("name") or ""),
+        )
+    )
+
+    for account in selectable_accounts:
         key = _account_id(account)
         if not key:
             continue

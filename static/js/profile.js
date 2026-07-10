@@ -10,5 +10,15 @@
     });
   }
 
-  document.addEventListener("DOMContentLoaded", updateAvatarFilename);
+  function openNavigationEditorFromHash() {
+    if (window.location.hash !== "#navigation") return;
+    var editor = document.getElementById("navigation");
+    if (editor && editor.tagName === "DETAILS") editor.open = true;
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    updateAvatarFilename();
+    openNavigationEditorFromHash();
+  });
+  window.addEventListener("hashchange", openNavigationEditorFromHash);
 })();

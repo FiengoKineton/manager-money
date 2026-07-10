@@ -4547,3 +4547,57 @@ html[data-theme="night"] .grouped-scope-switcher .scope-switcher-group summary {
   color: var(--ink) !important;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255,255,255,0.045) !important;
 }
+
+/* Navigation/profile patch: keep long sidebar trees scrollable and compact the alert trigger. */
+body.app-body-clean .app-sidebar {
+  overflow: hidden !important;
+}
+
+body.app-body-clean .app-brand,
+body.app-body-clean .app-sidebar-footer-clean {
+  flex: 0 0 auto;
+}
+
+body.app-body-clean .app-sidebar-nav-clean {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: .3rem;
+  padding-bottom: .5rem;
+}
+
+body.app-body-clean .app-sidebar-nav-clean::-webkit-scrollbar {
+  width: 8px;
+}
+
+body.app-body-clean .app-sidebar-nav-clean::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(100, 116, 139, .28);
+}
+
+body.app-body-clean .app-sidebar-nav-clean::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-sidebar-nav-clean .nav-summary-label,
+.app-sidebar-nav-clean .nav-items a > span:last-child,
+.app-sidebar-nav-clean .nav-subitems a > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notification-trigger {
+  width: 42px;
+  min-width: 42px;
+  padding-inline: .55rem !important;
+}
+
+.notification-trigger .notification-count {
+  position: absolute;
+  right: -.28rem;
+  bottom: -.2rem;
+}

@@ -17,7 +17,11 @@
   <button type="button" class="dashboard-hero-balance dashboard-wallet-balance" data-mm-dialog-open="dash-net-dialog">
     <span>{{ "Account net" if scope_is_account else "All Conti net" }}</span>
     <strong>{{ totals.net|money_masked }}</strong>
-    <small>After open pending: {{ net_after_pending|money_masked }}</small>
+    {% if dashboard_period.mode == 'month' %}
+      <small>Full-history net on other pages: {{ full_history_net|money_masked }}</small>
+    {% else %}
+      <small>After open pending: {{ net_after_pending|money_masked }}</small>
+    {% endif %}
     <small>{{ money_calculation_label|default('full history') }}</small>
   </button>
 </section>
@@ -69,6 +73,11 @@
     <span class="command-tile-copy"><strong>Analysis</strong><small>Habits and categories</small></span>
   </a>
 
+  <button type="button" class="command-tile" data-mm-dialog-open="dashboard-category-dialog">
+    <span class="command-tile-icon" aria-hidden="true">🏷️</span>
+    <span class="command-tile-copy"><strong>Custom category</strong><small>Create it here, use it everywhere</small></span>
+  </button>
+
   {% if endpoint_exists('investments.investments_page') %}
   <a class="command-tile" href="{{ url_for('investments.investments_page', account_id=selected_account_id) if selected_account_id else url_for('investments.investments_page') }}">
     <span class="command-tile-icon" aria-hidden="true">📈</span>
@@ -83,6 +92,9 @@
   </a>
   {% endif %}
 </section>
+
+{% if category_added %}<section class="alert-card alert-success dashboard-inline-alert">Category “{{ category_added }}” is now available in the main transaction forms.</section>{% endif %}
+{% if category_error %}<section class="alert-card alert-error dashboard-inline-alert">{{ category_error }}</section>{% endif %}
 
 <section class="dashboard-wallet-strip" aria-label="Dashboard quick cards">
   <button type="button" class="dashboard-wallet-stat tone-income" data-mm-dialog-open="dash-income-dialog"><span>Income</span><strong>{{ totals.income|money_masked }}</strong><small>{{ visual_scope_label }}</small></button>
@@ -253,30 +265,20 @@
   {% endif %}
 </section>
 
-<section class="filters app-filter-bar dashboard-filter-bar dashboard-filter-minimal">
-  <details>
-    <summary><strong>Date and filters</strong> <span class="muted">Charts can be filtered without changing the selected Conto.</span></summary>
-    <form method="get" action="{{ url_for('dashboard.index') }}" class="filters-form">
-      {% if selected_account_id %}<input type="hidden" name="account_id" value="{{ selected_account_id }}">{% endif %}
-      <div class="filter-date">
-        <label class="block-label">Date window</label>
-        <div class="date-inputs">
-          <div><span class="small-label">From</span><input type="date" name="from" value="{{ start }}"></div>
-          <div><span class="small-label">To</span><input type="date" name="to" value="{{ end }}"></div>
-        </div>
-      </div>
-      <div class="filter-main">
-        <div class="filter-row dashboard-filter-row">
-          <div class="filter-field"><label>Types</label><div class="types-group">{% for t in all_types %}<label class="checkbox-inline"><input type="checkbox" class="type-checkbox" name="types" value="{{ t }}" {% if t in active_types %}checked{% endif %}>{{ t.capitalize() }}</label>{% endfor %}</div></div>
-          <div class="filter-field"><label>Category</label><select name="category" id="category-select" multiple size="4">{% for c in categories_all %}<option value="{{ c }}" {% if c in categories_selected %}selected{% endif %}>{{ c }}</option>{% endfor %}</select><p class="hint">Hold Ctrl (Cmd) to select multiple.</p></div>
-          <div class="filter-field"><label>Search</label><input type="text" name="q" value="{{ q }}" placeholder="Description, category, account"></div>
-          <div class="filter-field amount-range-field"><label>Amount range (€)</label><div class="amount-range-inputs"><input type="number" step="0.01" min="0" name="amount_min" value="{{ amount_min }}" placeholder="Min"><input type="number" step="0.01" min="0" name="amount_max" value="{{ amount_max }}" placeholder="Max"></div><p class="hint">Uses the displayed absolute amount.</p></div>
-        </div>
-        <div class="filters-actions"><button type="submit" class="primary-btn">Apply</button><button type="submit" name="reset_filters" value="1" class="secondary-btn">Current year</button></div>
-      </div>
-    </form>
-  </details>
-</section>
+{% with
+  period_form_action=url_for('dashboard.index'),
+  period_full_history_url=(url_for('dashboard.index', account_id=selected_account_id) if selected_account_id else url_for('dashboard.index')),
+  period_eyebrow='Dashboard calculation',
+  period_title='Choose the time window',
+  period_help='Full history is the default. A month selection applies only to this dashboard page and is cleared when you navigate elsewhere.',
+  period_submit_label='Update dashboard',
+  advanced_filters_title='Advanced chart filters',
+  advanced_filters_help='Optional: type, category, search and amount',
+  advanced_submit_label='Apply chart filters',
+  category_select_id='dashboard-category-select'
+%}
+  {% include 'components/dashboard_period_selector.html' %}
+{% endwith %}
 
 {% if stats_3_months is defined and stats_this_month is defined %}
 <section class="dashboard-period-strip dashboard-wallet-period-strip">
@@ -302,6 +304,13 @@
   <div class="chart-card chart-card-cashflow"><img class="static-chart-img" src="{{ url_for('dashboard.user_plot', filename='monthly_summary.png') }}" alt="Cashflow bridge"></div>
 </section>
 {% endif %}
+
+{% with
+  category_dialog_id='dashboard-category-dialog',
+  category_form_action=url_for('dashboard.index')
+%}
+  {% include 'components/custom_category_dialog.html' %}
+{% endwith %}
 
 {% set dashboard_dialogs = [
   ('dash-net-dialog', 'Net position', totals.net, 'This is the real selected scope balance: one Conto if you opened a bank, or All Conti if you are outside a specific account.'),
@@ -334,4 +343,5 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/account-wallet-ui.js') }}"></script>
+<script src="{{ url_for('static', filename='js/shared/dashboard-period-control.js') }}?v=period-control-1"></script>
 {% endblock %}

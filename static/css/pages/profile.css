@@ -681,3 +681,206 @@ html[data-theme="night"] .profile-status-error {
     text-align: left;
   }
 }
+
+/* Profile identity and grouped navigation customiser. */
+.navigation-customiser {
+  margin-top: 1rem;
+  overflow: hidden;
+}
+
+.navigation-customiser > summary,
+.navigation-settings-group > summary,
+.navigation-settings-subgroup > summary {
+  list-style: none;
+}
+
+.navigation-customiser > summary::-webkit-details-marker,
+.navigation-settings-group > summary::-webkit-details-marker,
+.navigation-settings-subgroup > summary::-webkit-details-marker {
+  display: none;
+}
+
+.navigation-customiser-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  cursor: pointer;
+}
+
+.navigation-customiser-summary h3,
+.navigation-settings-group-summary strong,
+.navigation-settings-subgroup-summary strong {
+  margin: 0;
+  color: var(--ink);
+}
+
+.navigation-customiser-summary p {
+  margin: .3rem 0 0;
+  color: var(--muted);
+}
+
+.navigation-customiser-cue {
+  flex: 0 0 auto;
+  min-width: 4.3rem;
+  padding: .45rem .7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  font-size: .78rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.navigation-customiser[open] .navigation-customiser-cue::before {
+  content: "Close";
+}
+
+.navigation-customiser[open] .navigation-customiser-cue {
+  font-size: 0;
+}
+
+.navigation-customiser[open] .navigation-customiser-cue::before {
+  font-size: .78rem;
+}
+
+.navigation-customiser-body {
+  display: grid;
+  gap: 1rem;
+  padding: 0 1rem 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.navigation-customiser-body > .navigation-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+.navigation-customiser-body > .navigation-settings-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.navigation-settings-group-summary,
+.navigation-settings-subgroup-summary {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .7rem;
+  cursor: pointer;
+}
+
+.navigation-settings-group-summary {
+  padding: .9rem 1rem;
+  background: var(--surface);
+}
+
+.navigation-settings-subgroup-summary {
+  padding: .75rem .85rem;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+
+.navigation-settings-group-summary::after,
+.navigation-settings-subgroup-summary::after {
+  content: "⌄";
+  color: var(--muted);
+  transition: transform .16s ease;
+}
+
+.navigation-settings-group[open] > .navigation-settings-group-summary::after,
+.navigation-settings-subgroup[open] > .navigation-settings-subgroup-summary::after {
+  transform: rotate(180deg);
+}
+
+.navigation-settings-summary-icon,
+.navigation-settings-icon {
+  display: inline-grid;
+  place-items: center;
+  line-height: 1;
+}
+
+.navigation-settings-group-summary small,
+.navigation-settings-subgroup-summary small {
+  display: block;
+  margin-top: .12rem;
+  color: var(--muted);
+  font-size: .74rem;
+}
+
+.navigation-settings-group-body,
+.navigation-settings-subgroup-body {
+  display: grid;
+  gap: .75rem;
+}
+
+.navigation-settings-group-body {
+  padding: .8rem;
+  border-top: 1px solid var(--line);
+}
+
+.navigation-settings-subgroup-body {
+  padding: .7rem;
+  border-top: 1px solid var(--line);
+}
+
+.navigation-settings-level-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .7rem;
+  flex-wrap: wrap;
+}
+
+.navigation-settings-order-actions {
+  display: flex;
+  gap: .4rem;
+}
+
+.navigation-settings-level-actions form,
+.navigation-settings-order-actions form {
+  margin: 0;
+}
+
+.navigation-settings-subgroups {
+  display: grid;
+  gap: .65rem;
+}
+
+.navigation-settings-subgroup {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--surface-soft) 90%, transparent);
+}
+
+.navigation-settings-direct-items,
+.navigation-settings-subgroup .navigation-settings-items {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.navigation-settings-copy strong {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+
+@media (max-width: 760px) {
+  .navigation-customiser-summary,
+  .navigation-customiser-body > .navigation-settings-header,
+  .navigation-settings-level-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .navigation-customiser-cue {
+    align-self: flex-start;
+  }
+}
