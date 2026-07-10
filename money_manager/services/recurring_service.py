@@ -38,15 +38,19 @@ from money_manager.repositories.recurring import (
 
 def _payment_fields_from_form(form) -> dict:
     tx_type = str(form.get("type", "expense") or "expense").lower()
-    account_id = form.get("account_id") or form.get("account", "")
+    requested_account = form.get("account_id") or form.get("account", "")
+    account_snapshot = snapshot_account(requested_account)
+    stable_account_id = account_snapshot.get("account_id", "")
     payment_method_id = form.get("payment_method_id", "")
     if tx_type == "income":
         payment_method_id = ""
+    payment_snapshot = snapshot_payment_method(payment_method_id)
     return {
-        "account": form.get("account", "") or account_id or "auto",
-        **snapshot_account(account_id),
-        "payment_method_id": snapshot_payment_method(payment_method_id)["payment_method_id"],
-        "payment_method_name_snapshot": snapshot_payment_method(payment_method_id)["payment_method_name_snapshot"],
+        # Keep the legacy field aligned with the stable ID. Otherwise an edited
+        # rule can visibly say Satispay while still being scoped to Edenred.
+        "account": stable_account_id or "auto",
+        **account_snapshot,
+        **payment_snapshot,
         "payment_resolution_template_json": "",
     }
 
@@ -238,6 +242,11 @@ def is_rule_finished(row: dict, today: date | None = None) -> bool:
     return False
 
 
+def _rule_account_value(row: dict) -> str:
+    """Return the stable account reference for a recurring rule."""
+    return str(row.get("account_id") or row.get("account") or "auto")
+
+
 def _credit_style_key(account_value: str | None) -> str:
     account = str(account_value or "").strip().casefold()
     if account in PAYPAL_CREDIT_ALIASES:
@@ -252,7 +261,7 @@ def _credit_style_key(account_value: str | None) -> str:
 
 def _is_credit_style_recurring(row: dict) -> bool:
     tx_type = str(row.get("type", "expense")).strip().lower()
-    return tx_type == "expense" and bool(_credit_style_key(row.get("account", "")))
+    return tx_type == "expense" and bool(_credit_style_key(_rule_account_value(row)))
 
 
 def _credit_due_date_from_charge_date(charge_date: date, due_day: int = CREDIT_CARD_DUE_DAY) -> date:
@@ -264,7 +273,7 @@ def _credit_due_date_from_charge_date(charge_date: date, due_day: int = CREDIT_C
 
 
 def _pending_due_date_for_rule(row: dict, scheduled_date: date) -> date:
-    credit_key = _credit_style_key(row.get("account", ""))
+    credit_key = _credit_style_key(_rule_account_value(row))
     if credit_key:
         due_day = account_due_day_for_key(credit_key, CREDIT_CARD_DUE_DAY) if credit_key not in {"credit", PAYPAL_CREDIT_ACCOUNT_VALUE} else CREDIT_CARD_DUE_DAY
         return _credit_due_date_from_charge_date(scheduled_date, due_day=due_day)
@@ -273,14 +282,14 @@ def _pending_due_date_for_rule(row: dict, scheduled_date: date) -> date:
 
 
 def _pending_account_for_rule(row: dict) -> str:
-    credit_key = _credit_style_key(row.get("account", ""))
+    credit_key = _credit_style_key(_rule_account_value(row))
     if credit_key == PAYPAL_CREDIT_ACCOUNT_VALUE:
         return PAYPAL_CREDIT_ACCOUNT_VALUE
     if credit_key == "credit":
         return "credit"
     if credit_key:
         return account_label_for_key(credit_key)
-    return row.get("account", "auto")
+    return _rule_account_value(row)
 
 
 def generate_recurring(today: date | None = None) -> int:
@@ -392,8 +401,8 @@ def recurring_forecast_for_period(window_start: date, window_end: date, today: d
                 "account": account,
                 "account_id": row.get("account_id", ""),
                 "payment_method_id": row.get("payment_method_id", ""),
-                "account_label": account_label_for_value(account),
-                "is_auxiliary_account": is_auxiliary_account(account),
+                "account_label": account_label_for_value(row.get("account_id") or account),
+                "is_auxiliary_account": is_auxiliary_account(row.get("account_id") or account),
                 "amount_value": amount,
                 "amount_str": f"€ {amount:.2f}",
                 "scheduled_date": scheduled_date.isoformat(),
@@ -594,8 +603,9 @@ def _decorate_rule(row: dict) -> dict:
     decorated["auto_execute"] = auto_execute
     decorated["auto_execute_value"] = "1" if auto_execute else ""
     decorated["auto_execute_label"] = "Auto-pay on due date" if auto_execute else "Ask before paying"
-    decorated["account_label"] = account_label_for_value(decorated.get("account", ""))
-    decorated["is_auxiliary_account"] = is_auxiliary_account(decorated.get("account", ""))
+    display_account = decorated.get("account_id") or decorated.get("account", "")
+    decorated["account_label"] = account_label_for_value(display_account)
+    decorated["is_auxiliary_account"] = is_auxiliary_account(display_account)
     decorated["is_finished"] = finished
     decorated["finish_reason"] = _finish_reason(end_date, max_occurrences, generated_count, next_due)
     decorated["last_generated_sort"] = last_generated or date.min

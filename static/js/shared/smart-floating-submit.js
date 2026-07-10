@@ -51,6 +51,8 @@
   }
 
   function labelFor(button) {
+    var explicit = button.getAttribute("data-smart-floating-label");
+    if (explicit) return String(explicit).replace(/\s+/g, " ").trim();
     var value = button.tagName === "INPUT" ? button.value : button.textContent;
     return String(value || "Save").replace(/\s+/g, " ").trim() || "Save";
   }

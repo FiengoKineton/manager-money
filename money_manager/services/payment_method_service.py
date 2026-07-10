@@ -861,9 +861,12 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
         parent = _parent_for_credit_method(method)
         if not parent:
             parent = "main_bank"
-        # When no last4 is available, same parent + same visible name is the only
-        # stable identity we have.  This is exactly the case that generated a
-        # long list of identical "Credit Card" options.
+        # User-created cards are distinct stable objects even when the user has
+        # not entered the last four digits yet. Older repair logic grouped every
+        # manual card with the same generic name and silently archived all but
+        # one, making multiple real cards look like a single reference.
+        if not last4 and (metadata.get("user_created") or metadata.get("manual_card")):
+            return (parent, f"{name}:{method.get('id') or ''}", "manual")
         return (parent, name, last4)
 
     def _credit_method_score(method: Mapping[str, Any]) -> tuple[int, int, int, int, int]:
@@ -1056,6 +1059,23 @@ def ensure_methods_for_accounts(payload: Mapping[str, Any], accounts_payload: Ma
         label = account.get("label") or account.get("name") or key.replace("_", " ").title()
         order = int(_safe_number(account.get("display_order"), 1000))
         _materialize_legacy_account_cards(account)
+        parent_key = str(account.get("parent_account_id") or account.get("parent_key") or "").strip()
+        is_hidden_prepaid_route = kind == "prepaid_balance" and bool(parent_key) and "hidden stored balance" in clean_text(account.get("description") or "")
+        if is_hidden_prepaid_route:
+            # The real prepaid card already owns this generated balance account.
+            # Do not expose a second synthetic payment method for the same card.
+            for method in methods:
+                legacy = method.get("legacy") if isinstance(method.get("legacy"), Mapping) else {}
+                if str(method.get("id") or "") != key or legacy.get("migration_rule") != "auto_wallet_balance_method":
+                    continue
+                method["is_active"] = False
+                method["is_archived"] = True
+                method["archived_at"] = method.get("archived_at") or utc_now()
+                method["updated_at"] = utc_now()
+                legacy = dict(legacy)
+                legacy["auto_archived_reason"] = "hidden_prepaid_balance_route"
+                method["legacy"] = legacy
+            continue
         if kind == "current_account":
             if not _has_active_method(key, "debit_card"):
                 _add({
@@ -1281,6 +1301,7 @@ def write_account_payment_migration_report(
 
 def _method_from_form(form: Mapping[str, Any], *, method_id: str) -> dict[str, Any]:
     metadata: dict[str, Any] = {}
+    is_manual_card = str(form.get("manual_card") or form.get("user_created") or "").strip().casefold() in {"1", "true", "yes", "on"}
     card_payload = {
         "network": clean_label(form.get("card_network") or form.get("network") or ""),
         "last4": clean_label(form.get("card_last4") or form.get("last4") or ""),
@@ -1290,6 +1311,7 @@ def _method_from_form(form: Mapping[str, Any], *, method_id: str) -> dict[str, A
     }
     if any(card_payload.values()):
         metadata["card"] = card_payload
+    if is_manual_card or any(card_payload.values()):
         metadata["manual_card"] = True
         metadata["visible_card"] = True
         metadata["user_created"] = True

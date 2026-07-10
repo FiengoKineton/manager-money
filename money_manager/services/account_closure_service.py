@@ -11,6 +11,7 @@ from money_manager.services.account_config_service import (
     account_by_key,
     account_label_for_key,
     active_accounts,
+    configured_account_key,
     load_accounts_config,
     normalize_account_key,
     save_accounts_config,
@@ -33,7 +34,9 @@ ACCOUNT_REFERENCE_FIELDS = [
 
 
 def account_closure_precheck(account_id: str) -> dict[str, Any]:
-    key = normalize_account_key(account_id)
+    key = configured_account_key(account_id)
+    if not key:
+        return {"ok": False, "error": "Account not found.", "blockers": ["Account not found."], "warnings": [], "account_id": str(account_id or "")}
     account = account_by_key(key, include_archived=True)
     if not account:
         return {"ok": False, "error": "Account not found.", "blockers": ["Account not found."], "warnings": [], "account_id": key}
@@ -46,9 +49,7 @@ def account_closure_precheck(account_id: str) -> dict[str, Any]:
     blockers: list[str] = []
     warnings: list[str] = []
     if key == MAIN_ACCOUNT_KEY:
-        active_current = [row for row in active_accounts(include_main=True) if row.get("is_current_account") and row.get("key") != key]
-        if not active_current:
-            warnings.append("This is the last active current account. Select a replacement or confirm very carefully.")
+        blockers.append("The built-in Main account cannot be closed. Rename it or move activity to another current account instead.")
 
     active_method_refs = _active_payment_method_refs(key)
     if active_method_refs:
@@ -71,20 +72,25 @@ def account_closure_precheck(account_id: str) -> dict[str, Any]:
     if recurring_rows:
         blockers.append(f"{len(recurring_rows)} recurring rule(s) reference this account.")
 
-    related = _other_dependency_counts(key)
+    related_rows = _other_dependencies(key)
+    related = {name: len(rows) for name, rows in related_rows.items()}
     for name, count in related.items():
         if count:
-            warnings.append(f"{count} {name} row(s) mention this account. Review before closing.")
+            blockers.append(f"{count} active {name} row(s) reference this account. Reassign or finish them before closing.")
 
     if abs(balance) >= 0.005:
         warnings.append(f"Current balance is € {balance:.2f}. Move or reconcile it before archive-only closure.")
 
-    warnings.append("Future Bills/Mutui checks are not implemented yet; review those manually when that module exists.")
+    warnings.append("Future-bill dependencies are not available in this repository, so review those manually if you use an external bills module.")
 
     available_replacements = [
         {"key": row.get("key"), "label": row.get("label") or row.get("name") or row.get("key")}
         for row in active_accounts(include_main=True)
-        if row.get("key") != key and not row.get("is_container") and not row.get("is_closed")
+        if row.get("key") != key
+        and not row.get("is_container")
+        and not row.get("is_closed")
+        and not row.get("is_liability")
+        and str(row.get("account_kind") or row.get("type") or "") != "credit_card_liability"
     ]
 
     return {
@@ -101,6 +107,7 @@ def account_closure_precheck(account_id: str) -> dict[str, Any]:
         "pending_rows": pending_rows,
         "recurring_rows": recurring_rows,
         "other_dependency_counts": related,
+        "other_dependencies": related_rows,
         "blockers": blockers,
         "warnings": warnings,
         "available_replacements": available_replacements,
@@ -109,15 +116,24 @@ def account_closure_precheck(account_id: str) -> dict[str, Any]:
         "can_reassign_payment_methods": bool(active_method_refs and available_replacements),
         "can_settle_credit_now": bool(open_settlements),
         "can_move_future_settlements": bool(open_settlements and available_replacements),
+        "cashflow_account": _cashflow_account(exclude_key=key),
     }
 
 
 def close_account(account_id: str, options: Mapping[str, Any]) -> dict[str, Any]:
-    key = normalize_account_key(account_id)
-    replacement = normalize_account_key(options.get("replacement_account_id") or options.get("replacement_account") or "") if options.get("replacement_account_id") or options.get("replacement_account") else ""
+    key = configured_account_key(account_id)
+    if not key:
+        return {"ok": False, "error": "Account not found."}
+    replacement_raw = options.get("replacement_account_id") or options.get("replacement_account") or ""
+    replacement = configured_account_key(replacement_raw) if replacement_raw else ""
+    if replacement_raw and not replacement:
+        return {"ok": False, "error": "Replacement account does not exist or is inactive."}
     mode = str(options.get("closure_mode") or options.get("mode") or "archive_only")
+    balance_action = str(options.get("balance_action") or "").strip().casefold()
     today = str(options.get("date") or date.today().isoformat())
-    allow_nonzero = _truthy(options.get("confirm_nonzero_balance")) or _truthy(options.get("confirm_close_last_current"))
+
+    if not _truthy(options.get("confirm_close")):
+        return {"ok": False, "error": "Confirm that you understand the account will be closed before continuing."}
 
     precheck = account_closure_precheck(key)
     if not precheck.get("ok"):
@@ -134,11 +150,22 @@ def close_account(account_id: str, options: Mapping[str, Any]) -> dict[str, Any]
     balance = float(precheck.get("balance") or 0.0)
     blockers = list(precheck.get("blockers", []))
 
-    if mode in {"move_balance_then_archive", "close_with_replacement"}:
+    balance_destination = ""
+    if balance_action in {"transfer", "move_to_replacement"} or mode in {"move_balance_then_archive", "close_with_replacement"}:
         if not replacement:
-            return {"ok": False, "error": "Select a replacement account to move the balance.", "precheck": precheck}
+            return {"ok": False, "error": "Select a replacement account for the remaining balance.", "precheck": precheck}
+        balance_destination = replacement
+    elif balance_action in {"cash", "liquidate_to_cash", "liquidate"}:
+        cashflow = _cashflow_account(exclude_key=key)
+        balance_destination = str(cashflow.get("key") or "") if cashflow else ""
+        if not balance_destination:
+            return {"ok": False, "error": "No open CashFlow/cash account is available for liquidation.", "precheck": precheck}
+
+    if balance_destination:
+        if balance_destination == key:
+            return {"ok": False, "error": "Balance destination must be different from the account being closed.", "precheck": precheck}
         if abs(balance) >= 0.005:
-            move_report = move_balance_to_replacement(key, replacement, today, balance=balance)
+            move_report = move_balance_to_replacement(key, balance_destination, today, balance=balance)
             actions.append("balance_moved" if move_report.get("ok") else "balance_move_failed")
             if not move_report.get("ok"):
                 return {"ok": False, "error": move_report.get("error", "Could not move balance."), "precheck": precheck}
@@ -151,6 +178,13 @@ def close_account(account_id: str, options: Mapping[str, Any]) -> dict[str, Any]
         report = reassign_payment_methods(key, replacement)
         actions.append(f"payment_methods_reassigned:{report.get('changed_count', 0)}")
         blockers = [b for b in blockers if "payment method" not in b.lower()]
+
+    if _truthy(options.get("reassign_dependent_accounts")):
+        if not replacement:
+            return {"ok": False, "error": "Select a replacement account to reassign dependent accounts.", "precheck": precheck}
+        report = reassign_dependent_accounts(key, replacement)
+        actions.append(f"dependent_accounts_reassigned:{report.get('changed_count', 0)}")
+        blockers = [b for b in blockers if "dependent account" not in b.lower()]
 
     if _truthy(options.get("settle_credit_now")) or mode == "settle_credit_now_then_close":
         report = settle_pending_credit_now(key)
@@ -168,9 +202,9 @@ def close_account(account_id: str, options: Mapping[str, Any]) -> dict[str, Any]
     final_check = account_closure_precheck(key)
     hard_blockers = list(final_check.get("blockers", []))
     final_balance = float(final_check.get("balance") or 0.0)
-    if abs(final_balance) >= 0.005 and mode == "archive_only" and not allow_nonzero:
-        hard_blockers.append("Archive-only closure requires zero balance or explicit non-zero confirmation.")
-    if hard_blockers and not _truthy(options.get("force_close")):
+    if abs(final_balance) >= 0.005:
+        hard_blockers.append("The account still has a non-zero balance. Transfer it or liquidate it to CashFlow first.")
+    if hard_blockers:
         return {"ok": False, "error": "Account cannot be closed safely yet.", "blockers": hard_blockers, "precheck": final_check}
 
     closed = _set_account_closed(key, replacement_account_id=replacement, closed_at=today)
@@ -188,14 +222,20 @@ def close_account(account_id: str, options: Mapping[str, Any]) -> dict[str, Any]
         "account_id": key,
         "replacement_account_id": replacement,
         "status": "completed",
-        "details": {"mode": mode, "actions": actions, "final_balance": final_balance},
+        "details": {
+            "mode": mode,
+            "balance_action": balance_action,
+            "balance_destination_account_id": balance_destination,
+            "actions": actions,
+            "final_balance": final_balance,
+        },
         "warnings": warnings,
     })
     return {"ok": True, "message": "Account closed safely.", "actions": actions, "event": event, "warnings": warnings}
 
 
 def archive_account_only(account_id: str) -> dict[str, Any]:
-    return close_account(account_id, {"mode": "archive_only"})
+    return close_account(account_id, {"mode": "archive_only", "confirm_close": "1"})
 
 
 def move_balance_to_replacement(account_id: str, replacement_account_id: str, movement_date: str | None = None, *, balance: float | None = None) -> dict[str, Any]:
@@ -240,6 +280,24 @@ def reassign_payment_methods(account_id: str, replacement_account_id: str) -> di
             changed += 1
     if changed:
         save_payment_methods(payload)
+    return {"ok": True, "changed_count": changed}
+
+
+def reassign_dependent_accounts(account_id: str, replacement_account_id: str) -> dict[str, Any]:
+    key = normalize_account_key(account_id)
+    replacement = normalize_account_key(replacement_account_id)
+    config = load_accounts_config()
+    changed = 0
+    for account in config.get("accounts", []):
+        parent = str(account.get("parent_account_id") or account.get("parent_key") or "")
+        if parent != key or not account.get("is_active", True) or account.get("is_closed"):
+            continue
+        account["parent_account_id"] = replacement
+        account["parent_key"] = replacement
+        account["updated_at"] = _now()
+        changed += 1
+    if changed:
+        save_accounts_config(config)
     return {"ok": True, "changed_count": changed}
 
 
@@ -334,8 +392,11 @@ def _pending_rows_for_account(account_id: str) -> list[dict[str, Any]]:
     for row in load_pending():
         if str(row.get("status") or "pending") != "pending":
             continue
-        candidates = {str(row.get("account") or ""), str(row.get("account_key") or "")}
-        normalized = {normalize_account_key(value) for value in candidates if value}
+        candidates = {
+            str(row.get(field) or "")
+            for field in ("account", "account_id", "account_key", "account_key_snapshot", "funding_account_id", "settlement_account_id")
+        }
+        normalized = {resolved for value in candidates if value for resolved in [configured_account_key(value)] if resolved}
         if account_id in normalized:
             rows.append(row)
     return rows
@@ -343,39 +404,103 @@ def _pending_rows_for_account(account_id: str) -> list[dict[str, Any]]:
 
 def _recurring_rows_for_account(account_id: str) -> list[dict[str, Any]]:
     rows = []
+    try:
+        from money_manager.services.recurring_service import is_rule_finished
+    except Exception:
+        is_rule_finished = None
     for row in load_recurring():
-        if row.get("end_date"):
+        if is_rule_finished and is_rule_finished(row):
             continue
-        account_value = str(row.get("account") or "")
-        if account_value and normalize_account_key(account_value) == account_id:
+        candidates = [str(row.get(field) or "") for field in ("account", "account_id", "account_key", "preferred_account_id", "funding_account_id")]
+        if any(configured_account_key(value) == account_id for value in candidates if value):
             rows.append(row)
     return rows
 
 
-def _other_dependency_counts(account_id: str) -> dict[str, int]:
-    checks: dict[str, tuple[str, str]] = {
-        "payable": ("money_manager.repositories.payables", "load_payables"),
-        "debt": ("money_manager.repositories.debts", "load_debts"),
-        "receivable": ("money_manager.repositories.receivables", "load_receivables"),
-        "parent support": ("money_manager.repositories.parent_support", "load_parent_support_rows"),
-        "expense project planned item": ("money_manager.repositories.expense_projects", "load_planned_items"),
+def _other_dependencies(account_id: str) -> dict[str, list[dict[str, Any]]]:
+    checks: dict[str, tuple[str, str, str | None]] = {
+        "payable": ("money_manager.repositories.payables", "load_payables", None),
+        "debt": ("money_manager.repositories.debts", "load_debts", None),
+        "receivable": ("money_manager.repositories.receivables", "load_receivables", None),
+        "parent support rule": ("money_manager.repositories.parent_support", "load_rules", None),
+        "expense project planned item": ("money_manager.repositories.expense_projects", "load_planned_items", None),
+        "investment asset": ("money_manager.repositories.investments", "load_investment_assets", None),
+        "mortgage": ("money_manager.services.mortgage_service", "load_mortgages", "mortgages"),
+        "savings goal": ("money_manager.services.savings_goal_service", "load_savings_goals", "goals"),
     }
-    result: dict[str, int] = {}
-    for label, (module_name, func_name) in checks.items():
+    result: dict[str, list[dict[str, Any]]] = {}
+    for label, (module_name, func_name, collection_key) in checks.items():
         try:
             module = __import__(module_name, fromlist=[func_name])
             loader = getattr(module, func_name)
             loaded = loader()
         except Exception:
-            result[label] = 0
+            result[label] = []
             continue
-        count = 0
+        if collection_key and isinstance(loaded, Mapping):
+            loaded = loaded.get(collection_key, [])
+        matches: list[dict[str, Any]] = []
         for row in loaded if isinstance(loaded, list) else []:
-            text_values = [str(row.get(field, "") or "") for field in ("account", "account_key", "payment_method", "description")]
-            if any(normalize_account_key(value) == account_id for value in text_values if value):
-                count += 1
-        result[label] = count
+            if not isinstance(row, Mapping) or not _dependency_is_active(label, row):
+                continue
+            text_values = [
+                str(row.get(field, "") or "")
+                for field in (
+                    "account",
+                    "account_id",
+                    "account_key",
+                    "preferred_account_id",
+                    "funding_account_id",
+                    "settlement_account_id",
+                )
+            ]
+            if any(configured_account_key(value) == account_id for value in text_values if value):
+                matches.append(dict(row))
+        result[label] = matches
     return result
+
+
+def _dependency_is_active(label: str, row: Mapping[str, Any]) -> bool:
+    if label == "investment asset":
+        return _truthy(row.get("active"))
+    if label == "mortgage":
+        return bool(row.get("is_active", True))
+    if label == "savings goal":
+        return str(row.get("status") or "active").casefold() in {"active", "paused"}
+    if label == "parent support rule":
+        if not _truthy(row.get("active")):
+            return False
+        raw_end = str(row.get("end_date") or "").strip()
+        if not raw_end:
+            return True
+        try:
+            return date.fromisoformat(raw_end) >= date.today()
+        except ValueError:
+            return True
+    return str(row.get("status") or "active").casefold() in {"active", "pending", "pocket"}
+
+
+def _cashflow_account(exclude_key: str = "") -> dict[str, Any] | None:
+    candidates: list[dict[str, Any]] = []
+    for account in active_accounts(include_main=True):
+        key = str(account.get("key") or account.get("id") or "")
+        kind = str(account.get("account_kind") or account.get("type") or "")
+        if not key or key == exclude_key or account.get("is_container") or account.get("is_liability"):
+            continue
+        if key in {"cash_flow", "cashflow", "cash"} or kind == "cash":
+            candidates.append(dict(account))
+    if not candidates:
+        return None
+    def _sort_order(row: Mapping[str, Any]) -> tuple[int, int]:
+        try:
+            display_order = int(float(row.get("display_order") or 1000))
+        except (TypeError, ValueError):
+            display_order = 1000
+        return (0 if str(row.get("key") or "") == "cash_flow" else 1, display_order)
+
+    candidates.sort(key=_sort_order)
+    account = candidates[0]
+    return {"key": str(account.get("key") or account.get("id") or ""), "label": str(account.get("label") or account.get("name") or "CashFlow")}
 
 
 def _update_profile_default_if_needed(account_id: str, replacement_account_id: str) -> dict[str, Any]:

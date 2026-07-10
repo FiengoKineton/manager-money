@@ -33,6 +33,7 @@ from money_manager.config import (
     normalize_account_key,
 )
 from money_manager.domain.transaction import TransactionInput, make_transaction_uid
+from money_manager.services.account_config_service import configured_account_key
 from money_manager.services.currency_service import append_conversion_note, convert_amount_to_eur
 from money_manager.services.category_icon_service import icon_for_category, load_category_icons_config
 from money_manager.repositories.pending import append_pending
@@ -687,6 +688,22 @@ def update_existing_transaction(row_index: int, form) -> dict:
         "description": tx_input.description,
     }
 
+    selected_account_id = ""
+    if tx_input.account_id:
+        selected_account_id = configured_account_key(tx_input.account_id) or ""
+        if not selected_account_id:
+            return {"ok": False, "error": f"Unknown or inactive account: {tx_input.account_id}"}
+        # Persist the stable selection even for old CSV-only transactions.  The
+        # old edit path updated only the legacy text field, so the detail screen
+        # could show the new snapshot while account calculations still used the
+        # previous account.
+        data.update({
+            "account_id": selected_account_id,
+            "account_key_snapshot": selected_account_id,
+            "account_name_snapshot": account_label_for_key(selected_account_id),
+            "account": "" if selected_account_id == MAIN_ACCOUNT_KEY else selected_account_id,
+        })
+
     # The transaction detail screen edits the already-saved EUR value. The add
     # screen has the currency selector and passes currency explicitly, so only
     # re-run conversion when that field is present.
@@ -724,7 +741,7 @@ def update_existing_transaction(row_index: int, form) -> dict:
     else:
         route_data["payment_method_id"] = original.get("payment_method_id", "")
         route_data["payment_channel_method_id"] = original.get("payment_channel_method_id_snapshot", "")
-    route_data["account_id"] = _effective_account_id_for_edit(original, route_data, tx_input)
+    route_data["account_id"] = selected_account_id or _effective_account_id_for_edit(original, route_data, tx_input)
 
     payment_changed = (
         tx_input.force_payment_rebuild

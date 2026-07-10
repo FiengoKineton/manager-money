@@ -13,6 +13,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 MAGIC_TEXT = "MMENC1"
 MAGIC_BYTES = b"MMENC1\n"
+MAGIC_BYTES_CRLF = b"MMENC1\r\n"
 ALGORITHM = "AESGCM"
 NONCE_BYTES = 12
 KEY_BYTES = 32
@@ -30,8 +31,23 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def _magic_length(payload: bytes | bytearray | memoryview | None) -> int:
+    """Return the encrypted-envelope header length.
+
+    Git/Windows line-ending conversion can turn ``MMENC1\n`` into
+    ``MMENC1\r\n`` even though the remaining envelope is still valid.
+    Accept both forms so encrypted user data remains portable across devices.
+    """
+    raw = bytes(payload or b"")
+    if raw.startswith(MAGIC_BYTES):
+        return len(MAGIC_BYTES)
+    if raw.startswith(MAGIC_BYTES_CRLF):
+        return len(MAGIC_BYTES_CRLF)
+    return 0
+
+
 def is_encrypted_bytes(payload: bytes | bytearray | memoryview | None) -> bool:
-    return bytes(payload or b"").startswith(MAGIC_BYTES)
+    return _magic_length(payload) > 0
 
 
 def is_file_encrypted(path: str | os.PathLike[str]) -> bool:
@@ -40,7 +56,7 @@ def is_file_encrypted(path: str | os.PathLike[str]) -> bool:
         if not target.exists() or not target.is_file():
             return False
         with target.open("rb") as handle:
-            return handle.read(len(MAGIC_BYTES)) == MAGIC_BYTES
+            return is_encrypted_bytes(handle.read(len(MAGIC_BYTES_CRLF)))
     except OSError:
         return False
 
@@ -73,11 +89,12 @@ def encrypt_bytes(
 
 def decrypt_bytes(payload: bytes | bytearray | memoryview, key: bytes | bytearray | memoryview) -> bytes:
     raw = bytes(payload or b"")
-    if not is_encrypted_bytes(raw):
+    magic_length = _magic_length(raw)
+    if not magic_length:
         raise DecryptionError("Payload is not a Money Manager encrypted envelope.")
     key_bytes = _validate_key(key)
     try:
-        envelope = json.loads(raw[len(MAGIC_BYTES):].decode("utf-8"))
+        envelope = json.loads(raw[magic_length:].decode("utf-8"))
         if envelope.get("magic") != MAGIC_TEXT or envelope.get("algorithm") != ALGORITHM:
             raise DecryptionError("Unsupported encrypted envelope.")
         nonce = _unb64(str(envelope.get("nonce") or ""))
@@ -135,7 +152,10 @@ def read_envelope_metadata(path: str | os.PathLike[str]) -> dict[str, Any]:
         return {}
     try:
         raw = target.read_bytes()
-        payload = json.loads(raw[len(MAGIC_BYTES):].decode("utf-8"))
+        magic_length = _magic_length(raw)
+        if not magic_length:
+            return {}
+        payload = json.loads(raw[magic_length:].decode("utf-8"))
         payload.pop("ciphertext", None)
         return payload if isinstance(payload, dict) else {}
     except Exception:

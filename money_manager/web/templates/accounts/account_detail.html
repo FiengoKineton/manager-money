@@ -22,7 +22,7 @@
     </div>
     <div class="conto-home-actions">
       <a class="primary-btn compact-btn" href="{{ url_for('transactions.add_transaction', account_id=account.key, type='expense') }}">Add transaction</a>
-      <button class="secondary-btn compact-btn" type="button" data-mm-dialog-open="account-info-dialog">Account info</button>
+      <button class="secondary-btn compact-btn" type="button" data-mm-dialog-open="account-info-dialog">Edit account info</button>
       <a class="secondary-btn compact-btn" href="{{ url_for('dashboard.overview', account_id=account.key) }}">Quick overview</a>
       <a class="secondary-btn compact-btn" href="{{ url_for('dashboard.index', account_id=account.key) }}">Dashboard</a>
       <a class="secondary-btn compact-btn" href="{{ url_for('transactions.transactions_page', account_id=account.key) }}">Transactions</a>
@@ -35,6 +35,9 @@
   </aside>
 </section>
 
+{% if closure_error %}<section class="alert-card alert-error">{{ closure_error }}</section>{% endif %}
+{% if closure_message %}<section class="alert-card alert-success">{{ closure_message }}</section>{% endif %}
+
 <section class="conto-metrics-grid conto-metrics-wallet" aria-label="{{ account.label }} local metrics">
   <button type="button" data-mm-dialog-open="metric-pending-dialog"><span>Pending</span><strong>{{ local_summary.pending_total|money_masked }}</strong><small>linked here</small></button>
   <button type="button" data-mm-dialog-open="metric-recurring-dialog"><span>Recurring monthly</span><strong>{{ local_summary.recurring_monthly_total|money_masked }}</strong><small>rules on this Conto</small></button>
@@ -42,6 +45,84 @@
   <button type="button" data-mm-dialog-open="metric-net-after-pending-dialog"><span>Net after pending</span><strong>{{ local_summary.net_after_pending|money_masked }}</strong><small>local pressure</small></button>
   <button type="button" data-mm-dialog-open="metric-transactions-dialog"><span>Transactions</span><strong>{{ local_summary.transactions_count }}</strong><small>matched rows</small></button>
 </section>
+
+{% if account.is_active and not account.is_closed and account.key != 'main_bank' %}
+<section class="panel-card account-closure-panel">
+  <details>
+    <summary><strong>Close this account</strong> <span class="muted">Stops future use without deleting historical transactions.</span></summary>
+    <div class="account-closure-content">
+      <p>Closing marks the account inactive and removes it from current calculations and transaction selectors. Historical movements remain available.</p>
+
+      {% if closure_precheck.blockers %}
+        <div class="alert-card alert-error">
+          <strong>Items that must be resolved</strong>
+          <ul>{% for blocker in closure_precheck.blockers %}<li>{{ blocker }}</li>{% endfor %}</ul>
+        </div>
+      {% endif %}
+      {% if closure_precheck.warnings %}
+        <div class="alert-card">
+          <strong>Checks and warnings</strong>
+          <ul>{% for warning in closure_precheck.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+        </div>
+      {% endif %}
+
+      <div class="account-closure-dependencies">
+        {% if closure_precheck.active_payment_methods %}
+          <div><strong>Payment methods</strong><ul>{% for item in closure_precheck.active_payment_methods %}<li>{{ item.name or item.id }} — {{ item.fields|join(', ') }}</li>{% endfor %}</ul></div>
+        {% endif %}
+        {% if closure_precheck.dependent_accounts %}
+          <div><strong>Dependent accounts</strong><ul>{% for item in closure_precheck.dependent_accounts %}<li><a href="{{ url_for('accounts.account_detail', account_key=item.key) }}">{{ item.label or item.name or item.key }}</a></li>{% endfor %}</ul></div>
+        {% endif %}
+        {% if closure_precheck.recurring_rows %}
+          <div><strong>Recurring rules to edit first</strong><ul>{% for item in closure_precheck.recurring_rows %}<li>{{ item.description or item.category or item.name or ('Rule ' ~ item.id) }} · {{ item.amount|default('') }}</li>{% endfor %}</ul></div>
+        {% endif %}
+        {% if closure_precheck.pending_rows %}
+          <div><strong>Pending rows to execute, cancel or reassign</strong><ul>{% for item in closure_precheck.pending_rows %}<li>{{ item.description or item.category or ('Pending ' ~ item.id) }} · {{ item.amount|default('') }}</li>{% endfor %}</ul></div>
+        {% endif %}
+        {% if closure_precheck.open_settlements %}
+          <div><strong>Open credit settlements</strong><ul>{% for item in closure_precheck.open_settlements %}<li>{{ item.statement_period or item.due_date or item.id }} · {{ item.amount|default(item.remaining_amount)|default('') }}</li>{% endfor %}</ul></div>
+        {% endif %}
+        {% for label, items in closure_precheck.other_dependencies.items() if items %}
+          <div>
+            <strong>{{ label|title }}</strong>
+            <ul>
+              {% for item in items %}
+                <li>{{ item.title or item.name or item.label or item.description or item.category or ('Item ' ~ item.id) }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endfor %}
+      </div>
+
+      <form method="post" class="custom-account-form spaced-form modal-form-grid account-closure-form">
+        <input type="hidden" name="action" value="close_account">
+        <div>
+          <label>Replacement account</label>
+          <select name="replacement_account_id">
+            <option value="">Select when dependencies must move</option>
+            {% for replacement in closure_precheck.available_replacements %}<option value="{{ replacement.key }}">{{ replacement.label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Remaining balance: {{ closure_precheck.balance|money_masked }}</label>
+          <select name="balance_action">
+            <option value="">Account must already be at zero</option>
+            <option value="transfer">Transfer it to the replacement account</option>
+            {% if closure_precheck.cashflow_account %}<option value="liquidate_to_cash">Liquidate it to {{ closure_precheck.cashflow_account.label }}</option>{% endif %}
+          </select>
+        </div>
+        {% if closure_precheck.active_payment_methods %}<label class="inline-checkbox"><input type="checkbox" name="reassign_payment_methods" value="1"> Reassign payment-method references to the replacement account</label>{% endif %}
+        {% if closure_precheck.dependent_accounts %}<label class="inline-checkbox"><input type="checkbox" name="reassign_dependent_accounts" value="1"> Move dependent accounts under the replacement account</label>{% endif %}
+        {% if closure_precheck.open_settlements %}<label class="inline-checkbox"><input type="checkbox" name="move_future_settlements" value="1"> Move future credit settlements to the replacement account</label>{% endif %}
+        <div class="form-field-wide">
+          <label class="inline-checkbox"><input type="checkbox" name="confirm_close" value="1" required> I understand this closes the account without deleting its history.</label>
+        </div>
+        <div class="form-actions-row form-field-wide"><button class="secondary-btn" type="submit">Close account safely</button></div>
+      </form>
+    </div>
+  </details>
+</section>
+{% endif %}
 
 <section class="conto-metrics-grid conto-metrics-wallet conto-support-metrics" aria-label="{{ account.label }} support and wealth metrics">
   <button type="button" data-mm-dialog-open="metric-debts-dialog"><span>Debts I owe</span><strong>{{ local_summary.debts_total|money_masked }}</strong><small>{{ local_summary.debts_count }} active</small></button>
@@ -253,6 +334,16 @@
       {% if method.is_default %}<span class="status-pill">Default</span>{% endif %}
       {% if method.is_archived %}<span class="status-pill warning">Archived</span>{% endif %}
     </div>
+    {% if method.route_accounts %}
+      <div class="account-route-links">
+        <strong>Accounts used by this card</strong>
+        <div class="modal-action-strip">
+          {% for route_account in method.route_accounts %}
+            <a class="secondary-btn compact-btn" href="{{ url_for('accounts.account_detail', account_key=route_account.key) }}">{{ route_account.role }}: {{ route_account.label|text_masked }}</a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
     <form method="post" action="{{ url_for('accounts.account_payment_method_detail', account_key=account.key, method_id=method.id) }}" class="custom-account-form spaced-form card-editor-form modal-form-grid">
       <input type="hidden" name="action" value="update_payment_method">
       <input type="hidden" name="payment_method_id" value="{{ method.id }}">
@@ -287,7 +378,7 @@
 
 {% set metric_dialogs = [
   ('metric-pending-dialog', 'Pending linked to this Conto', local_summary.pending_total, 'Open pending items that are assigned to this account scope.'),
-  ('metric-recurring-dialog', 'Recurring monthly on this Conto', local_summary.recurring_monthly_total, 'Monthly recurring pressure generated by rules assigned to this account.'),
+  ('metric-recurring-dialog', 'Recurring monthly on this Conto', local_summary.recurring_monthly_total, 'Expected monthly balance change from recurring rules: income is positive and expenses are negative.'),
   ('metric-payables-dialog', 'Payables from this Conto', local_summary.payables_total, 'Open payables that should be paid from this account.'),
   ('metric-net-after-pending-dialog', 'Net after pending', local_summary.net_after_pending, 'Current account net after open pending movements.'),
   ('metric-transactions-dialog', 'Transactions matched here', local_summary.transactions_count, 'Transactions visible in this selected account scope.'),

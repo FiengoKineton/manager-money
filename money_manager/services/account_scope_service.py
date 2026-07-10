@@ -41,7 +41,7 @@ def _is_active(account: Mapping[str, Any], include_archived: bool = False) -> bo
 
 def _is_liquid_account(account: Mapping[str, Any]) -> bool:
     kind = str(account.get("account_kind") or account.get("type") or "")
-    return kind not in {"container", "credit_card_liability"} and not bool(account.get("is_container")) and not bool(account.get("is_liability"))
+    return kind not in {"container", "credit_card_liability", "external_account"} and not bool(account.get("is_container")) and not bool(account.get("is_liability"))
 
 
 def _is_financial_center(account: Mapping[str, Any]) -> bool:
@@ -369,15 +369,26 @@ def resolve_account_scope(scope: str | Mapping[str, Any] | None = None, account_
     if scope_text == SCOPE_GLOBAL:
         center_ids = [_account_id(account) for account in financial_centers(user_id=user_id, include_archived=False)]
         included: list[str] = []
+        balance_ids: list[str] = []
         dependent: list[str] = []
-        # Global visibility includes every active non-technical account so search,
-        # transactions and lists really mean "all user accounts".  Global net,
-        # however, is calculated only from financial centers to avoid double
-        # counting dependent wallets such as PayPal when they are paid through a
-        # linked bank card.
+
+        # "All Conti" is the sum of every active real balance account, not only
+        # the top-level financial-center cards shown on the landing page.  A
+        # dependent wallet/prepaid card owns a real balance: excluding it caused
+        # a top-up to reduce Main while its destination increase disappeared from
+        # All Conti. Internal transfers cancel naturally because both source and
+        # destination are included exactly once.
+        #
+        # Containers, external references and credit-card liabilities are not
+        # liquid account balances. Liabilities continue to be shown separately as
+        # committed credit/debt in the overview.
         for account in all_accounts(user_id=user_id, include_archived=False, include_main=True):
             account_id = _account_id(account)
-            if not account_id or _is_technical_account(account):
+            if not account_id:
+                continue
+            if _is_liquid_account(account) and account_id not in balance_ids:
+                balance_ids.append(account_id)
+            if _is_technical_account(account):
                 continue
             if account_id not in included:
                 included.append(account_id)
@@ -389,7 +400,7 @@ def resolve_account_scope(scope: str | Mapping[str, Any] | None = None, account_
             "account_id": "",
             "label": "All Conti",
             "financial_center_ids": center_ids,
-            "balance_account_ids": center_ids,
+            "balance_account_ids": balance_ids,
             "included_account_ids": included,
             "dependent_account_ids": sorted(set(dependent)),
             "is_global": True,
@@ -637,12 +648,105 @@ def net_balance_for_scope(
     return round(float(total), 2)
 
 
+def balance_source_breakdown_for_scope(
+    scope: str | Mapping[str, Any] | None,
+    user_id: str | None = None,
+    df: pd.DataFrame | None = None,
+) -> list[dict[str, Any]]:
+    """Explain the exact balance inputs used for a scope.
+
+    This is intentionally read-only and reuses the same helpers as
+    :func:`net_balance_for_scope`.  It is primarily used by the "Why this net?"
+    page to diagnose cross-device differences where the visible transaction
+    list matches but opening balances, internal transfers, routing files or the
+    active data folder do not.
+    """
+    resolved = resolve_account_scope(scope, user_id=user_id)
+    data = _ensure_enriched(df) if df is not None else _load_enriched_transactions()
+    rows: list[dict[str, Any]] = []
+
+    for account_id in _balance_account_ids_for_resolved(resolved):
+        account = account_by_key(account_id, user_id=user_id, include_archived=True) or {}
+        initial = _initial_balance(account_id, user_id=user_id)
+        ledger_total = _ledger_balance_for_account(account_id, user_id=user_id)
+
+        if ledger_total is not None:
+            transaction_total = 0.0
+            transfer_total = 0.0
+            movement_total = float(ledger_total)
+            source = "authoritative ledger"
+        else:
+            movement_total = _transaction_balance_for_account(account_id, user_id=user_id, df=data)
+            transfer_total = _internal_transfer_total_for_account(account_id)
+            transaction_total = movement_total - transfer_total
+            source = "transactions + internal transfers"
+
+        total = initial + movement_total
+        rows.append({
+            "account_id": account_id,
+            "label": str(account.get("label") or account.get("name") or account_label_for_key(account_id)),
+            "initial_balance": round(float(initial), 2),
+            "transaction_total": round(float(transaction_total), 2),
+            "internal_transfer_total": round(float(transfer_total), 2),
+            "ledger_total": round(float(ledger_total), 2) if ledger_total is not None else None,
+            "movement_total": round(float(movement_total), 2),
+            "total": round(float(total), 2),
+            "source": source,
+        })
+    return rows
+
+
+def _internal_transfer_total_for_account(account_id: str) -> float:
+    try:
+        from money_manager.services.internal_transfer_service import (
+            auxiliary_transfer_movements,
+            main_account_transfer_movements,
+        )
+
+        key = normalize_account_key(account_id)
+        frame = main_account_transfer_movements() if key == MAIN_ACCOUNT_KEY else auxiliary_transfer_movements(account_key=key)
+        if frame.empty or "account_signed_amount" not in frame.columns:
+            return 0.0
+        return float(pd.to_numeric(frame["account_signed_amount"], errors="coerce").fillna(0.0).sum())
+    except Exception:
+        return 0.0
+
+
 def _row_account_candidates(row: Mapping[str, Any], user_id: str | None = None) -> set[str]:
     candidates: set[str] = set()
-    for field in [
+    direct_fields = [
         "account_id",
         "account_key",
         "account_key_snapshot",
+    ]
+    for field in direct_fields:
+        value = str(row.get(field) or "").strip()
+        if not value:
+            continue
+        try:
+            from money_manager.services.account_config_service import configured_account_key
+
+            resolved = configured_account_key(value, user_id=user_id)
+        except Exception:
+            resolved = None
+        if resolved:
+            candidates.add(resolved)
+
+    # The legacy account label is only a fallback.  Once a stable account id is
+    # present, retaining an old label (for example Edenred after moving a rule
+    # to Satispay) must not keep the row visible in the old account.
+    account_value = str(row.get("account") or "").strip()
+    if account_value and not candidates:
+        try:
+            from money_manager.services.account_config_service import configured_account_key
+
+            resolved = configured_account_key(account_value, user_id=user_id)
+        except Exception:
+            resolved = None
+        if resolved:
+            candidates.add(resolved)
+
+    for field in [
         "settlement_account_id",
         "funding_account_id",
         "liability_account_id",
@@ -652,10 +756,14 @@ def _row_account_candidates(row: Mapping[str, Any], user_id: str | None = None) 
     ]:
         value = str(row.get(field) or "").strip()
         if value:
-            candidates.add(normalize_account_key(value, user_id=user_id))
-    account_value = str(row.get("account") or "").strip()
-    if account_value:
-        candidates.add(normalize_account_key(account_value, user_id=user_id))
+            try:
+                from money_manager.services.account_config_service import configured_account_key
+
+                resolved = configured_account_key(value, user_id=user_id)
+            except Exception:
+                resolved = None
+            if resolved:
+                candidates.add(resolved)
     method_id = str(row.get("payment_method_id") or row.get("preferred_payment_method_id") or "").strip()
     if method_id:
         by_method = _method_by_id(user_id=user_id, include_archived=True)
@@ -684,9 +792,21 @@ def _amount(value: Any, allow_negative: bool = False) -> float:
 
 
 def _planning_signed_amount(row: Mapping[str, Any], amount_field: str = "amount") -> float:
+    """Return planning pressure: expenses positive, income negative.
+
+    Pending totals are subtracted from the current balance, so this historical
+    convention is intentionally retained for pending rows.
+    """
     amount = _amount(row.get(amount_field))
     row_type = str(row.get("type") or "expense").casefold()
     return -amount if row_type == "income" else amount
+
+
+def _planning_balance_delta(row: Mapping[str, Any], amount_field: str = "amount") -> float:
+    """Return the user-facing balance change: income positive, expense negative."""
+    amount = _amount(row.get(amount_field))
+    row_type = str(row.get("type") or "expense").casefold()
+    return amount if row_type == "income" else -amount
 
 
 def pending_for_scope(scope: str | Mapping[str, Any] | None, user_id: str | None = None) -> list[dict[str, Any]]:
@@ -741,8 +861,12 @@ def recurring_rows_for_scope(rows: list[dict[str, Any]], scope: str | Mapping[st
 
 
 def recurring_monthly_total_for_scope(scope: str | Mapping[str, Any] | None, user_id: str | None = None) -> float:
+    return _recurring_monthly_total_from_rows(recurring_for_scope(scope, user_id=user_id))
+
+
+def _recurring_monthly_total_from_rows(rows: list[dict[str, Any]]) -> float:
     total = 0.0
-    for row in recurring_for_scope(scope, user_id=user_id):
+    for row in rows:
         try:
             from money_manager.services.recurring_service import is_rule_finished, parse_frequency_months
 
@@ -751,7 +875,7 @@ def recurring_monthly_total_for_scope(scope: str | Mapping[str, Any] | None, use
             frequency = max(1, parse_frequency_months(row.get("frequency")))
         except Exception:
             frequency = max(1, int(_amount(row.get("frequency") or 1)))
-        total += _planning_signed_amount(row) / frequency
+        total += _planning_balance_delta(row) / frequency
     return round(float(total), 2)
 
 
@@ -845,7 +969,7 @@ def projected_net_for_scope(scope: str | Mapping[str, Any] | None, user_id: str 
         net_balance_for_scope(scope, user_id=user_id, df=df)
         - pending_total_for_scope(scope, user_id=user_id)
         - payables_total_for_scope(scope, user_id=user_id)
-        - recurring_monthly_total_for_scope(scope, user_id=user_id),
+        + recurring_monthly_total_for_scope(scope, user_id=user_id),
         2,
     )
 
@@ -879,7 +1003,7 @@ def scope_balance_summary(
         "recurring_monthly_total": recurring,
         "net_after_pending": round(net - pending, 2),
         "net_after_payables": round(net - payables, 2),
-        "projected_net": round(net - pending - payables - recurring, 2),
+        "projected_net": round(net - pending - payables + recurring, 2),
         "transactions_count": tx_count,
         "dependent_accounts_count": len(resolved.get("dependent_account_ids", [])),
         "payment_methods_count": methods_count,
@@ -892,9 +1016,77 @@ def scope_balance_summary(
 def all_financial_center_summaries(user_id: str | None = None, df: pd.DataFrame | None = None) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     data = _ensure_enriched(df) if df is not None else _load_enriched_transactions()
+    # Load planning repositories once for the whole All Conti page. The previous
+    # N+1 implementation re-read encrypted pending/recurring/payable files for
+    # every account and then reloaded payment methods again, which made this page
+    # noticeably slower than every other route.
+    try:
+        from money_manager.repositories.pending import load_pending
+
+        pending_rows = load_pending()
+    except Exception:
+        pending_rows = []
+    try:
+        from money_manager.repositories.recurring import load_recurring
+
+        recurring_rows = load_recurring()
+    except Exception:
+        recurring_rows = []
+    try:
+        from money_manager.repositories.payables import load_payables
+
+        payable_rows = load_payables()
+    except Exception:
+        payable_rows = []
+    methods = _method_rows(user_id=user_id, include_archived=False)
+
     for center in financial_centers(user_id=user_id, include_archived=False):
         center_id = _account_id(center)
-        summary = scope_balance_summary(f"account:{center_id}", user_id=user_id, df=data)
+        resolved = resolve_account_scope(f"account:{center_id}", user_id=user_id)
+        net = net_balance_for_scope(resolved, user_id=user_id, df=data)
+        scoped_pending = pending_rows_for_scope(pending_rows, resolved, user_id=user_id)
+        pending = round(sum(
+            _planning_signed_amount(row)
+            for row in scoped_pending
+            if str(row.get("status") or "pending").casefold() == "pending"
+        ), 2)
+        scoped_recurring = recurring_rows_for_scope(recurring_rows, resolved, user_id=user_id)
+        recurring = _recurring_monthly_total_from_rows(scoped_recurring)
+        scoped_payables = payable_rows_for_scope(payable_rows, resolved, user_id=user_id)
+        payables = round(sum(
+            _amount(row.get("remaining_amount"))
+            for row in scoped_payables
+            if str(row.get("status") or "active").casefold() == "active"
+        ), 2)
+        try:
+            tx_count = int(len(transactions_for_scope(data, resolved, user_id=user_id)))
+        except Exception:
+            tx_count = 0
+        center_methods = [
+            dict(method)
+            for method in methods
+            if center_id in _method_owner_account_ids(method, user_id=user_id)
+        ]
+        summary = {
+            "scope": resolved["scope"],
+            "kind": resolved["kind"],
+            "account_id": center_id,
+            "label": resolved["label"],
+            "net_balance": net,
+            "balance": net,
+            "pending_total": pending,
+            "payables_total": payables,
+            "recurring_monthly_total": recurring,
+            "net_after_pending": round(net - pending, 2),
+            "net_after_payables": round(net - payables, 2),
+            "projected_net": round(net - pending - payables + recurring, 2),
+            "transactions_count": tx_count,
+            "dependent_accounts_count": len(resolved.get("dependent_account_ids", [])),
+            "payment_methods_count": len(center_methods),
+            "dependent_accounts": [account for dep_id in resolved.get("dependent_account_ids", []) if (account := account_by_key(dep_id, user_id=user_id, include_archived=True))],
+            "payment_methods": center_methods,
+            **resolved,
+        }
         summary.update({
             "account_id": center_id,
             "key": center_id,

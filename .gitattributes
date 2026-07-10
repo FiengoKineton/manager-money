@@ -11,3 +11,7 @@
 *.csv text eol=lf
 
 MoneyManagerData/data/users/** binary
+# Financial data may be encrypted envelopes whose magic header must remain byte-exact.
+# Never let Git or platform checkout settings convert LF to CRLF in this tree.
+MoneyManagerData/** -text
+data/user_data/** -text

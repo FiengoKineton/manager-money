@@ -329,9 +329,10 @@ def validate_scoped_account_model(user_id: str | None = None) -> dict[str, Any]:
             for m in all_payment_methods(include_archived=False, user_id=user_id)
         ]
         global_summary = global_balance_summary(user_id=user_id)
-        center_sum = sum(float(item.get("net_balance", 0.0) or 0.0) for item in section["financial_centers"])
-        if abs(float(global_summary.get("net_balance", 0.0) or 0.0) - center_sum) > 0.01:
-            section["warnings"].append("Global balance differs from the sum of financial-center summaries; check dependent rollup policies for double counting or missing standalone centers.")
+        # All Conti intentionally includes active dependent/prepaid balances in
+        # addition to top-level financial centers.  A difference from the center
+        # cards is therefore expected and is no longer an integrity warning.
+        section["global_net_balance"] = float(global_summary.get("net_balance", 0.0) or 0.0)
         resolve_account_scope("global", user_id=user_id)
         for center in financial_centers(user_id=user_id, include_archived=True):
             center_id = _account_id(center)

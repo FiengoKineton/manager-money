@@ -2,6 +2,7 @@ from datetime import date
 
 import pandas as pd
 
+from money_manager.domain.constants import SPARAGNAT_FIELDS
 from money_manager.repositories.sparagnat import append_entry, delete_entry, load_entries, update_entry
 from money_manager.services.payment_form_service import payment_form_context, snapshot_account, snapshot_payment_method
 from money_manager.services.account_service import main_account_transactions
@@ -127,15 +128,44 @@ def overview_totals(start: str | None = None, end: str | None = None) -> dict:
 
 
 def _entries_frame() -> pd.DataFrame:
-    rows = load_entries()
-    df = pd.DataFrame(rows)
-    if df.empty:
-        return pd.DataFrame(columns=["id", "date", "kind", "person", "category", "amount", "account", "description", "created_at"])
+    """Return Sparagnat rows in a stable schema.
+
+    Some older or partially migrated files can contain rows without one or
+    more of the current columns.  Overview and net-explanation pages must not
+    fail just because this optional tracker has legacy-shaped data.
+    """
+    rows = [dict(row) for row in load_entries() if isinstance(row, dict)]
+    empty_frame = pd.DataFrame(columns=SPARAGNAT_FIELDS)
+    if not rows:
+        return empty_frame
+
+    df = pd.DataFrame.from_records(rows)
+    if df.empty or not set(df.columns).intersection(SPARAGNAT_FIELDS):
+        return empty_frame
+
+    defaults = {
+        "id": "",
+        "date": "",
+        "kind": "",
+        "person": "",
+        "category": "",
+        "amount": 0.0,
+        "account": "",
+        "description": "",
+        "created_at": "",
+    }
+    for column, default in defaults.items():
+        if column not in df.columns:
+            df[column] = default
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    df["created_at"] = pd.to_datetime(df.get("created_at"), errors="coerce")
+    df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0.0)
-    return df.sort_values(by=["date", "created_at"], ascending=[False, False])
+    return df.sort_values(
+        by=["date", "created_at"],
+        ascending=[False, False],
+        na_position="last",
+    )
 
 
 def _filter_by_date(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:

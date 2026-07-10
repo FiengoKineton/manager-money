@@ -487,7 +487,7 @@ def _recurring_payload_for_kind(kind: str, form: Mapping[str, Any], *, title: st
         "frequency": _positive_int(form.get("frequency"), 1),
         "day_of_month": min(31, max(1, _positive_int(form.get("day_of_month"), 1))),
         "category": _clean_text(form.get("category")) or meta["default_category"],
-        "account": form.get("account") or account_id or "auto",
+        "account": account_snapshot.get("account_id", "") or "auto",
         "account_id": account_snapshot.get("account_id", ""),
         "account_name_snapshot": account_snapshot.get("account_name_snapshot", ""),
         "payment_method_id": payment_snapshot.get("payment_method_id", ""),

@@ -782,13 +782,28 @@ def account_alias_map(user_id: str | None = None) -> dict[str, str]:
     return dict(_account_lookup_snapshot(user_id=user_id).get("alias_map", {}))
 
 
-def normalize_account_key(value: str | None, user_id: str | None = None) -> str:
+def configured_account_key(value: str | None, user_id: str | None = None) -> str | None:
+    """Resolve a configured account without silently falling back to Main.
+
+    Legacy imports intentionally use :func:`normalize_account_key`, where an
+    unknown value is treated as the historical main-bank route. Interactive
+    forms and stable ids must be stricter: a misspelled/removed account must not
+    unexpectedly become Main.
+    """
     text = clean_text(value)
     if text in {"", "auto", "main", "bank", "main bank", "main bank account", "bank account", "conto", "conto corrente"}:
         return MAIN_ACCOUNT_KEY
     if text == "other_accounts":
         text = OTHER_ACCOUNTS_KEY
-    return _account_lookup_snapshot(user_id=user_id).get("alias_map", {}).get(text, MAIN_ACCOUNT_KEY)
+    snapshot = _account_lookup_snapshot(user_id=user_id)
+    if text in snapshot.get("by_key", {}):
+        return text
+    resolved = snapshot.get("alias_map", {}).get(text)
+    return str(resolved) if resolved else None
+
+
+def normalize_account_key(value: str | None, user_id: str | None = None) -> str:
+    return configured_account_key(value, user_id=user_id) or MAIN_ACCOUNT_KEY
 
 
 def account_label_for_key(key: str | None, user_id: str | None = None) -> str:

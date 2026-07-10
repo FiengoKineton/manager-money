@@ -2,6 +2,7 @@ from flask import Blueprint, abort, jsonify, redirect, render_template, request,
 from time import monotonic
 import logging
 import threading
+import uuid
 
 from money_manager.services.account_service import (
     account_detail_context,
@@ -21,7 +22,7 @@ from money_manager.services.account_calculation_service import get_account_dashb
 from money_manager.services.calculation_service import cached_context
 from money_manager.services.pending_service import process_pending, sync_credit_account_statements
 from money_manager.services.account_closure_service import account_closure_precheck, close_account
-from money_manager.services.account_config_service import all_accounts, set_default_account, account_by_key
+from money_manager.services.account_config_service import all_accounts, set_default_account, account_by_key, configured_account_key
 from money_manager.services.account_integrity_service import full_integrity_report
 from money_manager.services.payment_form_service import account_options_for_payment_forms, explain_payment_method, payment_method_options_for_forms
 from money_manager.services.payment_method_service import (
@@ -183,6 +184,10 @@ def _parent_account_options_for_linking() -> list[dict]:
 
 @bp.route("/<account_key>", methods=["GET", "POST"])
 def account_detail(account_key: str):
+    resolved_account_key = configured_account_key(account_key)
+    if not resolved_account_key:
+        abort(404)
+    account_key = resolved_account_key
     if request.method == "GET":
         _schedule_credit_refresh()
     error = ""
@@ -247,7 +252,7 @@ def account_detail(account_key: str):
                 # Never reuse the old built-in `credit_card` id when adding a manual
                 # card to an account.  Reusing that archived legacy id could create
                 # invalid/hidden methods and surface as a generic Internal Error.
-                card_form["id"] = card_form.get("id") or f"{account_key}_{card_type}_{card_name}"
+                card_form["id"] = card_form.get("id") or f"{account_key}_{card_type}_{card_name}_{uuid.uuid4().hex[:8]}"
                 card_account_key = account_key
                 liability_account_key = str(card_form.get("liability_account_id") or "").strip()
                 if card_type == "prepaid_card":
@@ -255,8 +260,18 @@ def account_detail(account_key: str):
                 elif card_type == "credit_card":
                     # If the user typed a non-existing liability account, ignore it and
                     # create/reuse the correct hidden liability bucket under this Conto.
-                    if not liability_account_key or not account_by_key(liability_account_key, include_archived=True):
+                    resolved_liability_key = configured_account_key(liability_account_key) if liability_account_key else None
+                    liability_account = account_by_key(resolved_liability_key, include_archived=True) if resolved_liability_key else None
+                    if (
+                        not liability_account
+                        or liability_account.get("is_closed")
+                        or not liability_account.get("is_active", True)
+                        or not liability_account.get("is_liability")
+                        or str(liability_account.get("account_kind") or liability_account.get("type") or "") != "credit_card_liability"
+                    ):
                         liability_account_key = ensure_credit_card_liability_account(account_key, card_name)
+                    else:
+                        liability_account_key = str(liability_account.get("key") or resolved_liability_key)
 
                 if card_type == "credit_card":
                     linked_account_id = account_key
@@ -311,6 +326,10 @@ def account_detail(account_key: str):
 
 @bp.route("/<account_key>/payment-methods/<method_id>", methods=["GET", "POST"])
 def account_payment_method_detail(account_key: str, method_id: str):
+    resolved_account_key = configured_account_key(account_key)
+    if not resolved_account_key:
+        abort(404)
+    account_key = resolved_account_key
     if request.method == "GET":
         _schedule_credit_refresh()
     if request.method == "POST":

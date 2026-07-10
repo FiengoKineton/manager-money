@@ -263,6 +263,28 @@ def _resolve_data_home(project_dir: Path, requested: str | None = None) -> Path:
     return (project_dir / DATA_HOME_FOLDER_NAME).resolve()
 
 
+def _warn_about_data_home(project_dir: Path, data_home: Path) -> None:
+    """Make accidental use of a second device-local data copy visible.
+
+    The launcher intentionally supports custom/external data folders, so it must
+    not silently rewrite that choice.  It should, however, clearly say when a
+    Git pull of the project cannot update the folder currently used for money
+    data.
+    """
+    expected = (project_dir / DATA_HOME_FOLDER_NAME).resolve()
+    active = data_home.resolve()
+    if active == expected:
+        return
+    print("")
+    print("WARNING: Money Manager is using a custom data folder:")
+    print(f"  active:  {active}")
+    print(f"  project: {expected}")
+    print("Pulling the code repository does not necessarily update the active data folder.")
+    if (expected / "data" / "users").exists():
+        print("A second MoneyManagerData folder also exists inside the project. Check 'Why this net?' before editing data.")
+    print("")
+
+
 def ensure_data_home(project_dir: Path, data_home: Path) -> None:
     for folder in (
         data_home / "app_config",
@@ -674,6 +696,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         project_dir = find_project_dir()
 
     data_home = _resolve_data_home(project_dir, args.data_home)
+    _warn_about_data_home(project_dir, data_home)
     ensure_data_home(project_dir, data_home)
     print(f"Using project folder: {project_dir}")
     print(f"Using data folder: {data_home}")

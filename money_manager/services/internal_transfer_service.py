@@ -21,6 +21,7 @@ from money_manager.services.account_config_service import (
     account_by_key,
     account_label_for_key,
     active_accounts,
+    configured_account_key,
     normalize_account_key,
 )
 from money_manager.services.account_ledger_service import append_ledger_movements, void_ledger_group
@@ -98,12 +99,17 @@ def _parse_date(value: str) -> str:
     return text
 
 
-def _account_key_from_value(value: Any) -> str:
-    return normalize_account_key(str(value or ""))
+def _account_key_from_value(value: Any, *, strict: bool = False) -> str:
+    resolved = configured_account_key(str(value or ""))
+    if resolved:
+        return resolved
+    return "" if strict else normalize_account_key(str(value or ""))
 
 
 def _account_for_transfer(value: Any, *, allow_closed: bool = False, allow_container: bool = False, include_credit: bool = False) -> tuple[dict[str, Any] | None, str]:
-    key = _account_key_from_value(value)
+    key = _account_key_from_value(value, strict=True)
+    if not key:
+        return None, "Account does not exist or is no longer active. Refresh the page and choose it again."
     account = account_by_key(key, include_archived=True)
     if not account:
         return None, "Account does not exist."
@@ -420,16 +426,30 @@ def _clean_saved_account(value: Any) -> str:
 def _key_for_transfer_row(row: Mapping[str, Any], side: str) -> str:
     id_field = f"{side}_account_id"
     legacy_field = f"{side}_account"
-    if row.get(id_field):
-        return str(row.get(id_field))
-    return _account_key_from_value(row.get(legacy_field, ""))
+    raw_id = _clean_saved_account(row.get(id_field, ""))
+    raw_legacy = _clean_saved_account(row.get(legacy_field, ""))
+    for value in (raw_id, raw_legacy):
+        if not value:
+            continue
+        resolved = configured_account_key(value)
+        if resolved:
+            return resolved
+    # In the oldest format an empty legacy value represented Main. Preserve
+    # that convention, but never convert an unknown non-empty id into Main.
+    if not raw_id and not raw_legacy:
+        return MAIN_ACCOUNT_KEY
+    return raw_id or raw_legacy
 
 
 def _label_for_transfer_side(row: Mapping[str, Any], side: str) -> str:
     snapshot = _clean_saved_account(row.get(f"{side}_account_name_snapshot", ""))
     if snapshot:
         return snapshot
-    return account_label_for_key(_key_for_transfer_row(row, side))
+    key = _key_for_transfer_row(row, side)
+    resolved = configured_account_key(key)
+    if resolved:
+        return account_label_for_key(resolved)
+    return key or "Unknown account"
 
 
 def transfer_rows_for_display() -> list[dict[str, Any]]:
@@ -486,15 +506,42 @@ def totals() -> dict[str, Any]:
 
 
 def page_context(error: str = "", message: str = "") -> dict[str, Any]:
+    page_errors: list[str] = []
+    try:
+        choices = account_choices()
+    except Exception as exc:
+        choices = []
+        page_errors.append(f"Could not load account choices: {exc}")
+    try:
+        balances = account_balances_for_form()
+    except Exception as exc:
+        balances = {str(row.get("key") or ""): 0.0 for row in choices}
+        page_errors.append(f"Could not calculate all account balances: {exc}")
+    try:
+        method_options = payment_method_options_for_forms()
+    except Exception as exc:
+        method_options = []
+        page_errors.append(f"Could not load fee payment methods: {exc}")
+    try:
+        transfer_rows = transfer_rows_for_display()
+    except Exception as exc:
+        transfer_rows = []
+        page_errors.append(f"Could not load the existing transfer log: {exc}")
+    try:
+        transfer_totals = totals()
+    except Exception as exc:
+        transfer_totals = {"count": 0, "main_in": 0.0, "main_out": 0.0, "auxiliary_moved": 0.0, "fees": 0.0}
+        page_errors.append(f"Could not calculate transfer totals: {exc}")
+
     return {
         "today": date.today().isoformat(),
-        "account_options": account_choices(),
-        "account_balances": account_balances_for_form(),
-        "payment_method_options": payment_method_options_for_forms(),
+        "account_options": choices,
+        "account_balances": balances,
+        "payment_method_options": method_options,
         "transfer_kind_options": sorted(TRANSFER_KIND_OPTIONS),
-        "transfers": transfer_rows_for_display(),
-        "totals": totals(),
-        "error": error,
+        "transfers": transfer_rows,
+        "totals": transfer_totals,
+        "error": " ".join(part for part in [error, *page_errors] if part),
         "message": message,
     }
 

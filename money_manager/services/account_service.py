@@ -1389,6 +1389,12 @@ def _sparagnat_cash_movements() -> pd.DataFrame:
     if df.empty:
         return _empty_account_movements()
 
+    # Legacy tracker rows may predate the current date/amount schema. Keep
+    # account pages available and treat absent values as unknown/zero.
+    if "date" not in df.columns:
+        df["date"] = ""
+    if "amount" not in df.columns:
+        df["amount"] = 0.0
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0.0)
     df["type"] = "income"
