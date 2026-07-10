@@ -3,18 +3,33 @@
     if (!form || form.dataset.periodControlReady === "1") return;
     form.dataset.periodControlReady = "1";
     const choices = Array.from(form.querySelectorAll('input[name="period_mode"]'));
-    const fields = form.querySelector('[data-dashboard-month-fields]');
-    const selects = fields ? Array.from(fields.querySelectorAll("select")) : [];
+    const monthFields = form.querySelector('[data-dashboard-month-fields]');
+    const rangeFields = form.querySelector('[data-dashboard-range-fields]');
+
+    const toggleGroup = (group, visible) => {
+      if (!group) return;
+      group.hidden = !visible;
+      group.querySelectorAll("input, select, button").forEach((control) => {
+        if (control.type !== "submit") control.disabled = !visible;
+      });
+    };
+
     const sync = () => {
-      const monthMode = choices.some((input) => input.checked && input.value === "month");
-      if (fields) fields.classList.toggle("is-disabled", !monthMode);
-      selects.forEach((select) => { select.disabled = !monthMode; });
+      const selected = choices.find((input) => input.checked)?.value || "all";
+      toggleGroup(monthFields, selected === "month");
+      toggleGroup(rangeFields, selected === "range");
       choices.forEach((input) => {
         const label = input.closest(".dashboard-period-choice");
         if (label) label.classList.toggle("is-selected", input.checked);
       });
     };
-    choices.forEach((input) => input.addEventListener("change", sync));
+    choices.forEach((input) => input.addEventListener("change", () => {
+      sync();
+      if (input.checked && input.value === "all") {
+        if (typeof form.requestSubmit === "function") form.requestSubmit();
+        else form.submit();
+      }
+    }));
     sync();
   };
 

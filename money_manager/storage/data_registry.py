@@ -97,6 +97,13 @@ def _csv(name: str, filename: str, fields: list[str], *, description: str, sensi
     )
 
 
+def _partitioned_legacy_csv(name: str, filename: str, folder: str, fields: list[str], *, description: str) -> DataFileDefinition:
+    definition = _csv(name, filename, fields, description=description)
+    return DataFileDefinition(
+        **{**definition.__dict__, "metadata": {"partitioned_legacy": True, "partition_folder": folder}}
+    )
+
+
 def _json(name: str, filename: str, default: Callable[[], Any] | dict[str, Any], *, description: str, sensitive: SensitiveLevel = "personal", backup: BackupPolicy = "include", cache: str = "invalidate_on_write", encrypted_by_default: bool = False) -> DataFileDefinition:
     return DataFileDefinition(
         name=name,
@@ -184,9 +191,9 @@ USER_JSON_DEFINITIONS: tuple[DataFileDefinition, ...] = (
 )
 
 USER_CSV_DEFINITIONS: tuple[DataFileDefinition, ...] = (
-    _csv("expenses", "expenses.csv", TRANSACTION_FIELDS, description="Expense transactions."),
-    _csv("incomes", "incomes.csv", TRANSACTION_FIELDS, description="Income transactions."),
-    _csv("investments", "investments.csv", TRANSACTION_FIELDS, description="Investment transaction rows."),
+    _partitioned_legacy_csv("expenses", "expenses.csv", "expenses", TRANSACTION_FIELDS, description="Legacy expense transaction file; migrated to encrypted yearly partitions."),
+    _partitioned_legacy_csv("incomes", "incomes.csv", "incomes", TRANSACTION_FIELDS, description="Legacy income transaction file; migrated to encrypted yearly partitions."),
+    _partitioned_legacy_csv("investments", "investments.csv", "investments", TRANSACTION_FIELDS, description="Legacy investment transaction file; migrated to encrypted yearly partitions."),
     _csv("investment_assets", "investment_assets.csv", INVESTMENT_ASSET_FIELDS, description="Investment asset metadata."),
     _csv("pending", "pending.csv", PENDING_FIELDS, description="Scheduled and pending payments."),
     _csv("recurring", "recurring.csv", RECURRING_FIELDS, description="Recurring transaction rules."),
@@ -199,13 +206,19 @@ USER_CSV_DEFINITIONS: tuple[DataFileDefinition, ...] = (
     _csv("expense_projects", "expense_projects.csv", EXPENSE_PROJECT_FIELDS, description="Expense project containers."),
     _csv("expense_project_movements", "expense_project_movements.csv", EXPENSE_PROJECT_MOVEMENT_FIELDS, description="Expense project movements."),
     _csv("expense_project_planned_items", "expense_project_planned_items.csv", EXPENSE_PROJECT_PLANNED_ITEM_FIELDS, description="Planned expense project items."),
-    _csv("internal_transfers", "internal_transfers.csv", INTERNAL_TRANSFER_FIELDS, description="Internal transfers between accounts."),
-    _csv("account_ledger", "account_ledger.csv", ACCOUNT_LEDGER_FIELDS, description="Double-entry-style account balance movements."),
+    _partitioned_legacy_csv("internal_transfers", "internal_transfers.csv", "internal_transfers", INTERNAL_TRANSFER_FIELDS, description="Legacy internal transfer file; migrated to encrypted yearly partitions."),
+    _partitioned_legacy_csv("account_ledger", "account_ledger.csv", "account_ledger", ACCOUNT_LEDGER_FIELDS, description="Legacy account ledger file; migrated to encrypted yearly partitions."),
     _csv("credit_settlements", "credit_settlements.csv", CREDIT_SETTLEMENT_FIELDS, description="Credit statement and settlement records."),
     _csv("sparagnat", "sparagnat_fottut.csv", SPARAGNAT_FIELDS, description="Sparagnat Fottut records."),
 )
 
 USER_FOLDER_DEFINITIONS: tuple[DataFileDefinition, ...] = (
+    DataFileDefinition("expenses_history", "user", "expenses", "directory", backup_policy="include", cache_policy="invalidate_on_write", invalidation_tags=("expenses", "transactions", "money_rows"), encryption_policy="required", sensitive_level="financial", encrypted_by_default=True, description="Encrypted yearly expense files and summary index."),
+    DataFileDefinition("incomes_history", "user", "incomes", "directory", backup_policy="include", cache_policy="invalidate_on_write", invalidation_tags=("incomes", "transactions", "money_rows"), encryption_policy="required", sensitive_level="financial", encrypted_by_default=True, description="Encrypted yearly income files and summary index."),
+    DataFileDefinition("investments_history", "user", "investments", "directory", backup_policy="include", cache_policy="invalidate_on_write", invalidation_tags=("investments", "transactions", "money_rows"), encryption_policy="required", sensitive_level="financial", encrypted_by_default=True, description="Encrypted yearly investment movement files and summary index."),
+    DataFileDefinition("internal_transfers_history", "user", "internal_transfers", "directory", backup_policy="include", cache_policy="invalidate_on_write", invalidation_tags=("internal_transfers", "money_rows"), encryption_policy="required", sensitive_level="financial", encrypted_by_default=True, description="Encrypted yearly internal-transfer files and summary index."),
+    DataFileDefinition("account_ledger_history", "user", "account_ledger", "directory", backup_policy="include", cache_policy="invalidate_on_write", invalidation_tags=("account_ledger", "ledger", "money_rows"), encryption_policy="required", sensitive_level="financial", encrypted_by_default=True, description="Encrypted yearly account-ledger files and summary index."),
+    DataFileDefinition("legacy_partition_archive", "user", "legacy_archive/yearly_partition", "directory", backup_policy="include", encryption_policy="required", sensitive_level="financial", encrypted_by_default=True, description="Read-only encrypted legacy files retained after validated yearly migration."),
     DataFileDefinition("documents", "user", "documents", "binary_folder", backup_policy="include", encryption_policy="required", sensitive_level="personal", encrypted_by_default=True, description="User uploaded documents."),
     DataFileDefinition("plots", "user", "plots", "binary_folder", backup_policy="exclude", cache_policy="generated", encryption_policy="none", sensitive_level="public", description="Generated plots; excluded from backup."),
     DataFileDefinition("cache", "user", "cache", "directory", backup_policy="exclude", cache_policy="cache_folder", encryption_policy="none", sensitive_level="personal", description="Compatibility user cache folder. Prompt 14 will move cache under global data cache."),

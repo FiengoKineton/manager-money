@@ -4601,3 +4601,62 @@ body.app-body-clean .app-sidebar-nav-clean::-webkit-scrollbar-track {
   right: -.28rem;
   bottom: -.2rem;
 }
+
+/* --------------------------------------------------------------------------
+   Global desktop sidebar scrolling
+
+   The profile header and footer remain fixed inside the sidebar.
+   The complete navigation area scrolls whenever expanded groups no longer fit.
+-------------------------------------------------------------------------- */
+@media (min-width: 721px) {
+  html:not(.phone-native-active) .app-sidebar {
+    display: flex !important;
+    flex-direction: column;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  html:not(.phone-native-active) .app-sidebar > .app-brand,
+  html:not(.phone-native-active) .app-sidebar > .app-sidebar-footer {
+    flex: 0 0 auto;
+  }
+
+  html:not(.phone-native-active) .app-sidebar > .app-sidebar-nav {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    padding-bottom: 0.75rem;
+
+    scrollbar-width: thin;
+    scrollbar-color: rgba(78, 103, 90, 0.38) transparent;
+  }
+
+  html:not(.phone-native-active)
+    .app-sidebar
+    > .app-sidebar-nav::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  html:not(.phone-native-active)
+    .app-sidebar
+    > .app-sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  html:not(.phone-native-active)
+    .app-sidebar
+    > .app-sidebar-nav::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(78, 103, 90, 0.38);
+  }
+
+  html:not(.phone-native-active)
+    .app-sidebar
+    > .app-sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(78, 103, 90, 0.58);
+  }
+}

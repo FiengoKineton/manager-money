@@ -10,8 +10,8 @@ from money_manager.config.paths import (
     PAYABLES_CSV,
     PENDING_CSV,
     RECURRING_CSV,
-    TRANSACTION_FILES,
 )
+from money_manager.repositories.transactions import load_by_type
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
@@ -50,8 +50,12 @@ def _parse_amount(value: Any) -> float:
 
 def _transaction_rows() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    for tx_type, path in TRANSACTION_FILES.items():
-        for row in _read_csv(path):
+    for tx_type in ("expense", "income", "investment"):
+        try:
+            source_rows = load_by_type(tx_type).fillna("").to_dict(orient="records")
+        except Exception:
+            source_rows = []
+        for row in source_rows:
             tx_date = _parse_date(row.get("date"))
             amount = _parse_amount(row.get("amount"))
             signed = amount
@@ -60,7 +64,7 @@ def _transaction_rows() -> list[dict[str, Any]]:
             elif tx_type == "income":
                 signed = abs(amount)
             elif tx_type == "investment":
-                signed = -abs(amount)
+                signed = amount if str(row.get("category") or "").casefold() == "dividend" else -abs(amount)
 
             title = row.get("description") or row.get("category") or tx_type.capitalize()
             subtitle_bits = [bit for bit in [row.get("date"), tx_type.capitalize(), row.get("account")] if bit]

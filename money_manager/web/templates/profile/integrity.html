@@ -60,6 +60,62 @@
 </section>
 
 <section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Movement storage</span>
+      <h3>Yearly histories and summaries</h3>
+      <p>Large movement datasets are encrypted in one CSV per year. Their encrypted summary files are rebuildable indexes; the yearly CSV rows remain authoritative.</p>
+    </div>
+  </div>
+
+  {% if movement_history_result %}
+    <div class="alert-card {{ 'alert-success' if movement_history_result.ok else 'alert-error' }}">
+      {% if movement_history_result.ok %}Movement histories were validated and their summaries rebuilt.{% else %}Some movement histories could not be rebuilt.{% endif %}
+      {% if movement_history_result.errors %}<ul>{% for item in movement_history_result.errors %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+  {% endif %}
+
+  <div class="table-responsive">
+    <table>
+      <thead><tr><th>Dataset</th><th>Years</th><th>Rows</th><th>Summary</th><th>Legacy source</th></tr></thead>
+      <tbody>
+      {% for item in movement_history.datasets %}
+        <tr>
+          <td><strong>{{ item.dataset }}</strong><br><small><code>{{ item.folder }}/</code></small></td>
+          <td>{{ item.years|join(', ') if item.years else '—' }}</td>
+          <td>{{ item.row_count }}</td>
+          <td>{{ 'Ready' if item.summary_ready else 'Needs rebuild' }}</td>
+          <td>{{ 'Waiting for migration' if item.legacy_file_exists else 'Archived / none' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if movement_history_result and movement_history_result.datasets %}
+    <details class="dashboard-advanced-filters" open>
+      <summary><strong>Latest rebuild report</strong><span>Migration, moved rows and duplicate checks</span></summary>
+      <ul>
+      {% for item in movement_history_result.datasets %}
+        <li>
+          <strong>{{ item.dataset }}</strong>: {{ item.row_count }} rows across {{ item.years|length }} year file(s)
+          {% if item.migrated %} · legacy file migrated and archived{% endif %}
+          {% if item.moved_rows %} · {{ item.moved_rows }} misplaced row(s) moved{% endif %}
+          {% if item.duplicate_ids_found %} · duplicate IDs found (rows preserved): {{ item.duplicate_ids_found|join(', ') }}{% endif %}
+          {% if item.error %} · {{ item.error }}{% endif %}
+        </li>
+      {% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('integrity.refresh_movement_histories_route') }}" class="custom-account-form" onsubmit="return confirm('Validate every yearly movement file and rebuild all summaries? Existing authoritative rows are preserved; misplaced rows are repaired and duplicate IDs are reported.')">
+    <div class="form-field-wide"><label class="inline-checkbox"><input type="checkbox" name="confirm" value="1" required> I confirm the full movement-history validation.</label></div>
+    <div class="form-actions-row form-field-wide"><button type="submit" class="secondary-btn">Refresh movement histories and summaries</button></div>
+  </form>
+</section>
+
+<section class="panel-card">
   <div class="panel-header"><div><span class="eyebrow">{{ t("integrity.safe_repair") }}</span><h3>{{ t("integrity.safe_repair_title") }}</h3><p>{{ t("integrity.safe_repair_hint") }}</p></div></div>
   <form method="post" action="{{ url_for('integrity.repair_safe_route') }}" class="custom-account-form" onsubmit="return confirm({{ t('integrity.safe_repair_confirm')|tojson }})">
     <div class="form-field-wide"><label class="inline-checkbox"><input type="checkbox" name="confirm" value="1" required> {{ t("integrity.confirm_safe_repair") }}</label></div>

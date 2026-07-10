@@ -8,6 +8,7 @@ from flask import Blueprint, current_app, jsonify, redirect, render_template, re
 from money_manager.config import TRANSACTION_TYPES
 from money_manager.domain.transaction import TransactionInput, make_transaction_uid
 from money_manager.services.analytics_service import apply_transaction_filters
+from money_manager.repositories.transactions import transaction_available_years
 from money_manager.services.calculation_service import cached_context
 from money_manager.services.account_scope_service import transactions_for_scope
 from money_manager.services.category_service import category_context
@@ -108,7 +109,7 @@ def transactions_page():
         account_id = str(request.form.get("account_id") or "").strip()
         if account_id:
             params["account_id"] = account_id
-        for name in ("period_mode", "period_month", "period_year"):
+        for name in ("period_mode", "period_month", "period_year", "period_start", "period_end"):
             value = str(request.form.get(name) or "").strip()
             if value:
                 params[name] = value
@@ -121,8 +122,13 @@ def transactions_page():
             params["category_error"] = str(exc)
         return redirect(url_for("transactions.transactions_page", **params))
 
-    scoped_df = transactions_for_scope(load_transactions(), scope_key)
-    filter_state = dashboard_query_filter_state(request.args, scoped_df, TRANSACTION_TYPES)
+    available_years = transaction_available_years()
+    filter_state = dashboard_query_filter_state(
+        request.args,
+        None,
+        TRANSACTION_TYPES,
+        available_years_override=available_years,
+    )
 
     page_size = _positive_int_arg("page_size", DEFAULT_TRANSACTION_PAGE_SIZE, minimum=1, maximum=MAX_TRANSACTION_PAGE_SIZE)
 
@@ -158,11 +164,17 @@ def _transaction_cache_params(scope_key: str, filter_state: dict) -> dict:
         "period_mode": str((filter_state.get("period") or {}).get("mode") or "all"),
         "period_month": int((filter_state.get("period") or {}).get("month") or 0),
         "period_year": int((filter_state.get("period") or {}).get("year") or 0),
+        "period_start": str((filter_state.get("period") or {}).get("range_start") or ""),
+        "period_end": str((filter_state.get("period") or {}).get("range_end") or ""),
     }
 
 
 def _filtered_transactions_for_page(scope_key: str, filter_state: dict):
-    df = load_transactions()
+    period_mode = str((filter_state.get("period") or {}).get("mode") or "all")
+    if period_mode in {"month", "range"}:
+        df = load_transactions(start=filter_state.get("start"), end=filter_state.get("end"))
+    else:
+        df = load_transactions()
     main_df = transactions_for_scope(df, scope_key)
 
     filtered = apply_transaction_filters(
@@ -361,8 +373,12 @@ def transactions_page_slice():
     selected_scope = resolve_request_scope(request)
     scope_key = selected_scope["scope"]
 
-    scoped_df = transactions_for_scope(load_transactions(), scope_key)
-    filter_state = dashboard_query_filter_state(request.args, scoped_df, TRANSACTION_TYPES)
+    filter_state = dashboard_query_filter_state(
+        request.args,
+        None,
+        TRANSACTION_TYPES,
+        available_years_override=transaction_available_years(),
+    )
     page = _positive_int_arg("page", 1, minimum=1)
     page_size = _positive_int_arg("page_size", DEFAULT_TRANSACTION_PAGE_SIZE, minimum=1, maximum=MAX_TRANSACTION_PAGE_SIZE)
 

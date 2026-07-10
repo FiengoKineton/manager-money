@@ -11,6 +11,7 @@ from money_manager.services.dashboard_calculation_service import get_dashboard_o
 from money_manager.services.pending_service import process_pending, sync_credit_account_statements
 from money_manager.services.recurring_service import generate_recurring, recurring_forecast_for_current_month
 from money_manager.services.transaction_service import load_transactions
+from money_manager.repositories.transactions import transaction_available_years
 from money_manager.utils.stats import summary_totals
 from money_manager.web.context import resolve_request_scope, scope_template_context
 from money_manager.web.dashboard_period import dashboard_period_state, dashboard_query_filter_state
@@ -103,11 +104,18 @@ def topbar_summary_api():
         # The dashboard may explicitly ask for a one-month net. This query-only
         # override is never persisted, so every other page immediately returns
         # to the normal full-history topbar balance.
-        if str(request.args.get("period_mode") or "").casefold() == "month":
+        if str(request.args.get("period_mode") or "").casefold() in {"month", "range"}:
             from money_manager.services.account_scope_service import transactions_for_scope
 
-            scoped = transactions_for_scope(load_transactions(), selected_scope)
-            period = dashboard_period_state(request.args, scoped)
+            period = dashboard_period_state(
+                request.args,
+                None,
+                available_years_override=transaction_available_years(),
+            )
+            scoped = transactions_for_scope(
+                load_transactions(start=period["start"], end=period["end"]),
+                selected_scope,
+            )
             rows = apply_transaction_filters(
                 scoped, period["start"], period["end"], TRANSACTION_TYPES, [], "", "", ""
             )
@@ -167,7 +175,7 @@ def index():
                 params = {"category_added": category_name}
                 if account_id:
                     params["account_id"] = account_id
-                for name in ("period_mode", "period_month", "period_year"):
+                for name in ("period_mode", "period_month", "period_year", "period_start", "period_end"):
                     value = str(request.form.get(name) or "").strip()
                     if value:
                         params[name] = value
@@ -176,7 +184,7 @@ def index():
                 params = {"category_error": str(exc)}
                 if account_id:
                     params["account_id"] = account_id
-                for name in ("period_mode", "period_month", "period_year"):
+                for name in ("period_mode", "period_month", "period_year", "period_start", "period_end"):
                     value = str(request.form.get(name) or "").strip()
                     if value:
                         params[name] = value
@@ -186,12 +194,20 @@ def index():
     from money_manager.services.account_scope_service import pending_total_for_scope, scope_balance_summary, transactions_for_scope
     from money_manager.services.custom_category_service import effective_categories_by_type
 
-    df = load_transactions()
+    filter_state = dashboard_query_filter_state(
+        request.args,
+        None,
+        TRANSACTION_TYPES,
+        available_years_override=transaction_available_years(),
+    )
+    period_state = filter_state["period"]
+    if period_state["mode"] in {"month", "range"}:
+        df = load_transactions(start=filter_state["start"], end=filter_state["end"])
+    else:
+        df = load_transactions()
     scoped_df = transactions_for_scope(df, selected_scope)
     stats_this_month, stats_3_months = period_summaries(scoped_df)
 
-    filter_state = dashboard_query_filter_state(request.args, scoped_df, TRANSACTION_TYPES)
-    period_state = filter_state["period"]
     start = filter_state["start"]
     end = filter_state["end"]
     types = filter_state["types"]
@@ -269,10 +285,10 @@ def index():
     }, key=lambda value: (str(value).casefold(), str(value)))
 
     current_pending_total = pending_total_for_scope(selected_scope)
-    scope_summary = scope_balance_summary(selected_scope, df=df)
+    scope_summary = scope_balance_summary(selected_scope)
     full_history_net = float(scope_summary.get("net_balance", metrics["totals"].get("net", 0.0)) or 0.0)
 
-    if period_state["mode"] == "month":
+    if period_state["mode"] in {"month", "range"}:
         dashboard_net = float(summary_totals(period_df).get("net", 0.0) or 0.0)
         dashboard_net_after_pending = dashboard_net
         money_calculation_label = f"{period_state['label']} only · dashboard"

@@ -99,6 +99,7 @@
     html.phone-native-active .app-content-stage { width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0 !important; overflow-x: hidden !important; box-sizing: border-box !important; }
     html.phone-native-active .app-topbar { display: none !important; }
   </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=navigation-sidebar-scroll-1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=navigation-profile-4">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/instant-nav.css') }}?v=instant-nav-1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/ui-refinement.css') }}?v=ui-account-brand-3">
@@ -257,8 +258,11 @@
           {% set lazy_topbar_account_id = selected_account_id|default('', true) %}
           {% set lazy_topbar_url = '' %}
           {% if endpoint_exists('dashboard.topbar_summary_api') %}
-            {% if request.endpoint in ['dashboard.index', 'transactions.transactions_page'] and request.args.get('period_mode') == 'month' %}
+            {% set topbar_period_mode = request.args.get('period_mode') if request.endpoint in ['dashboard.index', 'transactions.transactions_page'] else '' %}
+            {% if topbar_period_mode == 'month' %}
               {% set lazy_topbar_url = url_for('dashboard.topbar_summary_api', account_id=lazy_topbar_account_id, period_mode='month', period_month=request.args.get('period_month'), period_year=request.args.get('period_year')) if lazy_topbar_account_id else url_for('dashboard.topbar_summary_api', period_mode='month', period_month=request.args.get('period_month'), period_year=request.args.get('period_year')) %}
+            {% elif topbar_period_mode == 'range' %}
+              {% set lazy_topbar_url = url_for('dashboard.topbar_summary_api', account_id=lazy_topbar_account_id, period_mode='range', period_start=request.args.get('period_start'), period_end=request.args.get('period_end')) if lazy_topbar_account_id else url_for('dashboard.topbar_summary_api', period_mode='range', period_start=request.args.get('period_start'), period_end=request.args.get('period_end')) %}
             {% else %}
               {% set lazy_topbar_url = url_for('dashboard.topbar_summary_api', account_id=lazy_topbar_account_id) if lazy_topbar_account_id else url_for('dashboard.topbar_summary_api') %}
             {% endif %}

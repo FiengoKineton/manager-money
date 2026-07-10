@@ -1,13 +1,25 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import hashlib
+import json
 from typing import Any
 
 import pandas as pd
 
-from money_manager.config.paths import INTERNAL_TRANSFERS_CSV
 from money_manager.domain.constants import INTERNAL_TRANSFER_FIELDS
-from money_manager.repositories.csv_files import append_row, ensure_csv, next_numeric_id, read_rows, write_rows
+from money_manager.config.user_paths import get_user_data_dir
+from money_manager.security.secure_storage import read_json_secure
+from money_manager.services.account_config_service import MAIN_ACCOUNT_KEY, configured_account_key
+from money_manager.repositories.yearly_partitioned import (
+    YearlyDatasetSpec,
+    append_partitioned_row,
+    ensure_partitioned,
+    load_summary,
+    mutate_partitioned_row,
+    next_partitioned_id,
+    read_partitioned_rows,
+)
 
 
 def utc_now() -> str:
@@ -59,12 +71,54 @@ def _normalise_legacy_row(row: dict[str, Any]) -> dict[str, Any]:
     return normalised
 
 
-def load_rows() -> list[dict[str, Any]]:
-    return [_normalise_legacy_row(row) for row in read_rows(INTERNAL_TRANSFERS_CSV, INTERNAL_TRANSFER_FIELDS)]
+def _transfer_signed_value(row: dict[str, Any]) -> float:
+    # Internal transfers redistribute balances; their all-accounts net is zero.
+    return 0.0
 
 
-def load_all() -> pd.DataFrame:
-    rows = load_rows()
+def _transfer_account_totals(rows: list[dict[str, Any]], user_id: str | None = None) -> dict[str, float]:
+    """Resolve both modern account IDs and legacy account labels exactly once."""
+    totals: dict[str, float] = {}
+    for row in rows:
+        amount = float(_money(row.get("amount", 0.0)))
+        for side, multiplier in (("from", -1.0), ("to", 1.0)):
+            raw = str(row.get(f"{side}_account_id") or row.get(f"{side}_account") or "").strip()
+            key = configured_account_key(raw, user_id=user_id) if raw else MAIN_ACCOUNT_KEY
+            # Preserve an unknown historical ID instead of silently charging Main.
+            key = key or raw
+            if key:
+                totals[key] = totals.get(key, 0.0) + multiplier * amount
+    return totals
+
+
+def _account_context_fingerprint(user_id: str | None = None) -> str:
+    payload = {
+        "summary_logic_version": 1,
+        "accounts": read_json_secure(get_user_data_dir(user_id) / "accounts.json", default={}, user_id=user_id),
+    }
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()[:24]
+
+
+INTERNAL_TRANSFERS_SPEC = YearlyDatasetSpec(
+    name="internal_transfers",
+    legacy_filename="internal_transfers.csv",
+    folder_name="internal_transfers",
+    file_prefix="internal_transfers",
+    fields=tuple(INTERNAL_TRANSFER_FIELDS),
+    signed_value=_transfer_signed_value,
+    account_totals_for_rows=_transfer_account_totals,
+    normalize_row=_normalise_legacy_row,
+    context_fingerprint=_account_context_fingerprint,
+)
+
+
+def load_rows(*, start: Any = None, end: Any = None, years: list[int] | None = None, user_id: str | None = None) -> list[dict[str, Any]]:
+    return read_partitioned_rows(INTERNAL_TRANSFERS_SPEC, start=start, end=end, years=years, user_id=user_id)
+
+
+def load_all(*, user_id: str | None = None) -> pd.DataFrame:
+    rows = load_rows(user_id=user_id)
     if not rows:
         return pd.DataFrame(columns=INTERNAL_TRANSFER_FIELDS)
 
@@ -79,16 +133,15 @@ def load_all() -> pd.DataFrame:
     return df.sort_values(by=["date", "created_at"], ascending=[False, False], na_position="last").reset_index(drop=True)
 
 
-def find_transfer(transfer_id: int | str) -> dict[str, Any] | None:
-    for row in load_rows():
+def find_transfer(transfer_id: int | str, *, user_id: str | None = None) -> dict[str, Any] | None:
+    for row in load_rows(user_id=user_id):
         if str(row.get("id")) == str(transfer_id):
             return row
     return None
 
 
 def append_transfer(data: dict[str, Any]) -> int:
-    rows = load_rows()
-    row_id = next_numeric_id(rows)
+    row_id = next_partitioned_id(INTERNAL_TRANSFERS_SPEC)
     now = utc_now()
     row = {field: "" for field in INTERNAL_TRANSFER_FIELDS}
     row.update({field: data.get(field, "") for field in INTERNAL_TRANSFER_FIELDS if field in data})
@@ -109,35 +162,35 @@ def append_transfer(data: dict[str, Any]) -> int:
         "created_at": data.get("created_at") or now,
         "updated_at": data.get("updated_at") or now,
     })
-    append_row(INTERNAL_TRANSFERS_CSV, INTERNAL_TRANSFER_FIELDS, row)
+    append_partitioned_row(INTERNAL_TRANSFERS_SPEC, row)
     return int(row_id)
 
 
 def update_transfer(transfer_id: int | str, data: dict[str, Any]) -> bool:
-    rows = load_rows()
-    changed = False
-    editable = [field for field in INTERNAL_TRANSFER_FIELDS if field not in {"id", "created_at"}]
-    for row in rows:
-        if str(row.get("id")) != str(transfer_id):
+    editable = {}
+    for field in INTERNAL_TRANSFER_FIELDS:
+        if field in {"id", "created_at"} or field not in data:
             continue
-        for field in editable:
-            if field in data:
-                row[field] = _money(data[field]) if field in {"amount", "fee_amount"} else data.get(field, "")
-        row["updated_at"] = data.get("updated_at") or utc_now()
-        changed = True
-        break
-    if changed:
-        write_rows(INTERNAL_TRANSFERS_CSV, INTERNAL_TRANSFER_FIELDS, rows)
-    return changed
+        editable[field] = _money(data[field]) if field in {"amount", "fee_amount"} else data.get(field, "")
+    editable["updated_at"] = data.get("updated_at") or utc_now()
+    return mutate_partitioned_row(
+        INTERNAL_TRANSFERS_SPEC,
+        lambda row: str(row.get("id")) == str(transfer_id),
+        update=editable,
+    )
 
 
 def delete_transfer(transfer_id: int | str) -> bool:
-    rows = load_rows()
-    kept = [row for row in rows if str(row.get("id")) != str(transfer_id)]
-    if len(kept) == len(rows):
-        return False
-    write_rows(INTERNAL_TRANSFERS_CSV, INTERNAL_TRANSFER_FIELDS, kept)
-    return True
+    return mutate_partitioned_row(
+        INTERNAL_TRANSFERS_SPEC,
+        lambda row: str(row.get("id")) == str(transfer_id),
+        delete=True,
+    )
+
+
+def transfer_partition_summary(user_id: str | None = None) -> dict[str, Any]:
+    ensure_partitioned(INTERNAL_TRANSFERS_SPEC, user_id=user_id)
+    return load_summary(INTERNAL_TRANSFERS_SPEC, user_id=user_id)
 
 
 def _money(value: Any) -> str:

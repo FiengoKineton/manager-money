@@ -178,13 +178,13 @@ def _notes() -> list[str]:
 
 
 _BALANCE_RELEVANT_FILES = (
-    "expenses.csv",
-    "incomes.csv",
-    "investments.csv",
-    "internal_transfers.csv",
+    "expenses",
+    "incomes",
+    "investments",
+    "internal_transfers",
+    "account_ledger",
     "accounts.json",
     "payment_methods.json",
-    "account_ledger.csv",
     "migration_info.json",
 )
 
@@ -266,8 +266,41 @@ def _data_source_diagnostics() -> dict[str, Any]:
 
 
 def _file_fingerprint(path: Path, filename: str, *, user_id: str = "") -> dict[str, Any]:
-    if not path.exists() or not path.is_file():
+    if not path.exists():
         return {"name": filename, "path": str(path), "exists": False, "size": 0, "modified_at": "", "sha256": "", "content_sha256": ""}
+    if path.is_dir():
+        physical = hashlib.sha256()
+        logical = hashlib.sha256()
+        total_size = 0
+        latest_mtime = 0.0
+        errors: list[str] = []
+        for child in sorted(item for item in path.rglob("*") if item.is_file()):
+            rel = child.relative_to(path).as_posix()
+            try:
+                raw = child.read_bytes()
+                stat = child.stat()
+                total_size += int(stat.st_size)
+                latest_mtime = max(latest_mtime, stat.st_mtime)
+                physical.update(rel.encode("utf-8")); physical.update(raw)
+                try:
+                    from money_manager.security.secure_storage import secure_read_bytes
+                    decrypted = secure_read_bytes(user_id or None, child)
+                    logical.update(rel.encode("utf-8")); logical.update(_canonical_content_bytes(child.name, decrypted))
+                except Exception as exc:
+                    errors.append(f"{rel}: {exc}")
+            except Exception as exc:
+                errors.append(f"{rel}: {exc}")
+        modified = datetime.fromtimestamp(latest_mtime, tz=timezone.utc).isoformat(timespec="seconds") if latest_mtime else ""
+        return {
+            "name": f"{filename}/",
+            "path": str(path),
+            "exists": True,
+            "size": total_size,
+            "modified_at": modified,
+            "sha256": physical.hexdigest()[:16],
+            "content_sha256": logical.hexdigest()[:16] if not errors else "",
+            "content_error": "; ".join(errors[:3]),
+        }
     try:
         raw = path.read_bytes()
         stat = path.stat()
@@ -302,7 +335,6 @@ def _file_fingerprint(path: Path, filename: str, *, user_id: str = "") -> dict[s
             "content_sha256": "",
             "error": str(exc),
         }
-
 
 def _canonical_content_bytes(filename: str, raw: bytes) -> bytes:
     """Hash logical content rather than encryption nonces or formatting."""

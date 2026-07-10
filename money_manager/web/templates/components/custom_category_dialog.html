@@ -11,6 +11,8 @@
         <input type="hidden" name="period_mode" value="{{ dashboard_period.mode }}">
         <input type="hidden" name="period_month" value="{{ dashboard_period.month }}">
         <input type="hidden" name="period_year" value="{{ dashboard_period.year }}">
+        <input type="hidden" name="period_start" value="{{ dashboard_period.range_start }}">
+        <input type="hidden" name="period_end" value="{{ dashboard_period.range_end }}">
       {% endif %}
       <label><span>Transaction type</span><select name="transaction_type">
         <option value="expense">Expense</option>

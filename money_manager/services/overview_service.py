@@ -13,6 +13,7 @@ from money_manager.services.parent_support_service import overview_totals as par
 from money_manager.services.receivable_service import overview_totals as receivable_overview_totals
 from money_manager.services.sparagnat_service import overview_totals as sparagnat_overview_totals
 from money_manager.services.transaction_service import load_transactions
+from money_manager.repositories.transactions import transaction_summary_totals
 from money_manager.utils.filters import filter_by_date
 from money_manager.utils.stats import expenses_by_category, summary_totals
 from money_manager.services.transaction_window_service import transaction_default_date_range
@@ -40,16 +41,19 @@ def _build_overview_context_uncached(scope: str = "global") -> dict:
     # Money position, balances, stress, and available cash are calculated from
     # the full CSV history so opening/older rows still count.
     start_default, end_default = transaction_default_date_range()
-    transactions = load_transactions()
+    # Normal overview refreshes touch only the active display years. All-time
+    # balances and global transaction totals come from the validated encrypted
+    # summary indexes, whose opening/closing values include previous years.
+    transactions = load_transactions(start=start_default, end=end_default)
     selected_scope = scope or "global"
-    main_transactions_all = transactions_for_scope(transactions, selected_scope)
-    main_transactions_display = filter_by_date(main_transactions_all, start_default, end_default)
-    scope_summary = scope_balance_summary(selected_scope, df=transactions)
-    global_summary = global_balance_summary(df=transactions)
-    totals = summary_totals(main_transactions_all)
-    totals["net"] = scope_summary.get("net_balance", totals.get("net", 0.0))
+    main_transactions_display = transactions_for_scope(transactions, selected_scope)
+    main_transactions_all = main_transactions_display
+    scope_summary = scope_balance_summary(selected_scope)
+    global_summary = global_balance_summary()
     display_totals = summary_totals(main_transactions_display)
-    stats_this_month, stats_3_months = period_summaries(main_transactions_all)
+    totals = transaction_summary_totals() if str(selected_scope or "global") == "global" else dict(display_totals)
+    totals["net"] = scope_summary.get("net_balance", totals.get("net", 0.0))
+    stats_this_month, stats_3_months = period_summaries(main_transactions_display)
 
     pending_rows = load_pending()
     pending_amount = pending_total_for_scope(selected_scope)
@@ -66,7 +70,7 @@ def _build_overview_context_uncached(scope: str = "global") -> dict:
     active_debt = debt_context["totals"]["active_remaining"] if not is_account_scope else float(scope_summary.get("payables_total", 0.0) or 0.0)
     parent_total = parent_context["total_support"] if not is_account_scope else 0.0
 
-    auxiliary_accounts = all_financial_center_summaries(df=transactions)
+    auxiliary_accounts = all_financial_center_summaries()
     auxiliary_balance = 0.0 if is_account_scope else max(0.0, float(global_summary.get("net_balance", 0.0)) - float(scope_summary.get("net_balance", 0.0)))
 
     top_categories = expenses_by_category(main_transactions_display).head(5).to_dict(orient="records")

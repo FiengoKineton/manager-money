@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from datetime import datetime
+import hashlib
+import json
 from pathlib import Path
 from typing import Any, Mapping
 
 import pandas as pd
 
 from money_manager.config import (
+    MAIN_ACCOUNT_KEY,
     MAIN_NET_CREDIT_PENDING,
     TRANSACTION_FILES,
     TRANSACTION_TYPES,
@@ -15,9 +19,19 @@ from money_manager.config import (
     account_policy_for_key,
 )
 from money_manager.domain.constants import TRANSACTION_FIELDS
+from money_manager.config.user_paths import get_user_data_dir, using_user
+from money_manager.security.secure_storage import read_json_secure
 from money_manager.domain.transaction import make_transaction_uid, parse_transaction_uid
-from money_manager.repositories.csv_files import append_row, ensure_csv, next_numeric_id, read_rows, write_rows
-from money_manager.services.account_service import enrich_transactions_with_accounts
+from money_manager.repositories.yearly_partitioned import (
+    YearlyDatasetSpec,
+    append_partitioned_row,
+    ensure_partitioned,
+    load_summary,
+    mutate_partitioned_row,
+    next_partitioned_id,
+    read_partitioned_rows,
+)
+from money_manager.services.account_service import enrich_transactions_with_accounts, _affects_main_net_mask, _valid_dated_transactions
 
 
 NEW_PAYMENT_COLUMNS = [
@@ -43,6 +57,115 @@ NEW_PAYMENT_COLUMNS = [
 ]
 
 
+def _transaction_signed_value(transaction_type: str):
+    def signed(row: Mapping[str, Any]) -> float:
+        try:
+            amount = float(str(row.get("amount") or "0").replace(",", "."))
+        except (TypeError, ValueError):
+            amount = 0.0
+        if transaction_type == "income":
+            return amount
+        if transaction_type == "expense":
+            return -amount
+        return amount if str(row.get("category") or "").casefold() == "dividend" else -amount
+    return signed
+
+
+def _routing_context_fingerprint(user_id: str | None = None) -> str:
+    """Fingerprint configuration that can change historical account routing."""
+    user_dir = get_user_data_dir(user_id)
+    payload: dict[str, Any] = {"summary_logic_version": 1}
+    for filename in ("accounts.json", "payment_methods.json", "categories.json"):
+        payload[filename] = read_json_secure(user_dir / filename, default={}, user_id=user_id)
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()[:24]
+
+
+def _transaction_account_totals(transaction_type: str):
+    """Build exact per-account contributions in one vectorized enrichment pass."""
+    def totals(rows: list[Mapping[str, Any]], user_id: str | None = None) -> Mapping[str, float]:
+        if not rows:
+            return {}
+        context = using_user(user_id) if user_id else nullcontext()
+        with context:
+            frame = pd.DataFrame([dict(row) for row in rows])
+            frame["type"] = transaction_type
+            frame["amount"] = pd.to_numeric(frame.get("amount", 0.0), errors="coerce").fillna(0.0)
+            frame["signed_amount"] = _signed_amount_series(frame)
+            enriched = enrich_transactions_with_accounts(frame)
+            result: dict[str, float] = {}
+
+            # Main can receive a contribution even when a row is also routed to a
+            # dependent wallet (for example a legacy top-up category). Reuse the
+            # application's existing routing rule so the summary matches the UI.
+            valid = _valid_dated_transactions(enriched)
+            main_rows = valid[_affects_main_net_mask(valid)].copy() if not valid.empty else valid
+            if not main_rows.empty:
+                result[MAIN_ACCOUNT_KEY] = float(pd.to_numeric(main_rows.get("signed_amount", 0.0), errors="coerce").fillna(0.0).sum())
+
+            if "account_key" in enriched.columns:
+                non_main = enriched[enriched["account_key"].fillna("").astype(str) != MAIN_ACCOUNT_KEY].copy()
+                if not non_main.empty:
+                    values = pd.to_numeric(non_main.get("account_signed_amount", 0.0), errors="coerce").fillna(0.0)
+                    grouped = values.groupby(non_main["account_key"].fillna("").astype(str)).sum()
+                    for key, value in grouped.items():
+                        if key:
+                            result[str(key)] = result.get(str(key), 0.0) + float(value)
+            return result
+    return totals
+
+
+def _transaction_account_counts(transaction_type: str):
+    """Count rows affecting each account using the same routing model as balances."""
+    def counts(rows: list[Mapping[str, Any]], user_id: str | None = None) -> Mapping[str, int]:
+        if not rows:
+            return {}
+        context = using_user(user_id) if user_id else nullcontext()
+        with context:
+            frame = pd.DataFrame([dict(row) for row in rows])
+            frame["type"] = transaction_type
+            frame["amount"] = pd.to_numeric(frame.get("amount", 0.0), errors="coerce").fillna(0.0)
+            frame["signed_amount"] = _signed_amount_series(frame)
+            enriched = enrich_transactions_with_accounts(frame)
+            result: dict[str, int] = {}
+            valid = _valid_dated_transactions(enriched)
+            main_rows = valid[_affects_main_net_mask(valid)] if not valid.empty else valid
+            if not main_rows.empty:
+                result[MAIN_ACCOUNT_KEY] = int(len(main_rows))
+            if "account_key" in enriched.columns:
+                non_main = enriched[enriched["account_key"].fillna("").astype(str) != MAIN_ACCOUNT_KEY]
+                if not non_main.empty:
+                    grouped = non_main.groupby(non_main["account_key"].fillna("").astype(str)).size()
+                    for key, value in grouped.items():
+                        if key:
+                            result[str(key)] = result.get(str(key), 0) + int(value)
+            return result
+    return counts
+
+
+_TRANSACTION_SPECS = {
+    tx_type: YearlyDatasetSpec(
+        name=f"{tx_type}s" if tx_type != "expense" else "expenses",
+        legacy_filename={"expense": "expenses.csv", "income": "incomes.csv", "investment": "investments.csv"}[tx_type],
+        folder_name={"expense": "expenses", "income": "incomes", "investment": "investments"}[tx_type],
+        file_prefix={"expense": "expenses", "income": "incomes", "investment": "investments"}[tx_type],
+        fields=tuple(TRANSACTION_FIELDS),
+        signed_value=_transaction_signed_value(tx_type),
+        account_totals_for_rows=_transaction_account_totals(tx_type),
+        account_counts_for_rows=_transaction_account_counts(tx_type),
+        context_fingerprint=_routing_context_fingerprint,
+    )
+    for tx_type in TRANSACTION_TYPES
+}
+
+
+def partition_spec_for_type(transaction_type: str) -> YearlyDatasetSpec:
+    try:
+        return _TRANSACTION_SPECS[str(transaction_type)]
+    except KeyError as exc:
+        raise ValueError(f"Unknown transaction type: {transaction_type}") from exc
+
+
 def _notify_cache_changed() -> None:
     try:
         from money_manager.services.cache_service import notify_data_changed
@@ -59,20 +182,27 @@ def csv_path_for_type(transaction_type: str) -> Path:
         raise ValueError(f"Unknown transaction type: {transaction_type}") from exc
 
 
-def load_by_type(transaction_type: str) -> pd.DataFrame:
-    path = csv_path_for_type(transaction_type)
-    rows = read_rows(path, TRANSACTION_FIELDS)
+def load_by_type(
+    transaction_type: str,
+    *,
+    start: Any = None,
+    end: Any = None,
+    years: list[int] | None = None,
+    user_id: str | None = None,
+) -> pd.DataFrame:
+    spec = partition_spec_for_type(transaction_type)
+    rows = read_partitioned_rows(spec, start=start, end=end, years=years, user_id=user_id)
     if not rows:
         return pd.DataFrame(columns=TRANSACTION_FIELDS)
-    return pd.DataFrame(rows).fillna("")
+    return pd.DataFrame(rows, columns=TRANSACTION_FIELDS).fillna("")
 
 
-def load_all() -> pd.DataFrame:
-    """Load all transaction CSVs into one normalized DataFrame."""
+def load_all(*, start: Any = None, end: Any = None, years: list[int] | None = None, user_id: str | None = None) -> pd.DataFrame:
+    """Load transaction partitions, optionally touching only intersecting years."""
     frames = []
 
     for transaction_type in TRANSACTION_TYPES:
-        df = load_by_type(transaction_type)
+        df = load_by_type(transaction_type, start=start, end=end, years=years, user_id=user_id)
         if not df.empty:
             df["type"] = transaction_type
             frames.append(df)
@@ -144,11 +274,9 @@ def append_transaction(tx: dict) -> int:
     payment in transaction_service.py first, then pass the resulting snapshots in
     ``tx``. Legacy callers can still pass only the old v10 keys.
     """
-    transaction_type = tx.get("type")
-    path = csv_path_for_type(transaction_type)
-    rows = read_rows(path, TRANSACTION_FIELDS)
-
-    row_id = next_numeric_id(rows)
+    transaction_type = str(tx.get("type") or "")
+    spec = partition_spec_for_type(transaction_type)
+    row_id = next_partitioned_id(spec)
     now = datetime.now().isoformat(timespec="seconds")
     row = {field: "" for field in TRANSACTION_FIELDS}
     row.update({field: _clean_cell(tx.get(field, "")) for field in TRANSACTION_FIELDS if field in tx})
@@ -194,39 +322,73 @@ def append_transaction(tx: dict) -> int:
         row["account_name_snapshot"] = row.get("account_name_snapshot") or credit_snapshot.get("account_name_snapshot", "")
         row["account_due_day_snapshot"] = credit_snapshot.get("account_due_day_snapshot", "")
 
-    append_row(path, TRANSACTION_FIELDS, row)
+    append_partitioned_row(spec, row)
     return int(row_id)
 
 
 def update_transaction(tx_id: int | str, transaction_type: str, data: dict) -> bool:
-    path = csv_path_for_type(transaction_type)
-    rows = read_rows(path, TRANSACTION_FIELDS)
-    changed = False
-    editable_columns = [field for field in TRANSACTION_FIELDS if field != "id"]
-    for row in rows:
-        if str(row.get("id")) != str(tx_id):
-            continue
-        for col in editable_columns:
-            if col in data:
-                row[col] = _clean_cell(data[col])
-        changed = True
-        break
-    if not changed:
-        return False
-    write_rows(path, TRANSACTION_FIELDS, rows)
-    _notify_cache_changed()
-    return True
+    spec = partition_spec_for_type(transaction_type)
+    editable = {field: _clean_cell(value) for field, value in data.items() if field in TRANSACTION_FIELDS and field != "id"}
+    changed = mutate_partitioned_row(
+        spec,
+        lambda row: str(row.get("id")) == str(tx_id),
+        update=editable,
+    )
+    if changed:
+        _notify_cache_changed()
+    return changed
 
 
 def delete_transaction(tx_id: int | str, transaction_type: str) -> bool:
-    path = csv_path_for_type(transaction_type)
-    rows = read_rows(path, TRANSACTION_FIELDS)
-    kept = [row for row in rows if str(row.get("id")) != str(tx_id)]
-    if len(kept) == len(rows):
-        return False
-    write_rows(path, TRANSACTION_FIELDS, kept)
-    _notify_cache_changed()
-    return True
+    spec = partition_spec_for_type(transaction_type)
+    changed = mutate_partitioned_row(
+        spec,
+        lambda row: str(row.get("id")) == str(tx_id),
+        delete=True,
+    )
+    if changed:
+        _notify_cache_changed()
+    return changed
+
+
+def transaction_partition_summaries(user_id: str | None = None) -> dict[str, dict[str, Any]]:
+    result: dict[str, dict[str, Any]] = {}
+    for tx_type, spec in _TRANSACTION_SPECS.items():
+        ensure_partitioned(spec, user_id=user_id)
+        result[tx_type] = load_summary(spec, user_id=user_id)
+    return result
+
+
+def transaction_available_years(user_id: str | None = None) -> list[int]:
+    years: set[int] = set()
+    for summary in transaction_partition_summaries(user_id=user_id).values():
+        years.update(int(value) for value in summary.get("available_years", []) if str(value).isdigit())
+    return sorted(years)
+
+
+def transaction_summary_totals(user_id: str | None = None) -> dict[str, float]:
+    summaries = transaction_partition_summaries(user_id=user_id)
+    income = float(summaries.get("income", {}).get("signed_total") or 0.0)
+    expense_signed = float(summaries.get("expense", {}).get("signed_total") or 0.0)
+    investment_signed = float(summaries.get("investment", {}).get("signed_total") or 0.0)
+    net = income + expense_signed + investment_signed
+    return {
+        "income": income,
+        "expenses": abs(expense_signed),
+        "investments": abs(investment_signed),
+        "net": net,
+        "savings_rate": max(net, 0.0) / income * 100.0 if income > 1e-9 else 0.0,
+        "total_availability": net + abs(investment_signed),
+    }
+
+
+def transaction_account_summary_totals(user_id: str | None = None) -> dict[str, float]:
+    """Return all-time transaction contributions without rereading old rows."""
+    totals: dict[str, float] = {}
+    for summary in transaction_partition_summaries(user_id=user_id).values():
+        for key, value in (summary.get("totals_by_account") or {}).items():
+            totals[str(key)] = totals.get(str(key), 0.0) + float(value or 0.0)
+    return totals
 
 
 def get_transaction_by_uid(transaction_uid: str) -> dict[str, Any] | None:
@@ -327,3 +489,12 @@ def _to_float(value: Any) -> float:
         return float(str(value or "0").replace(",", "."))
     except (TypeError, ValueError):
         return 0.0
+
+
+def transaction_account_summary_counts(user_id: str | None = None) -> dict[str, int]:
+    """Return indexed all-time transaction row counts by affected account."""
+    counts: dict[str, int] = {}
+    for summary in transaction_partition_summaries(user_id=user_id).values():
+        for key, value in (summary.get("row_counts_by_account") or {}).items():
+            counts[str(key)] = counts.get(str(key), 0) + int(value or 0)
+    return counts

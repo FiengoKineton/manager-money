@@ -52,6 +52,12 @@ SENSITIVE_USER_FILE_NAMES = {
 SENSITIVE_USER_DIR_PREFIXES = (
     "documents/",
     "profile/",
+    "expenses/",
+    "incomes/",
+    "investments/",
+    "internal_transfers/",
+    "account_ledger/",
+    "legacy_archive/yearly_partition/",
 )
 
 DISPOSABLE_SENSITIVE_CACHE_DIRS = (

@@ -50,8 +50,8 @@
   period_section_class='transactions-period-control',
   period_title_id='transactions-period-title',
   period_eyebrow='Transaction calculation',
-  period_title='All logs or one month',
-  period_help='The money totals use all recorded transactions by default. Choosing a month is temporary for this page; another route immediately returns the net to full history.',
+  period_title='All logs, one month, or a specific period',
+  period_help='The money totals use all recorded transactions by default. A selected month or exact period is temporary for this page; another route immediately returns the net to full history.',
   period_submit_label='Update transactions',
   advanced_filters_title='Filter the visible transaction list',
   advanced_filters_help='These filters change the rows shown, not the selected all-history/month net',
@@ -153,5 +153,5 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/dashboard.js') }}?v=transactions-credit-13"></script>
-<script src="{{ url_for('static', filename='js/shared/dashboard-period-control.js') }}?v=period-control-1"></script>
+<script src="{{ url_for('static', filename='js/shared/dashboard-period-control.js') }}?v=period-control-2"></script>
 {% endblock %}

@@ -431,10 +431,21 @@ def _due_date_from_payload(tx: dict, due_day: int = CREDIT_CARD_DUE_DAY) -> date
     return next_credit_due(payment_date, due_day=due_day)
 
 
-def load_transactions() -> pd.DataFrame:
+def load_transactions(*, start: Any = None, end: Any = None, years: list[int] | None = None) -> pd.DataFrame:
     from money_manager.services.cache_service import cached_calculation
 
-    return cached_calculation("transactions.load_all", load_all)
+    if start is None and end is None and years is None:
+        return cached_calculation("transactions.load_all", load_all)
+    fingerprint = {
+        "start": str(start or ""),
+        "end": str(end or ""),
+        "years": tuple(int(value) for value in (years or [])),
+    }
+    return cached_calculation(
+        "transactions.load_range",
+        lambda: load_all(start=start, end=end, years=years),
+        extra_fingerprint=fingerprint,
+    )
 
 
 def prepare_transactions_for_display(df: pd.DataFrame) -> pd.DataFrame:

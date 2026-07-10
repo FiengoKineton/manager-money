@@ -567,8 +567,16 @@ def _ledger_is_authoritative(user_id: str | None = None) -> bool:
 def _ledger_balance_for_account(account_id: str, user_id: str | None = None) -> float | None:
     if not _ledger_is_authoritative(user_id=user_id):
         return None
+    try:
+        from money_manager.repositories.account_ledger import account_ledger_partition_summary
 
-    # existing ledger loading logic here
+        summary = account_ledger_partition_summary(user_id=user_id)
+        totals = summary.get("totals_by_account") if isinstance(summary.get("totals_by_account"), Mapping) else {}
+        return float(totals.get(normalize_account_key(account_id, user_id=user_id), 0.0) or 0.0)
+    except Exception:
+        # Falling back to transaction histories is safer than returning a
+        # partially read ledger value.
+        return None
 
 
 def _transaction_balance_for_account(
@@ -576,9 +584,24 @@ def _transaction_balance_for_account(
     user_id: str | None = None,
     df: pd.DataFrame | None = None,
 ) -> float:
-    data = _ensure_enriched(df) if df is not None else _load_enriched_transactions()
-
     account_key = normalize_account_key(account_id, user_id=user_id)
+
+    # The yearly summaries store the exact account-routing contribution of each
+    # transaction year. When callers only need a balance, avoid decrypting all
+    # historical rows and add the independently summarized transfer movements.
+    if df is None:
+        try:
+            from money_manager.repositories.transactions import transaction_account_summary_totals
+            from money_manager.repositories.internal_transfers import transfer_partition_summary
+
+            transaction_total = float(transaction_account_summary_totals(user_id=user_id).get(account_key, 0.0) or 0.0)
+            transfer_summary = transfer_partition_summary(user_id=user_id)
+            transfer_totals = transfer_summary.get("totals_by_account") if isinstance(transfer_summary.get("totals_by_account"), Mapping) else {}
+            return transaction_total + float(transfer_totals.get(account_key, 0.0) or 0.0)
+        except Exception:
+            data = _load_enriched_transactions()
+    else:
+        data = _ensure_enriched(df)
 
     if account_key == MAIN_ACCOUNT_KEY:
         try:
@@ -666,7 +689,7 @@ def balance_source_breakdown_for_scope(
     active data folder do not.
     """
     resolved = resolve_account_scope(scope, user_id=user_id)
-    data = _ensure_enriched(df) if df is not None else _load_enriched_transactions()
+    data = _ensure_enriched(df) if df is not None else None
     rows: list[dict[str, Any]] = []
 
     for account_id in _balance_account_ids_for_resolved(resolved):
@@ -702,16 +725,12 @@ def balance_source_breakdown_for_scope(
 
 def _internal_transfer_total_for_account(account_id: str) -> float:
     try:
-        from money_manager.services.internal_transfer_service import (
-            auxiliary_transfer_movements,
-            main_account_transfer_movements,
-        )
+        from money_manager.repositories.internal_transfers import transfer_partition_summary
 
         key = normalize_account_key(account_id)
-        frame = main_account_transfer_movements() if key == MAIN_ACCOUNT_KEY else auxiliary_transfer_movements(account_key=key)
-        if frame.empty or "account_signed_amount" not in frame.columns:
-            return 0.0
-        return float(pd.to_numeric(frame["account_signed_amount"], errors="coerce").fillna(0.0).sum())
+        summary = transfer_partition_summary()
+        totals = summary.get("totals_by_account") if isinstance(summary.get("totals_by_account"), Mapping) else {}
+        return float(totals.get(key, 0.0) or 0.0)
     except Exception:
         return 0.0
 
@@ -978,22 +997,47 @@ def projected_net_for_scope(scope: str | Mapping[str, Any] | None, user_id: str 
     )
 
 
+def _summary_transaction_count_for_scope(resolved: Mapping[str, Any], user_id: str | None = None) -> int:
+    """Use yearly indexes for an all-time count without decrypting old rows."""
+    try:
+        from money_manager.repositories.transactions import (
+            transaction_account_summary_counts,
+            transaction_partition_summaries,
+        )
+
+        summaries = transaction_partition_summaries(user_id=user_id)
+        total_rows = sum(int(summary.get("row_count") or 0) for summary in summaries.values())
+        if bool(resolved.get("is_global")):
+            return total_rows
+        counts = transaction_account_summary_counts(user_id=user_id)
+        account_ids = _balance_account_ids_for_resolved(resolved)
+        # A legacy top-up row can affect Main and a dependent wallet at once.
+        # Cap the roll-up at the global row count so indexed counts can never
+        # report more rows than actually exist.
+        return min(total_rows, sum(int(counts.get(account_id, 0) or 0) for account_id in account_ids))
+    except Exception:
+        return 0
+
+
 def scope_balance_summary(
     scope: str | Mapping[str, Any] | None,
     user_id: str | None = None,
     df: pd.DataFrame | None = None,
 ) -> dict[str, Any]:
     resolved = resolve_account_scope(scope, user_id=user_id)
-    data = _ensure_enriched(df) if df is not None else _load_enriched_transactions()
+    data = _ensure_enriched(df) if df is not None else None
     net = net_balance_for_scope(resolved, user_id=user_id, df=data)
     pending = pending_total_for_scope(resolved, user_id=user_id)
     payables = payables_total_for_scope(resolved, user_id=user_id)
     recurring = recurring_monthly_total_for_scope(resolved, user_id=user_id)
     account_id = resolved.get("account_id", "")
-    try:
-        tx_count = int(len(transactions_for_scope(data, resolved, user_id=user_id)))
-    except Exception:
-        tx_count = 0
+    if data is None:
+        tx_count = _summary_transaction_count_for_scope(resolved, user_id=user_id)
+    else:
+        try:
+            tx_count = int(len(transactions_for_scope(data, resolved, user_id=user_id)))
+        except Exception:
+            tx_count = 0
     methods_count = len(payment_methods_for_account(account_id, user_id=user_id, include_archived=False)) if account_id else len(_method_rows(user_id=user_id, include_archived=False))
     return {
         "scope": resolved["scope"],
@@ -1019,7 +1063,7 @@ def scope_balance_summary(
 
 def all_financial_center_summaries(user_id: str | None = None, df: pd.DataFrame | None = None) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    data = _ensure_enriched(df) if df is not None else _load_enriched_transactions()
+    data = _ensure_enriched(df) if df is not None else None
     # Load planning repositories once for the whole All Conti page. The previous
     # N+1 implementation re-read encrypted pending/recurring/payable files for
     # every account and then reloaded payment methods again, which made this page
@@ -1062,10 +1106,13 @@ def all_financial_center_summaries(user_id: str | None = None, df: pd.DataFrame 
             for row in scoped_payables
             if str(row.get("status") or "active").casefold() == "active"
         ), 2)
-        try:
-            tx_count = int(len(transactions_for_scope(data, resolved, user_id=user_id)))
-        except Exception:
-            tx_count = 0
+        if data is None:
+            tx_count = _summary_transaction_count_for_scope(resolved, user_id=user_id)
+        else:
+            try:
+                tx_count = int(len(transactions_for_scope(data, resolved, user_id=user_id)))
+            except Exception:
+                tx_count = 0
         center_methods = [
             dict(method)
             for method in methods

@@ -16,6 +16,10 @@ from money_manager.services.payment_method_service import all_payment_methods, e
 from money_manager.services.profile_service import load_profile, migrate_profile_bank_info
 from money_manager.services.schema_service import CSV_SCHEMAS, JSON_DEFAULTS, ensure_user_schema
 from money_manager.security.secure_storage import read_binary_secure
+from money_manager.repositories.transactions import load_by_type, partition_spec_for_type
+from money_manager.repositories.account_ledger import read_ledger_rows
+from money_manager.repositories.internal_transfers import load_rows as load_internal_transfer_rows
+from money_manager.repositories.yearly_partitioned import replace_partitioned_rows
 
 TRANSACTION_FILES = ["expenses.csv", "incomes.csv", "investments.csv"]
 REFERENCE_CSV_FILES = ["pending.csv", "recurring.csv", "credit_settlements.csv", "internal_transfers.csv"]
@@ -107,54 +111,57 @@ def validate_payment_methods(user_id: str | None = None) -> dict[str, Any]:
 
 def validate_transaction_snapshots(user_id: str | None = None) -> dict[str, Any]:
     report = _empty_report()
-    user_dir = get_user_data_dir(user_id)
     account_ids, method_ids = _known_ids(user_id=user_id)
     missing_method = 0
-    for filename in TRANSACTION_FILES + ["sparagnat_fottut.csv"]:
-        path = user_dir / filename
-        rows, headers = _read_csv(path)
-        if not rows:
-            continue
+    sources: list[tuple[str, list[dict[str, Any]]]] = []
+    for tx_type in ("expense", "income", "investment"):
+        try:
+            sources.append((f"{tx_type} yearly history", load_by_type(tx_type, user_id=user_id).fillna("").to_dict(orient="records")))
+        except Exception as exc:
+            report["errors"].append(f"Could not read {tx_type} yearly history: {exc}.")
+    sparagnat_rows, _ = _read_csv(get_user_data_dir(user_id) / "sparagnat_fottut.csv")
+    sources.append(("sparagnat_fottut.csv", sparagnat_rows))
+
+    for source_name, rows in sources:
         for row_num, row in enumerate(rows, start=2):
             if not str(row.get("transaction_uid") or "").strip():
-                report["warnings"].append(f"{filename}:{row_num} is missing transaction_uid.")
+                report["warnings"].append(f"{source_name}:{row_num} is missing transaction_uid.")
             account_id = str(row.get("account_id") or row.get("account_key_snapshot") or "").strip()
             if account_id and account_id not in account_ids:
-                report["errors"].append(f"{filename}:{row_num} points to missing account {account_id}.")
+                report["errors"].append(f"{source_name}:{row_num} points to missing account {account_id}.")
             method_id = str(row.get("payment_method_id") or "").strip()
             if not method_id:
                 missing_method += 1
             elif method_id not in method_ids:
-                report["errors"].append(f"{filename}:{row_num} points to missing payment method {method_id}.")
+                report["errors"].append(f"{source_name}:{row_num} points to missing payment method {method_id}.")
             if method_id and not str(row.get("payment_method_name_snapshot") or "").strip():
-                report["warnings"].append(f"{filename}:{row_num} has payment_method_id without name snapshot.")
+                report["warnings"].append(f"{source_name}:{row_num} has payment_method_id without name snapshot.")
             if account_id and not str(row.get("account_name_snapshot") or "").strip():
-                report["warnings"].append(f"{filename}:{row_num} has account_id without account name snapshot.")
+                report["warnings"].append(f"{source_name}:{row_num} has account_id without account name snapshot.")
     report["counts"]["transactions_without_payment_method_id"] = missing_method
     return report
 
 
 def validate_ledger_consistency(user_id: str | None = None) -> dict[str, Any]:
     report = _empty_report()
-    user_dir = get_user_data_dir(user_id)
-    path = user_dir / "account_ledger.csv"
-    rows, headers = _read_csv(path)
+    try:
+        rows = read_ledger_rows(user_id=user_id)
+    except Exception as exc:
+        report["errors"].append(f"Could not read yearly account ledger: {exc}.")
+        rows = []
     report["counts"]["ledger_rows"] = len(rows)
-    missing_columns = [field for field in ACCOUNT_LEDGER_FIELDS if field not in headers]
-    if missing_columns:
-        report["errors"].append(f"account_ledger.csv is missing columns: {', '.join(missing_columns)}.")
     account_ids, method_ids = _known_ids(user_id=user_id)
     for row_num, row in enumerate(rows, start=2):
         account_id = str(row.get("account_id") or "").strip()
         if account_id and account_id not in account_ids:
-            report["errors"].append(f"account_ledger.csv:{row_num} points to missing account {account_id}.")
+            report["errors"].append(f"account_ledger history:{row_num} points to missing account {account_id}.")
         method_id = str(row.get("payment_method_id") or "").strip()
         if method_id and method_id not in method_ids:
-            report["errors"].append(f"account_ledger.csv:{row_num} points to missing payment method {method_id}.")
-        _check_number(report, row.get("amount"), f"account_ledger.csv:{row_num} amount")
-        _check_number(report, row.get("signed_amount"), f"account_ledger.csv:{row_num} signed_amount")
+            report["errors"].append(f"account_ledger history:{row_num} points to missing payment method {method_id}.")
+        _check_number(report, row.get("amount"), f"account_ledger history:{row_num} amount")
+        _check_number(report, row.get("signed_amount"), f"account_ledger history:{row_num} signed_amount")
         if row.get("status") not in {"", "posted", "scheduled", "voided", "draft"}:
-            report["warnings"].append(f"account_ledger.csv:{row_num} has unusual ledger status {row.get('status')}.")
+            report["warnings"].append(f"account_ledger history:{row_num} has unusual ledger status {row.get('status')}.")
     return report
 
 
@@ -178,20 +185,20 @@ def validate_credit_settlements(user_id: str | None = None) -> dict[str, Any]:
 
 def validate_internal_transfers(user_id: str | None = None) -> dict[str, Any]:
     report = _empty_report()
-    user_dir = get_user_data_dir(user_id)
-    rows, headers = _read_csv(user_dir / "internal_transfers.csv")
+    try:
+        rows = load_internal_transfer_rows(user_id=user_id)
+    except Exception as exc:
+        report["errors"].append(f"Could not read yearly internal transfers: {exc}.")
+        rows = []
     account_ids, method_ids = _known_ids(user_id=user_id)
-    missing_columns = [field for field in INTERNAL_TRANSFER_FIELDS if field not in headers]
-    if missing_columns:
-        report["errors"].append(f"internal_transfers.csv is missing columns: {', '.join(missing_columns)}.")
     for row_num, row in enumerate(rows, start=2):
         for field in ["from_account_id", "to_account_id"]:
             value = str(row.get(field) or "").strip()
             if value and value not in account_ids:
-                report["errors"].append(f"internal_transfers.csv:{row_num} uses missing {field} {value}.")
+                report["errors"].append(f"internal transfer history:{row_num} uses missing {field} {value}.")
         fee_method = str(row.get("fee_payment_method_id") or "").strip()
         if fee_method and fee_method not in method_ids:
-            report["errors"].append(f"internal_transfers.csv:{row_num} uses missing fee payment method {fee_method}.")
+            report["errors"].append(f"internal transfer history:{row_num} uses missing fee payment method {fee_method}.")
     return report
 
 
@@ -353,7 +360,10 @@ def validate_scoped_account_model(user_id: str | None = None) -> dict[str, Any]:
 def validate_backup_schema_files(user_id: str | None = None) -> dict[str, Any]:
     report = _empty_report()
     user_dir = get_user_data_dir(user_id)
+    partitioned_legacy = {"expenses.csv", "incomes.csv", "investments.csv", "internal_transfers.csv", "account_ledger.csv"}
     for filename, fields in CSV_SCHEMAS.items():
+        if filename in partitioned_legacy:
+            continue
         path = user_dir / filename
         if not path.exists():
             report["warnings"].append(f"Missing CSV file: {filename}.")
@@ -369,15 +379,14 @@ def validate_backup_schema_files(user_id: str | None = None) -> dict[str, Any]:
 
 
 def rebuild_ledger_preview(user_id: str | None = None) -> dict[str, Any]:
-    user_dir = get_user_data_dir(user_id)
-    ledger_rows, _ = _read_csv(user_dir / "account_ledger.csv")
+    ledger_rows = read_ledger_rows(user_id=user_id)
     ledger_transaction_uids = {str(row.get("transaction_uid") or "").strip() for row in ledger_rows if row.get("transaction_uid")}
     transaction_rows = 0
     missing_ledger = 0
     with_ledger = 0
     without_uid = 0
-    for filename in TRANSACTION_FILES:
-        rows, _ = _read_csv(user_dir / filename)
+    for tx_type in ("expense", "income", "investment"):
+        rows = load_by_type(tx_type, user_id=user_id).fillna("").to_dict(orient="records")
         for row in rows:
             transaction_rows += 1
             uid = str(row.get("transaction_uid") or "").strip()
@@ -423,30 +432,41 @@ def _repair_transaction_snapshots(user_id: str | None = None) -> list[str]:
     accounts_by_id = {_account_id(account): account for account in accounts_payload.get("accounts", []) if isinstance(account, Mapping)}
     methods_by_id = {str(method.get("id") or ""): method for method in all_payment_methods(include_archived=True, user_id=user_id)}
     changes: list[str] = []
-    for filename in TRANSACTION_FILES + ["sparagnat_fottut.csv"]:
-        path = user_dir / filename
-        rows, headers = _read_csv(path)
-        if not rows:
-            continue
+
+    for tx_type in ("expense", "income", "investment"):
+        rows = load_by_type(tx_type, user_id=user_id).fillna("").to_dict(orient="records")
+        changed_rows = _fill_safe_transaction_snapshots(rows, accounts_by_id, methods_by_id)
+        if changed_rows:
+            replace_partitioned_rows(partition_spec_for_type(tx_type), rows, user_id=user_id)
+            changes.append(f"Filled safe transaction identifiers/snapshots in {tx_type} yearly history: {changed_rows} cells/rows updated.")
+
+    path = user_dir / "sparagnat_fottut.csv"
+    rows, headers = _read_csv(path)
+    if rows:
         final_headers = list(dict.fromkeys((headers or []) + TRANSACTION_FIELDS))
-        changed_rows = 0
-        for row in rows:
-            if "transaction_uid" in final_headers and not str(row.get("transaction_uid") or "").strip():
-                row["transaction_uid"] = f"tx_{uuid.uuid4().hex}"
-                changed_rows += 1
-            account_id = str(row.get("account_id") or row.get("account_key_snapshot") or "").strip()
-            if account_id in accounts_by_id and not str(row.get("account_name_snapshot") or "").strip():
-                account = accounts_by_id[account_id]
-                row["account_name_snapshot"] = str(account.get("label") or account.get("name") or account_id)
-                changed_rows += 1
-            method_id = str(row.get("payment_method_id") or "").strip()
-            if method_id in methods_by_id and not str(row.get("payment_method_name_snapshot") or "").strip():
-                row["payment_method_name_snapshot"] = str(methods_by_id[method_id].get("name") or method_id)
-                changed_rows += 1
+        changed_rows = _fill_safe_transaction_snapshots(rows, accounts_by_id, methods_by_id)
         if changed_rows:
             _write_csv(path, final_headers, rows)
-            changes.append(f"Filled safe transaction identifiers/snapshots in {filename}: {changed_rows} cells/rows updated.")
+            changes.append(f"Filled safe transaction identifiers/snapshots in sparagnat_fottut.csv: {changed_rows} cells/rows updated.")
     return changes
+
+
+def _fill_safe_transaction_snapshots(rows, accounts_by_id, methods_by_id) -> int:
+    changed_rows = 0
+    for row in rows:
+        if not str(row.get("transaction_uid") or "").strip():
+            row["transaction_uid"] = f"tx_{uuid.uuid4().hex}"
+            changed_rows += 1
+        account_id = str(row.get("account_id") or row.get("account_key_snapshot") or "").strip()
+        if account_id in accounts_by_id and not str(row.get("account_name_snapshot") or "").strip():
+            account = accounts_by_id[account_id]
+            row["account_name_snapshot"] = str(account.get("label") or account.get("name") or account_id)
+            changed_rows += 1
+        method_id = str(row.get("payment_method_id") or "").strip()
+        if method_id in methods_by_id and not str(row.get("payment_method_name_snapshot") or "").strip():
+            row["payment_method_name_snapshot"] = str(methods_by_id[method_id].get("name") or method_id)
+            changed_rows += 1
+    return changed_rows
 
 
 def _known_ids(user_id: str | None = None) -> tuple[set[str], set[str]]:

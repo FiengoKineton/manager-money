@@ -270,7 +270,7 @@
   period_full_history_url=(url_for('dashboard.index', account_id=selected_account_id) if selected_account_id else url_for('dashboard.index')),
   period_eyebrow='Dashboard calculation',
   period_title='Choose the time window',
-  period_help='Full history is the default. A month selection applies only to this dashboard page and is cleared when you navigate elsewhere.',
+  period_help='Full history is the default. A month or exact period applies only to this dashboard page and is cleared when you navigate elsewhere.',
   period_submit_label='Update dashboard',
   advanced_filters_title='Advanced chart filters',
   advanced_filters_help='Optional: type, category, search and amount',
@@ -343,5 +343,5 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/account-wallet-ui.js') }}"></script>
-<script src="{{ url_for('static', filename='js/shared/dashboard-period-control.js') }}?v=period-control-1"></script>
+<script src="{{ url_for('static', filename='js/shared/dashboard-period-control.js') }}?v=period-control-2"></script>
 {% endblock %}

@@ -39,6 +39,13 @@ def ensure_file_definition(definition: DataFileDefinition, user_id: str | None =
         return report
 
     if definition.file_type == "csv":
+        if bool((definition.metadata or {}).get("partitioned_legacy")):
+            partition_folder = str((definition.metadata or {}).get("partition_folder") or "").strip()
+            partition_root = path.parent / partition_folder if partition_folder else None
+            report["migration_pending"] = bool(path.exists() and not (partition_root and partition_root.exists()))
+            report["partitioned"] = bool(partition_root and partition_root.exists())
+            report["skipped_legacy_creation"] = not path.exists()
+            return report
         created, added = ensure_csv_schema(path, list(definition.csv_fields), preserve_unknown_columns=definition.preserve_unknown_columns)
         report["created"] = created
         report["repaired"] = bool(added)

@@ -3,7 +3,7 @@
     <div>
       <span class="eyebrow">{{ period_eyebrow|default('Calculation window') }}</span>
       <h3 id="{{ period_title_id|default('dashboard-period-title') }}">{{ period_title|default('Choose the time window') }}</h3>
-      <p>{{ period_help|default('Full history is the default. A month selection applies only to this page and disappears when you navigate elsewhere.') }}</p>
+      <p>{{ period_help|default('Full history is the default. A month or exact period applies only to this page and disappears when you navigate elsewhere.') }}</p>
     </div>
     <span class="dashboard-period-status">{{ dashboard_period.label }}</span>
   </div>
@@ -19,15 +19,28 @@
         <input type="radio" name="period_mode" value="month" {% if dashboard_period.mode == 'month' %}checked{% endif %}>
         <span><strong>Specific month</strong><small>Temporary month-only income, expenses and net</small></span>
       </label>
+      <label class="dashboard-period-choice {{ 'is-selected' if dashboard_period.mode == 'range' else '' }}">
+        <input type="radio" name="period_mode" value="range" {% if dashboard_period.mode == 'range' %}checked{% endif %}>
+        <span><strong>Specific period</strong><small>Exact inclusive start and end date/time</small></span>
+      </label>
     </div>
 
-    <div class="dashboard-period-fields" data-dashboard-month-fields>
-      <label><span>Month</span><select name="period_month">
+    <div class="dashboard-period-fields" data-dashboard-month-fields {% if dashboard_period.mode != 'month' %}hidden{% endif %}>
+      <label><span>Month</span><select name="period_month" {% if dashboard_period.mode != 'month' %}disabled{% endif %}>
         {% for option in dashboard_period.month_options %}<option value="{{ option.value }}" {% if option.value == dashboard_period.month %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
       </select></label>
-      <label><span>Year</span><select name="period_year">
+      <label><span>Year</span><select name="period_year" {% if dashboard_period.mode != 'month' %}disabled{% endif %}>
         {% for year in dashboard_period.available_years|reverse %}<option value="{{ year }}" {% if year == dashboard_period.year %}selected{% endif %}>{{ year }}</option>{% endfor %}
       </select></label>
+      <div class="dashboard-period-actions">
+        <button type="submit" class="primary-btn">{{ period_submit_label|default('Update') }}</button>
+        <a class="secondary-btn" href="{{ period_full_history_url }}">Full history</a>
+      </div>
+    </div>
+
+    <div class="dashboard-period-fields dashboard-period-range-fields" data-dashboard-range-fields {% if dashboard_period.mode != 'range' %}hidden{% endif %}>
+      <label><span>From</span><input type="datetime-local" name="period_start" value="{{ dashboard_period.range_start }}" {% if dashboard_period.mode != 'range' %}disabled{% endif %}></label>
+      <label><span>To</span><input type="datetime-local" name="period_end" value="{{ dashboard_period.range_end }}" {% if dashboard_period.mode != 'range' %}disabled{% endif %}></label>
       <div class="dashboard-period-actions">
         <button type="submit" class="primary-btn">{{ period_submit_label|default('Update') }}</button>
         <a class="secondary-btn" href="{{ period_full_history_url }}">Full history</a>
