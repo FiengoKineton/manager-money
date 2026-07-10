@@ -2160,8 +2160,9 @@ html[data-theme="comfort"] .dashboard-hero-balance small {
 
 .dashboard-period-choices {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
+  width: 100%;
 }
 
 .dashboard-period-choice {
@@ -2219,6 +2220,10 @@ html[data-theme="comfort"] .dashboard-hero-balance small {
   transition: opacity 0.16s ease;
 }
 
+.dashboard-period-fields[hidden] {
+  display: none !important;
+}
+
 .dashboard-period-fields > label,
 .dashboard-category-form > label {
   display: grid;
@@ -2232,9 +2237,6 @@ html[data-theme="comfort"] .dashboard-hero-balance small {
   font-weight: 850;
 }
 
-.dashboard-period-fields.is-disabled > label {
-  opacity: 0.5;
-}
 
 .dashboard-period-actions {
   display: flex;
@@ -2308,6 +2310,3 @@ html[data-theme="comfort"] .dashboard-hero-balance small {
   }
 }
 
-.dashboard-period-fields.is-disabled select {
-  cursor: not-allowed;
-}

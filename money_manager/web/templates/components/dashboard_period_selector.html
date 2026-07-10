@@ -34,7 +34,6 @@
       </select></label>
       <div class="dashboard-period-actions">
         <button type="submit" class="primary-btn">{{ period_submit_label|default('Update') }}</button>
-        <a class="secondary-btn" href="{{ period_full_history_url }}">Full history</a>
       </div>
     </div>
 
@@ -43,7 +42,6 @@
       <label><span>To</span><input type="datetime-local" name="period_end" value="{{ dashboard_period.range_end }}" {% if dashboard_period.mode != 'range' %}disabled{% endif %}></label>
       <div class="dashboard-period-actions">
         <button type="submit" class="primary-btn">{{ period_submit_label|default('Update') }}</button>
-        <a class="secondary-btn" href="{{ period_full_history_url }}">Full history</a>
       </div>
     </div>
 
