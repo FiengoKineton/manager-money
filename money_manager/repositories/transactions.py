@@ -9,6 +9,7 @@ from typing import Any, Mapping
 
 import pandas as pd
 
+from money_manager.cache import request_cache
 from money_manager.config import (
     MAIN_ACCOUNT_KEY,
     MAIN_NET_CREDIT_PENDING,
@@ -19,7 +20,7 @@ from money_manager.config import (
     account_policy_for_key,
 )
 from money_manager.domain.constants import TRANSACTION_FIELDS
-from money_manager.config.user_paths import get_user_data_dir, using_user
+from money_manager.config.user_paths import get_current_user_id, get_user_data_dir, normalize_user_id, using_user
 from money_manager.security.secure_storage import read_json_secure
 from money_manager.domain.transaction import make_transaction_uid, parse_transaction_uid
 from money_manager.repositories.yearly_partitioned import (
@@ -73,12 +74,27 @@ def _transaction_signed_value(transaction_type: str):
 
 def _routing_context_fingerprint(user_id: str | None = None) -> str:
     """Fingerprint configuration that can change historical account routing."""
+    current_id = user_id or get_current_user_id()
+    safe_id = normalize_user_id(current_id) if current_id else ""
+    request_key = f"transaction_routing_context:v2:{safe_id}"
+    sentinel = object()
+    cached = request_cache.get(request_key, sentinel)
+    if cached is not sentinel:
+        return str(cached)
+
     user_dir = get_user_data_dir(user_id)
-    payload: dict[str, Any] = {"summary_logic_version": 1}
-    for filename in ("accounts.json", "payment_methods.json", "categories.json"):
-        payload[filename] = read_json_secure(user_dir / filename, default={}, user_id=user_id)
+    # Only accounts.json affects enrich_transactions_with_accounts(): account
+    # aliases, hierarchy and main-net policy live there.  Including categories
+    # and payment methods caused a full historical summary rebuild after benign
+    # UI edits such as changing an icon or card label.
+    payload: dict[str, Any] = {
+        "summary_logic_version": 2,
+        "accounts.json": read_json_secure(user_dir / "accounts.json", default={}, user_id=user_id),
+    }
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
-    return hashlib.sha256(raw).hexdigest()[:24]
+    fingerprint = hashlib.sha256(raw).hexdigest()[:24]
+    request_cache.set(request_key, fingerprint)
+    return fingerprint
 
 
 def _transaction_account_totals(transaction_type: str):
@@ -164,15 +180,6 @@ def partition_spec_for_type(transaction_type: str) -> YearlyDatasetSpec:
         return _TRANSACTION_SPECS[str(transaction_type)]
     except KeyError as exc:
         raise ValueError(f"Unknown transaction type: {transaction_type}") from exc
-
-
-def _notify_cache_changed() -> None:
-    try:
-        from money_manager.services.cache_service import notify_data_changed
-
-        notify_data_changed()
-    except Exception:
-        pass
 
 
 def csv_path_for_type(transaction_type: str) -> Path:
@@ -334,8 +341,6 @@ def update_transaction(tx_id: int | str, transaction_type: str, data: dict) -> b
         lambda row: str(row.get("id")) == str(tx_id),
         update=editable,
     )
-    if changed:
-        _notify_cache_changed()
     return changed
 
 
@@ -346,16 +351,23 @@ def delete_transaction(tx_id: int | str, transaction_type: str) -> bool:
         lambda row: str(row.get("id")) == str(tx_id),
         delete=True,
     )
-    if changed:
-        _notify_cache_changed()
     return changed
 
 
 def transaction_partition_summaries(user_id: str | None = None) -> dict[str, dict[str, Any]]:
+    current_id = user_id or get_current_user_id()
+    safe_id = normalize_user_id(current_id) if current_id else ""
+    request_key = f"transaction_partition_summaries:v2:{safe_id}"
+    sentinel = object()
+    cached = request_cache.get(request_key, sentinel)
+    if cached is not sentinel:
+        return {str(key): dict(value) for key, value in dict(cached).items()}
+
     result: dict[str, dict[str, Any]] = {}
     for tx_type, spec in _TRANSACTION_SPECS.items():
         ensure_partitioned(spec, user_id=user_id)
         result[tx_type] = load_summary(spec, user_id=user_id)
+    request_cache.set(request_key, {key: dict(value) for key, value in result.items()})
     return result
 
 

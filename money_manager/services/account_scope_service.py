@@ -536,6 +536,10 @@ def ledger_movements_for_scope(scope: str | Mapping[str, Any] | None, user_id: s
 
 def _initial_balance(account_id: str, user_id: str | None = None) -> float:
     account = account_by_key(account_id, user_id=user_id, include_archived=True)
+    return _initial_balance_from_account(account)
+
+
+def _initial_balance_from_account(account: Mapping[str, Any] | None) -> float:
     if not account or not _is_liquid_account(account):
         return 0.0
     try:
@@ -576,6 +580,49 @@ def _ledger_balance_for_account(account_id: str, user_id: str | None = None) -> 
     except Exception:
         # Falling back to transaction histories is safer than returning a
         # partially read ledger value.
+        return None
+
+
+def _ledger_balance_totals(user_id: str | None = None) -> dict[str, float] | None:
+    """Load the authoritative ledger summary once for a whole scope calculation."""
+    if not _ledger_is_authoritative(user_id=user_id):
+        return None
+    try:
+        from money_manager.repositories.account_ledger import account_ledger_partition_summary
+
+        summary = account_ledger_partition_summary(user_id=user_id)
+        raw = summary.get("totals_by_account") if isinstance(summary.get("totals_by_account"), Mapping) else {}
+        return {str(key): float(value or 0.0) for key, value in raw.items()}
+    except Exception:
+        return None
+
+
+def _transaction_and_transfer_balance_totals(user_id: str | None = None) -> dict[str, float] | None:
+    """Return every account movement total using the yearly indexes once.
+
+    The former implementation called both summary loaders for each account in
+    All Conti.  With several wallets/cards this became an N+1 hot path and each
+    topbar GET repeatedly validated the same encrypted yearly files.
+    """
+    try:
+        from money_manager.repositories.transactions import transaction_account_summary_totals
+        from money_manager.repositories.internal_transfers import transfer_partition_summary
+
+        totals = {
+            str(key): float(value or 0.0)
+            for key, value in transaction_account_summary_totals(user_id=user_id).items()
+        }
+        transfer_summary = transfer_partition_summary(user_id=user_id)
+        transfer_totals = (
+            transfer_summary.get("totals_by_account")
+            if isinstance(transfer_summary.get("totals_by_account"), Mapping)
+            else {}
+        )
+        for key, value in transfer_totals.items():
+            text_key = str(key)
+            totals[text_key] = totals.get(text_key, 0.0) + float(value or 0.0)
+        return totals
+    except Exception:
         return None
 
 
@@ -667,11 +714,28 @@ def net_balance_for_scope(
 ) -> float:
     resolved = resolve_account_scope(scope, user_id=user_id)
     data = _ensure_enriched(df) if df is not None else None
-    total = 0.0
-    for account_id in _balance_account_ids_for_resolved(resolved):
-        total += _initial_balance(account_id, user_id=user_id)
-        ledger_total = _ledger_balance_for_account(account_id, user_id=user_id)
-        total += ledger_total if ledger_total is not None else _transaction_balance_for_account(account_id, user_id=user_id, df=data)
+    account_ids = _balance_account_ids_for_resolved(resolved)
+    accounts_by_id = _accounts_by_id(user_id=user_id, include_archived=True)
+    total = sum(_initial_balance_from_account(accounts_by_id.get(account_id)) for account_id in account_ids)
+
+    # Ledger, when authoritative, always represents the full-history balance
+    # even if a period-limited DataFrame was supplied by a page.
+    movement_totals = _ledger_balance_totals(user_id=user_id)
+    if movement_totals is None and data is None:
+        movement_totals = _transaction_and_transfer_balance_totals(user_id=user_id)
+
+    if movement_totals is not None:
+        for account_id in account_ids:
+            key = normalize_account_key(account_id, user_id=user_id)
+            total += float(movement_totals.get(key, 0.0) or 0.0)
+        return round(float(total), 2)
+
+    # Safe compatibility fallback: if an index cannot be read, use the supplied
+    # frame or load history once, rather than once per account.
+    if data is None:
+        data = _load_enriched_transactions()
+    for account_id in account_ids:
+        total += _transaction_balance_for_account(account_id, user_id=user_id, df=data)
     return round(float(total), 2)
 
 

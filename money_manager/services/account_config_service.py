@@ -948,7 +948,6 @@ def create_account_from_form(form: Mapping[str, Any], user_id: str | None = None
         return None
     accounts.append(record)
     save_accounts_config(config, user_id=user_id)
-    _notify_cache_changed()
     return record
 
 
@@ -1003,7 +1002,6 @@ def update_account_from_form(account_key: str, form: Mapping[str, Any], user_id:
         updated["updated_at"] = utc_now()
         config["accounts"][index] = normalize_account_record(updated, index=index) or updated
         save_accounts_config(config, user_id=user_id)
-        _notify_cache_changed()
         return config["accounts"][index]
     return None
 
@@ -1024,7 +1022,6 @@ def archive_account(account_key: str, user_id: str | None = None, active: bool =
             break
     if changed:
         save_accounts_config(config, user_id=user_id)
-        _notify_cache_changed()
     return changed
 
 
@@ -1076,14 +1073,6 @@ def archive_card(account_key: str, card_id: str, user_id: str | None = None, act
     return changed
 
 
-def _notify_cache_changed() -> None:
-    try:
-        from money_manager.services.cache_service import notify_data_changed
-        notify_data_changed()
-    except Exception:
-        pass
-
-
 def set_default_account(account_key: str, user_id: str | None = None) -> bool:
     """Mark one current account as the user's default current account.
 
@@ -1106,5 +1095,4 @@ def set_default_account(account_key: str, user_id: str | None = None) -> bool:
             account["is_default"] = False
     if matched:
         save_accounts_config(config, user_id=user_id)
-        _notify_cache_changed()
     return matched

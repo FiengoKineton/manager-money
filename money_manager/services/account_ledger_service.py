@@ -16,6 +16,7 @@ Sign convention:
 
 import csv
 import json
+import threading
 import uuid
 from dataclasses import asdict, is_dataclass
 from datetime import date as date_cls, datetime, timezone
@@ -25,12 +26,19 @@ from typing import Any, Iterable, Mapping
 from money_manager.config.user_paths import user_data_path
 from money_manager.domain.constants import ACCOUNT_LEDGER_FIELDS
 from money_manager.domain.payment import LedgerMovementDraft, PaymentResolution
-from money_manager.repositories.account_ledger import ensure_account_ledger_file, read_ledger_rows, write_ledger_rows
+from money_manager.repositories.account_ledger import (
+    account_ledger_partition_summary,
+    append_ledger_rows,
+    ensure_account_ledger_file,
+    read_ledger_rows,
+    write_ledger_rows,
+)
 from money_manager.repositories.csv_files import next_numeric_id
 from money_manager.services.payment_routing_service import resolve_payment, resolution_json_dumps
 
 POSTED_STATUSES = {"posted"}
 ACTIVE_STATUSES_WITH_SCHEDULED = {"posted", "scheduled"}
+_LEDGER_APPEND_LOCK = threading.RLock()
 
 
 def utc_now() -> str:
@@ -52,26 +60,31 @@ def append_ledger_movements(movements: Iterable[Any], user_id: str | None = None
     """Append ledger movement rows and return their row ids.
 
     Each item can be a full ledger row dict, a LedgerMovementDraft, or a dict
-    shaped like LedgerMovementDraft plus optional ledger metadata.  Missing ids,
-    timestamps, currency, and status are filled conservatively.
+    shaped like LedgerMovementDraft plus optional ledger metadata. Missing ids,
+    timestamps, currency, and status are filled conservatively. The append is
+    serialized so concurrent desktop/phone requests cannot allocate the same
+    numeric IDs inside one app process.
     """
-    path = ensure_account_ledger(user_id=user_id)
-    existing = read_ledger_rows(user_id=user_id)
-    next_id = next_numeric_id(existing, field="id")
-    appended: list[dict[str, Any]] = []
-    ids: list[str] = []
-    for item in movements:
-        raw = _movement_to_dict(item)
-        row = _normalize_ledger_row(raw, next_id=next_id)
-        next_id += 1
-        appended.append(row)
-        ids.append(str(row["id"]))
-    if not appended:
+    items = list(movements)
+    if not items:
         return []
-    all_rows = [*existing, *appended]
-    write_ledger_rows(all_rows, user_id=user_id)
-    _notify_cache_changed()
-    return ids
+
+    with _LEDGER_APPEND_LOCK:
+        summary = account_ledger_partition_summary(user_id=user_id)
+        try:
+            next_id = int(summary.get("max_numeric_id") or 0) + 1
+        except (TypeError, ValueError):
+            next_id = 1
+        appended: list[dict[str, Any]] = []
+        ids: list[str] = []
+        for item in items:
+            raw = _movement_to_dict(item)
+            row = _normalize_ledger_row(raw, next_id=next_id)
+            next_id += 1
+            appended.append(row)
+            ids.append(str(row["id"]))
+        append_ledger_rows(appended, user_id=user_id)
+        return ids
 
 
 def ledger_rows_for_transaction(transaction_uid: str, include_void: bool = True, user_id: str | None = None) -> list[dict[str, Any]]:
@@ -440,11 +453,3 @@ def _format_money(value: float) -> str:
 
 def _truthy(value: Any) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
-
-
-def _notify_cache_changed() -> None:
-    try:
-        from money_manager.services.cache_service import notify_data_changed
-        notify_data_changed()
-    except Exception:
-        pass

@@ -121,16 +121,38 @@ def build_calendar_events(
     today = today or date.today()
     events: list[dict[str, Any]] = []
 
-    # Recurring rules: salaries, subscriptions, bills and other scheduled items.
+    # Read these shared sources once.  Previously the calendar loaded/decrypted
+    # pending and recurring storage multiple times in the same GET request.
+    try:
+        all_pending_rows = load_pending()
+    except Exception:
+        all_pending_rows = []
     try:
         from money_manager.repositories.recurring import load_recurring
 
-        recurring_rows = recurring_rows_for_scope(load_recurring(), selected_scope)
-        recurring_context = recurring_forecast_for_period(window_start, window_end, today=today)
+        all_recurring_rows = load_recurring()
+    except Exception:
+        all_recurring_rows = []
+
+    # Recurring rules: salaries, subscriptions, bills and other scheduled items.
+    try:
+        recurring_rows = recurring_rows_for_scope(all_recurring_rows, selected_scope)
+        recurring_context = recurring_forecast_for_period(
+            window_start,
+            window_end,
+            today=today,
+            pending_rows=all_pending_rows,
+            recurring_rows=all_recurring_rows,
+        )
         scoped_ids = {str(row.get("id", "")) for row in recurring_rows}
         scope_limited = _scope_is_limited(selected_scope)
         for item in recurring_context.get("items", []):
             if scope_limited and str(item.get("rule_id", "")) not in scoped_ids:
+                continue
+            # An open pending row is the source of truth for its current due
+            # date.  Rendering the recurring forecast as well produced two
+            # calendar payments after the pending row was postponed.
+            if item.get("is_open_pending"):
                 continue
             due = _parse_date(item.get("payment_due_date"))
             if not _inside(due, window_start, window_end):
@@ -172,7 +194,7 @@ def build_calendar_events(
 
     # Pending queue: visible near-term payments already generated.
     try:
-        pending_rows = pending_rows_for_scope(load_pending(), selected_scope)
+        pending_rows = pending_rows_for_scope(all_pending_rows, selected_scope)
         for row in pending_rows:
             if str(row.get("status") or "pending").casefold() != "pending":
                 continue

@@ -35,18 +35,6 @@ class _RowCacheEntry:
 _ROW_CACHE: "OrderedDict[str, _RowCacheEntry]" = OrderedDict()
 
 
-def _notify_cache_changed(path: Path | None = None) -> None:
-    try:
-        from money_manager.services.cache_service import notify_path_changed, notify_data_changed
-
-        if path is not None:
-            notify_path_changed(str(path))
-        else:
-            notify_data_changed()
-    except Exception:
-        pass
-
-
 def ensure_csv(path: Path, fieldnames: list[str]) -> None:
     """Create or migrate a CSV file while respecting encryption-at-rest."""
     ensure_csv_secure(path, fieldnames)
@@ -90,17 +78,18 @@ def read_rows(path: Path, fieldnames: list[str]) -> list[dict]:
 
 
 def write_rows(path: Path, fieldnames: list[str], rows: Iterable[dict]) -> None:
+    # secure_storage performs the authoritative cache invalidation after the
+    # atomic write.  Calling it again here doubled version bumps, disk-index
+    # writes and process-cache clears for every CSV mutation.
     write_csv_secure(path, fieldnames, rows)
     _invalidate_row_cache_for_path(path)
     request_cache.clear_user()
-    _notify_cache_changed(path)
 
 
 def append_row(path: Path, fieldnames: list[str], row: dict) -> None:
     append_csv_row_secure(path, fieldnames, row)
     _invalidate_row_cache_for_path(path)
     request_cache.clear_user()
-    _notify_cache_changed(path)
 
 
 def next_numeric_id(rows: list[dict], field: str = "id") -> int:

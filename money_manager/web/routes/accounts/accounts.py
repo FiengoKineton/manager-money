@@ -64,6 +64,11 @@ def _schedule_credit_refresh(*, force: bool = False) -> None:
     normal GET requests.  With encrypted CSVs and larger data folders this can
     turn a simple navigation click into a long write-heavy request or a 504.
     """
+
+    if not force and request.headers.get("X-MoneyManager-Warmup", "").strip() == "1":
+        # Background page preparation must stay read-only and low-impact.  The
+        # real page visit already schedules this maintenance when needed.
+        return
     user_id = _current_user_id()
     if not user_id:
         return

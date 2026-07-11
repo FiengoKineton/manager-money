@@ -33,7 +33,15 @@ def get_quick_overview_uncached() -> dict[str, Any]:
 
 
 def get_quick_overview_cached() -> dict[str, Any]:
-    return cached_context("quick_overview", get_quick_overview_uncached, params={})
+    # Keep the last validated disk value available during a transient encrypted
+    # file read/write collision.  The caller must never replace a known balance
+    # with a fabricated zero simply because one refresh failed.
+    return cached_context(
+        "quick_overview",
+        get_quick_overview_uncached,
+        params={},
+        allow_stale_on_error=True,
+    )
 
 
 def get_net_worth_cached(as_of: str | None = None) -> float:

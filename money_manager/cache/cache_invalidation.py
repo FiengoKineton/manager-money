@@ -38,6 +38,15 @@ def _note_turbo_data_changed(user_id: str | None = None, tags: Iterable[str] | N
         pass
 
 
+def _invalidate_rendered_pages(user_id: str | None = None, tags: Iterable[str] | None = None) -> None:
+    try:
+        from money_manager.performance.navigation_accelerator import invalidate_pages
+
+        invalidate_pages(user_id=user_id, tags=tags)
+    except Exception:
+        pass
+
+
 def invalidate_tags(tags: Iterable[str], user_id: str | None = None) -> int:
     safe_id = _resolve_optional_user(user_id)
     expanded = expand_tags(tags)
@@ -51,6 +60,7 @@ def invalidate_tags(tags: Iterable[str], user_id: str | None = None) -> int:
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id, tags=expanded)
     _clear_turbo_cache(user_id=safe_id, tags=expanded)
+    _invalidate_rendered_pages(user_id=safe_id, tags=expanded)
     try:
         from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
 
@@ -73,6 +83,7 @@ def invalidate_key(key: str, user_id: str | None = None) -> int:
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id)
     _clear_turbo_cache(user_id=safe_id)
+    _invalidate_rendered_pages(user_id=safe_id, tags=())
     try:
         from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
 
@@ -95,6 +106,7 @@ def invalidate_user_cache(user_id: str | None = None) -> int:
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id)
     _clear_turbo_cache(user_id=safe_id)
+    _invalidate_rendered_pages(user_id=safe_id, tags=())
     try:
         from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
 
@@ -134,6 +146,7 @@ def clear_user_cache(user_id: str | None = None) -> int:
     request_cache.clear_user(safe_id)
     process_cache.clear(user_id=safe_id)
     _clear_turbo_cache(user_id=safe_id)
+    _invalidate_rendered_pages(user_id=safe_id, tags=())
     try:
         from money_manager.cache.source_fingerprint_service import clear_fingerprint_caches
 

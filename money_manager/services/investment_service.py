@@ -763,12 +763,6 @@ def _write_cache(cache: dict) -> None:
     path = Path(INVESTMENT_MARKET_CACHE_JSON)
     path.parent.mkdir(exist_ok=True, parents=True)
     write_json_secure(path, cache)
-    try:
-        from money_manager.services.cache_service import notify_data_changed
-
-        notify_data_changed()
-    except Exception:
-        pass
 
 
 def _empty_chart(title: str) -> str:

@@ -47,5 +47,8 @@ def debts_page():
 
         return redirect(url_for("debts.debts_page"))
 
-    generate_debt_payments()
-    return render_template("support/debts.html", **page_context())
+    refresh_automatic = request.headers.get("X-MoneyManager-Warmup", "").strip() != "1"
+    return render_template(
+        "support/debts.html",
+        **page_context(refresh_automatic=refresh_automatic),
+    )

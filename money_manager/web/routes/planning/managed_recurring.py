@@ -62,5 +62,6 @@ def _managed_page(kind: str):
             kind,
             message=request.args.get("message", ""),
             error=request.args.get("error", ""),
+            refresh_automatic=request.headers.get("X-MoneyManager-Warmup", "").strip() != "1",
         ),
     )

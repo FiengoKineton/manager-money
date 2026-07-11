@@ -11,9 +11,32 @@ from money_manager.config.user_paths import get_current_user_id
 bp = Blueprint("settings_cache", __name__, url_prefix="/settings")
 
 
+def _template_context(*, action_result=None, error=None) -> dict:
+    user_id = get_current_user_id()
+    try:
+        from money_manager.performance.navigation_accelerator import stats as adaptive_page_cache_stats
+
+        page_cache = adaptive_page_cache_stats(user_id=user_id)
+    except Exception:
+        page_cache = {
+            "enabled": False,
+            "entry_count": 0,
+            "total_bytes": 0,
+            "stats": {},
+            "entries": [],
+            "usage": {},
+        }
+    return {
+        "cache": cache_inventory(user_id=user_id),
+        "adaptive_page_cache": page_cache,
+        "action_result": action_result,
+        "error": error,
+    }
+
+
 @bp.get("/cache")
 def cache_page():
-    return render_template("settings/cache.html", cache=cache_inventory(user_id=get_current_user_id()), action_result=None, error=None)
+    return render_template("settings/cache.html", **_template_context())
 
 
 @bp.post("/cache/clear")
@@ -26,7 +49,7 @@ def clear_cache_route():
         action_result = {"message": "cache_cleared", "removed": removed}
     except Exception as exc:
         error = str(exc)
-    return render_template("settings/cache.html", cache=cache_inventory(user_id=get_current_user_id()), action_result=action_result, error=error)
+    return render_template("settings/cache.html", **_template_context(action_result=action_result, error=error))
 
 
 @bp.post("/cache/rebuild")
@@ -38,7 +61,7 @@ def rebuild_cache_route():
         action_result["message"] = "cache_rebuilt"
     except Exception as exc:
         error = str(exc)
-    return render_template("settings/cache.html", cache=cache_inventory(user_id=get_current_user_id()), action_result=action_result, error=error)
+    return render_template("settings/cache.html", **_template_context(action_result=action_result, error=error))
 
 
 @bp.post("/cache/cleanup-stale")
@@ -50,4 +73,4 @@ def cleanup_stale_route():
         action_result = {"message": "stale_removed", "removed": removed}
     except Exception as exc:
         error = str(exc)
-    return render_template("settings/cache.html", cache=cache_inventory(user_id=get_current_user_id()), action_result=action_result, error=error)
+    return render_template("settings/cache.html", **_template_context(action_result=action_result, error=error))

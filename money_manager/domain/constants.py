@@ -141,6 +141,10 @@ PENDING_FIELDS = [
     "status",
     "source",
     "source_id",
+    # Stable identity of a generated recurring occurrence.  ``date_due`` is
+    # intentionally editable (a payment can be delayed), so it cannot also be
+    # used as the deduplication key for the recurring rule.
+    "source_occurrence_date",
     # Optional metadata used by credit-account statement aggregation.
     # Older CSVs are migrated automatically and keep working with blanks.
     "pending_kind",

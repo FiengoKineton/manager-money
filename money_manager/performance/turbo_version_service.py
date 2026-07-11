@@ -70,14 +70,22 @@ def note_data_changed(*, user_id: str | None = None, tags: Iterable[str] | None 
     unreachable immediately without filesystem polling.
     """
     safe_id = normalize_user_id(user_id) if user_id else ""
-    changed = set(expanded_tags(tags or ()))
+    supplied_tags = tuple(tags or ())
+    changed = set(expanded_tags(supplied_tags))
     if path:
         changed.update(_tags_for_path(path, user_id=safe_id))
-    if not changed:
+    global_change = not changed and not path and tags is not None
+    if not changed and not global_change:
         changed.add("money_rows")
 
     with _LOCK:
-        _GLOBAL_SERIALS[safe_id] = int(_GLOBAL_SERIALS.get(safe_id, 0)) + 1
+        if global_change:
+            _GLOBAL_SERIALS[safe_id] = int(_GLOBAL_SERIALS.get(safe_id, 0)) + 1
+            _drop_signature_cache_locked(user_id=safe_id, tags=set())
+            return
+        # Tagged writes must not advance the global serial.  Doing so made every
+        # cache signature change after every edit and defeated dependency-aware
+        # invalidation even though the runtime epoch itself was tag-scoped.
         for tag in changed:
             key = (safe_id, tag)
             _CHANGE_SERIALS[key] = int(_CHANGE_SERIALS.get(key, 0)) + 1
@@ -123,8 +131,13 @@ def signature(dependencies: Iterable[str], *, user_id: str, extra: dict[str, Any
     now = time.time()
     with _LOCK:
         cached = _SIGNATURE_CACHE.get(memo_key)
+        cached_at = float(_SIGNATURE_SAVED_AT.get(memo_key, 0.0) or 0.0)
+        # A memoized signature may be returned only inside the external-poll
+        # window.  The previous code returned it forever, so manual edits or a
+        # Git pull could remain invisible until an in-app write happened.
         if cached is not None:
-            return dict(cached)
+            if TRUST_RUNTIME_WRITES and (EXTERNAL_POLL_SECONDS <= 0 or now - cached_at < EXTERNAL_POLL_SECONDS):
+                return dict(cached)
 
     external_digest = ""
     if _should_poll_external(safe_id, tags, now):

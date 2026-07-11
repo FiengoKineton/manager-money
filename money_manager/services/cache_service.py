@@ -155,4 +155,10 @@ def cache_status() -> dict[str, Any]:
         status["json_object_cache"] = json_read_cache.stats()
     except Exception:
         pass
+    try:
+        from money_manager.performance.navigation_accelerator import stats as navigation_cache_stats
+
+        status["adaptive_page_cache"] = navigation_cache_stats()
+    except Exception:
+        pass
     return status

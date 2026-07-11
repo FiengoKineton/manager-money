@@ -116,7 +116,7 @@
     <script src="{{ url_for('static', filename='js/vendor/plotly.min.js') }}?v=plotly-6.5.2"></script>
   {% endif %}
 </head>
-<body class="app-body app-body-clean" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}">
+<body class="app-body app-body-clean" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}" data-page-endpoint="{{ request.endpoint or '' }}" data-navigation-plan-url="{{ url_for('money_manager_navigation_plan') }}">
   {% set ep = request.endpoint or '' %}
   {% set profile_open = ep.startswith('profile.') %}
 
@@ -436,9 +436,9 @@
     </section>
   </div>
 
-  <script src="{{ url_for('static', filename='js/shared/instant-nav.js') }}?v=instant-nav-3" defer></script>
+  <script src="{{ url_for('static', filename='js/shared/instant-nav.js') }}?v=adaptive-nav-1" defer></script>
   <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=navigation-refresh-3"></script>
-  <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-lazy-2"></script>
+  <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-lazy-3"></script>
   <script src="{{ url_for('static', filename='js/shared/smart-floating-submit.js') }}?v=smart-save-3" defer></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/command-palette.js') }}?v=command-palette-2" defer></script>

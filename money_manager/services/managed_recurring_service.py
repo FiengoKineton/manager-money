@@ -57,17 +57,25 @@ KIND_META = {
 }
 
 
-def page_context(kind: str, *, message: str = "", error: str = "", user_id: str | None = None) -> dict[str, Any]:
+def page_context(
+    kind: str,
+    *,
+    message: str = "",
+    error: str = "",
+    user_id: str | None = None,
+    refresh_automatic: bool = True,
+) -> dict[str, Any]:
     kind = _clean_kind(kind)
     load_warnings: list[str] = []
 
     # This page is a normal GET route, so it must render even when automatic
     # recurring generation has a bad/old row or encrypted IO is temporarily busy.
     # The user can still repair the data from the normal Recurring/Pending pages.
-    try:
-        generate_recurring()
-    except Exception as exc:
-        load_warnings.append(f"Automatic recurring refresh was skipped: {exc}")
+    if refresh_automatic:
+        try:
+            generate_recurring()
+        except Exception as exc:
+            load_warnings.append(f"Automatic recurring refresh was skipped: {exc}")
 
     try:
         payload = load_managed_recurring(user_id=user_id)

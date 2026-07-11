@@ -510,9 +510,10 @@ def rule_by_id(rule_id) -> dict | None:
     return None
 
 
-def page_context() -> dict:
-    _sync_debt_rules_with_debts()
-    generate_debt_payments()
+def page_context(*, refresh_automatic: bool = True) -> dict:
+    if refresh_automatic:
+        _sync_debt_rules_with_debts()
+        generate_debt_payments()
 
     debts = load_debts()
     rules = load_debt_rules()

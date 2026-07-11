@@ -23,6 +23,7 @@ def append_pending(tx: dict, due_date: date) -> int | None:
         "status": tx.get("status", "pending") or "pending",
         "source": tx.get("source", ""),
         "source_id": tx.get("source_id", ""),
+        "source_occurrence_date": tx.get("source_occurrence_date", ""),
         "pending_kind": tx.get("pending_kind", ""),
         "account_key": tx.get("account_key", ""),
         "account_label": tx.get("account_label", ""),
@@ -76,7 +77,7 @@ def update_pending(tx_id: int | str, updates: dict) -> None:
     for row in rows:
         if str(row.get("id", "")) != str(tx_id):
             continue
-        for key in ["type", "date_due", "amount", "category", "account", "description", "status", "source", "source_id", "pending_kind", "account_key", "account_label", "statement_month", "date_charge", "account_id", "account_name_snapshot", "payment_method_id", "payment_method_name_snapshot", "payment_resolution_template_json"]:
+        for key in ["type", "date_due", "amount", "category", "account", "description", "status", "source", "source_id", "source_occurrence_date", "pending_kind", "account_key", "account_label", "statement_month", "date_charge", "account_id", "account_name_snapshot", "payment_method_id", "payment_method_name_snapshot", "payment_resolution_template_json"]:
             if key in updates:
                 row[key] = updates[key]
         break

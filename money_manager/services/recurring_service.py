@@ -320,6 +320,7 @@ def generate_recurring(today: date | None = None) -> int:
                     "description": row.get("name", ""),
                     "source": "recurring",
                     "source_id": row.get("id", ""),
+                    "source_occurrence_date": scheduled_date.isoformat(),
                 },
                 pending_due_date,
             )
@@ -354,13 +355,20 @@ def recurring_forecast_for_current_month(today: date | None = None) -> dict:
     return recurring_forecast_for_period(window_start, window_end, today=today)
 
 
-def recurring_forecast_for_period(window_start: date, window_end: date, today: date | None = None) -> dict:
+def recurring_forecast_for_period(
+    window_start: date,
+    window_end: date,
+    today: date | None = None,
+    *,
+    pending_rows: list[dict] | None = None,
+    recurring_rows: list[dict] | None = None,
+) -> dict:
     """Preview recurring payments due in a period without writing pending rows."""
     today = today or date.today()
-    pending_rows = load_pending()
+    pending_rows = load_pending() if pending_rows is None else list(pending_rows)
     forecast_rows = []
 
-    for row in load_recurring():
+    for row in (load_recurring() if recurring_rows is None else list(recurring_rows)):
         for occurrence in _iter_scheduled_occurrences(row, stop_date=window_end, today=today):
             scheduled_date = occurrence["scheduled_date"]
             payment_due_date = _pending_due_date_for_rule(row, scheduled_date)
@@ -514,12 +522,22 @@ def _matching_pending_row(
     account: str,
 ) -> dict | None:
     due = pending_due_date.isoformat()
+    occurrence_due = scheduled_date.isoformat()
     rule_id = str(row.get("id", ""))
     name = str(row.get("name", ""))
     transaction_type = str(row.get("type", ""))
     category = str(row.get("category", ""))
     amount = normalize_amount(row.get("amount", 0))
 
+    # Current rows have a stable occurrence key.  It deliberately remains the
+    # original scheduled date even when the user postpones ``date_due``.
+    for tx in pending_rows:
+        same_source = tx.get("source") == "recurring" and str(tx.get("source_id", "")) == rule_id
+        if same_source and str(tx.get("source_occurrence_date") or "") == occurrence_due:
+            return tx
+
+    # Backward compatibility for rows created before source_occurrence_date was
+    # introduced.  An unchanged due date remains an exact and unambiguous match.
     for tx in pending_rows:
         if tx.get("date_due") != due:
             continue
@@ -536,7 +554,52 @@ def _matching_pending_row(
         if same_source or same_legacy_row:
             return tx
 
+    # A legacy recurring row may already have been delayed, so its editable due
+    # date no longer equals the rule occurrence. Associate each such row with
+    # the generated occurrence whose original payment due date is nearest. This
+    # also works when old executed pending rows were deleted, where simple
+    # position/ID pairing would shift every later occurrence.
+    last_generated = parse_date(row.get("last_generated"))
+    if last_generated and scheduled_date <= last_generated:
+        source_rows = [
+            tx for tx in pending_rows
+            if tx.get("source") == "recurring"
+            and str(tx.get("source_id", "")) == rule_id
+            and not str(tx.get("source_occurrence_date") or "").strip()
+        ]
+        reserved_occurrences = {
+            str(tx.get("source_occurrence_date") or "")
+            for tx in pending_rows
+            if tx.get("source") == "recurring"
+            and str(tx.get("source_id", "")) == rule_id
+            and str(tx.get("source_occurrence_date") or "").strip()
+        }
+        generated_dates = [
+            occurrence["scheduled_date"]
+            for occurrence in _iter_scheduled_occurrences(row, stop_date=last_generated, today=scheduled_date)
+            if occurrence["scheduled_date"].isoformat() not in reserved_occurrences
+        ]
+        for legacy_row in sorted(source_rows, key=_pending_creation_sort_key):
+            legacy_due = parse_date(legacy_row.get("date_due"))
+            if legacy_due is None or not generated_dates:
+                continue
+            nearest = min(
+                generated_dates,
+                key=lambda generated_date: (
+                    abs((_pending_due_date_for_rule(row, generated_date) - legacy_due).days),
+                    generated_date,
+                ),
+            )
+            if nearest == scheduled_date:
+                return legacy_row
+
     return None
+
+
+def _pending_creation_sort_key(row: dict) -> tuple[int, str, str]:
+    raw_id = str(row.get("id") or "")
+    numeric_id = int(raw_id) if raw_id.isdigit() else 2**31 - 1
+    return numeric_id, str(row.get("date_due") or ""), raw_id
 
 
 def _nth_occurrence_date(row: dict, occurrence_number: int) -> date | None:

@@ -56,6 +56,34 @@
 </section>
 
 <section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">Adaptive navigation</span>
+      <h3>Prepared pages</h3>
+      <p>The current page is stored after rendering. Likely next pages are prepared in the background and invalidated only when their data dependencies change.</p>
+    </div>
+  </div>
+  <div class="kpi-grid account-kpi-grid">
+    <article class="kpi-card tone-net"><span>Ready pages</span><strong>{{ adaptive_page_cache.entry_count }}</strong><small>{{ (adaptive_page_cache.total_bytes / 1024)|round(1) }} KB in memory</small></article>
+    <article class="kpi-card tone-income"><span>Instant hits</span><strong>{{ adaptive_page_cache.stats.hits or 0 }}</strong><small>{{ adaptive_page_cache.stats.stores or 0 }} pages prepared</small></article>
+    <article class="kpi-card tone-expense"><span>Background requests</span><strong>{{ adaptive_page_cache.stats.warm_requests or 0 }}</strong><small>{{ adaptive_page_cache.stats.warm_skips or 0 }} already ready or in progress</small></article>
+    <article class="kpi-card tone-investment"><span>Selective invalidations</span><strong>{{ adaptive_page_cache.stats.invalidations or 0 }}</strong><small>{{ "Enabled" if adaptive_page_cache.enabled else "Disabled" }}</small></article>
+  </div>
+  {% if adaptive_page_cache.entries %}
+  <div class="table-responsive">
+    <table>
+      <thead><tr><th>Page</th><th>Path</th><th>Age</th><th>Hits</th><th>Size</th></tr></thead>
+      <tbody>
+        {% for entry in adaptive_page_cache.entries|sort(attribute='hits', reverse=true) %}
+        <tr><td>{{ entry.endpoint }}</td><td>{{ entry.path }}</td><td>{{ entry.age_seconds }} s</td><td>{{ entry.hits }}</td><td>{{ (entry.bytes / 1024)|round(1) }} KB</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+
+<section class="panel-card">
   <div class="panel-header"><div><span class="eyebrow">{{ t("cache.cache_entries") }}</span><h3>{{ t("cache.entries") }}</h3></div></div>
   <div class="table-responsive">
     <table>

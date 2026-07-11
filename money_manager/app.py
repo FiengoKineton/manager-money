@@ -18,6 +18,11 @@ def _is_prefetch_request() -> bool:
     try:
         if request.method != "GET":
             return False
+        # Explicit Money Manager warm-up fetches are intentional and are handled
+        # by the adaptive page accelerator.  Do not mistake them for browser
+        # speculation and short-circuit them.
+        if request.headers.get("X-MoneyManager-Warmup", "").strip() == "1":
+            return False
         purpose = " ".join([
             request.headers.get("Purpose", ""),
             request.headers.get("Sec-Purpose", ""),
@@ -110,5 +115,14 @@ def create_app() -> Flask:
         except Exception:
             pass
         return response
+
+    try:
+        from money_manager.performance.navigation_accelerator import init_app as init_navigation_accelerator
+
+        init_navigation_accelerator(app)
+    except Exception:
+        # The accelerator is an optional performance layer; the application must
+        # remain usable even if a platform-specific runtime cannot initialise it.
+        pass
 
     return app

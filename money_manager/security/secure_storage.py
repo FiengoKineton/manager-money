@@ -68,7 +68,13 @@ def read_json_secure(logical_name_or_path: str | os.PathLike[str], default: Any 
         return default
 
 
-def write_json_secure(logical_name_or_path: str | os.PathLike[str], payload: Any, user_id: str | None = None) -> None:
+def write_json_secure(
+    logical_name_or_path: str | os.PathLike[str],
+    payload: Any,
+    user_id: str | None = None,
+    *,
+    notify_cache: bool = True,
+) -> None:
     path, logical_name, resolved_user_id = _resolve(logical_name_or_path, user_id=user_id)
     raw = json.dumps(payload, indent=2, ensure_ascii=False).encode("utf-8")
     try:
@@ -80,7 +86,8 @@ def write_json_secure(logical_name_or_path: str | os.PathLike[str], payload: Any
         _json_object_cache().set_value(path, payload, user_id=resolved_user_id)
     except Exception:
         pass
-    _notify_cache_changed(path=path, logical_name=logical_name, user_id=resolved_user_id)
+    if notify_cache:
+        _notify_cache_changed(path=path, logical_name=logical_name, user_id=resolved_user_id)
 
 def secure_read_text(user_id: str | None, path: str | os.PathLike[str], encoding: str = "utf-8-sig") -> str:
     target, logical_name, resolved_user_id = _resolve(path, user_id=user_id)

@@ -1,13 +1,13 @@
 (function () {
-  var CACHE_TTL_MS = 30 * 1000;
-  var FETCH_TIMEOUT_MS = 2500;
+  var STALE_CACHE_TTL_MS = 10 * 60 * 1000;
+  var FETCH_TIMEOUT_MS = 5000;
 
   function now() {
     return Date.now ? Date.now() : new Date().getTime();
   }
 
   function cacheKey(url) {
-    return "money-manager:topbar-summary:" + String(url || "");
+    return "money-manager:topbar-summary:v2:" + String(url || "");
   }
 
   function readCached(url) {
@@ -15,7 +15,8 @@
       var raw = window.sessionStorage && window.sessionStorage.getItem(cacheKey(url));
       if (!raw) return null;
       var item = JSON.parse(raw);
-      if (!item || !item.payload || now() - Number(item.savedAt || 0) > CACHE_TTL_MS) return null;
+      var age = now() - Number(item && item.savedAt || 0);
+      if (!item || !item.payload || age > STALE_CACHE_TTL_MS) return null;
       return item.payload;
     } catch (error) {
       return null;
@@ -83,8 +84,10 @@
     groups.forEach((groupPills, url) => {
       var cached = readCached(url);
       if (cached) {
+        // Stale-while-revalidate: paint instantly from session cache, then
+        // refresh in the idle queue so a transaction saved on the previous
+        // page is reflected without making navigation wait.
         groupPills.forEach((pill) => updatePill(pill, cached));
-        return;
       }
 
       runWhenIdle(function () {
@@ -98,7 +101,9 @@
           .catch(() => {
             groupPills.forEach((pill) => {
               const valueNode = pill.querySelector("[data-topbar-net-value], [data-phone-net-value]");
-              if (valueNode && valueNode.textContent === "Loading…") valueNode.textContent = "€ 0.00";
+              // A failed GET is not a zero balance. Keep any last-known value;
+              // on a first-load failure show an unavailable marker instead.
+              if (valueNode && valueNode.textContent === "Loading…") valueNode.textContent = "—";
             });
           });
       });

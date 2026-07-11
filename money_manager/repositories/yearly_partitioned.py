@@ -273,6 +273,36 @@ def append_partitioned_row(spec: YearlyDatasetSpec, row: Mapping[str, Any], user
 
 
 @_partition_locked
+def append_partitioned_rows(
+    spec: YearlyDatasetSpec,
+    rows: Iterable[Mapping[str, Any]],
+    user_id: str | None = None,
+) -> None:
+    """Append a batch while reading/writing each affected year only once.
+
+    Ledger postings commonly contain two or more movements for the same date.
+    Appending them one by one repeatedly decrypted and rewrote the same yearly
+    CSV and rebuilt its summary after every movement.
+    """
+    ensure_partitioned(spec, user_id=user_id)
+    grouped: dict[int, list[dict[str, Any]]] = {}
+    for source in rows:
+        normalized = _normalized_row(spec, source)
+        grouped.setdefault(_row_year(normalized, spec.date_field), []).append(normalized)
+    if not grouped:
+        return
+
+    changed_rows: dict[int, list[dict[str, Any]]] = {}
+    for year, additions in grouped.items():
+        path = yearly_path(spec, year, user_id=user_id)
+        existing = read_rows(path, list(spec.fields)) if path.exists() else []
+        final_rows = [*existing, *additions]
+        write_rows(path, list(spec.fields), final_rows)
+        changed_rows[year] = final_rows
+    _refresh_changed_years(spec, changed_rows, user_id=user_id)
+
+
+@_partition_locked
 def next_partitioned_id(spec: YearlyDatasetSpec, user_id: str | None = None) -> int:
     summary = ensure_partitioned(spec, user_id=user_id)
     try:
@@ -385,7 +415,7 @@ def migrate_legacy_file(spec: YearlyDatasetSpec, user_id: str | None = None) -> 
         "archived_to": destination.relative_to(get_user_data_dir(user_id)).as_posix(),
         "source_rows": len(rows),
     }
-    write_json_secure(summary_path(spec, user_id=user_id), rebuilt, user_id=user_id)
+    write_json_secure(summary_path(spec, user_id=user_id), rebuilt, user_id=user_id, notify_cache=False)
     return rebuilt
 
 
@@ -433,7 +463,7 @@ def rebuild_summary(spec: YearlyDatasetSpec, user_id: str | None = None, *, repa
         "duplicate_ids_found": sorted(set(duplicate_ids)),
         "duplicate_ids_removed": [],
     }
-    write_json_secure(summary_path(spec, user_id=user_id), summary, user_id=user_id)
+    write_json_secure(summary_path(spec, user_id=user_id), summary, user_id=user_id, notify_cache=False)
     return summary
 
 
@@ -557,11 +587,27 @@ def _summary_matches_files(spec: YearlyDatasetSpec, summary: Mapping[str, Any], 
 
 
 def _refresh_changed_year(spec: YearlyDatasetSpec, year: int, user_id: str | None = None) -> dict[str, Any]:
-    """Refresh one yearly entry and derive all cumulative values from the index.
+    """Refresh one yearly entry and derive all cumulative values from the index."""
+    path = yearly_path(spec, year, user_id=user_id)
+    changed_rows: dict[int, list[dict[str, Any]]] = {}
+    if path.exists():
+        changed_rows[year] = [
+            _normalized_row(spec, row)
+            for row in read_rows(path, list(spec.fields))
+        ]
+    return _refresh_changed_years(spec, changed_rows, user_id=user_id)
 
-    Normal writes decrypt only the affected year's CSV. Older years are reused
-    from the validated summary, so adding a 2027 row does not reread 2025/2026.
-    A full rebuild remains available from Integrity for deliberate verification.
+
+def _refresh_changed_years(
+    spec: YearlyDatasetSpec,
+    changed_rows: Mapping[int, list[dict[str, Any]]],
+    user_id: str | None = None,
+) -> dict[str, Any]:
+    """Refresh affected years and reuse validated entries for untouched years.
+
+    This is the batch equivalent of the original single-year refresh.  It keeps
+    normal writes proportional to the current year instead of rereading the
+    complete history.
     """
     previous = load_summary(spec, user_id=user_id)
     if spec.context_fingerprint and str(previous.get("context_fingerprint") or "") != spec.context_fingerprint(user_id):
@@ -569,8 +615,8 @@ def _refresh_changed_year(spec: YearlyDatasetSpec, year: int, user_id: str | Non
     previous_years = previous.get("years") if isinstance(previous.get("years"), Mapping) else {}
     entries: dict[int, Mapping[str, Any]] = {}
     for candidate in discover_years(spec, user_id=user_id):
-        if candidate == year:
-            rows = [_normalized_row(spec, row) for row in read_rows(yearly_path(spec, candidate, user_id=user_id), list(spec.fields))]
+        if candidate in changed_rows:
+            rows = [_normalized_row(spec, row) for row in changed_rows[candidate]]
             entries[candidate] = _year_entry(spec, candidate, rows, user_id=user_id)
             continue
         cached = previous_years.get(str(candidate)) if isinstance(previous_years, Mapping) else None
@@ -592,6 +638,6 @@ def _refresh_changed_year(spec: YearlyDatasetSpec, year: int, user_id: str | Non
     rebuilt = _summary_from_entries(spec, entries, user_id=user_id)
     if isinstance(previous.get("migration"), Mapping):
         rebuilt["migration"] = dict(previous["migration"])
-    write_json_secure(summary_path(spec, user_id=user_id), rebuilt, user_id=user_id)
+    write_json_secure(summary_path(spec, user_id=user_id), rebuilt, user_id=user_id, notify_cache=False)
     return rebuilt
 

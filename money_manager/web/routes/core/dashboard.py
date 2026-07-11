@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, jsonify, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, send_file, url_for
 from time import monotonic
 import threading
 
@@ -26,10 +26,40 @@ _auto_refresh_lock = threading.RLock()
 _auto_refresh_running: set[str] = set()
 _last_auto_refresh_at_by_user: dict[str, float] = {}
 
+_TOPBAR_LAST_GOOD_TTL_SECONDS = 15 * 60
+_TOPBAR_LAST_GOOD_MAX_ENTRIES = 256
+_topbar_last_good_lock = threading.RLock()
+_topbar_last_good: dict[str, tuple[float, dict]] = {}
+
 
 def _current_user_id() -> str:
     user = current_user() or {}
     return str(user.get("id") or "").strip()
+
+
+def _topbar_request_key() -> str:
+    return f"{_current_user_id()}:{request.full_path.rstrip('?')}"
+
+
+def _remember_topbar_payload(key: str, payload: dict) -> None:
+    with _topbar_last_good_lock:
+        _topbar_last_good[key] = (monotonic(), dict(payload))
+        if len(_topbar_last_good) > _TOPBAR_LAST_GOOD_MAX_ENTRIES:
+            oldest = sorted(_topbar_last_good.items(), key=lambda item: item[1][0])
+            for stale_key, _ in oldest[: len(_topbar_last_good) - _TOPBAR_LAST_GOOD_MAX_ENTRIES]:
+                _topbar_last_good.pop(stale_key, None)
+
+
+def _last_good_topbar_payload(key: str) -> dict | None:
+    with _topbar_last_good_lock:
+        item = _topbar_last_good.get(key)
+        if item is None:
+            return None
+        saved_at, payload = item
+        if monotonic() - saved_at > _TOPBAR_LAST_GOOD_TTL_SECONDS:
+            _topbar_last_good.pop(key, None)
+            return None
+        return dict(payload)
 
 
 @bp.route("/user-plots/<path:filename>")
@@ -64,6 +94,11 @@ def _schedule_automatic_items_refresh(*, force: bool = False) -> None:
     this maintenance synchronously before rendering /home, /overview and
     /dashboard, which could make a simple click wait on encrypted file IO.
     """
+
+    if not force and request.headers.get("X-MoneyManager-Warmup", "").strip() == "1":
+        # Background page preparation must stay read-only and low-impact.  The
+        # real page visit already schedules this maintenance when needed.
+        return
     user_id = _current_user_id()
     if not user_id:
         return
@@ -99,8 +134,9 @@ def home():
 
 @bp.get("/api/topbar-summary")
 def topbar_summary_api():
-    selected_scope = resolve_request_scope(request)
+    request_key = _topbar_request_key()
     try:
+        selected_scope = resolve_request_scope(request)
         # The dashboard may explicitly ask for a one-month net. This query-only
         # override is never persisted, so every other page immediately returns
         # to the normal full-history topbar balance.
@@ -124,7 +160,12 @@ def topbar_summary_api():
         elif selected_scope.get("is_account") and selected_scope.get("account_id"):
             from money_manager.services.account_scope_service import scope_balance_summary
 
-            summary = scope_balance_summary(selected_scope)
+            summary = cached_context(
+                "scope_balance_summary",
+                lambda: scope_balance_summary(selected_scope),
+                params={"scope": selected_scope.get("scope", "global"), "view": "topbar"},
+                allow_stale_on_error=True,
+            )
             net = float(summary.get("net_balance", 0.0) or 0.0)
             label = f"{selected_scope.get('label') or selected_scope.get('account_id')} net"
         else:
@@ -132,10 +173,22 @@ def topbar_summary_api():
 
             net = float(get_quick_overview_cached().get("net_worth", 0.0) or 0.0)
             label = "All Conti net"
-    except Exception:
-        net = 0.0
-        label = "All Conti net"
-    return jsonify({"ok": True, "net": net, "net_formatted": format_euro(net), "label": label})
+        payload = {"ok": True, "net": net, "net_formatted": format_euro(net), "label": label, "stale": False}
+        _remember_topbar_payload(request_key, payload)
+        return jsonify(payload)
+    except Exception as exc:
+        current_app.logger.warning("Topbar summary refresh failed; preserving last good value: %s", exc)
+        fallback = _last_good_topbar_payload(request_key)
+        if fallback is not None:
+            fallback["stale"] = True
+            return jsonify(fallback)
+        return jsonify({
+            "ok": False,
+            "net": None,
+            "net_formatted": "—",
+            "label": "All Conti net",
+            "stale": True,
+        }), 503
 
 @bp.route("/home")
 def overview():

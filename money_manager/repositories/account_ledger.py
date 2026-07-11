@@ -7,6 +7,7 @@ from money_manager.domain.constants import ACCOUNT_LEDGER_FIELDS
 from money_manager.repositories.yearly_partitioned import (
     YearlyDatasetSpec,
     append_partitioned_row,
+    append_partitioned_rows,
     dataset_root,
     ensure_partitioned,
     load_summary,
@@ -71,6 +72,10 @@ def write_ledger_rows(rows: Iterable[dict], user_id: str | None = None) -> None:
 
 def append_ledger_row(row: dict, user_id: str | None = None) -> None:
     append_partitioned_row(ACCOUNT_LEDGER_SPEC, row, user_id=user_id)
+
+
+def append_ledger_rows(rows: Iterable[dict], user_id: str | None = None) -> None:
+    append_partitioned_rows(ACCOUNT_LEDGER_SPEC, rows, user_id=user_id)
 
 
 def account_ledger_partition_summary(user_id: str | None = None) -> dict[str, Any]:
