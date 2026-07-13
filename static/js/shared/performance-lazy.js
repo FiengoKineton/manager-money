@@ -1,5 +1,6 @@
 (function () {
   var STALE_CACHE_TTL_MS = 10 * 60 * 1000;
+  var FRESH_CACHE_TTL_MS = 20 * 1000;
   var FETCH_TIMEOUT_MS = 5000;
 
   function now() {
@@ -7,7 +8,19 @@
   }
 
   function cacheKey(url) {
-    return "money-manager:topbar-summary:v2:" + String(url || "");
+    return "money-manager:topbar-summary:v3:" + String(url || "");
+  }
+
+  function pageSignalsFreshData() {
+    try {
+      var params = new URLSearchParams(window.location.search || "");
+      return [
+        "saved", "updated", "deleted", "created", "success", "message",
+        "category_added", "account_closed", "reconciled"
+      ].some(function (key) { return params.has(key); });
+    } catch (error) {
+      return false;
+    }
   }
 
   function readCached(url) {
@@ -17,7 +30,7 @@
       var item = JSON.parse(raw);
       var age = now() - Number(item && item.savedAt || 0);
       if (!item || !item.payload || age > STALE_CACHE_TTL_MS) return null;
-      return item.payload;
+      return {payload: item.payload, age: age};
     } catch (error) {
       return null;
     }
@@ -81,13 +94,17 @@
       groups.get(url).push(pill);
     });
 
+    var forceRefresh = pageSignalsFreshData();
+
     groups.forEach((groupPills, url) => {
       var cached = readCached(url);
       if (cached) {
-        // Stale-while-revalidate: paint instantly from session cache, then
-        // refresh in the idle queue so a transaction saved on the previous
-        // page is reflected without making navigation wait.
-        groupPills.forEach((pill) => updatePill(pill, cached));
+        // Paint instantly. During rapid navigation, a value fetched on the
+        // previous page is still fresh; avoid issuing the same summary request
+        // again for every document. Older cached values use stale-while-
+        // revalidate so writes still become visible automatically.
+        groupPills.forEach((pill) => updatePill(pill, cached.payload));
+        if (!forceRefresh && cached.age <= FRESH_CACHE_TTL_MS) return;
       }
 
       runWhenIdle(function () {

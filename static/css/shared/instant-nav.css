@@ -27,3 +27,107 @@ body.is-navigating a,
 body.is-navigating button {
   cursor: progress;
 }
+
+/* Keep the current document readable while the destination is prepared in the
+   server-side rendered-page cache. The final browser navigation then consumes
+   the hot page instead of showing a blank shell during the expensive work. */
+body.is-navigation-preparing .app-content-stage {
+  opacity: 0.88;
+  filter: saturate(0.96);
+}
+
+/* Dedicated navigation status element.
+   Do not use body::after here: the visual theme already uses body::after as a
+   34-44rem cursor-following aurora. Reusing that pseudo-element inherited its
+   size and pointer position and produced the giant white circle during page
+   preparation. */
+.nav-transition-status {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 10000;
+  width: auto;
+  height: auto;
+  padding: 0.62rem 0.88rem;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  color: var(--ink, #17231d);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 14px 38px rgba(31, 41, 55, 0.16);
+  backdrop-filter: blur(14px) saturate(1.16);
+  -webkit-backdrop-filter: blur(14px) saturate(1.16);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms;
+}
+
+body.is-navigation-preparing .nav-transition-status {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition-delay: 0s;
+}
+
+html[data-theme="night"] .nav-transition-status {
+  color: #e6edf3;
+  border-color: rgba(203, 213, 225, 0.15);
+  background: rgba(20, 28, 39, 0.88);
+}
+
+html[data-theme="comfort"] .nav-transition-status {
+  color: #2d3b31;
+  border-color: rgba(128, 118, 92, 0.20);
+  background: rgba(250, 244, 226, 0.88);
+}
+
+/* Hide cursor-following aura layers while the browser captures the outgoing
+   page for a cross-document transition. This prevents a residual glow from
+   being frozen into the transition snapshot. */
+body.is-navigating.app-body-clean::after,
+body.is-navigating .desktop-pointer-glow {
+  opacity: 0 !important;
+  animation: none !important;
+}
+
+@keyframes navigation-status-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Chromium/Edge can keep the previous document visible until the new one is
+   ready. Other browsers simply ignore this progressive enhancement. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: mm-page-out 120ms ease both;
+}
+
+::view-transition-new(root) {
+  animation: mm-page-in 170ms ease both;
+}
+
+@keyframes mm-page-out {
+  to { opacity: 0.72; transform: translateY(-2px); }
+}
+
+@keyframes mm-page-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  .nav-transition-status {
+    animation: none !important;
+    transition: none !important;
+  }
+}

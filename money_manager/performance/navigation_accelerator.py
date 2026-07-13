@@ -43,11 +43,12 @@ _MAX_ENTRIES = max(8, int(os.environ.get("MONEY_MANAGER_PAGE_CACHE_ENTRIES", "64
 _MAX_TOTAL_BYTES = max(4 * 1024 * 1024, int(os.environ.get("MONEY_MANAGER_PAGE_CACHE_BYTES", str(48 * 1024 * 1024)) or (48 * 1024 * 1024)))
 _MAX_ENTRY_BYTES = max(256 * 1024, int(os.environ.get("MONEY_MANAGER_PAGE_CACHE_ENTRY_BYTES", str(4 * 1024 * 1024)) or (4 * 1024 * 1024)))
 _TTL_SECONDS = max(30.0, float(os.environ.get("MONEY_MANAGER_PAGE_CACHE_TTL_SECONDS", "600") or 600))
-_WAIT_FOR_WARM_SECONDS = max(0.0, float(os.environ.get("MONEY_MANAGER_PAGE_CACHE_WAIT_SECONDS", "2.5") or 2.5))
-_PLAN_LIMIT = max(1, int(os.environ.get("MONEY_MANAGER_BACKGROUND_WARM_LIMIT", "32") or 32))
+_WAIT_FOR_WARM_SECONDS = max(0.0, float(os.environ.get("MONEY_MANAGER_PAGE_CACHE_WAIT_SECONDS", "0.45") or 0.45))
+_PLAN_LIMIT = max(1, int(os.environ.get("MONEY_MANAGER_BACKGROUND_WARM_LIMIT", "8") or 8))
 _USAGE_FLUSH_SECONDS = max(1.0, float(os.environ.get("MONEY_MANAGER_NAV_USAGE_FLUSH_SECONDS", "4") or 4))
+_VALIDATION_INTERVAL_SECONDS = max(0.0, float(os.environ.get("MONEY_MANAGER_PAGE_CACHE_VALIDATION_SECONDS", "2.0") or 2.0))
 _PROCESS_TOKEN = uuid.uuid4().hex[:12]
-_SCHEMA_TOKEN = "adaptive-page-cache-v1"
+_SCHEMA_TOKEN = "adaptive-page-cache-v2"
 
 _SHELL_DEPENDENCIES = ("profile", "preferences", "navigation", "accounts")
 
@@ -143,6 +144,7 @@ class _PageEntry:
     body: bytes
     created_at: float
     expires_at: float
+    validated_at: float
     hits: int = 0
 
 
@@ -536,6 +538,16 @@ def _get_valid_entry(key: str, user_id: str, definition: PageDefinition) -> _Pag
         if entry.expires_at <= now:
             _remove_entry_locked(key)
             return None
+        # Consecutive navigation requests often arrive within milliseconds (the
+        # document plus topbar/lazy helpers).  Recomputing even the throttled
+        # dependency signature for every hit adds avoidable lock and stat work.
+        # The underlying external-file poll is already delayed, so a short
+        # validation grace preserves correctness while keeping the hot path hot.
+        if now - float(entry.validated_at or 0.0) <= _VALIDATION_INTERVAL_SECONDS:
+            entry.hits += 1
+            _ENTRIES.move_to_end(key)
+            _STATS["hits"] = int(_STATS.get("hits", 0)) + 1
+            return entry
 
     try:
         digest = _entry_signature(definition, user_id)
@@ -550,6 +562,7 @@ def _get_valid_entry(key: str, user_id: str, definition: PageDefinition) -> _Pag
         current = _ENTRIES.get(key)
         if current is None:
             return None
+        current.validated_at = now
         current.hits += 1
         _ENTRIES.move_to_end(key)
         _STATS["hits"] = int(_STATS.get("hits", 0)) + 1
@@ -584,6 +597,7 @@ def _store_response(key: str, user_id: str, definition: PageDefinition, response
         body=body,
         created_at=now,
         expires_at=now + _TTL_SECONDS,
+        validated_at=now,
     )
     with _LOCK:
         old = _ENTRIES.pop(key, None)

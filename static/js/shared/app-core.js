@@ -1333,10 +1333,11 @@
       const isComfort = mode === "comfort";
       const targetMode = isComfort ? "day" : "comfort";
       button.classList.toggle("is-active", isComfort);
+      button.classList.toggle("shows-light-target", targetMode === "day");
+      button.classList.toggle("shows-comfort-target", targetMode === "comfort");
+      button.dataset.targetMode = targetMode;
       button.setAttribute("aria-label", `Switch to ${modeLabel(targetMode)} mode`);
       button.setAttribute("title", `Switch to ${modeLabel(targetMode)} mode`);
-      const label = button.querySelector("[data-theme-comfort-label]");
-      if (label) label.textContent = isComfort ? "Light" : "Comfort";
     });
   }
 
@@ -1362,48 +1363,90 @@
 
 /* --------------------------------------------------------------------------
    Browser history controls
+
+   Back and forward must operate on the real browser history.  The previous
+   fallback redirected to Home after 450 ms when a slow page had not committed
+   yet; that replaced the forward stack and made Back look like an All Conti
+   shortcut.  Never redirect here: Home already has its own explicit button.
 -------------------------------------------------------------------------- */
 (function () {
-  function homeFallback() {
-    const home = document.querySelector('[aria-label="Home"][href], .phone-dock-item[href], a[href="/dashboard"], a[href="/accounts"]');
-    return home ? home.getAttribute('href') : '/dashboard';
+  function navigationApi() {
+    return window.navigation && typeof window.navigation === "object"
+      ? window.navigation
+      : null;
   }
 
   function navigateBack() {
-    const before = window.location.href;
-    if (window.history.length > 1) {
-      window.history.back();
-      window.setTimeout(() => {
-        if (window.location.href === before && homeFallback()) window.location.href = homeFallback();
-      }, 450);
+    const nav = navigationApi();
+    if (nav && nav.canGoBack && typeof nav.back === "function") {
+      try { nav.back(); } catch (error) {}
       return;
     }
-    window.location.href = homeFallback();
+    if (window.history.length > 1) {
+      window.history.back();
+    }
   }
 
   function navigateForward() {
+    const nav = navigationApi();
+    if (nav && nav.canGoForward && typeof nav.forward === "function") {
+      try { nav.forward(); } catch (error) {}
+      return;
+    }
+    // The classic History API has no reliable canGoForward flag. Calling it
+    // with an empty forward stack is a safe no-op.
     window.history.forward();
   }
 
-  document.addEventListener('click', function (event) {
-    const back = event.target.closest('[data-browser-back]');
+  function syncHistoryButtons() {
+    const nav = navigationApi();
+    document.querySelectorAll("[data-browser-back]").forEach(function (button) {
+      if (nav && typeof nav.canGoBack === "boolean") {
+        button.disabled = !nav.canGoBack;
+        button.setAttribute("aria-disabled", nav.canGoBack ? "false" : "true");
+      } else {
+        button.disabled = false;
+        button.removeAttribute("aria-disabled");
+      }
+    });
+    document.querySelectorAll("[data-browser-forward]").forEach(function (button) {
+      if (nav && typeof nav.canGoForward === "boolean") {
+        button.disabled = !nav.canGoForward;
+        button.setAttribute("aria-disabled", nav.canGoForward ? "false" : "true");
+      } else {
+        button.disabled = false;
+        button.removeAttribute("aria-disabled");
+      }
+    });
+  }
+
+  document.addEventListener("click", function (event) {
+    const back = event.target.closest("[data-browser-back]");
     if (back) {
       event.preventDefault();
       navigateBack();
       return;
     }
 
-    const refresh = event.target.closest('[data-browser-refresh]');
+    const refresh = event.target.closest("[data-browser-refresh]");
     if (refresh) {
       event.preventDefault();
       window.location.reload();
       return;
     }
 
-    const forward = event.target.closest('[data-browser-forward]');
+    const forward = event.target.closest("[data-browser-forward]");
     if (forward) {
       event.preventDefault();
       navigateForward();
     }
   });
+
+  document.addEventListener("DOMContentLoaded", syncHistoryButtons);
+  window.addEventListener("pageshow", syncHistoryButtons);
+  window.addEventListener("popstate", syncHistoryButtons);
+  const nav = navigationApi();
+  if (nav && typeof nav.addEventListener === "function") {
+    nav.addEventListener("currententrychange", syncHistoryButtons);
+  }
 })();

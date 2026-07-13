@@ -26,71 +26,95 @@
   </button>
 </section>
 
-<section class="dashboard-command-hub" aria-label="Fast dashboard routes">
+<section class="dashboard-command-hub dashboard-command-hub-stacked" aria-label="Fast dashboard routes">
   <a class="command-tile command-tile-primary" href="{{ url_for('transactions.add_transaction', type='expense', account_id=selected_account_id) if selected_account_id else url_for('transactions.add_transaction', type='expense') }}">
-    <span class="command-tile-icon" aria-hidden="true">＋</span>
-    <span class="command-tile-copy"><strong>Add expense</strong><small>Register spending in one tap</small></span>
+    <span class="command-primary-main">
+      <span class="command-tile-icon" aria-hidden="true">＋</span>
+      <span class="command-tile-copy">
+        <strong>Add expense</strong>
+        <small>Register spending in one tap</small>
+      </span>
+    </span>
+    <span class="command-primary-footer">
+      <span>Quick transaction</span>
+      <span aria-hidden="true">→</span>
+    </span>
   </a>
 
-  <a class="command-tile" href="{{ url_for('transactions.transactions_page', account_id=selected_account_id) if selected_account_id else url_for('transactions.transactions_page') }}">
-    <span class="command-tile-icon" aria-hidden="true">↕</span>
-    <span class="command-tile-copy"><strong>Transactions</strong><small>Search, edit, execute</small></span>
-  </a>
+  <div class="command-pair command-pair-transactions">
+    <a class="command-tile command-tile-main" href="{{ url_for('transactions.transactions_page', account_id=selected_account_id) if selected_account_id else url_for('transactions.transactions_page') }}">
+      <strong class="command-tile-title">Transactions</strong>
+      <span class="command-tile-icon" aria-hidden="true">↕</span>
+      <span class="command-tile-action"><span>Open</span><span aria-hidden="true">→</span></span>
+    </a>
+    {% if endpoint_exists('planned_expenses.planned_expenses_page') %}
+    <a class="command-tile command-tile-secondary" href="{{ url_for('planned_expenses.planned_expenses_page') }}">
+      <span class="command-secondary-icon" aria-hidden="true">🧾</span>
+      <strong>Planned</strong>
+      <span aria-hidden="true">→</span>
+    </a>
+    {% endif %}
+  </div>
 
-  <a class="command-tile" href="{{ url_for('accounts.account_detail', account_key=selected_account_id) if selected_account_id else url_for('accounts.accounts_page') }}">
-    <span class="command-tile-icon" aria-hidden="true">🏦</span>
-    <span class="command-tile-copy"><strong>{{ 'Conto home' if scope_is_account else 'All Conti' }}</strong><small>Balances and account details</small></span>
-  </a>
+  <div class="command-pair command-pair-accounts">
+    <a class="command-tile command-tile-main" href="{{ url_for('accounts.account_detail', account_key=selected_account_id) if selected_account_id else url_for('accounts.accounts_page') }}">
+      <strong class="command-tile-title">{{ 'Conto home' if scope_is_account else 'All Conti' }}</strong>
+      <span class="command-tile-icon" aria-hidden="true">🏦</span>
+      <span class="command-tile-action"><span>Open</span><span aria-hidden="true">→</span></span>
+    </a>
+    <a class="command-tile command-tile-secondary" href="{{ url_for('analysis.analysis', account_id=selected_account_id) if selected_account_id else url_for('analysis.analysis') }}">
+      <span class="command-secondary-icon" aria-hidden="true">📊</span>
+      <strong>Analysis</strong>
+      <span aria-hidden="true">→</span>
+    </a>
+  </div>
 
-  {% if endpoint_exists('financial_calendar.calendar_page') %}
-  <a class="command-tile command-tile-wide" href="{{ url_for('financial_calendar.calendar_page', account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page') }}">
-    <span class="command-tile-icon" aria-hidden="true">📅</span>
-    <span class="command-tile-copy"><strong>Calendar</strong><small>Upcoming bills, salary and planned movements</small></span>
-  </a>
-  {% endif %}
+  <div class="command-pair command-pair-pending">
+    <a class="command-tile command-tile-main" href="{{ url_for('pending.pending_page', account_id=selected_account_id) if selected_account_id else url_for('pending.pending_page') }}">
+      <strong class="command-tile-title">Pending</strong>
+      <span class="command-tile-icon" aria-hidden="true">◷</span>
+      <span class="command-tile-action"><span>{{ pending_open_count }} open</span><span aria-hidden="true">→</span></span>
+    </a>
+    <button type="button" class="command-tile command-tile-secondary" data-mm-dialog-open="dashboard-category-dialog">
+      <span class="command-secondary-icon" aria-hidden="true">🏷️</span>
+      <strong>Custom category</strong>
+      <span aria-hidden="true">→</span>
+    </button>
+  </div>
 
-  <a class="command-tile" href="{{ url_for('pending.pending_page', account_id=selected_account_id) if selected_account_id else url_for('pending.pending_page') }}">
-    <span class="command-tile-icon" aria-hidden="true">⏳</span>
-    <span class="command-tile-copy"><strong>Pending</strong><small>Forecast and execute open movements</small></span>
-  </a>
+  <div class="command-pair command-pair-calendar">
+    {% if endpoint_exists('financial_calendar.calendar_page') %}
+    <a class="command-tile command-tile-main" href="{{ url_for('financial_calendar.calendar_page', account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page') }}">
+      <strong class="command-tile-title">Calendar</strong>
+      <span class="command-tile-icon" aria-hidden="true">▦</span>
+      <span class="command-tile-action"><span>Next</span><span aria-hidden="true">→</span></span>
+    </a>
+    {% endif %}
+    {% if endpoint_exists('investments.investments_page') %}
+    <a class="command-tile command-tile-secondary" href="{{ url_for('investments.investments_page', account_id=selected_account_id) if selected_account_id else url_for('investments.investments_page') }}">
+      <span class="command-secondary-icon" aria-hidden="true">📈</span>
+      <strong>Investments</strong>
+      <span aria-hidden="true">→</span>
+    </a>
+    {% endif %}
+  </div>
 
-  {% if endpoint_exists('notifications.center') %}
-  <a class="command-tile" href="{{ url_for('notifications.center', account_id=selected_account_id) if selected_account_id else url_for('notifications.center') }}">
-    <span class="command-tile-icon" aria-hidden="true">🔔</span>
-    <span class="command-tile-copy"><strong>Alerts</strong><small>{{ dashboard_new_notifications|length }} unread reminders</small></span>
-  </a>
-  {% endif %}
-
-  {% if endpoint_exists('planned_expenses.planned_expenses_page') %}
-  <a class="command-tile" href="{{ url_for('planned_expenses.planned_expenses_page') }}">
-    <span class="command-tile-icon" aria-hidden="true">🧾</span>
-    <span class="command-tile-copy"><strong>Planned</strong><small>Trips, gifts and future expenses</small></span>
-  </a>
-  {% endif %}
-
-  <a class="command-tile" href="{{ url_for('analysis.analysis', account_id=selected_account_id) if selected_account_id else url_for('analysis.analysis') }}">
-    <span class="command-tile-icon" aria-hidden="true">📊</span>
-    <span class="command-tile-copy"><strong>Analysis</strong><small>Habits and categories</small></span>
-  </a>
-
-  <button type="button" class="command-tile" data-mm-dialog-open="dashboard-category-dialog">
-    <span class="command-tile-icon" aria-hidden="true">🏷️</span>
-    <span class="command-tile-copy"><strong>Custom category</strong><small>Create it here, use it everywhere</small></span>
-  </button>
-
-  {% if endpoint_exists('investments.investments_page') %}
-  <a class="command-tile" href="{{ url_for('investments.investments_page', account_id=selected_account_id) if selected_account_id else url_for('investments.investments_page') }}">
-    <span class="command-tile-icon" aria-hidden="true">📈</span>
-    <span class="command-tile-copy"><strong>Investments</strong><small>Capital and P/L</small></span>
-  </a>
-  {% endif %}
-
-  {% if endpoint_exists('savings_goals.savings_goals_page') %}
-  <a class="command-tile" href="{{ url_for('savings_goals.savings_goals_page') }}">
-    <span class="command-tile-icon" aria-hidden="true">◎</span>
-    <span class="command-tile-copy"><strong>Goals</strong><small>Targets and progress</small></span>
-  </a>
-  {% endif %}
+  <div class="command-pair command-pair-alerts">
+    {% if endpoint_exists('notifications.center') %}
+    <a class="command-tile command-tile-main" href="{{ url_for('notifications.center', account_id=selected_account_id) if selected_account_id else url_for('notifications.center') }}">
+      <strong class="command-tile-title">Alerts</strong>
+      <span class="command-tile-icon" aria-hidden="true">🔔</span>
+      <span class="command-tile-action"><span>{{ dashboard_new_notifications|length }} new</span><span aria-hidden="true">→</span></span>
+    </a>
+    {% endif %}
+    {% if endpoint_exists('savings_goals.savings_goals_page') %}
+    <a class="command-tile command-tile-secondary" href="{{ url_for('savings_goals.savings_goals_page') }}">
+      <span class="command-secondary-icon" aria-hidden="true">◎</span>
+      <strong>Goals</strong>
+      <span aria-hidden="true">→</span>
+    </a>
+    {% endif %}
+  </div>
 </section>
 
 {% if category_added %}<section class="alert-card alert-success dashboard-inline-alert">Category “{{ category_added }}” is now available in the main transaction forms.</section>{% endif %}

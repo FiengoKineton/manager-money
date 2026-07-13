@@ -244,7 +244,7 @@ def index():
                 return redirect(url_for("dashboard.index", **params))
 
     selected_scope = resolve_request_scope(request)
-    from money_manager.services.account_scope_service import pending_total_for_scope, scope_balance_summary, transactions_for_scope
+    from money_manager.services.account_scope_service import pending_for_scope, scope_balance_summary, transactions_for_scope
     from money_manager.services.custom_category_service import effective_categories_by_type
 
     filter_state = dashboard_query_filter_state(
@@ -337,7 +337,19 @@ def index():
         if str(value).strip()
     }, key=lambda value: (str(value).casefold(), str(value)))
 
-    current_pending_total = pending_total_for_scope(selected_scope)
+    scoped_pending_rows = pending_for_scope(selected_scope)
+    pending_open_count = 0
+    current_pending_total = 0.0
+    for row in scoped_pending_rows:
+        if str(row.get("status") or "pending").strip().casefold() != "pending":
+            continue
+        pending_open_count += 1
+        try:
+            pending_amount = max(0.0, float(str(row.get("amount") or 0).replace(",", ".")))
+        except (TypeError, ValueError):
+            pending_amount = 0.0
+        current_pending_total += -pending_amount if str(row.get("type") or "expense").casefold() == "income" else pending_amount
+    current_pending_total = round(float(current_pending_total), 2)
     scope_summary = scope_balance_summary(selected_scope)
     full_history_net = float(scope_summary.get("net_balance", metrics["totals"].get("net", 0.0)) or 0.0)
 
@@ -420,6 +432,7 @@ def index():
         full_history_net=full_history_net,
         scope_balance=scope_summary,
         pending_this_month=current_pending_total,
+        pending_open_count=pending_open_count,
         current_month_recurring=current_month_recurring,
         recurring_expenses_this_month=recurring_expenses_this_month,
         recurring_incomes_this_month=recurring_incomes_this_month,

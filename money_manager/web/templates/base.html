@@ -99,10 +99,10 @@
     html.phone-native-active .app-content-stage { width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0 !important; overflow-x: hidden !important; box-sizing: border-box !important; }
     html.phone-native-active .app-topbar { display: none !important; }
   </style>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=navigation-profile-4">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/instant-nav.css') }}?v=instant-nav-1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/web/web.css') }}?v=account-switcher-topbar-2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/instant-nav.css') }}?v=instant-nav-3">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shared/ui-refinement.css') }}?v=ui-account-brand-3">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dashboard.css') }}?v=dashboard-period-visibility-1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dashboard.css') }}?v=dashboard-command-pairs-2">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/phone/phone.css') }}?v=phone-ui-18-planning-mobile">
   {% set plotly_endpoints = [
     'dashboard.index',
@@ -117,6 +117,66 @@
   {% endif %}
 </head>
 <body class="app-body app-body-clean" data-background-url="{{ url_for('documents.documents_background', filename='background.jpg') }}" data-page-endpoint="{{ request.endpoint or '' }}" data-navigation-plan-url="{{ url_for('money_manager_navigation_plan') }}">
+  {% macro render_sidebar_groups(groups, force_all_conti_open=false, scoped_account_id='', force_all_closed=false) -%}
+    {% for group in groups %}
+      {% set force_group_open = force_all_conti_open and group.group_id == 'accounts' %}
+      <details
+        class="nav-group app-nav-group {{ 'is-active' if group.is_active and not force_all_conti_open and not force_all_closed else '' }}"
+        data-navigation-group="{{ group.group_id }}"
+        {{ 'open' if not force_all_closed and (force_group_open or group.is_open) else '' }}
+      >
+        <summary>
+          <span class="nav-icon" aria-hidden="true">{{ group.icon or '•' }}</span>
+          <span class="nav-summary-label">{{ group.label or t(group.label_key) }}</span>
+        </summary>
+        <div class="nav-items {{ 'nav-items-with-subgroups' if group.subgroups else '' }}">
+          {% for item in group['items'] %}
+            {% if endpoint_exists(item.endpoint) %}
+              {% if item.preserve_account_scope and scoped_account_id %}
+                {% set item_url = url_for(item.endpoint, account_id=scoped_account_id) %}
+              {% else %}
+                {% set item_url = url_for(item.endpoint) %}
+              {% endif %}
+              <a href="{{ item_url }}" class="{{ 'active' if item.is_active and not force_all_conti_open and not force_all_closed else '' }}" data-navigation-page="{{ item.page_id }}">
+                <span class="nav-link-icon" aria-hidden="true">{{ item.icon or '•' }}</span>
+                <span>{{ item.label or t(item.label_key) }}</span>
+              </a>
+            {% endif %}
+          {% endfor %}
+
+          {% for subgroup in group.subgroups %}
+            {% set force_subgroup_open = force_all_conti_open and subgroup.subgroup_id == 'accounts_all' %}
+            <details
+              class="nav-subgroup {{ 'is-active' if subgroup.is_active and not force_all_conti_open and not force_all_closed else '' }}"
+              data-navigation-subgroup="{{ subgroup.subgroup_id }}"
+              {{ 'open' if not force_all_closed and (force_subgroup_open or subgroup.is_open) else '' }}
+            >
+              <summary>
+                <span class="nav-icon" aria-hidden="true">{{ subgroup.icon or '•' }}</span>
+                <span class="nav-summary-label">{{ subgroup.label or t(subgroup.label_key) }}</span>
+              </summary>
+              <div class="nav-subitems">
+                {% for item in subgroup['items'] %}
+                  {% if endpoint_exists(item.endpoint) %}
+                    {% if item.preserve_account_scope and scoped_account_id %}
+                      {% set item_url = url_for(item.endpoint, account_id=scoped_account_id) %}
+                    {% else %}
+                      {% set item_url = url_for(item.endpoint) %}
+                    {% endif %}
+                    <a href="{{ item_url }}" class="{{ 'active' if item.is_active and not force_all_conti_open and not force_all_closed else '' }}" data-navigation-page="{{ item.page_id }}">
+                      <span class="nav-link-icon" aria-hidden="true">{{ item.icon or '•' }}</span>
+                      <span>{{ item.label or t(item.label_key) }}</span>
+                    </a>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </details>
+          {% endfor %}
+        </div>
+      </details>
+    {% endfor %}
+  {%- endmacro %}
+
   {% set ep = request.endpoint or '' %}
   {% set profile_open = ep.startswith('profile.') %}
 
@@ -140,8 +200,17 @@
       <nav class="app-sidebar-nav app-sidebar-nav-clean">
         {% set active_account_id = account_id if has_active_account else '' %}
         {% if has_active_account %}
-          <a class="nav-back-card" href="{{ url_for('accounts.accounts_page') }}">← Back to all Conti</a>
-          <details class="nav-group app-nav-group is-active" open>
+          <details class="account-global-navigation-drawer" data-account-global-navigation>
+            <summary class="nav-back-card">
+              <span aria-hidden="true">←</span>
+              <span>All Conti menu</span>
+            </summary>
+            <div class="account-global-navigation-tree">
+              {{ render_sidebar_groups(sidebar_navigation, false, '', true) }}
+            </div>
+          </details>
+
+          <details class="nav-group app-nav-group account-local-navigation is-active" open>
             <summary><span class="nav-icon" aria-hidden="true">🏦</span> {{ account_label|text_masked }}</summary>
             <div class="nav-items">
               {% if endpoint_exists('accounts.account_detail') %}<a href="{{ url_for('accounts.account_detail', account_key=active_account_id) }}" class="{{ 'active' if request.endpoint in ['accounts.account_detail', 'accounts.account_payment_method_detail'] else '' }}"><span class="nav-link-icon">🏠</span> Conto home</a>{% endif %}
@@ -152,61 +221,7 @@
             </div>
           </details>
         {% else %}
-          {% for group in sidebar_navigation %}
-            <details
-              class="nav-group app-nav-group {{ 'is-active' if group.is_active else '' }}"
-              data-navigation-group="{{ group.group_id }}"
-              {{ 'open' if group.is_open else '' }}
-            >
-              <summary>
-                <span class="nav-icon" aria-hidden="true">{{ group.icon or '•' }}</span>
-                <span class="nav-summary-label">{{ group.label or t(group.label_key) }}</span>
-              </summary>
-              <div class="nav-items {{ 'nav-items-with-subgroups' if group.subgroups else '' }}">
-                {% for item in group['items'] %}
-                  {% if endpoint_exists(item.endpoint) %}
-                    {% if item.preserve_account_scope and selected_account_id %}
-                      {% set item_url = url_for(item.endpoint, account_id=selected_account_id) %}
-                    {% else %}
-                      {% set item_url = url_for(item.endpoint) %}
-                    {% endif %}
-                    <a href="{{ item_url }}" class="{{ 'active' if item.is_active else '' }}" data-navigation-page="{{ item.page_id }}">
-                      <span class="nav-link-icon" aria-hidden="true">{{ item.icon or '•' }}</span>
-                      <span>{{ item.label or t(item.label_key) }}</span>
-                    </a>
-                  {% endif %}
-                {% endfor %}
-
-                {% for subgroup in group.subgroups %}
-                  <details
-                    class="nav-subgroup {{ 'is-active' if subgroup.is_active else '' }}"
-                    data-navigation-subgroup="{{ subgroup.subgroup_id }}"
-                    {{ 'open' if subgroup.is_open else '' }}
-                  >
-                    <summary>
-                      <span class="nav-icon" aria-hidden="true">{{ subgroup.icon or '•' }}</span>
-                      <span class="nav-summary-label">{{ subgroup.label or t(subgroup.label_key) }}</span>
-                    </summary>
-                    <div class="nav-subitems">
-                      {% for item in subgroup['items'] %}
-                        {% if endpoint_exists(item.endpoint) %}
-                          {% if item.preserve_account_scope and selected_account_id %}
-                            {% set item_url = url_for(item.endpoint, account_id=selected_account_id) %}
-                          {% else %}
-                            {% set item_url = url_for(item.endpoint) %}
-                          {% endif %}
-                          <a href="{{ item_url }}" class="{{ 'active' if item.is_active else '' }}" data-navigation-page="{{ item.page_id }}">
-                            <span class="nav-link-icon" aria-hidden="true">{{ item.icon or '•' }}</span>
-                            <span>{{ item.label or t(item.label_key) }}</span>
-                          </a>
-                        {% endif %}
-                      {% endfor %}
-                    </div>
-                  </details>
-                {% endfor %}
-              </div>
-            </details>
-          {% endfor %}
+          {{ render_sidebar_groups(sidebar_navigation, false, selected_account_id) }}
         {% endif %}
       </nav>
 
@@ -256,14 +271,18 @@
           {% endif %}
           {% set lazy_topbar_account_id = selected_account_id|default('', true) %}
           {% set lazy_topbar_url = '' %}
+          {% set lazy_topbar_main_url = '' %}
           {% if endpoint_exists('dashboard.topbar_summary_api') %}
             {% set topbar_period_mode = request.args.get('period_mode') if request.endpoint in ['dashboard.index', 'transactions.transactions_page'] else '' %}
             {% if topbar_period_mode == 'month' %}
               {% set lazy_topbar_url = url_for('dashboard.topbar_summary_api', account_id=lazy_topbar_account_id, period_mode='month', period_month=request.args.get('period_month'), period_year=request.args.get('period_year')) if lazy_topbar_account_id else url_for('dashboard.topbar_summary_api', period_mode='month', period_month=request.args.get('period_month'), period_year=request.args.get('period_year')) %}
+              {% set lazy_topbar_main_url = url_for('dashboard.topbar_summary_api', account_id=topbar_main_account_key or 'main_bank', period_mode='month', period_month=request.args.get('period_month'), period_year=request.args.get('period_year')) %}
             {% elif topbar_period_mode == 'range' %}
               {% set lazy_topbar_url = url_for('dashboard.topbar_summary_api', account_id=lazy_topbar_account_id, period_mode='range', period_start=request.args.get('period_start'), period_end=request.args.get('period_end')) if lazy_topbar_account_id else url_for('dashboard.topbar_summary_api', period_mode='range', period_start=request.args.get('period_start'), period_end=request.args.get('period_end')) %}
+              {% set lazy_topbar_main_url = url_for('dashboard.topbar_summary_api', account_id=topbar_main_account_key or 'main_bank', period_mode='range', period_start=request.args.get('period_start'), period_end=request.args.get('period_end')) %}
             {% else %}
               {% set lazy_topbar_url = url_for('dashboard.topbar_summary_api', account_id=lazy_topbar_account_id) if lazy_topbar_account_id else url_for('dashboard.topbar_summary_api') %}
+              {% set lazy_topbar_main_url = url_for('dashboard.topbar_summary_api', account_id=topbar_main_account_key or 'main_bank') %}
             {% endif %}
           {% endif %}
           <a class="net-pill topbar-net-pill {{ 'is-account-scope' if has_active_account else '' }}"
@@ -274,8 +293,18 @@
             <span data-topbar-net-label>{{ topbar_net_label or 'All Conti net' }}</span>
             <strong data-topbar-net-value>{{ 'Loading…' if topbar_net_lazy and not mask_sensitive_data and lazy_topbar_url else topbar_display_net|money_masked }}</strong>
           </a>
-          {% if endpoint_exists('accounts.account_detail') %}
-            <a class="main-account-shortcut" href="{{ url_for('accounts.account_detail', account_key=topbar_main_account_key or 'main_bank') }}" title="Open {{ topbar_main_account_label or 'Main' }} account">Main Account</a>
+          {% set topbar_current_account_key = account_id if has_active_account else selected_account_id|default('', true) %}
+          {% set show_main_net_shortcut = not topbar_current_account_key or topbar_current_account_key != (topbar_main_account_key or 'main_bank') %}
+          {% if endpoint_exists('accounts.account_detail') and show_main_net_shortcut %}
+            <a class="main-account-shortcut main-account-net-pill"
+               href="{{ url_for('accounts.account_detail', account_key=topbar_main_account_key or 'main_bank') }}"
+               title="Open {{ topbar_main_account_label or 'Main' }} account"
+               data-topbar-net-pill
+               data-topbar-summary-url="{{ lazy_topbar_main_url }}"
+               data-mask-sensitive="{{ '1' if mask_sensitive_data else '0' }}">
+              <span data-topbar-net-label>{{ topbar_main_account_label or 'Main' }} net</span>
+              <strong data-topbar-net-value>{{ 'Loading…' if topbar_net_lazy and not mask_sensitive_data and lazy_topbar_main_url else topbar_main_bank_net|money_masked }}</strong>
+            </a>
           {% endif %}
           {% if endpoint_exists('financial_calendar.calendar_page') %}
             <a class="topbar-icon-shortcut" href="{{ url_for('financial_calendar.calendar_page', account_id=selected_account_id) if selected_account_id else url_for('financial_calendar.calendar_page') }}" title="Open financial calendar" aria-label="Open financial calendar">📅</a>
@@ -295,7 +324,6 @@
             <input type="hidden" name="next" value="{{ request.full_path }}">
             <button type="submit" class="theme-comfort-btn {{ 'is-active' if current_theme_mode == 'comfort' else '' }}" data-theme-comfort title="{{ t('theme.day') if current_theme_mode == 'comfort' else t('theme.comfort') }}" aria-label="{{ t('theme.day') if current_theme_mode == 'comfort' else t('theme.comfort') }}">
               <span class="theme-comfort-icon" aria-hidden="true">👁</span>
-              <b data-theme-comfort-label>{{ t('theme.day') if current_theme_mode == 'comfort' else t('theme.comfort') }}</b>
             </button>
           </form>
           <button type="button" class="topbar-icon-shortcut" data-command-palette-open title="Command palette" aria-label="Open command palette">⌘K</button>
@@ -436,9 +464,25 @@
     </section>
   </div>
 
-  <script src="{{ url_for('static', filename='js/shared/instant-nav.js') }}?v=adaptive-nav-1" defer></script>
-  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=navigation-refresh-3"></script>
-  <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-lazy-3"></script>
+  <script>
+    // The account-local sidebar exposes the global navigation as a drawer.
+    // Reopening that drawer always starts from a compact overview: Conti
+    // Correnti, Planning, Analysis and every nested subgroup remain closed
+    // until the user explicitly opens one.
+    document.addEventListener("toggle", function (event) {
+      var drawer = event.target;
+      if (!drawer || !drawer.matches || !drawer.matches("[data-account-global-navigation]") || !drawer.open) {
+        return;
+      }
+      drawer.querySelectorAll(".account-global-navigation-tree details[open]").forEach(function (section) {
+        section.open = false;
+      });
+    }, true);
+  </script>
+
+  <script src="{{ url_for('static', filename='js/shared/instant-nav.js') }}?v=adaptive-nav-4" defer></script>
+  <script src="{{ url_for('static', filename='js/shared/app-core.js') }}?v=history-controls-2"></script>
+  <script src="{{ url_for('static', filename='js/shared/performance-lazy.js') }}?v=topbar-summary-cache-2"></script>
   <script src="{{ url_for('static', filename='js/shared/smart-floating-submit.js') }}?v=smart-save-3" defer></script>
   <script src="{{ url_for('static', filename='js/shared/notifications.js') }}?v=notifications-2"></script>
   <script src="{{ url_for('static', filename='js/command-palette.js') }}?v=command-palette-2" defer></script>

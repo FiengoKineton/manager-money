@@ -613,3 +613,86 @@ html[data-theme="comfort"] .muted { color: var(--muted) !important; }
   .theme-toggle-orb,
   .theme-comfort-icon { width: 29px; height: 29px; }
 }
+
+/* --------------------------------------------------------------------------
+   Compact eye-comfort switch
+
+   The eye is intentionally styled as the destination mode:
+   - while Light is active, it uses the warm Comfort palette;
+   - while Comfort is active, it uses the cool Light palette.
+-------------------------------------------------------------------------- */
+.theme-comfort-btn {
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  min-height: 46px;
+  justify-content: center;
+  gap: 0;
+  padding: 0.4rem;
+  overflow: hidden;
+}
+
+.theme-comfort-btn b,
+.theme-comfort-btn [data-theme-comfort-label] {
+  display: none !important;
+}
+
+html[data-theme="day"] .theme-comfort-btn,
+.theme-comfort-btn.shows-comfort-target {
+  color: #40564a;
+  border-color: rgba(122, 107, 72, 0.22);
+  background:
+    linear-gradient(135deg, rgba(250, 242, 220, 0.94), rgba(224, 231, 204, 0.82)),
+    radial-gradient(circle at 18% 18%, rgba(161, 111, 43, 0.22), transparent 1.9rem),
+    radial-gradient(circle at 88% 82%, rgba(79, 111, 99, 0.22), transparent 2.4rem);
+  box-shadow: 0 15px 34px rgba(77, 65, 44, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+html[data-theme="day"] .theme-comfort-icon,
+.theme-comfort-btn.shows-comfort-target .theme-comfort-icon {
+  color: #40564a;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.92), transparent 30%),
+    linear-gradient(145deg, #f5ead0, #dce6c8);
+  border: 1px solid rgba(79, 111, 99, 0.17);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.90),
+    0 0 0 5px rgba(133, 145, 91, 0.09),
+    0 8px 18px rgba(96, 82, 55, 0.14);
+}
+
+html[data-theme="comfort"] .theme-comfort-btn,
+.theme-comfort-btn.shows-light-target {
+  color: #1f4256;
+  border-color: rgba(125, 211, 252, 0.34);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(222, 247, 255, 0.84)),
+    radial-gradient(circle at 18% 20%, rgba(250, 204, 21, 0.15), transparent 1.8rem),
+    radial-gradient(circle at 88% 82%, rgba(34, 211, 238, 0.24), transparent 2.4rem);
+  box-shadow:
+    0 15px 34px rgba(37, 99, 235, 0.13),
+    0 7px 18px rgba(34, 211, 238, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+html[data-theme="comfort"] .theme-comfort-icon,
+.theme-comfort-btn.shows-light-target .theme-comfort-icon {
+  color: #17394d;
+  background:
+    radial-gradient(circle at 34% 28%, #ffffff 0 24%, transparent 25%),
+    linear-gradient(145deg, #f8fdff, #c9f2fb);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 0 0 5px rgba(56, 189, 248, 0.10),
+    0 8px 18px rgba(14, 116, 144, 0.14);
+}
+
+html[data-theme="night"] .theme-comfort-btn.shows-comfort-target {
+  color: #eadfc4;
+  border-color: rgba(221, 198, 146, 0.18);
+  background:
+    linear-gradient(135deg, rgba(42, 43, 39, 0.94), rgba(39, 49, 44, 0.78)),
+    radial-gradient(circle at 20% 20%, rgba(242, 204, 143, 0.12), transparent 2rem),
+    radial-gradient(circle at 88% 85%, rgba(122, 201, 167, 0.10), transparent 2.6rem);
+}

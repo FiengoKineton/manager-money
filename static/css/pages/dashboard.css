@@ -2310,3 +2310,358 @@ html[data-theme="comfort"] .dashboard-hero-balance small {
   }
 }
 
+
+/* --------------------------------------------------------------------------
+   Dashboard command board v3
+
+   One large Add expense card plus five paired command blocks. Each pair keeps
+   its main route above a compact related route while preserving the dashboard's
+   rounded, asymmetric visual language.
+---------------------------------------------------------------------------- */
+.dashboard-command-hub.dashboard-command-hub-stacked {
+  display: grid;
+  grid-template-columns: minmax(270px, 1.7fr) repeat(5, minmax(138px, 1fr));
+  grid-auto-flow: row;
+  grid-auto-rows: auto;
+  gap: clamp(0.72rem, 1vw, 1rem);
+  align-items: stretch;
+  margin: 0.65rem 0 1.35rem;
+  padding: 0;
+}
+
+.dashboard-command-hub-stacked .command-pair {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0.72rem;
+  min-width: 0;
+  min-height: 268px;
+}
+
+.dashboard-command-hub-stacked .command-tile {
+  --tile-lift: 0px;
+  --tile-tilt: 0deg;
+  grid-column: auto;
+  grid-row: auto;
+  min-width: 0;
+  transform: none;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  text-decoration: none;
+  isolation: isolate;
+}
+
+.dashboard-command-hub-stacked .command-tile::after {
+  display: none;
+}
+
+.dashboard-command-hub-stacked .command-tile:hover,
+.dashboard-command-hub-stacked .command-tile:focus-visible {
+  transform: translateY(-5px) scale(1.018);
+  border-color: rgba(37, 99, 235, 0.38);
+  box-shadow: 0 26px 58px rgba(15, 23, 42, 0.14);
+  z-index: 4;
+}
+
+.dashboard-command-hub-stacked .command-tile-primary {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 268px;
+  padding: 1.35rem 1.4rem 1.1rem;
+  border-radius: 52px 92px 48px 66px;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(circle at 17% 17%, rgba(255, 255, 255, 0.35), transparent 8.5rem),
+    radial-gradient(circle at 92% 90%, rgba(255, 255, 255, 0.18), transparent 7rem),
+    linear-gradient(138deg, rgba(37, 99, 235, 0.97), rgba(14, 165, 233, 0.91) 48%, rgba(20, 184, 166, 0.92));
+  box-shadow: 0 24px 62px rgba(37, 99, 235, 0.22);
+}
+
+.dashboard-command-hub-stacked .command-tile-primary::before {
+  width: 165px;
+  height: 165px;
+  right: -58px;
+  top: -58px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.dashboard-command-hub-stacked .command-tile-primary:hover,
+.dashboard-command-hub-stacked .command-tile-primary:focus-visible {
+  transform: translateY(-6px) scale(1.018);
+  color: #fff;
+  background:
+    radial-gradient(circle at 17% 17%, rgba(255, 255, 255, 0.31), transparent 8.5rem),
+    radial-gradient(circle at 92% 90%, rgba(255, 255, 255, 0.15), transparent 7rem),
+    linear-gradient(138deg, rgba(31, 91, 218, 0.98), rgba(9, 148, 214, 0.94) 48%, rgba(13, 163, 146, 0.95));
+  box-shadow: 0 32px 76px rgba(37, 99, 235, 0.3);
+  filter: saturate(1.04) brightness(0.99);
+}
+
+.dashboard-command-hub-stacked .command-primary-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1 1 auto;
+}
+
+.dashboard-command-hub-stacked .command-tile-primary .command-tile-icon {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  font-size: 2rem;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    0 16px 34px rgba(15, 23, 42, 0.12);
+}
+
+.dashboard-command-hub-stacked .command-tile-primary .command-tile-copy strong {
+  font-size: clamp(1.55rem, 2.1vw, 2.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+}
+
+.dashboard-command-hub-stacked .command-tile-primary .command-tile-copy small {
+  margin-top: 0.42rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.88rem;
+}
+
+.dashboard-command-hub-stacked .command-primary-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.025em;
+}
+
+.dashboard-command-hub-stacked .command-primary-footer > :last-child {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.17);
+  font-size: 1rem;
+}
+
+.dashboard-command-hub-stacked .command-tile-main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  min-height: 190px;
+  padding: 1rem 1rem 0.9rem;
+  border-radius: 34px 58px 30px 46px;
+  overflow: hidden;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 94% 10%, rgba(37, 99, 235, 0.13), transparent 5.7rem),
+    radial-gradient(circle at 14% 14%, rgba(255, 255, 255, 0.95), transparent 5.2rem),
+    rgba(255, 255, 255, 0.84);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-command-hub-stacked .command-tile-main::before {
+  width: 72px;
+  height: 72px;
+  right: -20px;
+  top: -22px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.dashboard-command-hub-stacked .command-pair:nth-of-type(even) .command-tile-main {
+  border-radius: 58px 32px 48px 30px;
+}
+
+.dashboard-command-hub-stacked .command-pair:nth-of-type(3n) .command-tile-main {
+  border-radius: 38px 62px 34px 52px;
+}
+
+.dashboard-command-hub-stacked .command-tile-title {
+  position: relative;
+  z-index: 1;
+  display: block;
+  min-width: 0;
+  font-size: clamp(0.92rem, 1.05vw, 1.06rem);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-command-hub-stacked .command-tile-main .command-tile-icon {
+  align-self: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  font-size: 1.42rem;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow:
+    inset 0 0 0 1px rgba(148, 163, 184, 0.18),
+    0 14px 32px rgba(15, 23, 42, 0.09);
+}
+
+.dashboard-command-hub-stacked .command-tile-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  padding-top: 0.66rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.dashboard-command-hub-stacked .command-tile-action > :last-child {
+  color: var(--brand);
+  font-size: 0.95rem;
+}
+
+.dashboard-command-hub-stacked .command-tile-secondary {
+  appearance: none;
+  width: 100%;
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.58rem;
+  padding: 0.78rem 0.86rem;
+  border-radius: 24px 38px 24px 32px;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(238, 248, 248, 0.82));
+  box-shadow: 0 13px 32px rgba(15, 23, 42, 0.07);
+}
+
+.dashboard-command-hub-stacked .command-pair:nth-of-type(even) .command-tile-secondary {
+  border-radius: 36px 22px 32px 24px;
+}
+
+.dashboard-command-hub-stacked .command-tile-secondary::before {
+  display: none;
+}
+
+.dashboard-command-hub-stacked .command-secondary-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.76);
+  font-size: 0.9rem;
+}
+
+.dashboard-command-hub-stacked .command-tile-secondary strong {
+  min-width: 0;
+  font-size: 0.78rem;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-command-hub-stacked .command-tile-secondary > :last-child {
+  color: var(--brand);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.dashboard-command-hub-stacked .command-pair-transactions .command-tile-main::before {
+  background: rgba(37, 99, 235, 0.13);
+}
+
+.dashboard-command-hub-stacked .command-pair-accounts .command-tile-main::before {
+  background: rgba(139, 92, 246, 0.13);
+}
+
+.dashboard-command-hub-stacked .command-pair-pending .command-tile-main::before {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.dashboard-command-hub-stacked .command-pair-calendar .command-tile-main::before {
+  background: rgba(20, 184, 166, 0.14);
+}
+
+.dashboard-command-hub-stacked .command-pair-alerts .command-tile-main::before {
+  background: rgba(244, 63, 94, 0.13);
+}
+
+@media (max-width: 1280px) {
+  .dashboard-command-hub.dashboard-command-hub-stacked {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-command-hub-stacked .command-tile-primary,
+  .dashboard-command-hub-stacked .command-pair {
+    min-height: 250px;
+  }
+}
+
+@media (max-width: 840px) {
+  .dashboard-command-hub.dashboard-command-hub-stacked {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-command-hub-stacked .command-tile-primary {
+    grid-column: 1 / -1;
+    min-height: 200px;
+  }
+
+  .dashboard-command-hub-stacked .command-pair {
+    min-height: 232px;
+  }
+
+  .dashboard-command-hub-stacked .command-tile-main {
+    min-height: 164px;
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-command-hub.dashboard-command-hub-stacked {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  .dashboard-command-hub-stacked .command-tile-primary {
+    grid-column: auto;
+    min-height: 190px;
+    border-radius: 38px 62px 38px 48px;
+  }
+
+  .dashboard-command-hub-stacked .command-pair {
+    min-height: 218px;
+  }
+
+  .dashboard-command-hub-stacked .command-tile-main {
+    min-height: 150px;
+  }
+}
+
+html[data-theme="night"] .dashboard-command-hub-stacked .command-tile-main,
+html[data-theme="night"] .dashboard-command-hub-stacked .command-tile-secondary {
+  color: rgba(241, 245, 249, 0.96);
+  border-color: rgba(148, 163, 184, 0.22);
+  background:
+    radial-gradient(circle at 92% 12%, rgba(56, 189, 248, 0.12), transparent 6rem),
+    linear-gradient(145deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.88));
+}
+
+html[data-theme="night"] .dashboard-command-hub-stacked .command-tile-action {
+  border-color: rgba(148, 163, 184, 0.22);
+  color: rgba(203, 213, 225, 0.78);
+}

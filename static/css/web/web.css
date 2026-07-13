@@ -4762,3 +4762,84 @@ body.app-body-clean .app-sidebar-nav-clean::-webkit-scrollbar-track {
     background: rgba(78, 103, 90, 0.58);
   }
 }
+
+/* Account-context navigation drawer and dual-net topbar. */
+.account-global-navigation-drawer {
+  display: grid;
+  flex: 0 0 auto;
+  min-height: max-content;
+  gap: .7rem;
+}
+
+.account-global-navigation-drawer > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.account-global-navigation-drawer > summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-global-navigation-drawer > .nav-back-card::after {
+  content: "⌄";
+  margin-left: auto;
+  transform: rotate(-90deg);
+  transition: transform .16s ease;
+}
+
+.account-global-navigation-drawer[open] > .nav-back-card::after {
+  transform: rotate(0deg);
+}
+
+.account-global-navigation-drawer[open] > .nav-back-card {
+  background: rgba(59, 130, 246, .08);
+}
+
+.account-global-navigation-tree {
+  display: grid;
+  gap: .75rem;
+  min-width: 0;
+}
+
+.account-global-navigation-tree > .app-nav-group,
+.account-local-navigation {
+  flex: 0 0 auto !important;
+  min-height: max-content;
+}
+
+.main-account-net-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .65rem;
+  min-height: 2.75rem;
+  padding: .65rem .9rem;
+}
+
+.main-account-net-pill span {
+  color: var(--muted, #64748b);
+  font-size: .76rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.main-account-net-pill strong {
+  color: var(--ink, #0f172a);
+  font-size: .95rem;
+  white-space: nowrap;
+}
+
+html[data-theme="night"] .main-account-net-pill span {
+  color: rgba(226, 232, 240, .72);
+}
+
+html[data-theme="night"] .main-account-net-pill strong {
+  color: #f8fafc;
+}
+
+@media (max-width: 1180px) {
+  .main-account-net-pill span {
+    display: none;
+  }
+}

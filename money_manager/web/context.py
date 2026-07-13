@@ -75,7 +75,7 @@ def _topbar_scope_net_context(active_account: dict | None = None) -> dict:
         return {
             "topbar_global_net": global_net,
             "topbar_display_net": global_net,
-            "topbar_net_label": f"{label} / all net",
+            "topbar_net_label": f"{label} net",
             "topbar_net_href": url_for("accounts.account_detail", account_key=account_id),
         }
 
@@ -257,7 +257,9 @@ def active_sidebar_account_context() -> dict:
         from money_manager.services.account_config_service import account_by_key
 
         account = account_by_key(account_id, include_archived=True) or {}
-        label = str(account.get("label") or account.get("name") or account_id)
+        resolved_id = str(account.get("key") or account.get("account_id") or account_id).strip() or account_id
+        label = str(account.get("label") or account.get("name") or resolved_id)
+        account_id = resolved_id
     except Exception:
         label = account_id
     return {"has_active_account": True, "account_id": account_id, "account_label": label}
@@ -354,16 +356,31 @@ def register_context_processors(app):
             sidebar_navigation = []
 
         active_account_context = active_sidebar_account_context() if user and is_authenticated() else {"has_active_account": False, "account_id": "", "account_label": ""}
-        topbar_context = _topbar_scope_net_context(active_account_context)
 
         try:
-            from money_manager.services.account_config_service import MAIN_ACCOUNT_KEY, account_label_for_key
+            from money_manager.services.account_config_service import MAIN_ACCOUNT_KEY, account_label_for_key, configured_account_key
 
-            main_account_key = MAIN_ACCOUNT_KEY
-            main_account_label = account_label_for_key(MAIN_ACCOUNT_KEY)
+            main_account_key = configured_account_key(MAIN_ACCOUNT_KEY) or MAIN_ACCOUNT_KEY
+            main_account_label = account_label_for_key(main_account_key)
         except Exception:
             main_account_key = "main_bank"
             main_account_label = "Main"
+
+        active_account_key = str(active_account_context.get("account_id") or "").strip()
+        # configured_account_key("") intentionally resolves legacy blank account
+        # values to Main.  That behavior is useful while importing old rows, but
+        # it must not be used for request scope detection: an empty scope means
+        # All Conti, not Main.  Resolving only non-empty values keeps the Main
+        # shortcut visible on global pages while still identifying a real Main
+        # account route correctly.
+        if active_account_key:
+            try:
+                active_account_key = configured_account_key(active_account_key) or active_account_key
+            except Exception:
+                pass
+        active_account_context["account_id"] = active_account_key
+        active_account_context["is_main_account"] = bool(active_account_key and active_account_key == main_account_key)
+        topbar_context = _topbar_scope_net_context(active_account_context)
 
         context = {
             "endpoint_exists": endpoint_exists,
@@ -373,6 +390,7 @@ def register_context_processors(app):
             "topbar_notifications": _topbar_notifications(),
             "topbar_main_account_key": main_account_key,
             "topbar_main_account_label": main_account_label,
+            "topbar_is_main_account": bool(active_account_context.get("is_main_account")),
             "current_user": user,
             "current_user_id": user.get("id") if user else None,
             "is_authenticated": is_authenticated(),
