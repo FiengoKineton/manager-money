@@ -31,7 +31,12 @@
   </div>
 </section>
 
-<section class="form-section pending-card add-recurring-card">
+<div class="page-create-action-row">
+  <button type="button" class="primary-btn" data-dialog-open="add-recurring-dialog">+ Create recurring payment</button>
+</div>
+<dialog id="add-recurring-dialog" class="entity-detail-dialog create-entity-dialog">
+<section class="form-section pending-card add-recurring-card" data-create-panel-ignore>
+  <button type="button" class="dialog-close create-dialog-close" data-dialog-close aria-label="Close">×</button>
   <div class="panel-header">
     <div>
       <span class="eyebrow">New automation</span>
@@ -90,6 +95,31 @@
       </label>
     </div>
 
+    <div class="form-field form-field-wide recurring-connection-picker">
+      <label>Transaction connection</label>
+      <div class="exclusive-connection-options">
+        <label><input type="radio" name="connection_type" value=""> Standard transaction</label>
+        <label><input type="radio" name="connection_type" value="bonifico"> Bonifico</label>
+        <label><input type="radio" name="connection_type" value="internal_transfer"> Internal transfer</label>
+      </div>
+      <div class="connection-panel" data-connection-panel="bonifico">
+        <label>Saved contact</label>
+        <select name="connection_contact_id">
+          <option value="">Choose a contact</option>
+          {% for contact in contacts %}<option value="{{ contact.id }}">{{ contact.display_name }}</option>{% endfor %}
+        </select>
+        <a class="secondary-btn compact-btn" href="{{ url_for('contacts.new_contact') }}">Create contact</a>
+      </div>
+      <div class="connection-panel" data-connection-panel="internal_transfer">
+        <label>Destination/source account</label>
+        <select name="connection_account_id">
+          <option value="">Choose an account</option>
+          {% for account in account_options %}<option value="{{ account.id or account.value }}">{{ account.label }}</option>{% endfor %}
+        </select>
+      </div>
+      <small>Bonifico and Internal transfer are mutually exclusive. Saved choices are retained when disabled.</small>
+    </div>
+
     <div class="form-field">
       <label>Amount (€)</label>
       <input type="number" step="0.01" name="amount" required>
@@ -134,6 +164,7 @@
     </div>
   </form>
 </section>
+</dialog>
 
 <section class="transactions pending-card recurring-rules-card">
   <div class="panel-header">
@@ -146,128 +177,57 @@
   </div>
 
   {% if recurring %}
-  <div class="recurring-rule-list">
+  <div class="recurring-compact-grid">
     {% for r in recurring %}
-    <form method="post" class="recurring-rule-card rule-{{ r.type|lower }} {% if r.is_auxiliary_account %}rule-auxiliary{% endif %}">
-      <input type="hidden" name="id" value="{{ r.id }}">
-
-      <div class="rule-card-topline">
-        <div class="rule-name-field">
-          <label>Name</label>
-          <input type="text" name="name" value="{{ r.name }}" required>
-        </div>
-        <div class="rule-amount-stack">
-          <strong>{{ r.amount_str }}</strong>
-          <span>{{ r.frequency_label }}</span>
-        </div>
-        <div class="rule-badges">
-          <span class="type-badge type-{{ r.type|lower }}">{{ r.type|capitalize }}</span>
-          <span class="soft-badge next-badge">Next: {{ r.next_payment }}</span>
-          <span class="soft-badge auto-badge {% if r.auto_execute %}auto-on{% else %}auto-off{% endif %}">{{ r.auto_execute_label }}</span>
-          {% if r.end_date %}<span class="soft-badge">Ends: {{ r.end_date }}</span>{% endif %}
-          {% if r.max_occurrences %}<span class="soft-badge">{{ r.generated_count }}/{{ r.max_occurrences }} used{% if r.stop_after_last_date %} · last: {{ r.stop_after_last_date }}{% endif %}</span>{% endif %}
-          {% if r.is_auxiliary_account %}<span class="soft-badge account-badge-soft">{{ r.account_label }}</span>{% endif %}
-        </div>
-      </div>
-
-      <div class="rule-metric-grid">
-        <div>
-          <span>Monthly equivalent</span>
-          <strong>€ {{ '%.2f'|format(r.monthly_equivalent) }}</strong>
-        </div>
-        <div>
-          <span>Yearly equivalent</span>
-          <strong>€ {{ '%.2f'|format(r.annual_equivalent) }}</strong>
-        </div>
-        <div>
-          <span>Account</span>
-          <strong>{{ r.account_label }}</strong>
-        </div>
-        <div>
-          <span>Stop rule</span>
-          <strong>{{ r.stop_rule_display }}</strong>
-        </div>
-      </div>
-
-      <div class="rule-fields-grid compact-rule-fields">
-        <div>
-          <label>Type</label>
-          <select name="type">
-            <option value="expense" {% if r.type == "expense" %}selected{% endif %}>Expense</option>
-            <option value="investment" {% if r.type == "investment" %}selected{% endif %}>Investment</option>
-            <option value="income" {% if r.type == "income" %}selected{% endif %}>Income</option>
-          </select>
-        </div>
-
-        <div>
-          <label>Amount</label>
-          <input type="number" step="0.01" name="amount" value="{{ r.amount }}" required>
-        </div>
-
-        <div>
-          <label>Day</label>
-          <input type="number" name="day_of_month" min="1" max="31" value="{{ r.day_of_month }}" required>
-        </div>
-
-        <div>
-          <label>Frequency</label>
-          <input type="number" name="frequency" min="1" max="120" value="{{ r.frequency }}" required>
-        </div>
-
-        <div>
-          <label>Start</label>
-          <input type="date" name="start_date" value="{{ '' if r.start_date == '—' else r.start_date }}">
-        </div>
-
-        <div>
-          <label>End</label>
-          <input type="date" name="end_date" value="{{ r.end_date }}">
-        </div>
-
-        <div>
-          <label>Stop after</label>
-          <input type="number" name="max_occurrences" min="1" max="999" value="{{ r.max_occurrences }}" placeholder="Forever">
-        </div>
-
-        <div>
-          <label>Category</label>
-          <input type="text" name="category" value="{{ r.category }}" required>
-        </div>
-
-        <div>
-          <label>Account / Conto</label>
-          <select name="account_id">
-            {% for account in account_options %}
-              {% set account_value = account.id or account.value %}
-              <option value="{{ account_value }}"
-                {% if (r.account_id == account_value) or (r.account == account.label) or (r.account == account_value) or (not r.account and account_value == 'main_bank') or (r.account == 'auto' and account_value == 'main_bank') %}selected{% endif %}>
-                {{ account.label }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label>Payment Method / Metodo di pagamento</label>
-          <select name="payment_method_id">
-            <option value="">Default for selected account</option>
-            {% for method in payment_method_options %}
-              <option value="{{ method.id }}" {% if method.id == r.payment_method_id %}selected{% endif %}>{{ method.label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="recurring-auto-pay-field recurring-auto-pay-edit">
-          <label class="checkbox-card compact-checkbox-card">
-            <input type="checkbox" name="auto_execute" value="1" {% if r.auto_execute %}checked{% endif %}>
-            <span><strong>Pay without asking</strong><small>{{ r.auto_execute_label }}</small></span>
-          </label>
-        </div>
-      </div>
-
-      <div class="rule-card-actions rule-action-rail" aria-label="Rule actions">
-        <button type="submit" name="action" value="update" class="icon-action-btn icon-action-save" title="Update rule" aria-label="Update rule">✎</button>
-        <button type="submit" name="action" value="delete" class="icon-action-btn icon-action-delete" title="Delete rule" aria-label="Delete rule" onclick="return confirm('Delete this recurring rule?')">×</button>
-      </div>
-    </form>
+    <article class="recurring-compact-card rule-{{ r.type|lower }}">
+      <button type="button" class="recurring-card-open" data-dialog-open="recurring-dialog-{{ r.id }}">
+        <span class="type-badge type-{{ r.type|lower }}">{{ r.type|capitalize }}</span>
+        <strong>{{ r.name }}</strong>
+        <span>{{ r.amount_str }} · {{ r.frequency_label }}</span>
+        <small>Next {{ r.next_payment }} · {{ r.account_label }} · {{ r.connection_label }}</small>
+        <span class="recurring-auto-status {{ 'is-enabled' if r.auto_execute else 'is-disabled' }}">
+          <span aria-hidden="true">{{ '✓' if r.auto_execute else '○' }}</span> Pay without asking: {{ 'On' if r.auto_execute else 'Off' }}
+        </span>
+      </button>
+      <dialog id="recurring-dialog-{{ r.id }}" class="entity-detail-dialog">
+        <form method="post" class="entity-detail-form">
+          <input type="hidden" name="id" value="{{ r.id }}">
+          <div class="dialog-header"><div><span class="eyebrow">Recurring rule</span><h2>{{ r.name }}</h2></div><button type="button" class="dialog-close" data-dialog-close>×</button></div>
+          <div class="rule-metric-grid">
+            <div><span>Executed</span><strong>{{ r.history_executed_total_str }}</strong></div>
+            <div><span>Pending</span><strong>{{ r.history_pending_total_str }}</strong></div>
+            <div><span>Monthly</span><strong>€ {{ '%.2f'|format(r.monthly_equivalent) }}</strong></div>
+            <div><span>Next</span><strong>{{ r.next_payment }}</strong></div>
+          </div>
+          <div class="rule-fields-grid compact-rule-fields">
+            <div><label>Name</label><input name="name" value="{{ r.name }}" required></div>
+            <div><label>Type</label><select name="type"><option value="expense" {% if r.type=='expense' %}selected{% endif %}>Expense</option><option value="investment" {% if r.type=='investment' %}selected{% endif %}>Investment</option><option value="income" {% if r.type=='income' %}selected{% endif %}>Income</option></select></div>
+            <div><label>Amount</label><input type="number" step="0.01" name="amount" value="{{ r.amount }}" required></div>
+            <div><label>Day</label><input type="number" min="1" max="31" name="day_of_month" value="{{ r.day_of_month }}" required></div>
+            <div><label>Every months</label><input type="number" min="1" name="frequency" value="{{ r.frequency }}" required></div>
+            <div><label>Category</label><input name="category" value="{{ r.category }}" required></div>
+            <div><label>Start</label><input type="date" name="start_date" value="{{ '' if r.start_date=='—' else r.start_date }}"></div>
+            <div><label>End</label><input type="date" name="end_date" value="{{ r.end_date }}"></div>
+            <div><label>Stop after</label><input type="number" name="max_occurrences" value="{{ r.max_occurrences }}"></div>
+            <div><label>Account</label><select name="account_id">{% for account in account_options %}{% set av=account.id or account.value %}<option value="{{ av }}" {% if av==r.account_id or av==r.account %}selected{% endif %}>{{ account.label }}</option>{% endfor %}</select></div>
+            <div><label>Payment method</label><select name="payment_method_id"><option value="">Default</option>{% for method in payment_method_options %}<option value="{{ method.id }}" {% if method.id==r.payment_method_id %}selected{% endif %}>{{ method.label }}</option>{% endfor %}</select></div>
+            <div><label><input type="checkbox" name="auto_execute" value="1" {% if r.auto_execute %}checked{% endif %}> Pay without asking</label></div>
+          </div>
+          <section class="connection-editor">
+            <h3>Transaction connection</h3>
+            <div class="exclusive-connection-options">
+              <label><input type="radio" name="connection_type" value="" {% if not r.connection_type %}checked{% endif %}> Standard</label>
+              <label><input type="radio" name="connection_type" value="bonifico" {% if r.connection_type=='bonifico' %}checked{% endif %}> Bonifico</label>
+              <label><input type="radio" name="connection_type" value="internal_transfer" {% if r.connection_type=='internal_transfer' %}checked{% endif %}> Internal transfer</label>
+            </div>
+            <div class="connection-panel" data-connection-panel="bonifico"><label>Contact</label><select name="connection_contact_id"><option value="">Choose</option>{% for contact in contacts %}<option value="{{ contact.id }}" {% if contact.id|string==r.connection_contact_id|string %}selected{% endif %}>{{ contact.display_name }}</option>{% endfor %}</select><a href="{{ url_for('contacts.new_contact') }}" class="secondary-btn compact-btn">Create contact</a></div>
+            <div class="connection-panel" data-connection-panel="internal_transfer"><label>Linked account/card</label><select name="connection_account_id"><option value="">Choose</option>{% for account in account_options %}{% set av=account.id or account.value %}<option value="{{ av }}" {% if av|string==r.connection_account_id|string %}selected{% endif %}>{{ account.label }}</option>{% endfor %}</select></div>
+          </section>
+          <section class="entity-history"><h3>Transaction history</h3>{% if r.history_transactions %}{% for tx in r.history_transactions %}<a class="history-row" href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"><span>{{ tx.date }}</span><span>{{ tx.description }}</span><strong>€ {{ '%.2f'|format(tx.amount) }}</strong></a>{% endfor %}{% else %}<p class="empty">No linked transactions yet. New executions will be linked automatically.</p>{% endif %}</section>
+          <div class="dialog-actions"><button type="submit" name="action" value="update">Save changes</button><button type="submit" name="action" value="delete" class="danger-btn" onclick="return confirm('Delete this recurring rule?')">Delete</button></div>
+        </form>
+      </dialog>
+    </article>
     {% endfor %}
   </div>
   {% else %}
@@ -275,15 +235,15 @@
   {% endif %}
 </section>
 
-<section class="transactions pending-card recurring-rules-card finished-recurring-card">
-  <div class="panel-header">
+<details class="transactions pending-card recurring-rules-card finished-recurring-card finished-entity-group">
+  <summary class="panel-header finished-group-summary">
     <div>
       <span class="eyebrow">Archive</span>
       <h2>Finished recurring rules</h2>
       <p>Rules stopped by an end date or by the maximum number of occurrences. Totals are based on generated pending/history rows.</p>
     </div>
     <span class="section-count">{{ recurring_finished|length }} finished</span>
-  </div>
+  </summary>
 
   {% if recurring_finished %}
   <div class="finished-rule-list">
@@ -325,7 +285,7 @@
   {% else %}
     <p class="empty">No finished recurring rules yet.</p>
   {% endif %}
-</section>
+</details>
 {% endblock %}
 
 {% block scripts %}
@@ -335,5 +295,5 @@
   "defaultCategoryByType": {{ default_category_by_type | tojson }}
 }
 </script>
-<script src="{{ url_for('static', filename='js/recurring.js') }}"></script>
+<script src="{{ url_for('static', filename='js/recurring.js') }}?v=recurring-cards-2"></script>
 {% endblock %}

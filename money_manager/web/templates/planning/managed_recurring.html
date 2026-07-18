@@ -137,10 +137,11 @@
       </div>
 
       {% if items %}
-        <div class="special-item-list">
+        <div class="special-item-list managed-recurring-grid">
           {% for item in items %}
-          <article class="special-item-card {{ 'needs-check' if item.needs_check else '' }}">
+          <article class="special-item-card managed-card-compact {{ 'needs-check' if item.needs_check else '' }}" tabindex="0" aria-label="Open {{ item.title }} details">
             <form method="post" class="special-item-form">
+              <button type="button" class="managed-card-close" aria-label="Close details">×</button>
               <input type="hidden" name="item_id" value="{{ item.id }}">
               <div class="special-item-head">
                 <div>

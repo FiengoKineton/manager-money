@@ -1,6 +1,7 @@
 from flask import Blueprint, redirect, render_template, request, url_for
 from datetime import date
 
+from money_manager.services.contact_service import list_contacts
 from money_manager.services.payment_form_service import account_options_for_payment_forms, payment_method_options_for_forms
 from money_manager.services.custom_category_service import effective_categories_by_type, default_category_for
 from money_manager.repositories.pending import delay_pending, delete_pending, load_pending, mark_discarded, update_pending
@@ -121,6 +122,7 @@ def pending_page():
         credit_statement_pending=credit_statement_pending,
         account_options=account_options_for_payment_forms(),
         payment_method_options=payment_method_options_for_forms(),
+        contacts=list_contacts(),
         **scope_template_context(selected_scope),
     )
 
@@ -158,5 +160,6 @@ def recurring_page():
         default_category_by_type={transaction_type: default_category_for(transaction_type) for transaction_type in effective_categories_by_type()},
         account_options=account_options_for_payment_forms(),
         payment_method_options=payment_method_options_for_forms(),
+        contacts=list_contacts(),
         **scope_template_context(selected_scope),
     )

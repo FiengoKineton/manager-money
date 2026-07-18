@@ -15,6 +15,7 @@ from money_manager.services.category_service import category_context
 from money_manager.services.custom_category_service import add_custom_category, effective_categories_by_type
 from money_manager.services.category_icon_service import set_category_icon
 from money_manager.services.currency_service import currency_options_for_forms
+from money_manager.services.credit_settlement_service import group_unsettled_credit_movements
 from money_manager.services.quick_log_service import handle_quick_log, quick_log_context
 from money_manager.services.payment_form_service import payment_form_context
 from money_manager.services.discount_balance_service import (
@@ -218,11 +219,52 @@ def _credit_purchase_mask(df) -> pd.Series:
     return tx_type.eq("expense") & (settlement_mode.eq("delayed") | (due.ne("") & liability.ne(""))) & ~settlement_like
 
 
+def _unsettled_credit_transaction_uids() -> set[str]:
+    """Return source transaction UIDs that still belong to an open statement.
+
+    The transaction CSV can retain the original card purchase after its statement
+    has been paid.  The ledger/settlement service is authoritative for whether
+    that purchase is still outstanding, so the queue must not infer this from
+    the old due-date snapshot alone.
+    """
+    try:
+        return {
+            str(uid).strip()
+            for group in group_unsettled_credit_movements()
+            for uid in (group.get("transaction_uids") or [])
+            if str(uid).strip()
+        }
+    except Exception:
+        current_app.logger.exception("Could not resolve unsettled credit-card transactions")
+        return set()
+
+
 def _split_credit_purchase_rows(filtered):
     mask = _credit_purchase_mask(filtered)
-    regular = filtered[~mask].copy()
     credit_rows = filtered[mask].copy()
+    regular = filtered[~mask].copy()
+
+    # Where the source UID is available, retain only purchases that the credit
+    # settlement ledger still considers open.  This prevents already-settled
+    # purchases from reappearing in the transaction-page queue.
+    unsettled_uids = _unsettled_credit_transaction_uids()
+    if unsettled_uids and not credit_rows.empty and "transaction_uid" in credit_rows.columns:
+        source_uids = _safe_text_series(credit_rows, "transaction_uid").str.strip()
+        known_uid = source_uids.ne("")
+        still_open = source_uids.isin(unsettled_uids)
+        settled_rows = credit_rows[known_uid & ~still_open]
+        if not settled_rows.empty:
+            regular = regular.drop(index=settled_rows.index, errors="ignore")
+        credit_rows = credit_rows[~known_uid | still_open].copy()
     return regular, credit_rows
+
+
+def _partition_credit_purchase_rows(credit_rows):
+    if credit_rows.empty:
+        return credit_rows.copy(), credit_rows.copy()
+    due = pd.to_datetime(_safe_text_series(credit_rows, "payment_due_date_snapshot"), errors="coerce")
+    overdue_mask = due.notna() & (due.dt.date < date.today())
+    return credit_rows[~overdue_mask].copy(), credit_rows[overdue_mask].copy()
 
 
 def _credit_purchase_display_rows(credit_rows) -> list[dict]:
@@ -287,6 +329,7 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict, *, page
     )
     regular_period_rows, _period_credit_rows = _split_credit_purchase_rows(period_rows)
     regular_filtered, credit_purchase_frame = _split_credit_purchase_rows(filtered)
+    current_credit_frame, overdue_credit_frame = _partition_credit_purchase_rows(credit_purchase_frame)
     calculation_totals = summary_totals(regular_period_rows)
 
     rows, total_rows, _start_index, has_more = _slice_transactions_for_display(
@@ -294,8 +337,10 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict, *, page
         page=page,
         page_size=page_size,
     )
-    credit_purchase_rows = _credit_purchase_display_rows(credit_purchase_frame)
-    credit_purchase_summary = _credit_purchase_summary(credit_purchase_frame)
+    credit_purchase_rows = _credit_purchase_display_rows(current_credit_frame)
+    credit_purchase_summary = _credit_purchase_summary(current_credit_frame)
+    overdue_credit_purchase_rows = _credit_purchase_display_rows(overdue_credit_frame)
+    overdue_credit_purchase_summary = _credit_purchase_summary(overdue_credit_frame)
     configured_categories = effective_categories_by_type()
     observed_categories = (
         main_df["category"].dropna().astype(str).tolist()
@@ -344,6 +389,8 @@ def _build_transactions_page_context(scope_key: str, filter_state: dict, *, page
         "transactions_has_more": has_more,
         "credit_purchase_rows": credit_purchase_rows,
         "credit_purchase_summary": credit_purchase_summary,
+        "overdue_credit_purchase_rows": overdue_credit_purchase_rows,
+        "overdue_credit_purchase_summary": overdue_credit_purchase_summary,
         "start": start,
         "end": end,
         "active_types": types,

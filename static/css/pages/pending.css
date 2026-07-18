@@ -1125,3 +1125,112 @@
   color: var(--muted-text, #64748b);
   line-height: 1.45;
 }
+
+.recurring-compact-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.recurring-compact-card { border:1px solid var(--border-color,#dbe3ee); border-radius:16px; background:var(--surface,#fff); overflow:hidden; }
+.recurring-card-open { width:100%; display:grid; gap:7px; padding:16px; text-align:left; border:0; background:transparent; color:inherit; cursor:pointer; }
+.recurring-card-open:hover { background:rgba(80,120,190,.06); }
+.entity-detail-dialog { width:min(880px,calc(100vw - 32px)); max-height:90vh; border:0; border-radius:20px; padding:0; box-shadow:0 24px 80px rgba(15,23,42,.3); }
+.entity-detail-dialog::backdrop { background:rgba(15,23,42,.58); backdrop-filter:blur(3px); }
+.entity-detail-form { padding:22px; overflow:auto; max-height:90vh; }
+.dialog-header,.dialog-actions { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.dialog-close { border:0; background:transparent; font-size:30px; cursor:pointer; }
+.connection-editor,.entity-history { margin-top:18px; padding-top:16px; border-top:1px solid var(--border-color,#dbe3ee); }
+.exclusive-connection-options { display:flex; flex-wrap:wrap; gap:12px; margin:8px 0 12px; }
+.connection-panel { display:flex; align-items:end; gap:10px; flex-wrap:wrap; }
+.connection-panel[hidden] { display:none !important; }
+.history-row { display:grid; grid-template-columns:110px 1fr auto; gap:12px; padding:10px 0; border-bottom:1px solid var(--border-color,#e5e7eb); color:inherit; text-decoration:none; }
+
+/* Recurring overview refinement: three readable cards per row with type pastel fills. */
+.recurring-compact-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.recurring-compact-card {
+  min-height: 205px;
+  border-radius: 20px;
+  border-color: rgba(100, 116, 139, .18);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .055);
+}
+.recurring-compact-card.rule-expense {
+  background: linear-gradient(145deg, rgba(255, 231, 226, .92), rgba(255, 246, 236, .9));
+}
+.recurring-compact-card.rule-income {
+  background: linear-gradient(145deg, rgba(222, 247, 231, .94), rgba(239, 251, 231, .9));
+}
+.recurring-compact-card.rule-investment {
+  background: linear-gradient(145deg, rgba(228, 234, 255, .94), rgba(238, 231, 255, .9));
+}
+.recurring-card-open {
+  min-height: 205px;
+  align-content: start;
+  gap: 10px;
+  padding: 20px;
+}
+.recurring-card-open > strong {
+  font-size: 1.08rem;
+  line-height: 1.3;
+}
+.recurring-card-open:hover {
+  background: rgba(255, 255, 255, .28);
+}
+.recurring-auto-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  margin-top: auto;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+  background: rgba(255, 255, 255, .62);
+  border: 1px solid rgba(100, 116, 139, .17);
+}
+.recurring-auto-status.is-enabled { color: #17633a; }
+.recurring-auto-status.is-disabled { color: #6b7280; }
+.add-recurring-card { position: relative; }
+
+@media (max-width: 1180px) {
+  .recurring-compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .recurring-compact-grid { grid-template-columns: 1fr; }
+  .recurring-compact-card,
+  .recurring-card-open { min-height: 0; }
+}
+
+.finished-entity-group{display:block}.finished-entity-group>summary{cursor:pointer;list-style:none}.finished-entity-group>summary::-webkit-details-marker{display:none}.finished-group-summary:after{content:"⌄";font-size:1.4rem;margin-left:auto;transition:transform .2s ease}.finished-entity-group[open]>.finished-group-summary:after{transform:rotate(180deg)}
+.bonifico-four-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.bonifico-summary-strip{margin-top:14px}.bonifico-rule-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.bonifico-rule-card{display:grid;gap:7px;padding:16px;border:1px solid var(--border-color,#dbe3ee);border-radius:16px;background:rgba(255,255,255,.62)}.bonifico-rule-card.rule-expense{background:rgba(255,231,226,.75)}.bonifico-rule-card.rule-income{background:rgba(222,247,231,.78)}.bonifico-rule-card.rule-investment{background:rgba(228,234,255,.8)}.bonifico-rule-card.is-previous{background:rgba(232,237,243,.78)}
+@media(max-width:900px){.bonifico-four-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.bonifico-rule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.bonifico-four-metrics,.bonifico-rule-grid{grid-template-columns:1fr}}
+
+/* Delta: compact four-wide Bonifico summary and reusable closed archives. */
+.bonifico-summary-strip .bonifico-four-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px;
+}
+.bonifico-summary-strip .bonifico-four-metrics > div { min-width: 0; }
+.bonifico-create-dialog .mm-create-dialog-shell {
+  width: min(1180px, calc(100vw - 32px));
+  max-height: min(90vh, 980px);
+  overflow: auto;
+}
+.bonifico-create-dialog .bonifico-form-section { margin: 0; box-shadow: none; }
+.pending-history-archive > summary,
+.archive-toggle-summary {
+  cursor: pointer;
+  list-style: none;
+}
+.pending-history-archive > summary::-webkit-details-marker { display: none; }
+.pending-history-content { padding-top: 12px; }
+.credit-purchase-overdue-archive { opacity: .94; }
+.credit-purchase-overdue-archive:not([open]) { padding-bottom: 14px; }
+
+@media (max-width: 900px) {
+  .bonifico-summary-strip .bonifico-four-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 600px) {
+  .bonifico-summary-strip .bonifico-four-metrics { grid-template-columns: 1fr !important; }
+}

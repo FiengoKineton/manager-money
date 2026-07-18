@@ -135,3 +135,21 @@
     min-width: 0 !important;
   }
 }
+
+.payable-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.payable-summary-card{border:1px solid var(--border-color,#dbe3ee);border-radius:16px;background:var(--surface,#fff);overflow:hidden}.payable-card-open{width:100%;display:grid;gap:7px;padding:16px;text-align:left;border:0;background:transparent;color:inherit;cursor:pointer}.payable-card-open:hover{background:rgba(80,120,190,.06)}.payable-card-amounts{display:flex;justify-content:space-between;align-items:end}.payable-visual-summary{display:grid;grid-template-columns:160px 1fr;gap:18px;align-items:center}.payable-donut{width:140px;aspect-ratio:1;border-radius:50%;background:conic-gradient(currentColor var(--paid),rgba(120,130,150,.18) 0);display:grid;place-items:center}.payable-donut:before{content:"";position:absolute}.payable-donut>div{width:96px;aspect-ratio:1;border-radius:50%;background:var(--surface,#fff);display:grid;place-content:center;text-align:center}.payable-quick-payment,.payable-upload-form{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.payment-timeline{display:grid;gap:8px}.timeline-payment{display:grid;grid-template-columns:100px 110px 1fr;gap:10px;padding:10px;border-left:3px solid currentColor;background:rgba(90,120,170,.06);color:inherit;text-decoration:none}.payable-item-row{display:grid;grid-template-columns:2fr 100px 130px 40px;gap:8px;margin-bottom:8px}.payable-file-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px}.payable-file-card img,.payable-file-card iframe{width:100%;height:260px;object-fit:contain;border:1px solid var(--border-color,#ddd);border-radius:10px}.amount-mismatch{color:var(--bad,#b42318)}@media(max-width:700px){.payable-visual-summary{grid-template-columns:1fr}.payable-item-row{grid-template-columns:1fr 80px 100px 36px}.timeline-payment{grid-template-columns:1fr}}
+
+/* Compact payable overview: exactly three cards on wide screens. */
+.payable-card-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.payable-summary-card{min-height:190px;border-radius:20px;box-shadow:0 10px 28px rgba(15,23,42,.055)}
+.payable-card-open{min-height:190px;padding:20px;align-content:start}
+.payable-summary-card:not(.is-closed){background:linear-gradient(145deg,rgba(255,231,226,.9),rgba(255,246,236,.9))}
+.payable-summary-card.is-closed{background:linear-gradient(145deg,rgba(232,237,243,.92),rgba(246,248,250,.92))}
+.finished-entity-group{display:block}
+.finished-entity-group>summary{cursor:pointer;list-style:none}
+.finished-entity-group>summary::-webkit-details-marker{display:none}
+.finished-group-summary:after{content:"⌄";font-size:1.4rem;margin-left:auto;transition:transform .2s ease}
+.finished-entity-group[open]>.finished-group-summary:after{transform:rotate(180deg)}
+.upload-result{margin:12px 0;padding:11px 14px;border-radius:12px;font-weight:700}
+.upload-result-uploaded{background:rgba(34,197,94,.12)}.upload-result-partial{background:rgba(245,158,11,.14)}.upload-result-failed{background:rgba(239,68,68,.12)}
+@media(max-width:1180px){.payable-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.payable-card-grid{grid-template-columns:1fr}.payable-summary-card,.payable-card-open{min-height:0}}

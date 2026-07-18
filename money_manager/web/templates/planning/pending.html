@@ -311,7 +311,11 @@
   {% endif %}
 </section>
 
-<section class="transactions pending-card pending-payments-card">
+<details class="transactions pending-card pending-payments-card pending-history-archive">
+  <summary class="archive-toggle-summary">
+    <span><span class="eyebrow">History</span><strong>Executed pending rows</strong><small>{{ pending_executed|length }} executed · click to open</small></span><span aria-hidden="true">⌄</span>
+  </summary>
+  <div class="pending-history-content">
   <div class="panel-header">
     <div>
       <span class="eyebrow">History</span>
@@ -380,7 +384,8 @@
   {% else %}
     <p class="empty">No executed pending rows yet.</p>
   {% endif %}
-</section>
+  </div>
+</details>
 
 <section class="transactions pending-card pending-payments-card discarded-history-card">
   <div class="panel-header">

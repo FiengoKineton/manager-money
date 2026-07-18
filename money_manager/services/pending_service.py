@@ -21,6 +21,7 @@ from money_manager.config import (
 from money_manager.repositories.pending import load_pending, mark_executed, append_pending, write_pending
 from money_manager.repositories.recurring import is_auto_execute, load_recurring
 from money_manager.repositories.transactions import append_transaction
+from money_manager.services.contact_service import get_contact
 from money_manager.services.transaction_service import save_transaction_payload
 
 CREDIT_STATEMENT_SOURCE = "credit_account_statement"
@@ -409,6 +410,44 @@ def _execute_pending_row(tx: dict, execution_date: str | None = None, *, automat
             "linked_object_id": recurring_id,
             "linked_object_name": str(recurring_rule.get("name") or tx.get("description") or "Recurring rule"),
         }
+        connection_type = str(recurring_rule.get("connection_type") or tx.get("connection_type") or "")
+        if connection_type == "bonifico":
+            contact = get_contact(recurring_rule.get("connection_contact_id") or tx.get("connection_contact_id") or "")
+            contact = contact or {}
+            link_fields.update({
+                "payment_method": "bonifico",
+                "contact_id": str(contact.get("id") or recurring_rule.get("connection_contact_id") or ""),
+                "contact_name": str(contact.get("display_name") or ""),
+                "iban_snapshot": str(contact.get("iban") or ""),
+                "bic_swift_snapshot": str(contact.get("bic_swift") or ""),
+                "bank_name_snapshot": str(contact.get("bank_name") or ""),
+                "transfer_reference": f"Recurring rule #{recurring_id}",
+                "transfer_status": "recorded",
+            })
+        elif connection_type == "internal_transfer":
+            link_fields.update({
+                "transfer_reference": f"Internal transfer recurring rule #{recurring_id} to {recurring_rule.get('connection_account_id') or tx.get('connection_account_id') or ''}",
+                "transfer_status": "recorded",
+            })
+    if tx.get("source") == "recurring" and str(recurring_rule.get("connection_type") or tx.get("connection_type") or "") == "internal_transfer":
+        from money_manager.services.internal_transfer_service import create_transfer
+        linked_account = str(recurring_rule.get("connection_account_id") or tx.get("connection_account_id") or "")
+        tx_type = str(tx.get("type") or "expense").casefold()
+        source_account = str(account_id or "")
+        from_account = linked_account if tx_type == "income" else source_account
+        to_account = source_account if tx_type == "income" else linked_account
+        result = create_transfer({
+            "date": execution_date,
+            "from_account_id": from_account,
+            "to_account_id": to_account,
+            "amount": float(tx.get("amount", 0.0)),
+            "transfer_kind": "wallet_topup",
+            "description": _auto_description(tx.get("description", ""), automatic),
+        })
+        if not result.get("ok"):
+            raise ValueError(result.get("error") or "Recurring internal transfer failed.")
+        return
+
     save_result = save_transaction_payload(
         {
             "type": tx.get("type", "expense"),

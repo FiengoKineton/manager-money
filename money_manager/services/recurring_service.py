@@ -19,6 +19,7 @@ from money_manager.config import (
 
 from money_manager.repositories.pending import append_pending, delete_pending_for_source, load_pending
 from money_manager.services.payment_form_service import snapshot_account, snapshot_payment_method
+from money_manager.services.contact_service import get_contact
 from money_manager.repositories.recurring import (
     add_months,
     append_recurring,
@@ -55,6 +56,19 @@ def _payment_fields_from_form(form) -> dict:
     }
 
 
+
+def _connection_fields_from_form(form, old_rule: dict | None = None) -> dict:
+    old_rule = old_rule or {}
+    requested = str(form.get("connection_type") or "").strip().casefold()
+    if requested not in {"bonifico", "internal_transfer"}:
+        requested = ""
+    # Preserve remembered choices when a connection is disabled.
+    return {
+        "connection_type": requested,
+        "connection_contact_id": str(form.get("connection_contact_id") or old_rule.get("connection_contact_id") or ""),
+        "connection_account_id": str(form.get("connection_account_id") or old_rule.get("connection_account_id") or ""),
+    }
+
 def _auto_execute_from_form(form) -> str:
     return "1" if is_auto_execute(form.get("auto_execute")) else ""
 
@@ -87,7 +101,7 @@ def prepare_recurring_for_display(rows: list[dict]) -> list[dict]:
 def append_rule_from_form(form) -> None:
     end_date, max_occurrences = _termination_fields_from_form(form)
 
-    append_recurring({
+    created = append_recurring({
         "name": form.get("name", ""),
         "type": form.get("type", "expense"),
         "amount": float(form.get("amount", 0)),
@@ -96,15 +110,27 @@ def append_rule_from_form(form) -> None:
         "category": form.get("category", ""),
         **_payment_fields_from_form(form),
         "auto_execute": _auto_execute_from_form(form),
+        **_connection_fields_from_form(form),
         "start_date": form.get("start_date", ""),
         "end_date": end_date,
         "max_occurrences": max_occurrences,
     })
+    try:
+        from money_manager.services.recurring_connection_history_service import remember_rule_connection
+        remember_rule_connection(_find_rule_by_id(created))
+    except Exception:
+        pass
 
 
 def update_rule_from_form(form) -> None:
     rule_id = form.get("id")
     old_rule = _find_rule_by_id(rule_id)
+    if old_rule and str(old_rule.get("connection_type") or "").casefold() == "bonifico":
+        try:
+            from money_manager.services.recurring_connection_history_service import remember_rule_connection
+            remember_rule_connection(old_rule)
+        except Exception:
+            pass
     pending_rows_before = load_pending()
     has_open_generated_rows = any(
         tx.get("source") == "recurring"
@@ -128,6 +154,7 @@ def update_rule_from_form(form) -> None:
         "category": form.get("category", ""),
         **_payment_fields_from_form(form),
         "auto_execute": _auto_execute_from_form(form),
+        **_connection_fields_from_form(form, old_rule),
         "start_date": form.get("start_date", ""),
         "end_date": end_date,
         "max_occurrences": max_occurrences,
@@ -138,10 +165,20 @@ def update_rule_from_form(form) -> None:
         updates["last_generated"] = retained_last.isoformat() if retained_last else ""
 
     update_recurring(rule_id, updates)
+    try:
+        from money_manager.services.recurring_connection_history_service import remember_rule_connection
+        remember_rule_connection(_find_rule_by_id(rule_id))
+    except Exception:
+        pass
 
 
 def delete_rule_from_form(form) -> None:
     rule_id = form.get("id")
+    try:
+        from money_manager.services.recurring_connection_history_service import remember_rule_connection
+        remember_rule_connection(_find_rule_by_id(rule_id))
+    except Exception:
+        pass
     delete_pending_for_source("recurring", rule_id, only_pending=True)
     delete_recurring(int(rule_id))
 
@@ -321,6 +358,9 @@ def generate_recurring(today: date | None = None) -> int:
                     "source": "recurring",
                     "source_id": row.get("id", ""),
                     "source_occurrence_date": scheduled_date.isoformat(),
+                    "connection_type": row.get("connection_type", ""),
+                    "connection_contact_id": row.get("connection_contact_id", ""),
+                    "connection_account_id": row.get("connection_account_id", ""),
                 },
                 pending_due_date,
             )
@@ -669,6 +709,12 @@ def _decorate_rule(row: dict) -> dict:
     display_account = decorated.get("account_id") or decorated.get("account", "")
     decorated["account_label"] = account_label_for_value(display_account)
     decorated["is_auxiliary_account"] = is_auxiliary_account(display_account)
+    decorated["connection_type"] = str(decorated.get("connection_type") or "")
+    decorated["connection_contact_name"] = ""
+    if decorated["connection_contact_id"] if "connection_contact_id" in decorated else False:
+        contact = get_contact(decorated.get("connection_contact_id"))
+        decorated["connection_contact_name"] = str((contact or {}).get("display_name") or "")
+    decorated["connection_label"] = ("Bonifico" if decorated["connection_type"] == "bonifico" else "Internal transfer" if decorated["connection_type"] == "internal_transfer" else "Standard transaction")
     decorated["is_finished"] = finished
     decorated["finish_reason"] = _finish_reason(end_date, max_occurrences, generated_count, next_due)
     decorated["last_generated_sort"] = last_generated or date.min
@@ -702,7 +748,24 @@ def _recurring_history_summary(row: dict) -> dict:
     else:
         total_label = "Total spent"
 
+    transaction_history = []
+    try:
+        from money_manager.services.transaction_service import load_transactions
+        frame = load_transactions()
+        if not frame.empty:
+            matched = frame[(frame.get("linked_object_type", "").fillna("").astype(str) == "recurring") & (frame.get("linked_object_id", "").fillna("").astype(str) == str(row.get("id", "")))]
+            for index, tx in matched.sort_values("date", ascending=False).iterrows():
+                transaction_history.append({
+                    "row_index": int(index),
+                    "date": str(tx.get("date"))[:10],
+                    "amount": normalize_amount(tx.get("amount")),
+                    "description": str(tx.get("description") or ""),
+                })
+    except Exception:
+        transaction_history = []
+
     return {
+        "history_transactions": transaction_history,
         "history_count": len(history_rows),
         "history_executed_count": len(executed),
         "history_pending_count": len(pending),

@@ -56,3 +56,34 @@
     updateCategories(config);
   });
 })();
+
+(function () {
+  function refreshConnectionPanels(root) {
+    const selected = root.querySelector('input[name="connection_type"]:checked');
+    const value = selected ? selected.value : '';
+    root.querySelectorAll('[data-connection-panel]').forEach((panel) => {
+      panel.hidden = panel.dataset.connectionPanel !== value;
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-dialog-open]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const dialog = document.getElementById(button.dataset.dialogOpen);
+        if (dialog) {
+          refreshConnectionPanels(dialog);
+          dialog.showModal();
+        }
+      });
+    });
+    document.querySelectorAll('[data-dialog-close]').forEach((button) => {
+      button.addEventListener('click', () => button.closest('dialog')?.close());
+    });
+    document.querySelectorAll('.recurring-form, .entity-detail-dialog').forEach((root) => {
+      root.querySelectorAll('input[name="connection_type"]').forEach((radio) => {
+        radio.addEventListener('change', () => refreshConnectionPanels(root));
+      });
+      refreshConnectionPanels(root);
+    });
+  });
+})();

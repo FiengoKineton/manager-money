@@ -42,6 +42,9 @@ def append_recurring(rule: dict) -> int | None:
         "payment_method_name_snapshot": rule.get("payment_method_name_snapshot", ""),
         "payment_resolution_template_json": rule.get("payment_resolution_template_json", ""),
         "auto_execute": _clean_bool_field(rule.get("auto_execute", "")),
+        "connection_type": _clean_connection_type(rule.get("connection_type", "")),
+        "connection_contact_id": str(rule.get("connection_contact_id", "") or ""),
+        "connection_account_id": str(rule.get("connection_account_id", "") or ""),
         "start_date": (parse_date(rule.get("start_date")) or date.today()).isoformat(),
         "end_date": _clean_date_field(rule.get("end_date", "")),
         "max_occurrences": _clean_max_occurrences(rule.get("max_occurrences", "")),
@@ -80,6 +83,9 @@ def update_recurring(rule_id, updates: dict) -> None:
                 row[key] = updates.get(key, "")
         if "auto_execute" in updates:
             row["auto_execute"] = _clean_bool_field(updates.get("auto_execute", ""))
+        for key in ["connection_type", "connection_contact_id", "connection_account_id"]:
+            if key in updates:
+                row[key] = _clean_connection_type(updates.get(key, "")) if key == "connection_type" else str(updates.get(key, "") or "")
         row["start_date"] = updates.get("start_date") or row.get("start_date") or date.today().isoformat()
         row["end_date"] = _clean_date_field(updates.get("end_date", row.get("end_date", "")))
         row["max_occurrences"] = _clean_max_occurrences(
@@ -227,12 +233,18 @@ def _clean_max_occurrences(value) -> str:
     return str(parsed) if parsed else ""
 
 
+def _clean_connection_type(value) -> str:
+    value = str(value or "").strip().casefold()
+    return value if value in {"bonifico", "internal_transfer"} else ""
+
+
 def _normalize_row(row: dict) -> dict:
     normalized = {field: row.get(field, "") for field in RECURRING_FIELDS}
     normalized["frequency"] = str(parse_frequency_months(normalized.get("frequency")))
     normalized["auto_execute"] = _clean_bool_field(normalized.get("auto_execute", ""))
     normalized["max_occurrences"] = _clean_max_occurrences(normalized.get("max_occurrences", ""))
     normalized["end_date"] = _clean_date_field(normalized.get("end_date", ""))
+    normalized["connection_type"] = _clean_connection_type(normalized.get("connection_type", ""))
 
     # The UI treats the two stopping options as alternatives:
     # either stop on an exact date OR stop after N occurrences.

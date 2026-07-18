@@ -1,0 +1,24 @@
+{
+  "11": {
+    "rule_id": "11",
+    "name": "Kineton salary",
+    "type": "income",
+    "amount": "1900.0",
+    "frequency": 1,
+    "connection_contact_id": "contact_d99cb45464bc",
+    "ever_bonifico": true,
+    "current_connection_type": "bonifico",
+    "updated_at": "2026-07-18T05:42:13.797364+00:00"
+  },
+  "10": {
+    "rule_id": "10",
+    "name": "Condominio 3rd e 4th rata 2026",
+    "type": "expense",
+    "amount": "612.0",
+    "frequency": 3,
+    "connection_contact_id": "contact_ca4962c470d1",
+    "ever_bonifico": true,
+    "current_connection_type": "bonifico",
+    "updated_at": "2026-07-18T05:42:13.797388+00:00"
+  }
+}

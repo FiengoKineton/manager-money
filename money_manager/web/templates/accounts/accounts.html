@@ -118,7 +118,7 @@
 {% if dependent_accounts_overview %}
 <section class="panel-card accounts-focus-list-card all-conti-clean-list all-conti-foldout-section">
   <div class="panel-header compact-panel-header"><div><span class="eyebrow">Level 3</span><h3>Dependent wallets</h3><p>PayPal, Glovo, EasyPark and similar accounts stay compact here. Expand to see parent and projected balance.</p></div></div>
-  <div class="all-conti-wallet-grid">
+  <div class="all-conti-wallet-grid all-conti-wallet-grid-three">
     {% for child in dependent_accounts_overview %}
       <details class="all-conti-wallet-chip account-{{ child.balance_tone }}">
         <summary>

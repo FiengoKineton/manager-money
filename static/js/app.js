@@ -1340,4 +1340,201 @@
       button.addEventListener("click", () => window.history.forward());
     });
   });
+
+  // Compact three-column entity cards with an in-place full edit modal.
+  // The original row remains the authoritative form, so every existing field,
+  // action and validation rule is preserved when the card is opened.
+  function normalizeCardText(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function cardCellValue(cell) {
+    if (!cell) return "";
+    const field = cell.querySelector("input:not([type='hidden']), select, textarea");
+    if (field) {
+      if (field.tagName === "SELECT") {
+        return normalizeCardText(field.selectedOptions?.[0]?.textContent || field.value);
+      }
+      if (field.type === "checkbox") return field.checked ? "On" : "Off";
+      return normalizeCardText(field.value);
+    }
+    return normalizeCardText(cell.textContent);
+  }
+
+  function ensureEntityCardBackdrop() {
+    let backdrop = document.querySelector("[data-entity-card-backdrop]");
+    if (backdrop) return backdrop;
+    backdrop = document.createElement("button");
+    backdrop.type = "button";
+    backdrop.className = "entity-card-modal-backdrop";
+    backdrop.dataset.entityCardBackdrop = "true";
+    backdrop.setAttribute("aria-label", "Close details");
+    document.body.appendChild(backdrop);
+    return backdrop;
+  }
+
+  function closeEntityCardModal() {
+    const openRow = document.querySelector("tr.entity-card-modal-open");
+    if (openRow) openRow.classList.remove("entity-card-modal-open");
+    document.body.classList.remove("entity-card-dialog-open");
+    const backdrop = document.querySelector("[data-entity-card-backdrop]");
+    if (backdrop) backdrop.classList.remove("is-visible");
+  }
+
+  function openEntityCardModal(row) {
+    if (!row) return;
+    closeEntityCardModal();
+    row.classList.add("entity-card-modal-open");
+    document.body.classList.add("entity-card-dialog-open");
+    ensureEntityCardBackdrop().classList.add("is-visible");
+    const first = row.querySelector("input:not([type='hidden']), select, textarea, button");
+    window.setTimeout(() => first?.focus({ preventScroll: true }), 30);
+  }
+
+  function buildEntityCardSummary(table, row, headers) {
+    if (row.querySelector(":scope > .entity-card-summary")) return;
+    const cells = Array.from(row.children).filter((cell) => !cell.classList.contains("mobile-row-summary"));
+    const titleIndexes = String(table.dataset.mobileTitle || "").split(",").map((v) => normalizeCardText(v).toLowerCase()).filter(Boolean);
+    const amountName = normalizeCardText(table.dataset.mobileAmount || "").toLowerCase();
+    const metaNames = String(table.dataset.mobileMeta || "").split(",").map((v) => normalizeCardText(v).toLowerCase()).filter(Boolean);
+    const headerMap = headers.map((h) => normalizeCardText(h).toLowerCase());
+    const valuesFor = (names) => names.map((name) => {
+      const index = headerMap.findIndex((header) => header === name || header.includes(name));
+      return index >= 0 ? cardCellValue(cells[index]) : "";
+    }).filter(Boolean);
+    const titles = valuesFor(titleIndexes);
+    const amountIndex = amountName ? headerMap.findIndex((header) => header === amountName || header.includes(amountName)) : -1;
+    const amount = amountIndex >= 0 ? cardCellValue(cells[amountIndex]) : "";
+    const meta = valuesFor(metaNames);
+
+    const summary = document.createElement("td");
+    summary.className = "entity-card-summary";
+    summary.innerHTML = `
+      <div class="entity-card-summary-top">
+        <div>
+          <strong>${titles[0] || "Open details"}</strong>
+          ${titles.slice(1).map((value) => `<span>${value}</span>`).join("")}
+        </div>
+        ${amount ? `<b>${amount}</b>` : ""}
+      </div>
+      ${meta.length ? `<p>${meta.join(" · ")}</p>` : ""}
+      <button type="button" class="entity-card-open-button">Open / edit</button>`;
+    row.appendChild(summary);
+
+    const closeCell = document.createElement("td");
+    closeCell.className = "entity-card-modal-close-cell";
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "entity-card-modal-close";
+    closeButton.setAttribute("aria-label", "Close details");
+    closeButton.textContent = "×";
+    closeButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeEntityCardModal();
+    });
+    closeCell.appendChild(closeButton);
+    row.appendChild(closeCell);
+  }
+
+  function wireEntityCardModals() {
+    document.querySelectorAll("table.entity-card-grid-table").forEach((table) => {
+      const headers = Array.from(table.querySelectorAll("thead th")).map((header) => header.textContent);
+      table.querySelectorAll("tbody > tr").forEach((row) => {
+        buildEntityCardSummary(table, row, headers);
+        if (row.dataset.entityModalWired === "true") return;
+        row.dataset.entityModalWired = "true";
+        row.addEventListener("click", (event) => {
+          if (row.classList.contains("entity-card-modal-open")) return;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          openEntityCardModal(row);
+        }, true);
+      });
+    });
+    const backdrop = ensureEntityCardBackdrop();
+    if (backdrop.dataset.wired !== "true") {
+      backdrop.dataset.wired = "true";
+      backdrop.addEventListener("click", closeEntityCardModal);
+    }
+  }
+
+  function wireManagedRecurringCards() {
+    document.querySelectorAll(".managed-card-compact").forEach((card) => {
+      if (card.dataset.managedModalWired === "true") return;
+      card.dataset.managedModalWired = "true";
+      const closeButton = card.querySelector(".managed-card-close");
+      const open = () => {
+        document.querySelectorAll(".managed-card-compact.managed-card-open").forEach((other) => {
+          if (other !== card) other.classList.remove("managed-card-open");
+        });
+        card.classList.add("managed-card-open");
+        document.body.classList.add("managed-card-dialog-open");
+      };
+      const close = (event) => {
+        event?.preventDefault();
+        event?.stopPropagation();
+        card.classList.remove("managed-card-open");
+        if (!document.querySelector(".managed-card-compact.managed-card-open")) {
+          document.body.classList.remove("managed-card-dialog-open");
+        }
+      };
+      card.addEventListener("click", (event) => {
+        if (card.classList.contains("managed-card-open")) return;
+        event.preventDefault();
+        open();
+      });
+      card.addEventListener("keydown", (event) => {
+        if ((event.key === "Enter" || event.key === " ") && !card.classList.contains("managed-card-open")) {
+          event.preventDefault();
+          open();
+        }
+      });
+      closeButton?.addEventListener("click", close);
+    });
+  }
+
+  function createClosedHistory(table, options) {
+    if (!table || table.dataset.historySplit === "true") return;
+    const body = table.tBodies[0];
+    if (!body) return;
+    const closedRows = Array.from(body.rows).filter((row) => row.classList.contains("is-closed"));
+    if (!closedRows.length) return;
+    table.dataset.historySplit = "true";
+    const details = document.createElement("details");
+    details.className = "closed-entity-history panel-card";
+    const summary = document.createElement("summary");
+    summary.innerHTML = `<strong>${options.title}</strong><span>${closedRows.length} ${options.countLabel}</span>`;
+    const historyTable = table.cloneNode(false);
+    historyTable.removeAttribute("id");
+    historyTable.dataset.historySplit = "true";
+    if (table.tHead) historyTable.appendChild(table.tHead.cloneNode(true));
+    const historyBody = document.createElement("tbody");
+    closedRows.forEach((row) => historyBody.appendChild(row));
+    historyTable.appendChild(historyBody);
+    details.appendChild(summary);
+    details.appendChild(historyTable);
+    table.closest("section")?.insertAdjacentElement("afterend", details);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    createClosedHistory(document.querySelector("table.debt-tracked-table"), {
+      title: "Extinguished debts history",
+      countLabel: "closed debts",
+    });
+    createClosedHistory(document.querySelector("table.money-owed-table"), {
+      title: "Closed receivables history",
+      countLabel: "closed receivables",
+    });
+    wireEntityCardModals();
+    wireManagedRecurringCards();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    closeEntityCardModal();
+    document.querySelectorAll(".managed-card-compact.managed-card-open").forEach((card) => card.classList.remove("managed-card-open"));
+    document.body.classList.remove("managed-card-dialog-open");
+  });
+
 })();

@@ -279,7 +279,39 @@ def bonifico_form_context() -> dict[str, Any]:
         if method.get("method_type") == "bank_transfer"
     ]
     contacts = list_contacts()
+    recent_transfers = []
+    totals = {"incoming": 0.0, "outgoing": 0.0}
+    try:
+        from money_manager.services.transaction_service import load_transactions
+        frame = load_transactions()
+        if not frame.empty and "payment_method" in frame.columns:
+            matched = frame[frame["payment_method"].fillna("").astype(str).str.casefold() == BONIFICO_PAYMENT_METHOD].sort_values("date", ascending=False)
+            for index, tx in matched.head(100).iterrows():
+                tx_type = str(tx.get("type") or "expense")
+                amount = _parse_amount(tx.get("amount"))
+                totals["incoming" if tx_type == "income" else "outgoing"] += amount
+                recent_transfers.append({
+                    "row_index": int(index), "date": str(tx.get("date"))[:10], "type": tx_type,
+                    "amount": amount, "contact_name": str(tx.get("contact_name") or ""),
+                    "description": str(tx.get("description") or ""),
+                    "linked_object_type": str(tx.get("linked_object_type") or ""),
+                    "linked_object_name": str(tx.get("linked_object_name") or ""),
+                })
+    except Exception:
+        pass
+    try:
+        from money_manager.repositories.recurring import load_recurring
+        from money_manager.services.recurring_service import prepare_recurring_sections
+        from money_manager.services.recurring_connection_history_service import bonifico_rule_history
+        recurring_rows = prepare_recurring_sections(load_recurring())["all"]
+        rule_history = bonifico_rule_history(recurring_rows)
+    except Exception:
+        rule_history = {"active": [], "previous": []}
     return {
+        "recent_bonifici": recent_transfers,
+        "bonifico_totals": totals,
+        "bonifico_recurring_rules": rule_history["active"],
+        "previous_bonifico_recurring_rules": rule_history["previous"],
         "account_options": account_options,
         "payment_method_options": payment_methods,
         "account_balances": account_balances_for_preview(),

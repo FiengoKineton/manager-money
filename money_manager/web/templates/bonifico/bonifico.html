@@ -8,9 +8,24 @@
     <h2>{{ t("bonifico.title") }}</h2>
     <p>{{ t("bonifico.description") }}</p>
   </div>
-  <a class="secondary-btn" href="{{ url_for('contacts.contacts_page') }}">{{ t("contacts.manage_contacts") }}</a>
+  <div class="hero-actions">
+    <button type="button" class="primary-btn" data-mm-dialog-open="bonifico-create-dialog">Record bonifico</button>
+    <a class="secondary-btn" href="{{ url_for('contacts.contacts_page') }}">{{ t("contacts.manage_contacts") }}</a>
+  </div>
 </section>
 
+<section class="transactions bonifico-summary-strip">
+  <div class="rule-metric-grid bonifico-four-metrics">
+    <div><span>Total incoming</span><strong>€ {{ '%.2f'|format(bonifico_totals.incoming) }}</strong></div>
+    <div><span>Total outgoing</span><strong>€ {{ '%.2f'|format(bonifico_totals.outgoing) }}</strong></div>
+    <div><span>Net</span><strong>€ {{ '%.2f'|format(bonifico_totals.incoming-bonifico_totals.outgoing) }}</strong></div>
+    <div><span>Linked rows</span><strong>{{ recent_bonifici|length }}</strong></div>
+  </div>
+</section>
+
+<dialog class="mm-create-dialog bonifico-create-dialog" id="bonifico-create-dialog" aria-labelledby="bonifico-create-title">
+  <div class="mm-create-dialog-shell">
+    <div class="mm-create-dialog-header"><div><span class="eyebrow">New transfer record</span><h2 id="bonifico-create-title">Record bonifico</h2></div><button type="button" class="mm-dialog-close" data-mm-dialog-close aria-label="Close">×</button></div>
 <section class="form-alert form-alert-warning bonifico-warning">
   <strong>{{ t("bonifico.warning_title") }}</strong> {{ t("bonifico.warning") }}
 </section>
@@ -247,6 +262,23 @@
     </div>
   </form>
 </section>
+  </div>
+</dialog>
+
+<section class="transactions bonifico-history-card">
+  <div class="panel-header"><div><span class="eyebrow">Linked history</span><h2>Recorded bonifici</h2><p>Transactions created manually or by recurring rules. Select one to open its receipt and details.</p></div></div>
+  {% if recent_bonifici %}<div class="bonifico-history-list">{% for tx in recent_bonifici %}<a class="history-row" href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}"><span>{{ tx.date }}</span><span><strong>{{ tx.contact_name or tx.linked_object_name or 'Bonifico' }}</strong><small>{{ tx.description }}{% if tx.linked_object_type %} · {{ tx.linked_object_type }}{% endif %}</small></span><strong>{{ '+' if tx.type=='income' else '−' }} € {{ '%.2f'|format(tx.amount) }}</strong></a>{% endfor %}</div>{% else %}<p class="empty">No linked bonifico transactions yet. Older records without transfer metadata remain available in Transactions.</p>{% endif %}
+</section>
+
+<section class="transactions bonifico-rule-links">
+  <div class="panel-header"><div><span class="eyebrow">Automation links</span><h2>Connected recurring rules</h2><p>Rules currently configured to create Bonifico transactions.</p></div><span class="section-count">{{ bonifico_recurring_rules|length }} connected</span></div>
+  {% if bonifico_recurring_rules %}<div class="bonifico-rule-grid">{% for r in bonifico_recurring_rules %}<article class="bonifico-rule-card rule-{{ r.type|lower }}"><span class="type-badge type-{{ r.type|lower }}">{{ r.type|capitalize }}</span><strong>{{ r.name }}</strong><span>€ {{ '%.2f'|format(r.amount|float) }} · {{ r.frequency_label or ('Every ' ~ r.frequency ~ ' months') }}</span><small>{{ r.connection_contact_name or 'Saved contact' }} · {{ 'Pay automatically' if r.auto_execute else 'Ask before paying' }}</small></article>{% endfor %}</div>{% else %}<p class="empty">No recurring rule is currently connected to Bonifico.</p>{% endif %}
+</section>
+
+<details class="transactions bonifico-rule-links finished-entity-group">
+  <summary class="panel-header finished-group-summary"><div><span class="eyebrow">Connection archive</span><h2>Previously connected recurring rules</h2><p>Each rule appears once, even after repeated on/off changes.</p></div><span class="section-count">{{ previous_bonifico_recurring_rules|length }} previous</span></summary>
+  {% if previous_bonifico_recurring_rules %}<div class="bonifico-rule-grid">{% for r in previous_bonifico_recurring_rules %}<article class="bonifico-rule-card is-previous"><strong>{{ r.name }}</strong><span>€ {{ '%.2f'|format(r.amount|float) }} · Every {{ r.frequency or 1 }} month(s)</span><small>{{ 'Rule still exists; Bonifico is currently disabled.' if r.exists else 'Rule was deleted.' }}</small></article>{% endfor %}</div>{% else %}<p class="empty">No previous Bonifico rule connections recorded yet.</p>{% endif %}
+</details>
 {% endblock %}
 
 {% block scripts %}

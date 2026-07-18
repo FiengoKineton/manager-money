@@ -70,13 +70,43 @@ def delete_payable_from_form(form) -> None:
         pass
 
 
+def _linked_payable_transactions(payable_id) -> list[dict]:
+    try:
+        from money_manager.services.transaction_service import load_transactions
+        frame = load_transactions()
+        if frame.empty:
+            return []
+        linked = frame[(frame.get("linked_object_type", "").fillna("").astype(str) == "payable") & (frame.get("linked_object_id", "").fillna("").astype(str) == str(payable_id))]
+        rows = linked.sort_values("date").to_dict("records")
+        result = []
+        for row in rows:
+            result.append({
+                "row_index": int(row.get("row_index", row.get("id", 0)) or 0),
+                "date": str(row.get("date"))[:10],
+                "amount": _amount(row.get("amount")),
+                "description": str(row.get("description") or ""),
+                "transaction_uid": str(row.get("transaction_uid") or ""),
+            })
+        return result
+    except Exception:
+        return []
+
+
+def _paid_amount_from_transactions(payable_id) -> float:
+    return sum(_amount(row.get("amount")) for row in _linked_payable_transactions(payable_id))
+
+
 def update_payable_from_form(form) -> None:
     payable_id = _safe_int(form.get("id"))
     if payable_id is None:
         return
 
     before = payable_by_id(payable_id)
-    remaining = _amount(form.get("remaining_amount"))
+    original_amount = _amount(form.get("original_amount"))
+    paid_amount = _paid_amount_from_transactions(payable_id)
+    # Transaction history is authoritative: editing the payable total must not
+    # rewrite payments that have already been recorded.
+    remaining = max(0.0, original_amount - paid_amount)
     status = form.get("status", "active")
     if remaining <= 0.005:
         status = "paid"
@@ -84,7 +114,7 @@ def update_payable_from_form(form) -> None:
     updates = {
         "name": form.get("name", ""),
         "payee": form.get("payee", ""),
-        "original_amount": _amount(form.get("original_amount")),
+        "original_amount": original_amount,
         "remaining_amount": remaining,
         "category": form.get("category") or DEFAULT_PAYABLE_EXPENSE_CATEGORY,
         "start_date": form.get("start_date", ""),
@@ -326,6 +356,7 @@ def overview_totals(scope=None) -> dict:
     if scoped:
         rows = payable_rows_for_scope(rows, scope)
     active = [row for row in rows if row.get("status") == "active" and _amount(row.get("remaining_amount")) > 0]
+    finished = [row for row in rows if row not in active]
     active_remaining = sum(_amount(row.get("remaining_amount")) for row in active)
     original_total = sum(_amount(row.get("original_amount")) for row in rows)
     paid_total = sum(max(0.0, _amount(row.get("original_amount")) - _amount(row.get("remaining_amount"))) for row in rows)
@@ -360,10 +391,18 @@ def page_context(main_net: float = 0.0, visible_liquidity: float = 0.0, scope=No
             pass
     for row in rows:
         original = _amount(row.get("original_amount"))
-        remaining = _amount(row.get("remaining_amount"))
+        linked_transactions = _linked_payable_transactions(row.get("id"))
+        paid_from_transactions = sum(_amount(tx.get("amount")) for tx in linked_transactions)
+        remaining = max(0.0, original - paid_from_transactions) if linked_transactions else _amount(row.get("remaining_amount"))
         row["original_amount"] = original
         row["remaining_amount"] = remaining
-        row["paid_amount"] = max(0.0, original - remaining)
+        row["paid_amount"] = paid_from_transactions if linked_transactions else max(0.0, original - remaining)
+        row["linked_transaction_rows"] = linked_transactions
+        try:
+            from money_manager.services.payable_detail_service import details_for_payable
+            row["details"] = details_for_payable(row.get("id"))
+        except Exception:
+            row["details"] = {"items": [], "files": [], "items_total": 0.0}
         row["progress"] = 0.0 if original <= 0 else min(100.0, row["paid_amount"] / original * 100.0)
         try:
             from money_manager.services.timeline_service import enrich_object_row
@@ -375,6 +414,7 @@ def page_context(main_net: float = 0.0, visible_liquidity: float = 0.0, scope=No
             row.setdefault("linked_transactions_text", "No linked transactions yet.")
 
     active = [row for row in rows if row.get("status") == "active" and _amount(row.get("remaining_amount")) > 0]
+    finished = [row for row in rows if row not in active]
     totals = overview_totals(selected_scope if scope is not None else None)
     totals["main_net_now"] = float(main_net)
     totals["visible_liquidity_now"] = float(visible_liquidity)
@@ -393,6 +433,7 @@ def page_context(main_net: float = 0.0, visible_liquidity: float = 0.0, scope=No
     return {
         "payables": rows,
         "active_payables": active,
+        "finished_payables": finished,
         "totals": totals,
         "today": date.today().isoformat(),
         "selected_scope": selected_scope,

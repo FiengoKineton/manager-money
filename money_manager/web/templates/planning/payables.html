@@ -113,148 +113,31 @@
 </section>
 
 <section class="transactions payables-card">
-  <h2>Tracked Payables</h2>
-
-  {% if payables %}
-  <table class="standard-table inline-edit-table payables-tracked-table desktop-detail-table" data-mobile-title="Payee,Name" data-mobile-amount="Remaining" data-mobile-meta="Payee, Due / account, Status">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Payee</th>
-        <th>Original</th>
-        <th>Remaining</th>
-        <th>Paid</th>
-        <th>Progress</th>
-        <th>Due / account</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in payables %}
-      <tr class="desktop-detail-row {{ 'is-closed' if item.status != 'active' else '' }}"
-          data-detail-payee="{{ item.payee|e }}"
-          data-detail-description="{{ item.description|e }}"
-          data-detail-category="{{ item.category|e }}"
-          data-detail-start-date="{{ item.start_date|e }}"
-          data-detail-created-at="{{ item.created_at|e }}"
-          data-detail-closed-at="{{ item.closed_at|e }}"
-          data-detail-payment-history="{{ item.payment_history_text|e }}"
-          data-detail-linked-transactions="{{ item.linked_transactions_text|e }}"
-          data-detail-timeline="{{ item.timeline_text|e }}">
-        <td>
-          <form id="payable-update-{{ item.id }}" method="post"></form>
-          <input form="payable-update-{{ item.id }}" type="hidden" name="action" value="update_payable">
-          <input form="payable-update-{{ item.id }}" type="hidden" name="id" value="{{ item.id }}">
-          <input form="payable-update-{{ item.id }}" type="text" name="name" value="{{ item.name }}" required>
-          <input form="payable-update-{{ item.id }}" type="text" name="description" value="{{ item.description }}" placeholder="Note" class="table-note-input">
-          <input form="payable-update-{{ item.id }}" type="hidden" name="category" value="{{ item.category or 'Payable' }}">
-        </td>
-        <td><input form="payable-update-{{ item.id }}" type="text" name="payee" value="{{ item.payee }}"></td>
-        <td><input form="payable-update-{{ item.id }}" type="number" step="0.01" name="original_amount" value="{{ item.original_amount }}" required></td>
-        <td><input form="payable-update-{{ item.id }}" type="number" step="0.01" name="remaining_amount" value="{{ item.remaining_amount }}" required></td>
-        <td>{{ '%.2f'|format(item.paid_amount) }}</td>
-        <td>
-          <div class="progress-wrap progress-wrap-expense">
-            <div class="progress-bar progress-bar-expense" style="width: {{ item.progress }}%"></div>
-          </div>
-          <small>{{ '%.0f'|format(item.progress) }}%</small>
-        </td>
-        <td>
-          <input form="payable-update-{{ item.id }}" type="date" name="due_date" value="{{ item.due_date }}" aria-label="Due date">
-          <input form="payable-update-{{ item.id }}" type="date" name="start_date" value="{{ item.start_date }}" aria-label="Start date">
-          <select form="payable-update-{{ item.id }}" name="account_id" aria-label="Account / Conto">
-            {% for account in account_options %}
-              {% set account_value = account.id or account.value %}
-              <option value="{{ account_value }}" {% if account_value == item.account_id or account_value == item.account or account.label == item.account %}selected{% endif %}>{{ account.label }}</option>
-            {% endfor %}
-          </select>
-          <select form="payable-update-{{ item.id }}" name="preferred_payment_method_id" aria-label="Preferred Payment Method">
-            <option value="">Select when paying</option>
-            {% for method in payment_form.payment_method_options or payment_method_options %}
-              <option value="{{ method.id }}" {% if method.id == item.preferred_payment_method_id %}selected{% endif %}>{{ method.label }}</option>
-            {% endfor %}
-          </select>
-        </td>
-        <td>
-          <select form="payable-update-{{ item.id }}" name="status">
-            <option value="active" {% if item.status == 'active' %}selected{% endif %}>Active</option>
-            <option value="paid" {% if item.status == 'paid' %}selected{% endif %}>Paid</option>
-            <option value="cancelled" {% if item.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
-          </select>
-        </td>
-        <td class="debt-actions">
-          <div class="table-action-rail">
-            <button form="payable-update-{{ item.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update payable" aria-label="Update payable">✎</button>
-
-            {% if item.status == 'active' and item.remaining_amount > 0 %}
-            <form method="post" class="row-action-form">
-              <input type="hidden" name="action" value="pay_payable">
-              <input type="hidden" name="id" value="{{ item.id }}">
-              <input type="hidden" name="amount" value="{{ item.remaining_amount }}">
-              <input type="hidden" name="date" value="{{ today }}">
-              <input type="hidden" name="account_id" value="{{ item.account_id or item.account }}">
-              <input type="hidden" name="payment_method_id" value="{{ item.preferred_payment_method_id }}">
-              <button type="submit" class="secondary-btn compact-btn" onclick="return confirm('Create the expense and mark this payable as paid?')">Pay all</button>
-            </form>
-
-            <form method="post" class="mini-pay-form">
-              <input type="hidden" name="action" value="pay_payable">
-              <input type="hidden" name="id" value="{{ item.id }}">
-              <input type="date" name="date" value="{{ today }}" aria-label="Payment date">
-              <input type="number" step="0.01" name="amount" placeholder="Partial" required>
-              <select name="account_id" aria-label="Account / Conto">
-                {% for account in account_options %}
-                  {% set account_value = account.id or account.value %}
-                  <option value="{{ account_value }}" {% if account_value == item.account_id or account_value == item.account or account.label == item.account %}selected{% endif %}>{{ account.label }}</option>
-                {% endfor %}
-              </select>
-              <select name="payment_method_id" aria-label="Payment Method">
-                <option value="{{ item.preferred_payment_method_id }}">Use preferred method{% if item.preferred_payment_method_name_snapshot %}: {{ item.preferred_payment_method_name_snapshot }}{% endif %}</option>
-                {% for method in payment_form.payment_method_options or payment_method_options %}
-                  <option value="{{ method.id }}" {% if method.id == item.preferred_payment_method_id %}selected{% endif %}>{{ method.label }}</option>
-                {% endfor %}
-              </select>
-              <button type="submit" class="secondary-btn compact-btn">Pay</button>
-            </form>
-            {% endif %}
-
-            <form method="post" class="row-action-form">
-              <input type="hidden" name="action" value="update_payable">
-              <input type="hidden" name="id" value="{{ item.id }}">
-              <input type="hidden" name="name" value="{{ item.name }}">
-              <input type="hidden" name="payee" value="{{ item.payee }}">
-              <input type="hidden" name="original_amount" value="{{ item.original_amount }}">
-              <input type="hidden" name="remaining_amount" value="{{ item.remaining_amount }}">
-              <input type="hidden" name="category" value="{{ item.category or 'Payable' }}">
-              <input type="hidden" name="start_date" value="{{ item.start_date }}">
-              <input type="hidden" name="due_date" value="{{ item.due_date }}">
-              <input type="hidden" name="description" value="{{ item.description }}">
-              <input type="hidden" name="account_id" value="{{ item.account_id or item.account }}">
-              <input type="hidden" name="preferred_payment_method_id" value="{{ item.preferred_payment_method_id }}">
-              <input type="hidden" name="status" value="cancelled">
-              <button type="submit" class="secondary-btn compact-btn" title="Archive/cancel payable">Archive</button>
-            </form>
-
-            <form method="post" class="row-action-form">
-              <input type="hidden" name="action" value="duplicate_payable">
-              <input type="hidden" name="id" value="{{ item.id }}">
-              <button type="submit" class="secondary-btn compact-btn" title="Duplicate payable">Duplicate</button>
-            </form>
-
-            <form method="post" class="row-action-form">
-              <input type="hidden" name="action" value="delete_payable">
-              <input type="hidden" name="id" value="{{ item.id }}">
-              <button type="submit" class="icon-action-btn icon-action-delete" title="Delete payable" aria-label="Delete payable" onclick="return confirm('Delete this payable?')">×</button>
-            </form>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-    <p>No payables yet.</p>
+  <div class="panel-header">
+    <div><span class="eyebrow">Open liabilities</span><h2>Active payables</h2><p>Select a payable to review its payments, composition and attachments.</p></div>
+    <span class="section-count">{{ active_payables|length }} active</span>
+  </div>
+  {% if upload_status %}
+    <div class="upload-result upload-result-{{ upload_status }}">
+      {% if upload_status == 'uploaded' %}Files uploaded successfully.
+      {% elif upload_status == 'partial' %}Some files were uploaded; unsupported or invalid files were skipped.
+      {% else %}No file was uploaded. Select a supported, non-empty file up to 25 MB.{% endif %}
+    </div>
   {% endif %}
+  {% if active_payables %}
+    <div class="payable-card-grid">{% set payable_rows = active_payables %}{% include "planning/_payable_cards.html" %}</div>
+  {% else %}<p class="empty">No active payables.</p>{% endif %}
 </section>
+
+<details class="transactions payables-card finished-entity-group">
+  <summary class="panel-header finished-group-summary">
+    <div><span class="eyebrow">Archive</span><h2>Paid and finished payables</h2><p>Paid, cancelled, or otherwise closed liabilities.</p></div>
+    <span class="section-count">{{ finished_payables|length }} finished</span>
+  </summary>
+  {% if finished_payables %}
+    <div class="payable-card-grid">{% set payable_rows = finished_payables %}{% include "planning/_payable_cards.html" %}</div>
+  {% else %}<p class="empty">No finished payables.</p>{% endif %}
+</details>
 {% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/payables.js') }}"></script>{% endblock %}

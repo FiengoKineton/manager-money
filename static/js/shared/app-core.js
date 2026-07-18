@@ -1450,3 +1450,63 @@
     nav.addEventListener("currententrychange", syncHistoryButtons);
   }
 })();
+
+/* Compact dedicated recurring cards (Bollette/Stipendi).
+   The complete existing form remains authoritative and is opened in-place as a
+   modal overlay, avoiding duplicate form controls and preserving all actions. */
+(function () {
+  function closeManagedCard(card) {
+    if (!card) return;
+    card.classList.remove("managed-card-open");
+    card.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("managed-card-dialog-open");
+  }
+
+  function wireManagedRecurringCards() {
+    document.querySelectorAll(".managed-recurring-grid .special-item-card").forEach((card) => {
+      if (card.dataset.managedDialogWired === "true") return;
+      card.dataset.managedDialogWired = "true";
+      card.classList.add("managed-card-compact");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-expanded", "false");
+
+      const form = card.querySelector(".special-item-form");
+      if (!form) return;
+      const close = document.createElement("button");
+      close.type = "button";
+      close.className = "managed-card-close";
+      close.setAttribute("aria-label", "Close details");
+      close.textContent = "×";
+      close.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeManagedCard(card);
+      });
+      form.prepend(close);
+
+      const open = () => {
+        card.classList.add("managed-card-open");
+        card.setAttribute("aria-expanded", "true");
+        document.body.classList.add("managed-card-dialog-open");
+      };
+      card.addEventListener("click", (event) => {
+        if (card.classList.contains("managed-card-open")) return;
+        if (event.target.closest("a, button, input, select, textarea, label")) return;
+        open();
+      });
+      card.addEventListener("keydown", (event) => {
+        if ((event.key === "Enter" || event.key === " ") && !card.classList.contains("managed-card-open")) {
+          event.preventDefault();
+          open();
+        }
+        if (event.key === "Escape") closeManagedCard(card);
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", wireManagedRecurringCards);
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll(".managed-card-open").forEach(closeManagedCard);
+  });
+})();

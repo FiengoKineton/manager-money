@@ -95,6 +95,32 @@
 </details>
 {% endif %}
 
+{% if overdue_credit_purchase_rows %}
+<details class="panel-card credit-purchase-panel credit-purchase-overdue-archive">
+  <summary class="credit-purchase-summary-toggle">
+    <span>
+      <span class="eyebrow">Past credit-card queue</span>
+      <strong>Older purchases still awaiting settlement</strong>
+      <small>{{ overdue_credit_purchase_summary.count }} payments · € {{ '%.2f'|format(overdue_credit_purchase_summary.total) }} · hidden by default</small>
+    </span>
+    <em>Tap/click to open</em>
+  </summary>
+  <p class="hint">Only genuinely unsettled ledger movements appear here. Purchases whose statement has already been paid are excluded.</p>
+  <div class="credit-purchase-list">
+    {% for tx in overdue_credit_purchase_rows %}
+      <article class="credit-purchase-card row-{{ tx.type }}">
+        <a class="credit-purchase-main" href="{{ url_for('transactions.transaction_detail', row_index=tx.row_index) }}">
+          <span class="transaction-category-icon" aria-hidden="true">{{ tx.category_icon or '💳' }}</span>
+          <span><strong>{{ tx.description if tx.description and tx.description != 'nan' else tx.category }}</strong><small>Made {{ tx.date_str }} · Due {{ tx.credit_due_date or '—' }} · {{ tx.credit_method_label }}</small></span>
+          <b>€ {{ tx.amount_str }}</b>
+        </a>
+        <div class="credit-purchase-meta"><span>Past due · unsettled</span>{% if tx.credit_statement_period %}<span>Statement {{ tx.credit_statement_period }}</span>{% endif %}</div>
+      </article>
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
+
 <section class="transactions transactions-with-phone-cards"
          data-transactions-lazy-root
          data-next-page="{{ transactions_page + 1 }}"

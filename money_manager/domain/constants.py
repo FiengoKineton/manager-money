@@ -157,6 +157,9 @@ PENDING_FIELDS = [
     "payment_method_id",
     "payment_method_name_snapshot",
     "payment_resolution_template_json",
+    "connection_type",
+    "connection_contact_id",
+    "connection_account_id",
 ]
 
 RECURRING_FIELDS = [
@@ -178,6 +181,9 @@ RECURRING_FIELDS = [
     "payment_method_name_snapshot",
     "payment_resolution_template_json",
     "auto_execute",
+    "connection_type",
+    "connection_contact_id",
+    "connection_account_id",
 ]
 
 SPARAGNAT_FIELDS = [
