@@ -308,7 +308,10 @@
 
     <tbody>
       {% for rule in rules %}
-      <tr>
+      <tr class="desktop-detail-row"
+          data-detail-rule-history="{{ rule.rule_history_text|e }}"
+          data-detail-future-linked-transactions="{{ rule.future_linked_transactions_text|e }}"
+          data-detail-timeline="Created {{ rule.start_date or 'without a start date' }}{% if rule.end_date %}; ends {{ rule.end_date }}{% else %}; no end date{% endif %}; {{ 'active' if rule.active else 'inactive' }}">
         <td>
           <form id="parent-rule-update-{{ rule.id }}" method="post"></form>
           <input form="parent-rule-update-{{ rule.id }}" type="hidden" name="action" value="update_rule">

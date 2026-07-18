@@ -299,11 +299,43 @@ def next_month(value: date) -> date:
     return date(value.year, value.month + 1, 1)
 
 
+def _rule_occurrences(rule: dict, *, months_before: int = 24, months_after: int = 12) -> tuple[list[str], list[str]]:
+    today = date.today()
+    rule_start = parse_date(rule.get("start_date")) or today
+    rule_end = parse_date(rule.get("end_date"))
+    day_of_month = max(1, min(31, parse_int(rule.get("day_of_month"), 1)))
+    amount = parse_amount(rule.get("monthly_amount"))
+
+    first_month = date(today.year, today.month, 1)
+    for _ in range(months_before):
+        first_month = date(first_month.year - 1, 12, 1) if first_month.month == 1 else date(first_month.year, first_month.month - 1, 1)
+
+    last_month = date(today.year, today.month, 1)
+    for _ in range(months_after):
+        last_month = next_month(last_month)
+
+    past: list[str] = []
+    future: list[str] = []
+    current = max(date(rule_start.year, rule_start.month, 1), first_month)
+    while current <= last_month:
+        occurrence = date(current.year, current.month, min(day_of_month, monthrange(current.year, current.month)[1]))
+        if occurrence >= rule_start and (rule_end is None or occurrence <= rule_end):
+            label = f"{occurrence.isoformat()} · € {amount:.2f}"
+            if occurrence <= today:
+                past.append(label)
+            else:
+                future.append(label)
+        current = next_month(current)
+
+    return past[-12:], future[:12]
+
+
 def prepare_rules_for_display() -> list[dict]:
     rules = load_rules()
     prepared = []
 
     for rule in rules:
+        past_occurrences, future_occurrences = _rule_occurrences(rule)
         prepared.append({
             "id": rule.get("id", ""),
             "name": rule.get("name", ""),
@@ -323,6 +355,8 @@ def prepare_rules_for_display() -> list[dict]:
             "payment_method_name_snapshot": rule.get("payment_method_name_snapshot", ""),
             "description": rule.get("description", ""),
             "active": is_active(rule.get("active", "yes")),
+            "rule_history_text": "\n".join(past_occurrences) if past_occurrences else "No generated support occurrences yet.",
+            "future_linked_transactions_text": "\n".join(future_occurrences) if future_occurrences else "No future support occurrences scheduled.",
         })
 
     return prepared

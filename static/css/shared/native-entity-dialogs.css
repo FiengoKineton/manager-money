@@ -60,3 +60,75 @@ body.managed-card-dialog-open { overflow: auto !important; }
   .native-dialog-content,
   .native-dialog-form { padding: 14px; }
 }
+
+/* Structured editor used by support, debt and receivable dialogs. */
+.native-dialog-content {
+  display: grid;
+  gap: 22px;
+}
+.native-dialog-section {
+  display: grid;
+  gap: 14px;
+}
+.native-dialog-section-heading h3 {
+  margin: 2px 0 0;
+}
+.native-dialog-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.native-dialog-field {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-color, #dbe3ee) 82%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface, #fff) 94%, var(--page-bg, #f5f7f5) 6%);
+}
+.native-dialog-field-label {
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted-text, #6f7a72);
+}
+.native-dialog-field-body {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+.native-dialog-field-body > form:empty { display: none; }
+.native-dialog-actions-field {
+  grid-column: 1 / -1;
+}
+.native-dialog-actions-field .table-action-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.native-dialog-history-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.native-dialog-history-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--border-color, #dbe3ee) 76%, #b9d7c4 24%);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface, #fff) 89%, #edf6f0 11%);
+}
+.native-dialog-history-card h4 { margin: 0 0 8px; }
+.native-dialog-history-card p {
+  margin: 0;
+  white-space: pre-line;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .native-dialog-field-grid,
+  .native-dialog-history-grid { grid-template-columns: 1fr; }
+}

@@ -83,13 +83,59 @@
         header.innerHTML = `<div><span class="eyebrow">Details and options</span><h2>${titles[0] || "Record"}</h2></div><button type="button" class="dialog-close" data-native-dialog-close aria-label="Close">×</button>`;
         const scroller = document.createElement("div");
         scroller.className = "native-dialog-content";
-        const detailTable = document.createElement("table");
-        detailTable.className = table.className.replace("entity-card-grid-table", "") + " native-dialog-table";
-        if (table.tHead) detailTable.appendChild(table.tHead.cloneNode(true));
-        const detailBody = document.createElement("tbody");
-        detailBody.appendChild(row);
-        detailTable.appendChild(detailBody);
-        scroller.appendChild(detailTable);
+
+        const editorSection = document.createElement("section");
+        editorSection.className = "native-dialog-section native-dialog-editor-section";
+        editorSection.innerHTML = `<div class="native-dialog-section-heading"><span class="eyebrow">Record</span><h3>Details and editing</h3></div>`;
+        const editorGrid = document.createElement("div");
+        editorGrid.className = "native-dialog-field-grid";
+
+        cells.forEach((cell, cellIndex) => {
+          const label = text(table.querySelectorAll("thead th")[cellIndex]?.textContent) || `Field ${cellIndex + 1}`;
+          const field = document.createElement("div");
+          field.className = "native-dialog-field";
+          if (/actions?/i.test(label)) field.classList.add("native-dialog-actions-field");
+          const fieldLabel = document.createElement("span");
+          fieldLabel.className = "native-dialog-field-label";
+          fieldLabel.textContent = label;
+          const fieldBody = document.createElement("div");
+          fieldBody.className = "native-dialog-field-body";
+          while (cell.firstChild) fieldBody.appendChild(cell.firstChild);
+          field.append(fieldLabel, fieldBody);
+          editorGrid.appendChild(field);
+        });
+        editorSection.appendChild(editorGrid);
+        scroller.appendChild(editorSection);
+
+        const historyItems = [
+          ["Payment history", row.dataset.detailPaymentHistory],
+          ["Linked transactions", row.dataset.detailLinkedTransactions],
+          ["Timeline", row.dataset.detailTimeline],
+          ["Future linked transactions", row.dataset.detailFutureLinkedTransactions],
+          ["Rule history", row.dataset.detailRuleHistory]
+        ].filter(([, value]) => text(value));
+
+        if (historyItems.length) {
+          const historySection = document.createElement("section");
+          historySection.className = "native-dialog-section native-dialog-history-section";
+          historySection.innerHTML = `<div class="native-dialog-section-heading"><span class="eyebrow">History</span><h3>Activity and linked movements</h3></div>`;
+          const historyGrid = document.createElement("div");
+          historyGrid.className = "native-dialog-history-grid";
+          historyItems.forEach(([label, value]) => {
+            const item = document.createElement("article");
+            item.className = "native-dialog-history-card";
+            const title = document.createElement("h4");
+            title.textContent = label;
+            const content = document.createElement("p");
+            content.textContent = text(value);
+            item.append(title, content);
+            historyGrid.appendChild(item);
+          });
+          historySection.appendChild(historyGrid);
+          scroller.appendChild(historySection);
+        }
+
+        row.remove();
         shell.append(header, scroller);
         dialog.appendChild(shell);
         card.append(openButton, dialog);
