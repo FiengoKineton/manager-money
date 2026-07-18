@@ -5102,3 +5102,37 @@ body.entity-card-dialog-open { overflow: hidden; }
     line-height: 1;
   }
 }
+
+/* Parent Support records remain a readable list and are archived closed by default. */
+.closed-support-records > summary,
+.closed-section-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+.closed-support-records > summary::-webkit-details-marker { display: none; }
+.closed-section-summary > span:first-child { display: grid; gap: .2rem; }
+.closed-section-summary strong { font-size: 1.2rem; }
+.closed-section-summary small { color: var(--text-muted, #6b7280); font-weight: 500; }
+.closed-section-toggle::before { content: "⌄"; font-size: 1.35rem; }
+.closed-support-records[open] .closed-section-toggle::before { content: "⌃"; }
+.closed-support-records > table { margin-top: 1rem; }
+
+/* Keep Parent Support rule summaries readable before opening the editor. */
+@media (min-width: 901px) {
+  .parent-support-rules-table.entity-card-grid-table > tbody > tr {
+    min-height: 190px;
+  }
+  .parent-support-rules-table .entity-card-summary {
+    width: 100%;
+    min-width: 0;
+  }
+  .parent-support-rules-table .entity-card-summary-top strong,
+  .parent-support-rules-table .entity-card-summary p {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

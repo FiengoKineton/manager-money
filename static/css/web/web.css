@@ -4963,3 +4963,176 @@ body.managed-card-dialog-open::before {
   .managed-recurring-grid { grid-template-columns: 1fr; }
   .managed-card-open { inset: 12px; max-height: calc(100vh - 24px); }
 }
+
+
+/* Reliable compact-card modal layer for Parent Support, Debts and Receivables. */
+@media (min-width: 901px) {
+  table.entity-card-grid-table > tbody > tr > td:not(.entity-card-summary) {
+    display: none !important;
+  }
+  table.entity-card-grid-table > tbody > tr > .entity-card-summary {
+    display: block !important;
+    grid-column: 1 / -1;
+    pointer-events: none;
+  }
+  .entity-card-summary-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .8rem;
+  }
+  .entity-card-summary-top > div {
+    display: grid;
+    gap: .2rem;
+    min-width: 0;
+  }
+  .entity-card-summary-top strong {
+    font-size: 1.05rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+  .entity-card-summary-top span,
+  .entity-card-summary p {
+    color: var(--text-muted, #6b7280);
+  }
+  .entity-card-summary-top b { white-space: nowrap; }
+  .entity-card-summary p { margin: .7rem 0 0; }
+  .entity-card-open-button {
+    margin-top: .85rem;
+    width: 100%;
+    pointer-events: none;
+  }
+  table.entity-card-grid-table > tbody > tr.entity-card-modal-open {
+    position: fixed;
+    z-index: 10120;
+    inset: 4vh max(18px, calc((100vw - 1180px) / 2));
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: .8rem 1rem;
+    max-height: 92vh;
+    overflow: auto;
+    padding: 1.25rem;
+    cursor: default;
+    background: var(--surface, #fff);
+    box-shadow: 0 30px 100px rgba(15,23,42,.35);
+  }
+  table.entity-card-grid-table > tbody > tr.entity-card-modal-open > td:not(.entity-card-summary) {
+    display: block !important;
+    grid-column: auto;
+    pointer-events: auto;
+  }
+  table.entity-card-grid-table > tbody > tr.entity-card-modal-open > td.entity-card-summary {
+    display: none !important;
+  }
+  table.entity-card-grid-table > tbody > tr.entity-card-modal-open > td:first-of-type,
+  table.entity-card-grid-table > tbody > tr.entity-card-modal-open > td.desktop-actions-cell,
+  table.entity-card-grid-table > tbody > tr.entity-card-modal-open > td:last-of-type {
+    grid-column: 1 / -1;
+  }
+  table.entity-card-grid-table > tbody > tr.entity-card-modal-open input,
+  table.entity-card-grid-table > tbody > tr.entity-card-modal-open select,
+  table.entity-card-grid-table > tbody > tr.entity-card-modal-open textarea {
+    width: 100%;
+    max-width: none;
+  }
+}
+.entity-card-modal-backdrop {
+  position: fixed;
+  z-index: 10110;
+  inset: 0;
+  display: none;
+  border: 0;
+  background: rgba(15,23,42,.5);
+  backdrop-filter: blur(5px);
+}
+.entity-card-modal-backdrop.is-visible { display: block; }
+body.entity-card-dialog-open { overflow: hidden; }
+
+.closed-entity-history {
+  margin-top: 1rem;
+}
+.closed-entity-history > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+.closed-entity-history > summary::-webkit-details-marker { display: none; }
+.closed-entity-history > summary::after { content: "⌄"; font-size: 1.2rem; }
+.closed-entity-history[open] > summary::after { content: "⌃"; }
+.closed-entity-history > table { margin-top: 1rem; }
+
+/* Managed Bollette/Cedolini cards remain compact until explicitly opened. */
+.managed-card-compact { position: relative; }
+.managed-card-compact:not(.managed-card-open) .special-item-form,
+.managed-card-compact:not(.managed-card-open) .pending-check-list,
+.managed-card-compact:not(.managed-card-open) .executed-mini-history,
+.managed-card-compact:not(.managed-card-open) .subtle-empty {
+  pointer-events: none;
+}
+.managed-card-open .special-item-form > * { display: initial; }
+.managed-card-open .special-form-grid { display: grid !important; }
+.managed-card-open .special-actions-row { display: flex !important; }
+.managed-card-open .managed-card-close { display: inline-grid !important; place-items: center; }
+
+@media (max-width: 900px) {
+  table.entity-card-grid-table > tbody > tr > .entity-card-summary { display: none; }
+  .entity-card-modal-backdrop { display: none !important; }
+}
+
+.entity-card-modal-close-cell { display: none !important; }
+@media (min-width: 901px) {
+  table.entity-card-grid-table > tbody > tr.entity-card-modal-open > td.entity-card-modal-close-cell {
+    display: block !important;
+    position: sticky;
+    z-index: 3;
+    top: 0;
+    grid-column: 1 / -1;
+    justify-self: end;
+    pointer-events: auto;
+  }
+  .entity-card-modal-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+}
+
+/* Parent Support records remain a readable list and are archived closed by default. */
+.closed-support-records > summary,
+.closed-section-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+.closed-support-records > summary::-webkit-details-marker { display: none; }
+.closed-section-summary > span:first-child { display: grid; gap: .2rem; }
+.closed-section-summary strong { font-size: 1.2rem; }
+.closed-section-summary small { color: var(--text-muted, #6b7280); font-weight: 500; }
+.closed-section-toggle::before { content: "⌄"; font-size: 1.35rem; }
+.closed-support-records[open] .closed-section-toggle::before { content: "⌃"; }
+.closed-support-records > table { margin-top: 1rem; }
+
+/* Keep Parent Support rule summaries readable before opening the editor. */
+@media (min-width: 901px) {
+  .parent-support-rules-table.entity-card-grid-table > tbody > tr {
+    min-height: 190px;
+  }
+  .parent-support-rules-table .entity-card-summary {
+    width: 100%;
+    min-width: 0;
+  }
+  .parent-support-rules-table .entity-card-summary-top strong,
+  .parent-support-rules-table .entity-card-summary p {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

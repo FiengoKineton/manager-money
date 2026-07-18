@@ -1,0 +1,62 @@
+.native-entity-grid,
+.managed-recurring-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+}
+.native-entity-card {
+  min-width: 0;
+  min-height: 220px;
+  background: color-mix(in srgb, var(--surface, #fff) 88%, #eaf5ef 12%);
+  border: 1px solid color-mix(in srgb, var(--border-color, #dbe3ee) 76%, #b9d7c4 24%);
+  box-shadow: 0 10px 28px rgba(48, 62, 53, .08);
+}
+.native-entity-open {
+  min-height: 220px;
+  width: 100%;
+  text-align: left;
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 12px;
+  padding: 24px !important;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.native-entity-open strong { font-size: 1.25rem; line-height: 1.25; }
+.native-entity-open small { color: var(--muted-text, #748075); line-height: 1.45; }
+.native-entity-amount { margin-top: auto; font-size: 1.15rem; font-weight: 800; }
+.native-open-label { margin-top: auto; font-weight: 800; opacity: .72; }
+.native-entity-dialog { width: min(1040px, calc(100vw - 32px)); max-height: 92vh; overflow: hidden; }
+.native-dialog-shell { display: flex; flex-direction: column; max-height: 92vh; background: var(--surface, #fff); }
+.native-dialog-content,
+.native-dialog-form { overflow: auto; padding: 20px 24px 28px; }
+.native-dialog-table { width: 100%; display: table !important; }
+.native-dialog-table thead { display: table-header-group !important; }
+.native-dialog-table tbody { display: table-row-group !important; }
+.native-dialog-table tr { display: table-row !important; position: static !important; transform: none !important; box-shadow: none !important; }
+.native-dialog-table td,
+.native-dialog-table th { display: table-cell !important; width: auto !important; max-width: none !important; opacity: 1 !important; visibility: visible !important; }
+.native-dialog-table input,
+.native-dialog-table select,
+.native-dialog-table textarea,
+.native-dialog-form input,
+.native-dialog-form select,
+.native-dialog-form textarea { width: 100%; min-width: 0; }
+.native-entity-dialog[open] { display: block; }
+.native-entity-dialog::backdrop { background: rgba(20, 28, 24, .58); backdrop-filter: blur(4px); }
+body.entity-card-dialog-open,
+body.managed-card-dialog-open { overflow: auto !important; }
+.entity-card-modal-backdrop { display: none !important; }
+@media (max-width: 1050px) {
+  .native-entity-grid,
+  .managed-recurring-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 700px) {
+  .native-entity-grid,
+  .managed-recurring-grid { grid-template-columns: 1fr !important; }
+  .native-entity-card,
+  .native-entity-open { min-height: 170px; }
+  .native-dialog-content,
+  .native-dialog-form { padding: 14px; }
+}

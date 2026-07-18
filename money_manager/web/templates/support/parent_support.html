@@ -391,11 +391,17 @@
   {% endif %}
 </section>
 
-<section class="transactions panel-card parent-support-card">
-  <h2>Support Records</h2>
+<details class="transactions panel-card parent-support-card closed-support-records">
+  <summary class="closed-section-summary">
+    <span>
+      <strong>Support Records</strong>
+      <small>{{ entries|length }} recorded support entr{{ 'y' if entries|length == 1 else 'ies' }}</small>
+    </span>
+    <span class="closed-section-toggle" aria-hidden="true"></span>
+  </summary>
 
   {% if entries %}
-  <table class="standard-table inline-edit-table parent-support-records-table entity-card-grid-table" data-mobile-title="Description" data-mobile-amount="Amount" data-mobile-meta="Date, Type, Parent">
+  <table class="standard-table inline-edit-table parent-support-records-table" data-mobile-title="Description" data-mobile-amount="Amount" data-mobile-meta="Date, Type, Parent">
     <thead>
       <tr>
         <th>Date</th>
@@ -467,7 +473,7 @@
   {% else %}
     <p class="empty">No support records yet.</p>
   {% endif %}
-</section>
+</details>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
