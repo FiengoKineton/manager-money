@@ -5,9 +5,9 @@ import mimetypes
 from io import BytesIO
 from pathlib import Path
 
-from flask import Blueprint, Response, abort, jsonify, make_response, render_template, send_file, send_from_directory, url_for
+from flask import Blueprint, Response, abort, current_app, jsonify, make_response, render_template, request, send_file, url_for
 
-from money_manager.config import ALLOWED_DOCUMENT_EXTENSIONS
+from money_manager.config import ALLOWED_DOCUMENT_EXTENSIONS, DOCUMENT_FOLDERS
 from money_manager.config.user_paths import user_documents_dir
 from money_manager.repositories.documents import (
     document_path,
@@ -15,6 +15,8 @@ from money_manager.repositories.documents import (
     is_allowed_document,
     is_allowed_folder,
     list_files,
+    MAX_DOCUMENT_UPLOAD_BYTES,
+    save_document,
 )
 from money_manager.security.protection_manager import safe_join
 from money_manager.security.secure_storage import read_binary_secure
@@ -50,6 +52,8 @@ def documents():
     return render_template(
         "support/documents.html",
         allowed_extensions=allowed_extensions,
+        document_folders=DOCUMENT_FOLDERS,
+        max_upload_mb=MAX_DOCUMENT_UPLOAD_BYTES // (1024 * 1024),
     )
 
 
@@ -58,7 +62,41 @@ def api_files(folder):
     if not is_allowed_folder(folder):
         return jsonify({"files": []})
 
-    return jsonify({"files": list_files(folder)})
+    response = jsonify({"files": list_files(folder)})
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@bp.route("/api/documents/upload", methods=["POST"])
+def upload_document():
+    folder = str(request.form.get("folder") or "").strip()
+    upload = request.files.get("document")
+
+    if upload is None or not upload.filename:
+        return jsonify({"ok": False, "error": "Choose a document to upload."}), 400
+
+    try:
+        payload = upload.stream.read(MAX_DOCUMENT_UPLOAD_BYTES + 1)
+        document = save_document(
+            folder,
+            upload.filename,
+            payload,
+            content_type=upload.mimetype or "",
+        )
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    except Exception:
+        current_app.logger.exception("Document upload failed")
+        return jsonify({"ok": False, "error": "The document could not be saved. Please try again."}), 500
+
+    response = jsonify({
+        "ok": True,
+        "message": f"{document['filename']} was added to {document['folder']}.",
+        "document": document,
+        "files": list_files(folder),
+    })
+    response.headers["Cache-Control"] = "no-store"
+    return response, 201
 
 
 @bp.route("/document/<folder>/<path:filename>")

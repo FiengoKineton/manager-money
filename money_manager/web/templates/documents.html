@@ -8,23 +8,35 @@
     <h2>Read documents inside the app</h2>
     <p>Pick a folder and select a file. PDFs, images and text files open directly in the preview area without needing to download first.</p>
   </div>
-  <div class="documents-extension-pill">
-    <span>Allowed files</span>
-    <strong>{{ allowed_extensions | join(" · ") }}</strong>
+  <div class="documents-hero-actions">
+    <div class="documents-extension-pill">
+      <span>Allowed files</span>
+      <strong>{{ allowed_extensions | join(" · ") }}</strong>
+    </div>
+    <button type="button" class="primary-btn document-add-hero-btn" data-open-document-upload>
+      <span aria-hidden="true">＋</span>
+      Add document
+    </button>
   </div>
 </section>
 
-<section class="documents-layout">
+<div id="document-page-message" class="document-page-message" role="status" aria-live="polite" hidden></div>
+
+<section class="documents-layout" data-default-folder="{{ document_folders[0] if document_folders else '' }}">
   <aside class="documents-sidebar-card">
-    <h3>Folders</h3>
+    <div class="documents-sidebar-heading">
+      <h3>Folders</h3>
+      <button type="button" class="document-add-compact-btn" data-open-document-upload aria-label="Add document" title="Add document">＋</button>
+    </div>
     <div class="folder-button-stack">
-      <button class="folder-btn active" data-folder="Cedolini">Cedolini</button>
-      <button class="folder-btn" data-folder="Tasse - Detrazioni Fiscali">Tasse - Detrazioni Fiscali</button>
+      {% for folder in document_folders %}
+        <button class="folder-btn {{ 'active' if loop.first else '' }}" data-folder="{{ folder }}">{{ folder }}</button>
+      {% endfor %}
     </div>
 
     <div class="document-current-folder">
       <span>Viewing</span>
-      <strong id="current-folder-label">Cedolini</strong>
+      <strong id="current-folder-label">{{ document_folders[0] if document_folders else 'No folder' }}</strong>
     </div>
 
     <div class="document-file-list" id="document-file-list">
@@ -42,8 +54,52 @@
     <iframe id="file-viewer" class="viewer-window" title="Document viewer"></iframe>
   </main>
 </section>
+
+<dialog id="document-upload-dialog" class="document-upload-dialog" aria-labelledby="document-upload-title">
+  <form id="document-upload-form" class="document-upload-form" method="post" action="{{ url_for('documents.upload_document') }}" enctype="multipart/form-data" data-upload-url="{{ url_for('documents.upload_document') }}">
+    <div class="document-upload-header">
+      <div>
+        <span class="eyebrow">Document library</span>
+        <h3 id="document-upload-title">Add a document</h3>
+        <p>Select its destination folder, then choose the file to store.</p>
+      </div>
+      <button type="button" class="document-upload-close" data-close-document-upload aria-label="Close">×</button>
+    </div>
+
+    <div class="document-upload-fields">
+      <label class="document-upload-field">
+        <span>Destination folder</span>
+        <select name="folder" id="document-upload-folder" required>
+          {% for folder in document_folders %}
+            <option value="{{ folder }}">{{ folder }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="document-upload-field document-upload-file-field">
+        <span>Document</span>
+        <input
+          type="file"
+          name="document"
+          id="document-upload-file"
+          data-max-upload-mb="{{ max_upload_mb }}"
+          accept="{{ allowed_extensions | join(',') }}"
+          required
+        >
+        <small id="document-upload-file-name">Choose one of the supported files · maximum {{ max_upload_mb }} MB</small>
+      </label>
+    </div>
+
+    <p id="document-upload-status" class="document-upload-status" role="alert" aria-live="polite" hidden></p>
+
+    <div class="document-upload-actions">
+      <button type="button" class="secondary-btn" data-close-document-upload>Cancel</button>
+      <button type="submit" class="primary-btn" id="document-upload-submit">Add document</button>
+    </div>
+  </form>
+</dialog>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/documents.js') }}"></script>
+<script src="{{ url_for('static', filename='js/documents.js') }}?v=document-upload-newest-first-2"></script>
 {% endblock %}
