@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <title>{{ t("app.name") }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="application-name" content="Money Manager">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" href="{{ url_for('static', filename='icons/money-manager.ico') }}" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='icons/money-manager.svg') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/money-manager-180.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='icons/site.webmanifest') }}">
   {% set ep = request.endpoint or '' %}
   {% set server_theme = selected_theme if selected_theme in ['day', 'night', 'comfort'] else 'day' %}
   <script>

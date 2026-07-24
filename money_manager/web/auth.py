@@ -74,8 +74,25 @@ def _schedule_schema_repair(user_id: str, key: tuple[str, int]) -> None:
     thread.start()
 
 
-PUBLIC_ENDPOINTS = {"auth.login", "auth.register", "auth.password_recovery", "static"}
-UNLOCK_ALLOWED_ENDPOINTS = {"security.unlock", "security.lock", "auth.logout", "auth.password_recovery", "static"}
+PUBLIC_ENDPOINTS = {
+    "auth.login",
+    "auth.register",
+    "auth.password_recovery",
+    "desktop_control.ready",
+    "desktop_control.internal_shutdown",
+    "money_manager_favicon",
+    "static",
+}
+UNLOCK_ALLOWED_ENDPOINTS = {
+    "security.unlock",
+    "security.lock",
+    "auth.logout",
+    "auth.password_recovery",
+    "desktop_control.ready",
+    "desktop_control.internal_shutdown",
+    "money_manager_favicon",
+    "static",
+}
 ONBOARDING_ALLOWED_ENDPOINTS = {"onboarding.onboarding_page", "onboarding.reset_onboarding", "auth.logout", "security.unlock", "security.lock", "auth.password_recovery"}
 
 

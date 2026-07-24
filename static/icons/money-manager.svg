@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Money Manager">
+  <defs>
+    <linearGradient id="bg" x1="28" y1="24" x2="230" y2="236" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="0.52" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="55" y1="38" x2="195" y2="205" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#020617" flood-opacity="0.34"/>
+    </filter>
+  </defs>
+  <rect x="10" y="10" width="236" height="236" rx="58" fill="url(#bg)" filter="url(#shadow)"/>
+  <path d="M35 73c25-35 72-49 118-38 28 7 51 23 68 45-34-18-75-24-114-13-30 8-53 24-72 46z" fill="url(#shine)"/>
+  <path d="M55 181V74h31l42 61 42-61h31v107h-32v-57l-39 55h-5l-39-55v57z" fill="#fff"/>
+</svg>

@@ -71,6 +71,12 @@ def create_app() -> Flask:
         SESSION_COOKIE_SAMESITE="Lax",
     )
 
+    @app.get("/favicon.ico", endpoint="money_manager_favicon")
+    def _money_manager_favicon():
+        response = app.send_static_file("icons/money-manager.ico")
+        response.headers["Cache-Control"] = "public, max-age=86400"
+        return response
+
     @app.before_request
     def _money_manager_skip_prefetch_requests():
         # Register this before blueprints so auth/onboarding guards do not

@@ -426,6 +426,12 @@
   "integrity.transactions_without_uid": "Senza UID",
   "integrity.warnings": "Avvisi",
   "integrity.warnings_hint": "Compatibilità o migrazioni da controllare.",
+  "nav": {
+    "financial_calendar": "Calendario finanziario",
+    "notifications_center": "Centro notifiche",
+    "planned_expenses": "Spese pianificate",
+    "savings_goals": "Obiettivi di risparmio"
+  },
   "nav.accounts": "Conti Correnti",
   "nav.analysis": "Analisi",
   "nav.analysis_wealth": "Analisi e patrimonio",
@@ -655,6 +661,7 @@
   "security.unlock_vault": "Sblocca vault",
   "security.unlocked": "Sbloccato",
   "security.vault": "Vault",
+  "theme.comfort": "Comfort occhi",
   "theme.day": "Chiaro",
   "theme.night": "Scuro",
   "transaction.bank_name_snapshot": "Snapshot banca",
@@ -701,6 +708,7 @@
   "updates.data_folder": "Cartella dati",
   "updates.data_schema": "Schema dati",
   "updates.description": "Prepara pacchetti di aggiornamento locali, controlla i percorsi di installazione e gestisce il rollback in modo sicuro. Gli aggiornamenti del codice vengono applicati dal launcher al prossimo avvio, non mentre Flask è in esecuzione.",
+  "updates.desktop_launcher": "Launcher desktop",
   "updates.eyebrow": "Distribuzione",
   "updates.history": "Cronologia",
   "updates.inbox_hint": "Inserisci gli ZIP di aggiornamento nella cartella inbox. Ogni ZIP deve contenere update_manifest.json e una cartella app/.",
@@ -710,6 +718,11 @@
   "updates.no_history": "Nessuna cronologia aggiornamenti.",
   "updates.no_packages": "Nessun pacchetto di aggiornamento trovato nell'inbox.",
   "updates.paths": "Percorsi",
+  "updates.restart_app": "Riavvia Money Manager",
+  "updates.restart_app_hint": "Arresta il server locale corrente, applica eventuali aggiornamenti preparati, avvia il sostituto sulla stessa porta quando possibile e riconnette automaticamente questa finestra.",
+  "updates.restart_confirm": "Riavviare Money Manager ora? La finestra si riconnetterà automaticamente.",
+  "updates.restart_manual_hint": "Questo server è stato avviato fuori dal launcher desktop. Chiudilo e avvia MoneyManager.vbs o MoneyManagerConsole.bat per usare il riavvio coordinato.",
+  "updates.restart_now": "Riavvia app ora",
   "updates.restart_required": "Riavvio richiesto",
   "updates.restart_required_label": "Riavvio richiesto",
   "updates.rollback": "Rollback",
@@ -723,12 +736,5 @@
   "updates.update_incompatible": "Aggiornamento incompatibile",
   "updates.update_staged": "Aggiornamento preparato. Riavvia il launcher per applicarlo.",
   "updates.version": "Versione",
-  "yearly.title": "Riepilogo Annuale",
-  "nav": {
-    "notifications_center": "Centro notifiche",
-    "financial_calendar": "Calendario finanziario",
-    "planned_expenses": "Spese pianificate",
-    "savings_goals": "Obiettivi di risparmio"
-  },
-  "theme.comfort": "Comfort occhi"
+  "yearly.title": "Riepilogo Annuale"
 }

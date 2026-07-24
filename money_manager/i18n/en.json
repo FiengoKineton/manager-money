@@ -426,6 +426,12 @@
   "integrity.transactions_without_uid": "Without UID",
   "integrity.warnings": "Warnings",
   "integrity.warnings_hint": "Compatibility or migration issues to review.",
+  "nav": {
+    "financial_calendar": "Financial calendar",
+    "notifications_center": "Notifications center",
+    "planned_expenses": "Planned expenses",
+    "savings_goals": "Savings goals"
+  },
   "nav.accounts": "Conti Correnti",
   "nav.analysis": "Analysis",
   "nav.analysis_wealth": "Analysis & wealth",
@@ -655,6 +661,7 @@
   "security.unlock_vault": "Unlock vault",
   "security.unlocked": "Unlocked",
   "security.vault": "Vault",
+  "theme.comfort": "Eye comfort",
   "theme.day": "Light",
   "theme.night": "Dark",
   "transaction.bank_name_snapshot": "Bank snapshot",
@@ -701,6 +708,7 @@
   "updates.data_folder": "Data folder",
   "updates.data_schema": "Data schema",
   "updates.description": "Stage local update packages, inspect install paths, and prepare rollback safely. Code updates are applied by the launcher on next start, not while Flask is running.",
+  "updates.desktop_launcher": "Desktop launcher",
   "updates.eyebrow": "Distribution",
   "updates.history": "History",
   "updates.inbox_hint": "Place update ZIP files in the inbox folder. Each ZIP must contain update_manifest.json and an app/ folder.",
@@ -710,6 +718,11 @@
   "updates.no_history": "No update history yet.",
   "updates.no_packages": "No update packages found in the inbox.",
   "updates.paths": "Paths",
+  "updates.restart_app": "Restart Money Manager",
+  "updates.restart_app_hint": "Stop the current local server, apply any staged update, start the replacement on the same port when possible, and reconnect this app window automatically.",
+  "updates.restart_confirm": "Restart Money Manager now? The app window will reconnect automatically.",
+  "updates.restart_manual_hint": "This server was started outside the desktop launcher. Close it and start MoneyManager.vbs or MoneyManagerConsole.bat to use coordinated restart.",
+  "updates.restart_now": "Restart app now",
   "updates.restart_required": "Restart required",
   "updates.restart_required_label": "Restart required",
   "updates.rollback": "Rollback",
@@ -723,12 +736,5 @@
   "updates.update_incompatible": "Update incompatible",
   "updates.update_staged": "Update staged. Restart the launcher to apply it.",
   "updates.version": "Version",
-  "yearly.title": "Yearly Summary",
-  "nav": {
-    "notifications_center": "Notifications center",
-    "financial_calendar": "Financial calendar",
-    "planned_expenses": "Planned expenses",
-    "savings_goals": "Savings goals"
-  },
-  "theme.comfort": "Eye comfort"
+  "yearly.title": "Yearly Summary"
 }

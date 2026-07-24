@@ -318,152 +318,149 @@ The Overview totals are also filtered to the configured default date range, matc
 
 ## Desktop / local launcher
 
-This repo can now be started in two ways: directly from a terminal or through the Windows launcher.
-
-### Run from terminal
-
-From the repo root:
-
-```bash
-python -m pip install -r requirements.txt
-python run_money_manager.py
-```
-
-The app starts on:
-
-```text
-http://127.0.0.1:5000
-```
-
-`run_money_manager.py` resolves the repo path from its own file location, so it can also be called from another directory:
-
-```bash
-python C:\path\to\manager-money\run_money_manager.py
-```
-
-By default it opens the browser automatically. To start the server without opening the browser:
-
-```bash
-python run_money_manager.py --no-browser
-```
-
-When using this direct terminal mode, stop the app with `Ctrl+C` in the terminal.
-
-### Run with the Windows launcher
+### Normal Windows start (no terminal)
 
 Double-click:
 
 ```text
-launcher.bat
+MoneyManager.vbs
 ```
 
-The launcher will:
+The VBScript starts the Python launcher with a hidden window style. The launcher then:
 
-- find the project folder;
-- check that Python is available;
-- create `.venv` inside the repo if it is missing;
-- install `requirements.txt` inside `.venv` only when needed;
-- store install status in `.launcher_state.json`;
-- start the app with the `.venv` Python;
-- open Money Manager at `http://127.0.0.1:5000`;
-- open the terminal minimized so it does not cover the desktop.
+1. locates or remembers the repository path;
+2. keeps launcher configuration and browser state under `%LOCALAPPDATA%\MoneyManagerLauncher`;
+3. preserves the configured `MoneyManagerData` folder;
+4. applies any staged update before server startup;
+5. creates/updates `.venv` without opening helper consoles;
+6. starts the server with `pythonw.exe` and hidden subprocess flags;
+7. waits for `/system/ready`, the root route, and the favicon asset;
+8. opens Microsoft Edge with `--app=<url> --start-maximized`, or Google Chrome when Edge is unavailable;
+9. falls back to the system browser only when neither app-mode browser is installed;
+10. finds the new browser window by its process tree, maximizes it, and brings it to the foreground.
 
-The launcher opens Money Manager in a dedicated Edge/Chrome app-style window when Edge or Chrome is available. Closing that browser app window stops the local server automatically, so it does not remain open in the terminal.
+Running the launcher again does not create another server or app window. The second launcher detects the existing Windows mutex and focuses the existing Money Manager window.
 
-No global Python packages are installed.
+Closing the managed Edge/Chrome app window stops the local server. In system-browser fallback mode, window-close detection is not reliable, so use the diagnostic launcher and `Ctrl+C` when a manual stop is needed.
 
-### Moving or renaming `launcher.bat`
+### Branded desktop shortcut
 
-You may rename `launcher.bat`, copy it to the Desktop, or move it to another folder. The batch file is only a portable bootstrap: it searches for the real Money Manager project folder and then runs `launcher.py` from that folder.
-
-Search order:
-
-1. the `MONEY_MANAGER_PROJECT_DIR` environment variable, if set;
-2. the user-level launcher config in AppData;
-3. an old `.money_manager_project_path.txt` next to the batch file, only for automatic migration;
-4. the batch file folder;
-5. the current terminal folder;
-6. parent folders.
-
-If the project folder is still not found, the batch file asks for the folder path once and stores it in:
+Double-click once:
 
 ```text
-%LOCALAPPDATA%\MoneyManagerLauncher\config.json
+CreateMoneyManagerShortcut.vbs
 ```
 
-That means copying `launcher.bat` to the Desktop no longer creates a visible `.txt` helper file on the Desktop. If an older launcher already created `.money_manager_project_path.txt`, the new launcher will migrate it into AppData and remove the old text file when the cached path is valid.
+It creates `Money Manager.lnk` on the Windows Desktop. The shortcut opens `MoneyManager.vbs` through `wscript.exe` and uses:
 
-Do not rename or remove `launcher.py` inside the repo; copied `.bat` files still use that file to start the real launcher.
+```text
+static\icons\money-manager.ico
+```
 
-### Foreground/debug launcher mode
+The ICO contains 16, 24, 32, 48, 64, 128, and 256 pixel variants. A `.vbs` file itself uses the Windows script-host icon, so the generated `.lnk` is the reliable way to display the Money Manager icon before an optional executable is built.
 
-If you want to see the launcher logs in the current terminal instead of opening a minimized window, run:
+### Diagnostic console mode
+
+Double-click:
+
+```text
+MoneyManagerConsole.bat
+```
+
+This keeps a visible console and supports the same portable project-path lookup. It may be renamed or copied outside the repository. Additional launcher arguments can be appended, for example:
 
 ```bat
-launcher.bat --foreground
+MoneyManagerConsole.bat --port 5010
+MoneyManagerConsole.bat --default-browser
 ```
 
-You can also run the launcher directly:
+Direct diagnostic startup is also available:
 
 ```bash
-python launcher.py
+python launcher.py --console
 ```
 
-To force the normal default browser instead of the dedicated app window:
+Direct development server startup remains unchanged:
 
 ```bash
-python launcher.py --default-browser
+python run_money_manager.py
+python run_money_manager.py --no-browser
+python run_money_manager.py --flask-dev-server
 ```
 
-In default-browser mode the server cannot reliably detect when only the browser tab/window is closed, so stop it with `Ctrl+C`.
+### Portable repository lookup
 
-### Where the virtual environment is created
+`MoneyManager.vbs` and `MoneyManagerConsole.bat` can be renamed or moved outside the repository. They search the script/current folder and parent folders, the `MONEY_MANAGER_PROJECT_DIR` environment variable, and the remembered path. When no valid repository is found, the VBS shows a folder-selection dialog and the batch launcher asks for a path.
 
-The virtual environment is created here:
-
-```text
-.venv/
-```
-
-The browser app profile used by the launcher is created here:
-
-```text
-.launcher_browser_profile/
-```
-
-Both folders are local to the repo and ignored by git/ZIP packaging.
-
-### Reset the local environment
-
-Close the launcher/server window, then delete:
-
-```text
-.venv/
-.launcher_state.json
-.launcher_browser_profile/
-```
-
-To reset the remembered project path for a copied or moved `launcher.bat`, delete:
+The selected project and data paths are stored outside the source repository:
 
 ```text
 %LOCALAPPDATA%\MoneyManagerLauncher\config.json
 ```
 
-After that, run `launcher.bat` again. It will recreate the environment, reinstall the requirements if needed, and ask for the project folder again only if it cannot find it automatically.
+Paths containing spaces are passed as quoted arguments. A valid project must contain:
 
-### Build a launcher executable later
+```text
+launcher.py
+run_money_manager.py
+requirements.txt
+money_manager\app.py
+```
 
-The repo includes `build_launcher_exe.py` as optional PyInstaller support. It does not include a generated `.exe`.
+### Runtime files and logs
 
-To build it later from the repo root:
+Device-specific launcher files are kept outside the source tree:
+
+```text
+%LOCALAPPDATA%\MoneyManagerLauncher\runtime.json
+%LOCALAPPDATA%\MoneyManagerLauncher\environment-<project-hash>.json
+%LOCALAPPDATA%\MoneyManagerLauncher\browser-profile-<project-hash>\
+%LOCALAPPDATA%\MoneyManagerLauncher\launcher_bootstrap.log
+```
+
+The virtual environment remains in `.venv/` because it belongs to the extracted code installation. Existing user data, database/configuration files, update packages, backups, and server logs remain in the configured `MoneyManagerData` folder. The launcher does not migrate or rename them.
+
+Server output is written to:
+
+```text
+<MoneyManagerData>\logs\launcher_latest.log
+```
+
+### Coordinated restart and updates
+
+The Updates page includes **Restart app now** when the server is managed by the desktop launcher. Restart performs the following sequence:
+
+1. the web route sends an authenticated loopback command to the supervising launcher;
+2. the current page switches to a restart/recovery screen;
+3. the launcher asks Waitress/Werkzeug to close, with terminate/kill only as a fallback;
+4. any staged update or rollback is applied;
+5. requirements are rechecked;
+6. the replacement server starts on the same host/port when possible;
+7. the restart page detects the new server instance and reconnects automatically;
+8. the existing app-mode window is maximized and focused again.
+
+If the original port cannot be reused, the launcher selects the next available port, closes the old managed browser process tree, and opens one replacement app window at the new URL. Restart failures show a Windows recovery message and leave details in the launcher/server logs; user data is not moved or deleted.
+
+### Favicon and browser-window icon
+
+All active base, login, registration, recovery, unlock, and restart templates declare the ICO, SVG, PNG touch icon, and web manifest through absolute Flask static URLs. `/favicon.ico` is also served directly, so nested routes do not depend on relative paths.
+
+Edge and Chrome ultimately control the taskbar icon of an app-mode window. The dedicated browser profile and page favicon provide the closest reliable site-branded result, but some browser/Windows versions may temporarily show or cache the Edge/Chrome icon. The generated Desktop shortcut and optional PyInstaller executable use the project ICO directly.
+
+### Optional executable build
+
+On Windows, install PyInstaller and run:
 
 ```bash
 python -m pip install pyinstaller
 python build_launcher_exe.py
 ```
 
-The executable will be generated under `dist/`. If the executable is moved outside the project folder, `launcher.py` is designed to ask once for the Money Manager project folder and store that path in the same AppData config used by the batch launcher:
+The script builds two branded executables under `dist/`:
 
 ```text
-%LOCALAPPDATA%\MoneyManagerLauncher\config.json
+MoneyManagerLauncher.exe   (windowed, no console)
+MoneyManagerConsole.exe    (diagnostic console)
 ```
+
+Both locate/remember the repository through the same AppData configuration and use `static\icons\money-manager.ico`.

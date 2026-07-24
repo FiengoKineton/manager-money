@@ -23,6 +23,22 @@
 {% if action_result %}<section class="panel-card"><div class="alert-card alert-success">{{ t("updates.update_staged") if action_result.restart_required else t("common.ok") }}</div></section>{% endif %}
 
 <section class="panel-card">
+  <div class="panel-header">
+    <div>
+      <span class="eyebrow">{{ t("updates.desktop_launcher") }}</span>
+      <h3>{{ t("updates.restart_app") }}</h3>
+      <p>{{ t("updates.restart_app_hint") if desktop_launcher_managed else t("updates.restart_manual_hint") }}</p>
+    </div>
+    {% if desktop_launcher_managed %}
+    <form method="post" action="{{ url_for('desktop_control.restart_app') }}" onsubmit="return confirm({{ t('updates.restart_confirm')|tojson }})">
+      <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
+      <button class="primary-btn" type="submit">{{ t("updates.restart_now") }}</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel-card">
   <div class="panel-header"><div><span class="eyebrow">{{ t("updates.paths") }}</span><h3>{{ t("updates.install_paths") }}</h3></div></div>
   <div class="table-responsive">
     <table>
