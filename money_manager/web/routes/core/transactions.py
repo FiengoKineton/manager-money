@@ -1,5 +1,6 @@
 from datetime import date
 import json
+import math
 
 import pandas as pd
 
@@ -53,6 +54,7 @@ bp = Blueprint("transactions", __name__)
 DEFAULT_TRANSACTION_PAGE_SIZE = 50
 MAX_TRANSACTION_PAGE_SIZE = 200
 NEW_CATEGORY_SENTINEL = "__new_category__"
+MAX_BATCH_EXPENSES = 50
 
 
 def _clean_form_text(value) -> str:
@@ -82,6 +84,62 @@ def _apply_inline_custom_category(posted_form) -> str:
         return str(exc)
 
     posted_form["category"] = custom_name
+    return ""
+
+
+def _batch_expense_rows(posted_form) -> list[dict]:
+    """Return aligned batch-expense rows from repeated form fields.
+
+    Empty amount rows are ignored so users can leave a spare row in the editor.
+    The original text values are retained for redisplay when validation fails.
+    """
+    field_names = ("batch_date", "batch_category", "batch_sub_category", "batch_amount", "batch_description")
+    values = {name: list(posted_form.getlist(name)) for name in field_names}
+    row_count = max((len(items) for items in values.values()), default=0)
+    rows: list[dict] = []
+
+    for index in range(min(row_count, MAX_BATCH_EXPENSES)):
+        row = {
+            "date": values["batch_date"][index] if index < len(values["batch_date"]) else "",
+            "category": values["batch_category"][index] if index < len(values["batch_category"]) else "",
+            "sub_category": values["batch_sub_category"][index] if index < len(values["batch_sub_category"]) else "",
+            "amount": (values["batch_amount"][index] if index < len(values["batch_amount"]) else "").replace(",", "."),
+            "description": values["batch_description"][index] if index < len(values["batch_description"]) else "",
+        }
+        if str(row["amount"] or "").strip():
+            rows.append(row)
+    return rows
+
+
+def _validate_batch_expense_rows(posted_form, rows: list[dict]) -> str:
+    submitted_count = len(posted_form.getlist("batch_amount"))
+    if submitted_count > MAX_BATCH_EXPENSES:
+        return f"A batch can contain at most {MAX_BATCH_EXPENSES} expenses."
+    if not rows:
+        return "Add at least one expense amount before saving the batch."
+
+    if not _clean_form_text(posted_form.get("batch_account_id", "")):
+        return "Choose the account used for this expense batch."
+    if not _clean_form_text(posted_form.get("batch_payment_method_id", "")):
+        return "Choose the payment method used for this expense batch."
+
+    for index, row in enumerate(rows, start=1):
+        try:
+            date.fromisoformat(str(row.get("date") or ""))
+        except (TypeError, ValueError):
+            return f"Expense {index} needs a valid date."
+
+        category = _clean_form_text(row.get("category", ""))
+        if not category or category == NEW_CATEGORY_SENTINEL:
+            return f"Expense {index} needs an existing category."
+
+        try:
+            amount = float(str(row.get("amount") or "0").replace(",", "."))
+        except (TypeError, ValueError):
+            amount = 0.0
+        if not math.isfinite(amount) or amount <= 0:
+            return f"Expense {index} needs an amount greater than zero."
+
     return ""
 
 
@@ -143,6 +201,10 @@ def transactions_page():
     )
     context["category_added"] = str(request.args.get("category_added") or "")
     context["category_error"] = str(request.args.get("category_error") or "")
+    try:
+        context["batch_saved"] = max(0, int(request.args.get("batch_saved", 0) or 0))
+    except (TypeError, ValueError):
+        context["batch_saved"] = 0
 
     return render_template(
         "core/transactions.html",
@@ -464,6 +526,8 @@ def _build_transactions_page_slice(scope_key: str, filter_state: dict, *, page: 
 def add_transaction():
     form_values = {}
     form_error = ""
+    batch_rows: list[dict] = []
+    batch_mode = False
 
     quick_error = ""
     quick_message = request.args.get("quick_message", "")
@@ -476,6 +540,45 @@ def add_transaction():
         quick_error = result.get("error", "The special log was not saved.")
         quick_values = request.form.to_dict()
         transaction_type = request.args.get("type", "expense")
+    elif request.method == "POST" and request.form.get("action") == "batch_expenses":
+        transaction_type = "expense"
+        batch_mode = True
+        form_values = request.form.to_dict()
+        batch_rows = _batch_expense_rows(request.form)
+        form_error = _validate_batch_expense_rows(request.form, batch_rows)
+
+        if not form_error:
+            saved_count = 0
+            for index, row in enumerate(batch_rows, start=1):
+                batch_form = {
+                    "type": "expense",
+                    "date": row.get("date", ""),
+                    "category": row.get("category", ""),
+                    "sub_category": row.get("sub_category", ""),
+                    "amount": row.get("amount", "0"),
+                    "description": row.get("description", ""),
+                    "currency": request.form.get("batch_currency", "EUR"),
+                    "account": request.form.get("batch_account", ""),
+                    "account_id": request.form.get("batch_account_id", ""),
+                    "payment_method_id": request.form.get("batch_payment_method_id", ""),
+                }
+                result = save_new_transaction(TransactionInput.from_form(batch_form))
+                if not result.get("ok"):
+                    detail = result.get("error", "The expense was not saved.")
+                    if saved_count:
+                        form_error = f"Saved {saved_count} expense(s), then expense {index} failed: {detail}"
+                        batch_rows = batch_rows[index - 1:]
+                    else:
+                        form_error = f"Expense {index} was not saved: {detail}"
+                    break
+                saved_count += 1
+
+            if not form_error:
+                scoped_account_id = request.form.get("batch_account_id") or request.args.get("account_id") or ""
+                params = {"batch_saved": saved_count}
+                if scoped_account_id:
+                    params["account_id"] = scoped_account_id
+                return redirect(url_for("transactions.transactions_page", **params))
     elif request.method == "POST":
         posted_form = request.form.copy()
         inline_category_error = _apply_inline_custom_category(posted_form)
@@ -571,6 +674,8 @@ def add_transaction():
         main_net_preview=main_net_for_preview(),
         form_error=form_error,
         form_values=form_values,
+        batch_rows=batch_rows,
+        batch_mode=batch_mode,
         quick_error=quick_error,
         quick_message=quick_message,
         quick_values=quick_values,

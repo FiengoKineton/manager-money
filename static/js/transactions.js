@@ -1,6 +1,11 @@
 (function () {
+  function isBatchExpenseMode() {
+    const form = document.querySelector(".transaction-form");
+    return Boolean(form && form.dataset.entryMode === "batch");
+  }
+
   function selectedCurrency() {
-    const select = document.getElementById("currency-select");
+    const select = document.getElementById(isBatchExpenseMode() ? "batch-currency-select" : "currency-select");
     const fallback = { code: "EUR", rate_to_eur: 1, correction_to_eur: 0, effective_rate_to_eur: 1 };
     if (!select) return fallback;
 
@@ -128,11 +133,12 @@
   }
 
   function currentEurTotal() {
-    return receiptTotalRaw() * selectedCurrency().effective_rate_to_eur;
+    const rawTotal = isBatchExpenseMode() ? batchExpenseTotalRaw() : receiptTotalRaw();
+    return rawTotal * selectedCurrency().effective_rate_to_eur;
   }
 
   function selectedAccountMeta() {
-    const accountSelect = document.getElementById("account-select");
+    const accountSelect = document.getElementById(isBatchExpenseMode() ? "batch-account-select" : "account-select");
     if (!accountSelect) return { key: "main_bank", kind: "main", label: "Main bank account" };
     const selected = accountSelect.options[accountSelect.selectedIndex];
     return {
@@ -211,6 +217,50 @@
       }
     }
 
+    updateFuturePreview();
+  }
+
+  function updateBatchPaymentMethodOptions() {
+    const select = document.getElementById("batch-payment-method-select");
+    const accountSelect = document.getElementById("batch-account-select");
+    if (!select || !accountSelect) return;
+
+    const selectedAccount = accountSelect.options[accountSelect.selectedIndex];
+    const accountId = (selectedAccount && selectedAccount.dataset.key) || accountSelect.value || "main_bank";
+    const previous = select.value || paymentFormState().selected_payment_method_id || "";
+    const methods = currentPaymentMethodOptions(accountId);
+    select.innerHTML = "";
+
+    methods.forEach((method) => {
+      const option = document.createElement("option");
+      option.value = method.id || "";
+      option.textContent = methodOptionLabel(method);
+      option.dataset.description = method.description || "";
+      option.dataset.methodType = method.method_type || "";
+      option.dataset.settlementMode = method.settlement_mode || "";
+      option.dataset.linkedAccountId = method.linked_account_id || "";
+      option.dataset.fundingAccountId = method.funding_account_id || "";
+      option.dataset.settlementAccountId = method.settlement_account_id || "";
+      option.dataset.liabilityAccountId = method.liability_account_id || "";
+      if (method.disabled_reason) option.disabled = true;
+      select.appendChild(option);
+    });
+
+    const canKeepPrevious = Array.from(select.options).some((option) => option.value === previous && !option.disabled);
+    if (canKeepPrevious) {
+      select.value = previous;
+    } else {
+      const firstEnabled = Array.from(select.options).find((option) => option.value && !option.disabled);
+      if (firstEnabled) select.value = firstEnabled.value;
+    }
+
+    const hint = document.getElementById("batch-payment-method-explanation");
+    const selected = select.options[select.selectedIndex];
+    if (hint) {
+      hint.textContent = methods.length
+        ? ((selected && selected.dataset.description) || "Select the payment method shared by all rows.")
+        : "No compatible payment method exists for this account yet.";
+    }
     updateFuturePreview();
   }
 
@@ -335,6 +385,132 @@
     container.appendChild(input);
   }
 
+  function batchExpenseRows() {
+    return Array.from(document.querySelectorAll("[data-batch-expense-row]"));
+  }
+
+  function batchExpenseTotalRaw() {
+    return batchExpenseRows().reduce((total, row) => {
+      return total + parseMoney(row.querySelector("[data-batch-expense-amount]")?.value || 0);
+    }, 0);
+  }
+
+  function batchExpenseFilledCount() {
+    return batchExpenseRows().filter((row) => parseMoney(row.querySelector("[data-batch-expense-amount]")?.value || 0) > 0).length;
+  }
+
+  function renumberBatchExpenseRows() {
+    batchExpenseRows().forEach((row, index) => {
+      const number = row.querySelector("[data-batch-row-number]");
+      if (number) number.textContent = String(index + 1);
+    });
+  }
+
+  function updateBatchExpenseSummary() {
+    const currency = selectedCurrency();
+    const rawTotal = batchExpenseTotalRaw();
+    const totalEur = rawTotal * currency.effective_rate_to_eur;
+    const count = batchExpenseFilledCount();
+
+    const countLabel = document.getElementById("batch-expense-count");
+    const currencyLabel = document.getElementById("batch-total-currency-code");
+    const rawTotalLabel = document.getElementById("batch-expense-total");
+    const eurTotalLabel = document.getElementById("batch-expense-total-eur");
+    if (countLabel) countLabel.textContent = String(count);
+    if (currencyLabel) currencyLabel.textContent = currency.code;
+    if (rawTotalLabel) rawTotalLabel.textContent = formatMoney(rawTotal);
+    if (eurTotalLabel) eurTotalLabel.textContent = formatMoney(totalEur);
+    updateFuturePreview();
+  }
+
+  function wireBatchExpenseRow(row) {
+    row.querySelectorAll("input, select").forEach((input) => {
+      input.addEventListener("input", updateBatchExpenseSummary);
+      input.addEventListener("change", updateBatchExpenseSummary);
+    });
+
+    const remove = row.querySelector("[data-batch-expense-remove]");
+    if (remove) {
+      remove.addEventListener("click", () => {
+        const rows = batchExpenseRows();
+        if (rows.length <= 1) {
+          row.querySelectorAll("input").forEach((input) => {
+            if (input.type === "date") return;
+            input.value = "";
+          });
+        } else {
+          row.remove();
+        }
+        renumberBatchExpenseRows();
+        updateBatchExpenseSummary();
+      });
+    }
+  }
+
+  function addBatchExpenseRow() {
+    const list = document.getElementById("batch-expense-list");
+    const template = document.getElementById("batch-expense-row-template");
+    if (!list || !template || batchExpenseRows().length >= 50) return;
+
+    const fragment = template.content.cloneNode(true);
+    const row = fragment.querySelector("[data-batch-expense-row]");
+    if (!row) return;
+
+    const existingRows = batchExpenseRows();
+    const previous = existingRows[existingRows.length - 1];
+    const previousDate = previous?.querySelector("input[name='batch_date']")?.value || "";
+    const previousCategory = previous?.querySelector("select[name='batch_category']")?.value || "";
+    const dateInput = row.querySelector("input[name='batch_date']");
+    const categorySelect = row.querySelector("select[name='batch_category']");
+    if (dateInput && previousDate) dateInput.value = previousDate;
+    if (categorySelect && previousCategory) categorySelect.value = previousCategory;
+
+    list.appendChild(fragment);
+    wireBatchExpenseRow(row);
+    renumberBatchExpenseRows();
+    row.querySelector("[data-batch-expense-amount]")?.focus();
+    updateBatchExpenseSummary();
+  }
+
+  function setPanelInputsDisabled(panel, disabled) {
+    if (!panel) return;
+    panel.querySelectorAll("input, select, textarea, button").forEach((control) => {
+      if (control.matches("[data-expense-entry-mode]")) return;
+      control.disabled = disabled;
+    });
+  }
+
+  function setExpenseEntryMode(mode) {
+    const form = document.querySelector(".transaction-form");
+    const singlePanel = document.querySelector("[data-single-entry-panel]");
+    const batchPanel = document.querySelector("[data-batch-expense-panel]");
+    const actionInput = document.getElementById("transaction-form-action");
+    if (!form || !singlePanel || !batchPanel || !actionInput) return;
+
+    const batch = mode === "batch";
+    form.dataset.entryMode = batch ? "batch" : "single";
+    singlePanel.hidden = batch;
+    batchPanel.hidden = !batch;
+    setPanelInputsDisabled(singlePanel, batch);
+    setPanelInputsDisabled(batchPanel, !batch);
+    actionInput.value = batch ? "batch_expenses" : "";
+
+    document.querySelectorAll("[data-expense-entry-mode]").forEach((button) => {
+      const active = button.dataset.expenseEntryMode === (batch ? "batch" : "single");
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    if (batch) {
+      updateBatchPaymentMethodOptions();
+      updateBatchExpenseSummary();
+    } else {
+      updatePaymentMethodOptions();
+      updateTotal();
+      togglePayPalPanel();
+    }
+  }
+
   function togglePayPalPanel() {
     const panel = document.getElementById("account-payment-panel") || document.getElementById("paypal-payment-panel");
     const methodSelect = document.getElementById("account-payment-method") || document.getElementById("paypal-payment-method");
@@ -358,7 +534,7 @@
   }
 
   function updateFuturePreview() {
-    const box = document.getElementById("future-balance-preview");
+    const box = document.getElementById(isBatchExpenseMode() ? "batch-future-balance-preview" : "future-balance-preview");
     if (!box) return;
 
     const form = document.querySelector(".transaction-form");
@@ -367,7 +543,9 @@
     const meta = selectedAccountMeta();
     const balances = window.moneyManagerAccountBalances || {};
     const mainNet = Number(window.moneyManagerMainNet || 0);
-    const methodSelect = document.getElementById("account-payment-method") || document.getElementById("paypal-payment-method");
+    const methodSelect = isBatchExpenseMode()
+      ? document.getElementById("batch-payment-method-select")
+      : (document.getElementById("account-payment-method") || document.getElementById("paypal-payment-method"));
     const insufficientSelect = document.getElementById("account-insufficient-action") || document.getElementById("paypal-insufficient-action");
     const method = methodSelect ? methodSelect.value : "balance";
     const insufficient = insufficientSelect ? insufficientSelect.value : "stop";
@@ -420,6 +598,12 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    const transactionForm = document.querySelector(".transaction-form");
+    const actionInput = document.getElementById("transaction-form-action");
+    if (transactionForm) {
+      transactionForm.dataset.entryMode = actionInput?.value === "batch_expenses" ? "batch" : "single";
+    }
+
     document.querySelectorAll(".amount-input, [data-add-receipt-qty], #receipt-discount-type, #receipt-discount-value, #receipt-discount-source-id, #receipt-new-discount-source-balance, #receipt-new-discount-source-name, #category-select, #sub-category-input, #description-input").forEach((input) => {
       input.addEventListener("input", updateTotal);
       input.addEventListener("change", updateTotal);
@@ -429,8 +613,21 @@
     const addButton = document.getElementById("add-amount-btn");
     if (addButton) addButton.addEventListener("click", addAmountField);
 
+    batchExpenseRows().forEach(wireBatchExpenseRow);
+    renumberBatchExpenseRows();
+
+    const addBatchButton = document.getElementById("add-batch-expense-row");
+    if (addBatchButton) addBatchButton.addEventListener("click", addBatchExpenseRow);
+
+    document.querySelectorAll("[data-expense-entry-mode]").forEach((button) => {
+      button.addEventListener("click", () => setExpenseEntryMode(button.dataset.expenseEntryMode || "single"));
+    });
+
     const currencySelect = document.getElementById("currency-select");
     if (currencySelect) currencySelect.addEventListener("change", updateTotal);
+
+    const batchCurrencySelect = document.getElementById("batch-currency-select");
+    if (batchCurrencySelect) batchCurrencySelect.addEventListener("change", updateBatchExpenseSummary);
 
     const accountSelect = document.getElementById("account-select");
     if (accountSelect) accountSelect.addEventListener("change", () => {
@@ -438,11 +635,25 @@
       togglePayPalPanel();
     });
 
+    const batchAccountSelect = document.getElementById("batch-account-select");
+    if (batchAccountSelect) batchAccountSelect.addEventListener("change", () => {
+      updateBatchPaymentMethodOptions();
+      updateBatchExpenseSummary();
+    });
+
     const mainPaymentMethodSelect = document.getElementById("payment-method-select");
     if (mainPaymentMethodSelect) mainPaymentMethodSelect.addEventListener("change", () => {
       const hint = document.getElementById("payment-method-explanation");
       const selected = mainPaymentMethodSelect.options[mainPaymentMethodSelect.selectedIndex];
       if (hint) hint.textContent = (selected && selected.dataset.description) || "Select a payment method to preview its route.";
+      updateFuturePreview();
+    });
+
+    const batchPaymentMethodSelect = document.getElementById("batch-payment-method-select");
+    if (batchPaymentMethodSelect) batchPaymentMethodSelect.addEventListener("change", () => {
+      const hint = document.getElementById("batch-payment-method-explanation");
+      const selected = batchPaymentMethodSelect.options[batchPaymentMethodSelect.selectedIndex];
+      if (hint) hint.textContent = (selected && selected.dataset.description) || "Select the payment method shared by all rows.";
       updateFuturePreview();
     });
 
@@ -482,8 +693,31 @@
       });
     }
 
-    updatePaymentMethodOptions();
-    updateTotal();
-    togglePayPalPanel();
+    if (transactionForm) {
+      transactionForm.addEventListener("submit", (event) => {
+        if (!isBatchExpenseMode()) return;
+        const firstAmount = document.querySelector("[data-batch-expense-amount]");
+        if (batchExpenseFilledCount() > 0) {
+          if (firstAmount) firstAmount.setCustomValidity("");
+          return;
+        }
+        event.preventDefault();
+        if (firstAmount) {
+          firstAmount.setCustomValidity("Add at least one expense amount.");
+          firstAmount.reportValidity();
+          firstAmount.addEventListener("input", () => firstAmount.setCustomValidity(""), { once: true });
+        }
+      });
+    }
+
+    if (actionInput?.value === "batch_expenses") {
+      setExpenseEntryMode("batch");
+    } else if (document.querySelector("[data-batch-expense-panel]")) {
+      setExpenseEntryMode("single");
+    } else {
+      updatePaymentMethodOptions();
+      updateTotal();
+      togglePayPalPanel();
+    }
   });
 })();

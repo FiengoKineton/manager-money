@@ -269,6 +269,12 @@
             <a href="{{ url_for('transactions.add_transaction', type='income') }}" class="{{ 'active' if ttype == 'income' else '' }}">Income</a>
             <a href="{{ url_for('transactions.add_transaction', type='investment') }}" class="{{ 'active' if ttype == 'investment' else '' }}">Investment</a>
           </div>
+          {% if ttype == 'expense' %}
+            <div class="expense-entry-mode-switch" aria-label="Expense entry mode">
+              <button type="button" class="secondary-btn compact-btn {{ '' if batch_mode else 'active' }}" data-expense-entry-mode="single">Single expense</button>
+              <button type="button" class="secondary-btn compact-btn {{ 'active' if batch_mode else '' }}" data-expense-entry-mode="batch">Multiple expenses</button>
+            </div>
+          {% endif %}
         </div>
 
         {% if form_error %}
@@ -279,6 +285,122 @@
 
         <form method="post" class="transaction-form" data-transaction-type="{{ ttype }}">
           <input type="hidden" name="type" value="{{ ttype }}">
+          <input type="hidden" name="action" id="transaction-form-action" value="{{ 'batch_expenses' if batch_mode else '' }}">
+
+          {% if ttype == 'expense' %}
+            {% macro render_batch_expense_row(row={}) %}
+              <div class="batch-expense-row" data-batch-expense-row>
+                <div class="batch-expense-row-number" data-batch-row-number>1</div>
+                <label>
+                  <span>Date</span>
+                  <input type="date" name="batch_date" value="{{ row.date or today }}" required>
+                </label>
+                <label>
+                  <span>Category</span>
+                  <select name="batch_category" required>
+                    {% for category_row in category_rows %}
+                      <option value="{{ category_row.name }}" {% if (row.category or default_category) == category_row.name %}selected{% endif %}>{{ category_row.icon }} {{ category_row.name }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <label>
+                  <span>Sub-category</span>
+                  <input type="text" name="batch_sub_category" value="{{ row.sub_category or '' }}" placeholder="Optional">
+                </label>
+                <label>
+                  <span>Amount</span>
+                  <input type="number" min="0.01" step="0.01" name="batch_amount" value="{{ row.amount or '' }}" placeholder="0.00" data-batch-expense-amount>
+                </label>
+                <label class="batch-expense-description">
+                  <span>Description</span>
+                  <input type="text" name="batch_description" value="{{ row.description or '' }}" placeholder="Optional note">
+                </label>
+                <button type="button" class="receipt-remove-row batch-expense-remove" data-batch-expense-remove aria-label="Remove expense">×</button>
+              </div>
+            {% endmacro %}
+
+            <section class="batch-expense-panel form-field-wide" data-batch-expense-panel {% if not batch_mode %}hidden{% endif %}>
+              <div class="batch-expense-intro">
+                <div>
+                  <span class="eyebrow">Batch entry</span>
+                  <h3>Add several separate expenses</h3>
+                  <p>Each row becomes its own transaction. Currency, account and payment method are shared across the batch.</p>
+                </div>
+                <button type="button" id="add-batch-expense-row" class="secondary-btn compact-btn">+ Add expense row</button>
+              </div>
+
+              <div class="batch-expense-list" id="batch-expense-list">
+                {% if batch_rows %}
+                  {% for batch_row in batch_rows %}{{ render_batch_expense_row(batch_row) }}{% endfor %}
+                {% else %}
+                  {{ render_batch_expense_row() }}
+                {% endif %}
+              </div>
+              <template id="batch-expense-row-template">{{ render_batch_expense_row() }}</template>
+
+              <div class="batch-expense-shared-grid">
+                <div>
+                  <label>Input currency</label>
+                  <select name="batch_currency" id="batch-currency-select">
+                    {% for currency in currency_options %}
+                      <option value="{{ currency.code }}" data-rate="{{ currency.rate_to_eur }}" data-correction="{{ currency.correction_to_eur }}" data-effective="{{ currency.effective_rate_to_eur }}" {% if (form_values.batch_currency or 'EUR') == currency.code %}selected{% endif %}>{{ currency.label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div>
+                  <label>Account / Conto</label>
+                  <select name="batch_account_id" id="batch-account-select" required>
+                    {% for account in payment_form.account_options %}
+                      <option
+                        value="{{ account.id }}"
+                        data-key="{{ account.id }}"
+                        data-kind="{{ account.account_kind }}"
+                        data-payment-mode="{{ 'main_net' if account.id == 'main_bank' else 'tracked_balance' }}"
+                        data-display-label="{{ account.label }}"
+                        {% if (form_values.batch_account_id or payment_form.selected_account_id) == account.id %}selected{% endif %}
+                        {% if account.disabled_reason %}disabled{% endif %}
+                      >{{ account.label }}{% if account.disabled_reason %} — {{ account.disabled_reason }}{% endif %}</option>
+                    {% endfor %}
+                  </select>
+                  <input type="hidden" name="batch_account" value="{{ form_values.batch_account or '' }}">
+                </div>
+                <div>
+                  <label>Payment Method / Metodo di pagamento</label>
+                  <select name="batch_payment_method_id" id="batch-payment-method-select" required>
+                    {% for method in payment_form.payment_method_options %}
+                      <option
+                        value="{{ method.id }}"
+                        data-description="{{ method.description }}"
+                        data-method-type="{{ method.method_type }}"
+                        data-settlement-mode="{{ method.settlement_mode }}"
+                        data-linked-account-id="{{ method.linked_account_id }}"
+                        data-funding-account-id="{{ method.funding_account_id }}"
+                        data-settlement-account-id="{{ method.settlement_account_id }}"
+                        data-liability-account-id="{{ method.liability_account_id }}"
+                        {% if (form_values.batch_payment_method_id or payment_form.selected_payment_method_id) == method.id %}selected{% endif %}
+                        {% if method.disabled_reason %}disabled{% endif %}
+                      >{{ method.label }}{% if method.disabled_reason %} — {{ method.disabled_reason }}{% endif %}</option>
+                    {% endfor %}
+                  </select>
+                  <small class="hint" id="batch-payment-method-explanation">{{ payment_form.selected_payment_method_explanation }}</small>
+                </div>
+              </div>
+
+              <div class="batch-expense-summary">
+                <div><span>Expenses ready</span><strong id="batch-expense-count">0</strong></div>
+                <div><span>Batch total</span><strong><span id="batch-total-currency-code">EUR</span> <span id="batch-expense-total">0.00</span></strong></div>
+                <div><span>Saved total in EUR</span><strong>€ <span id="batch-expense-total-eur">0.00</span></strong></div>
+              </div>
+
+              <div class="future-balance-preview" id="batch-future-balance-preview"></div>
+
+              <div class="normal-add-submit-row batch-expense-submit-row">
+                <button type="submit">Save all expenses</button>
+              </div>
+            </section>
+          {% endif %}
+
+          <div class="single-entry-panel form-field-wide" data-single-entry-panel {% if batch_mode %}hidden{% endif %}>
 
           <div>
             <label>Date</label>
@@ -466,6 +588,7 @@
           <div class="form-field-wide normal-add-submit-row">
             <button type="submit">Save {{ ttype }}</button>
           </div>
+          </div>
         </form>
       </section>
     {% endif %}
@@ -481,6 +604,6 @@
   window.moneyManagerDiscountSources = {{ discount_source_options_json | safe }};
   window.moneyManagerSuggestedDiscountSource = {{ (suggested_discount_source or {}) | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/transactions.js') }}?v=category-create-1"></script>
+<script src="{{ url_for('static', filename='js/transactions.js') }}?v=batch-expenses-1"></script>
 <script src="{{ url_for('static', filename='js/shared/category-customisation.js') }}?v=category-create-1" defer></script>
 {% endblock %}

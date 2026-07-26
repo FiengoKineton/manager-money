@@ -20,6 +20,7 @@
 
 {% if category_added %}<section class="alert-card alert-success dashboard-inline-alert">Category “{{ category_added }}” is now available in the main transaction forms.</section>{% endif %}
 {% if category_error %}<section class="alert-card alert-error dashboard-inline-alert">{{ category_error }}</section>{% endif %}
+{% if batch_saved %}<section class="alert-card alert-success dashboard-inline-alert">Saved {{ batch_saved }} expense{{ '' if batch_saved == 1 else 's' }} in one batch.</section>{% endif %}
 
 <section class="transactions-summary-grid">
   <article class="summary-card transaction-stat-card tone-net">
