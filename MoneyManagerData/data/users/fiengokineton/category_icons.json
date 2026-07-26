@@ -3,7 +3,8 @@
   "icons": {},
   "types": {
     "expense": {
-      "bank fees": "💸"
+      "bank fees": "💸",
+      "bar": "✎"
     },
     "income": {},
     "investment": {}
