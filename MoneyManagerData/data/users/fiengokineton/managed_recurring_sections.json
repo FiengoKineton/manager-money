@@ -34,7 +34,7 @@
       "last_checked_amount": "18.39",
       "last_checked_pending_id": "29",
       "created_at": "2026-06-29T16:43:42+00:00",
-      "updated_at": "2026-07-24T09:26:05+00:00",
+      "updated_at": "2026-08-05T09:22:06+00:00",
       "archived_at": ""
     }
   ],
@@ -110,7 +110,15 @@
       "event_type": "update",
       "message": "Updated NWG",
       "created_at": "2026-07-24T09:26:05+00:00"
+    },
+    {
+      "id": "event_aecdd44d9fdf",
+      "item_id": "managed_3b7213f28649",
+      "kind": "utility_bill",
+      "event_type": "update",
+      "message": "Updated NWG",
+      "created_at": "2026-08-05T09:22:06+00:00"
     }
   ],
-  "updated_at": "2026-07-24T09:26:05+00:00"
+  "updated_at": "2026-08-05T09:22:06+00:00"
 }
