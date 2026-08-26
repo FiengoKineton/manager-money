@@ -20,5 +20,15 @@
     "ever_bonifico": true,
     "current_connection_type": "bonifico",
     "updated_at": "2026-07-18T05:42:13.797388+00:00"
+  },
+  "13": {
+    "rule_id": "13",
+    "name": "Claude.ai",
+    "type": "expense",
+    "amount": "21.96",
+    "frequency": "1",
+    "connection_contact_id": "",
+    "updated_at": "2026-08-26T11:44:49.235550+00:00",
+    "current_connection_type": ""
   }
 }
