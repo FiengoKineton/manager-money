@@ -30,5 +30,15 @@
     "connection_contact_id": "",
     "updated_at": "2026-08-26T11:44:49.235550+00:00",
     "current_connection_type": ""
+  },
+  "8": {
+    "rule_id": "8",
+    "name": "Parking Spot",
+    "type": "expense",
+    "amount": "200.0",
+    "frequency": "1",
+    "connection_contact_id": "",
+    "updated_at": "2026-09-01T10:42:20.421539+00:00",
+    "current_connection_type": ""
   }
 }
