@@ -71,11 +71,14 @@ def write_debt_rules(rows: list[dict]) -> None:
     write_rows(DEBT_RULES_CSV, DEBT_RULE_FIELDS, [_normalize_rule(row) for row in rows])
 
 
+DEBT_RULE_TYPES = {"monthly_instalment", "payoff_date", "amortized"}
+
+
 def append_debt_rule(data: dict) -> None:
     rows = load_debt_rules()
 
     rule_type = data.get("rule_type", "monthly_instalment")
-    if rule_type not in {"monthly_instalment", "payoff_date"}:
+    if rule_type not in DEBT_RULE_TYPES:
         rule_type = "monthly_instalment"
 
     row = {
@@ -136,7 +139,7 @@ def _normalize_debt(row: dict) -> dict:
 def _normalize_rule(row: dict) -> dict:
     normalized = {field: row.get(field, "") for field in DEBT_RULE_FIELDS}
 
-    if normalized.get("rule_type") not in {"monthly_instalment", "payoff_date"}:
+    if normalized.get("rule_type") not in DEBT_RULE_TYPES:
         normalized["rule_type"] = "monthly_instalment"
 
     normalized["amount"] = _amount(normalized.get("amount"))

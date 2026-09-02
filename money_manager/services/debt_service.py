@@ -1,8 +1,10 @@
+import math
 from datetime import date, datetime
 from typing import Any, Mapping
 
 from money_manager.config import DEBT_PAYMENT_CATEGORY
 from money_manager.repositories.debts import (
+    DEBT_RULE_TYPES,
     append_debt,
     append_debt_rule,
     delete_debt,
@@ -119,6 +121,8 @@ def update_debt_from_form(form) -> None:
     if status != DEBT_STATUS_ACTIVE:
         _deactivate_rules_for_debt(debt_id)
         delete_pending_for_source("debt", debt_id, only_pending=True)
+    elif abs(remaining - _amount((before or {}).get("remaining_amount"))) > 0.004:
+        _recompute_amortized_rules_for_debt(debt_id)
 
 
 def pay_debt_from_form(form) -> None:
@@ -213,12 +217,32 @@ def add_rule_from_form(form) -> None:
     debt = debt_by_id(debt_id)
 
     rule_type = form.get("rule_type", "monthly_instalment")
-    if rule_type not in {"monthly_instalment", "payoff_date"}:
+    if rule_type not in DEBT_RULE_TYPES:
         rule_type = "monthly_instalment"
+
+    start_date = form.get("start_date") or date.today().isoformat()
+    start_parsed = parse_date(start_date) or date.today()
+    day_of_month = form.get("day_of_month") or start_parsed.day
+    frequency = form.get("frequency", 1)
+    payoff_date = form.get("payoff_date", "")
 
     if rule_type == "payoff_date":
         fallback_name = f"Extinguish - {debt.get('name', '')}" if debt else "Extinguish debt"
         amount = 0.0
+    elif rule_type == "amortized":
+        fallback_name = f"Even payoff - {debt.get('name', '')}" if debt else "Even payoff"
+        duration_months = _safe_int(form.get("duration_months"))
+        if not payoff_date and duration_months:
+            payoff_date = add_months(start_parsed, duration_months, _safe_int(day_of_month) or 1).isoformat()
+        remaining = _amount(debt.get("remaining_amount")) if debt else 0.0
+        periods_left = _current_periods_left({
+            "frequency": frequency,
+            "day_of_month": day_of_month,
+            "payoff_date": payoff_date,
+            "start_date": start_date,
+            "last_generated": "",
+        }, date.today())
+        amount = _amortized_instalment(remaining, periods_left)
     else:
         fallback_name = f"Debt payment - {debt.get('name', '')}" if debt else "Debt payment"
         amount = _amount(form.get("amount"))
@@ -228,10 +252,10 @@ def add_rule_from_form(form) -> None:
         "name": form.get("name") or fallback_name,
         "rule_type": rule_type,
         "amount": amount,
-        "frequency": form.get("frequency", 1),
-        "day_of_month": form.get("day_of_month", 1),
-        "start_date": form.get("start_date", date.today().isoformat()),
-        "payoff_date": form.get("payoff_date", ""),
+        "frequency": frequency,
+        "day_of_month": day_of_month,
+        "start_date": start_date,
+        "payoff_date": payoff_date,
     })
 
 
@@ -251,7 +275,7 @@ def update_rule_from_form(form) -> None:
         return
 
     rule_type = form.get("rule_type", "monthly_instalment")
-    if rule_type not in {"monthly_instalment", "payoff_date"}:
+    if rule_type not in DEBT_RULE_TYPES:
         rule_type = "monthly_instalment"
 
     updates = {
@@ -267,6 +291,31 @@ def update_rule_from_form(form) -> None:
     }
     update_debt_rule(rule_id, updates)
     _sync_debt_rules_with_debts()
+
+
+def recalculate_rule_from_form(form) -> None:
+    """Force an amortized rule back to the auto-computed instalment.
+
+    Manual edits made via ``update_rule_from_form`` are left alone otherwise -
+    this is the explicit "snap back to auto" action for when a manual edit
+    has drifted from what the remaining balance / payoff date now imply.
+    """
+    rule_id = _safe_int(form.get("id"))
+    if rule_id is None:
+        return
+
+    rows = load_debt_rules()
+    for row in rows:
+        if str(row.get("id")) != str(rule_id):
+            continue
+        if row.get("rule_type") != "amortized":
+            return
+        debt = debt_by_id(row.get("debt_id"))
+        if not debt:
+            return
+        _recompute_amortized_rule_amount(row, debt)
+        write_debt_rules(rows)
+        return
 
 
 def pay_rule_now_from_form(form) -> None:
@@ -448,6 +497,42 @@ def generate_debt_payments(today: date | None = None) -> int:
             created += 1
             continue
 
+        if rule_type == "amortized":
+            payoff_date = parse_date(row.get("payoff_date"))
+
+            for due_date in _iter_due_dates_to_generate(row, today):
+                periods_left = _periods_between(row, due_date, payoff_date)
+                amount = min(_amortized_instalment(remaining_budget, periods_left), remaining_budget)
+
+                if amount <= 0:
+                    break
+
+                if _matching_pending_exists(row, due_date):
+                    remaining_budget = max(0.0, remaining_budget - amount)
+                    row["last_generated"] = due_date.isoformat()
+                    row["amount"] = amount
+                    changed = True
+                    continue
+
+                append_pending({
+                    "type": "expense",
+                    "amount": amount,
+                    "category": DEBT_PAYMENT_CATEGORY,
+                    "account": debt.get("account", "auto"),
+                    "account_id": debt.get("account_id", ""),
+                    "payment_method_id": debt.get("preferred_payment_method_id", ""),
+                    "description": _pending_description(row),
+                    "source": "debt",
+                    "source_id": row.get("debt_id", ""),
+                }, due_date)
+
+                remaining_budget = max(0.0, remaining_budget - amount)
+                row["last_generated"] = due_date.isoformat()
+                row["amount"] = amount
+                changed = True
+                created += 1
+            continue
+
         for due_date in _iter_due_dates_to_generate(row, today):
             amount = min(normalize_amount(row.get("amount")), remaining_budget)
 
@@ -552,6 +637,11 @@ def page_context(*, refresh_automatic: bool = True) -> dict:
             rule["rule_type_label"] = "Extinguish on date"
             rule["amount_label"] = "Remaining balance"
             rule["frequency_label"] = "One time"
+        elif rule.get("rule_type") == "amortized":
+            rule["rule_type_label"] = "Even payoff by date"
+            rule["amount_label"] = f"{rule['amount']:.2f} (auto)"
+            rule["frequency_label"] = f"Every {rule['frequency']} month(s)"
+            rule["periods_left"] = _current_periods_left(rule, date.today())
         else:
             rule["rule_type_label"] = "Monthly instalment"
             rule["amount_label"] = f"{rule['amount']:.2f}"
@@ -680,6 +770,83 @@ def _sync_debt_rules_with_debts() -> None:
     if changed:
         write_debt_rules(rows)
 
+
+def _amortized_instalment(remaining: float, periods_left: int) -> float:
+    """Even instalment that clears ``remaining`` in ``periods_left`` payments.
+
+    Rounds up to the cent so the schedule never falls short of the payoff
+    date because of rounding - the final period is always capped to whatever
+    is actually left, so this never causes an overpayment.
+    """
+    remaining = max(0.0, _amount(remaining))
+    if periods_left <= 0:
+        return round(remaining, 2)
+    cents = math.ceil(round(remaining * 100, 6) / periods_left)
+    return round(cents / 100, 2)
+
+
+def _periods_between(row: dict, start_due: date, payoff: date | None) -> int:
+    """Count scheduled occurrences from ``start_due`` through ``payoff``, inclusive."""
+    if not payoff or start_due >= payoff:
+        return 1
+
+    frequency_months = parse_frequency_months(row.get("frequency"))
+    desired_day = _safe_int(row.get("day_of_month")) or 1
+    count = 0
+    current = start_due
+
+    # Safety cap mirrors occurrence_count_until() - avoids infinite loops on bad data.
+    for _ in range(1200):
+        if current > payoff:
+            break
+        count += 1
+        current = add_months(current, frequency_months, desired_day)
+
+    return max(count, 1)
+
+
+def _current_periods_left(row: dict, today: date) -> int:
+    payoff = parse_date(row.get("payoff_date"))
+    next_due = next_due_date_for_rule(row, today)
+    if not next_due:
+        return 0
+    return _periods_between(row, next_due, payoff)
+
+
+def _recompute_amortized_rule_amount(row: dict, debt: dict, today: date | None = None) -> float:
+    """Recompute and store an amortized rule's instalment in place, returning it."""
+    today = today or date.today()
+    remaining = _amount(debt.get("remaining_amount")) if debt else 0.0
+    periods_left = _current_periods_left(row, today)
+    amount = _amortized_instalment(remaining, periods_left)
+    row["amount"] = amount
+    return amount
+
+
+def _recompute_amortized_rules_for_debt(debt_id) -> None:
+    """Re-spread a debt's current remaining balance across its amortized rules.
+
+    Called whenever a debt's remaining balance changes outside of the normal
+    generate/pay flow (e.g. the user adds more principal to an existing debt),
+    so "pay this off evenly by <date>" rules keep targeting that same date.
+    """
+    debt = debt_by_id(debt_id)
+    if not debt:
+        return
+
+    rows = load_debt_rules()
+    changed = False
+    for row in rows:
+        if str(row.get("debt_id")) != str(debt_id):
+            continue
+        if row.get("rule_type") != "amortized":
+            continue
+        if str(row.get("active", "1")) not in {"1", "true", "True", "yes"}:
+            continue
+        _recompute_amortized_rule_amount(row, debt)
+        changed = True
+    if changed:
+        write_debt_rules(rows)
 
 
 def _normalize_debt_status(value, remaining: float | None = None) -> str:

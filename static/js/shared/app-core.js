@@ -1782,6 +1782,10 @@
       title: "Closed receivables history",
       countLabel: "closed receivables",
     });
+    createClosedHistory(document.querySelector("table.debt-rules-table"), {
+      title: "Completed rules history",
+      countLabel: "completed rules",
+    });
     wireEntityCardModals();
     wireManagedRecurringCards();
   });

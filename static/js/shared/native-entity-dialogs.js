@@ -107,6 +107,37 @@
         editorSection.appendChild(editorGrid);
         scroller.appendChild(editorSection);
 
+        let extraFields = [];
+        if (row.dataset.detailExtra) {
+          try {
+            extraFields = JSON.parse(row.dataset.detailExtra).filter(([, value]) => text(value));
+          } catch (err) {
+            extraFields = [];
+          }
+        }
+
+        if (extraFields.length) {
+          const detailsSection = document.createElement("section");
+          detailsSection.className = "native-dialog-section native-dialog-details-section";
+          detailsSection.innerHTML = `<div class="native-dialog-section-heading"><span class="eyebrow">More info</span><h3>Additional details</h3></div>`;
+          const detailsGrid = document.createElement("div");
+          detailsGrid.className = "native-dialog-field-grid";
+          extraFields.forEach(([label, value]) => {
+            const field = document.createElement("div");
+            field.className = "native-dialog-field native-dialog-field-readonly";
+            const fieldLabel = document.createElement("span");
+            fieldLabel.className = "native-dialog-field-label";
+            fieldLabel.textContent = label;
+            const fieldBody = document.createElement("p");
+            fieldBody.className = "native-dialog-readonly-value";
+            fieldBody.textContent = text(value);
+            field.append(fieldLabel, fieldBody);
+            detailsGrid.appendChild(field);
+          });
+          detailsSection.appendChild(detailsGrid);
+          scroller.insertBefore(detailsSection, editorSection.nextSibling);
+        }
+
         const historyItems = [
           ["Payment history", row.dataset.detailPaymentHistory],
           ["Linked transactions", row.dataset.detailLinkedTransactions],

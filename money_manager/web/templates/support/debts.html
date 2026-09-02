@@ -124,13 +124,15 @@
           data-detail-payment-history="{{ debt.payment_history_text|e }}"
           data-detail-linked-transactions="{{ debt.linked_transactions_text|e }}"
           data-detail-timeline="{{ debt.timeline_text|e }}"
-          data-detail-creditor="{{ debt.creditor }}"
-          data-detail-description="{{ debt.description }}"
-          data-detail-account="{{ debt.account }}"
-          data-detail-start-date="{{ debt.start_date }}"
-          data-detail-category="{{ debt.category }}"
-          data-detail-created-at="{{ debt.created_at }}"
-          data-detail-closed-at="{{ debt.closed_at }}">
+          data-detail-extra='{{ [
+            ["Creditor", debt.creditor],
+            ["Description", debt.description],
+            ["Account", debt.account_name_snapshot or debt.account],
+            ["Category", debt.category],
+            ["Start date", debt.start_date],
+            ["Created", debt.created_at],
+            ["Closed", debt.closed_at],
+          ] | tojson }}'>
 
         <td data-label="Name">
           <form id="debt-update-{{ debt.id }}" method="post"></form>
@@ -212,26 +214,6 @@
               class="icon-action-btn icon-action-update"
               title="Update debt"
               aria-label="Update debt">✎</button>
-
-            <form method="post" class="row-action-form debt-status-action-form">
-              <input type="hidden" name="action" value="update_debt">
-              <input type="hidden" name="id" value="{{ debt.id }}">
-              <input type="hidden" name="name" value="{{ debt.name }}">
-              <input type="hidden" name="creditor" value="{{ debt.creditor }}">
-              <input type="hidden" name="original_amount" value="{{ debt.original_amount }}">
-              <input type="hidden" name="remaining_amount" value="{{ debt.remaining_amount }}">
-              <input type="hidden" name="start_date" value="{{ debt.start_date }}">
-              <input type="hidden" name="due_date" value="{{ debt.due_date }}">
-              <input type="hidden" name="account_id" value="{{ debt.account_id or debt.account }}">
-              <input type="hidden" name="preferred_payment_method_id" value="{{ debt.preferred_payment_method_id }}">
-              <input type="hidden" name="description" value="{{ debt.description }}">
-              <select name="status" aria-label="Set debt status">
-                {% for value, label in debt_status_options %}
-                  <option value="{{ value }}" {% if debt.status == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-              <button type="submit" class="secondary-btn compact-btn">Save status</button>
-            </form>
 
             {% if debt.status == 'active' and debt.remaining_amount > 0 %}
             <form method="post" class="row-action-form">
@@ -347,9 +329,9 @@
 
     <div class="form-field">
       <label>Debt</label>
-      <select name="debt_id" required>
+      <select name="debt_id" id="debt-rule-debt-select" required>
         {% for debt in active_debts %}
-          <option value="{{ debt.id }}">
+          <option value="{{ debt.id }}" data-remaining="{{ '%.2f'|format(debt.remaining_amount) }}">
             {{ debt.name }} — remaining {{ '%.2f'|format(debt.remaining_amount) }}
           </option>
         {% endfor %}
@@ -364,37 +346,54 @@
     <div class="form-field">
       <label>Rule type</label>
       <select name="rule_type" id="debt-rule-type" required>
-        <option value="monthly_instalment">Monthly instalment</option>
-        <option value="payoff_date">Extinguish on date</option>
+        <option value="monthly_instalment">Fixed amount every period</option>
+        <option value="amortized">Even payoff by date (auto-calculated)</option>
+        <option value="payoff_date">Extinguish on date (pay all remaining)</option>
       </select>
     </div>
 
-    <div class="form-field monthly-rule-field">
+    <div class="form-field monthly-only-rule-field">
       <label>Amount (€)</label>
       <input type="number" step="0.01" name="amount" placeholder="300">
+      <small class="field-hint">Stays the same every period. The final payment is capped to whatever is still owed.</small>
     </div>
 
-    <div class="form-field monthly-rule-field">
+    <div class="form-field amortized-rule-field hidden-debt-rule-field">
+      <label>Instalment</label>
+      <output id="debt-rule-estimate" class="rule-estimate-output">Fill in the fields below</output>
+      <small class="field-hint">Recalculated automatically: remaining balance ÷ payments left. Rounded up to the cent. Edit it later from the rule's card if you want to override a single period.</small>
+    </div>
+
+    <div class="form-field periodic-rule-field">
       <label>Repeat every</label>
       <div class="frequency-input">
-        <input type="number" name="frequency" min="1" max="120" value="1">
+        <input type="number" name="frequency" id="debt-rule-frequency" min="1" max="120" value="1">
         <span>month(s)</span>
       </div>
     </div>
 
-    <div class="form-field monthly-rule-field">
+    <div class="form-field periodic-rule-field">
       <label>Day of month</label>
-      <input type="number" name="day_of_month" min="1" max="31" value="1">
+      <input type="number" name="day_of_month" id="debt-rule-day" min="1" max="31" value="1">
     </div>
 
-    <div class="form-field monthly-rule-field">
+    <div class="form-field periodic-rule-field">
       <label>Start date</label>
-      <input type="date" name="start_date" value="{{ today }}">
+      <input type="date" name="start_date" id="debt-rule-start" value="{{ today }}">
+    </div>
+
+    <div class="form-field amortized-rule-field hidden-debt-rule-field">
+      <label>Payoff in</label>
+      <div class="frequency-input">
+        <input type="number" name="duration_months" id="debt-rule-duration" min="1" max="600" placeholder="60">
+        <span>month(s)</span>
+      </div>
+      <small class="field-hint">e.g. 5 years = 60. Leave blank if you set an exact payoff date instead.</small>
     </div>
 
     <div class="form-field payoff-rule-field hidden-debt-rule-field">
-      <label>Extinguish date</label>
-      <input type="date" name="payoff_date" value="{{ today }}">
+      <label id="debt-rule-payoff-label">Payoff / extinguish date</label>
+      <input type="date" name="payoff_date" id="debt-rule-payoff">
     </div>
 
     <div class="form-actions">
@@ -410,7 +409,7 @@
   <h2>Debt Payment Rules</h2>
 
   {% if rules %}
-  <table class="standard-table inline-edit-table debt-rules-table" data-mobile-title="Creditor,Name" data-mobile-amount="Amount" data-mobile-meta="Type, Frequency, Status / next">
+  <table class="standard-table inline-edit-table debt-rules-table entity-card-grid-table" data-mobile-title="Name" data-mobile-amount="Amount" data-mobile-meta="Type, Debt, Frequency">
     <thead>
       <tr>
         <th>Name</th>
@@ -435,7 +434,8 @@
         </td>
         <td>
           <select form="rule-update-{{ rule.id }}" name="rule_type">
-            <option value="monthly_instalment" {% if rule.rule_type == 'monthly_instalment' %}selected{% endif %}>Monthly instalment</option>
+            <option value="monthly_instalment" {% if rule.rule_type == 'monthly_instalment' %}selected{% endif %}>Fixed amount every period</option>
+            <option value="amortized" {% if rule.rule_type == 'amortized' %}selected{% endif %}>Even payoff by date (auto)</option>
             <option value="payoff_date" {% if rule.rule_type == 'payoff_date' %}selected{% endif %}>Extinguish on date</option>
           </select>
         </td>
@@ -446,14 +446,21 @@
             {% endfor %}
           </select>
         </td>
-        <td><input form="rule-update-{{ rule.id }}" type="number" step="0.01" name="amount" value="{{ rule.amount }}"></td>
         <td>
-          <input form="rule-update-{{ rule.id }}" type="number" name="frequency" min="1" max="120" value="{{ rule.frequency }}" aria-label="Frequency months">
-          <input form="rule-update-{{ rule.id }}" type="number" name="day_of_month" min="1" max="31" value="{{ rule.day_of_month }}" aria-label="Day of month">
+          <input form="rule-update-{{ rule.id }}" type="number" step="0.01" name="amount" value="{{ rule.amount }}" {% if rule.rule_type == 'payoff_date' %}disabled{% endif %}>
+          {% if rule.rule_type == 'amortized' %}
+            <small class="field-hint">Auto · {{ rule.periods_left }} payment(s) left. Edit to override, or use Recalculate.</small>
+          {% elif rule.rule_type == 'payoff_date' %}
+            <small class="field-hint">Always pays the full remaining balance.</small>
+          {% endif %}
         </td>
-        <td>
-          <input form="rule-update-{{ rule.id }}" type="date" name="start_date" value="{{ rule.start_date }}" aria-label="Start date">
-          <input form="rule-update-{{ rule.id }}" type="date" name="payoff_date" value="{{ rule.payoff_date }}" aria-label="Payoff date">
+        <td class="paired-input-cell">
+          <label class="paired-input"><span>Every</span><input form="rule-update-{{ rule.id }}" type="number" name="frequency" min="1" max="120" value="{{ rule.frequency }}" aria-label="Frequency months"><span>month(s)</span></label>
+          <label class="paired-input"><span>Day</span><input form="rule-update-{{ rule.id }}" type="number" name="day_of_month" min="1" max="31" value="{{ rule.day_of_month }}" aria-label="Day of month"></label>
+        </td>
+        <td class="paired-input-cell">
+          <label class="paired-input"><span>Start</span><input form="rule-update-{{ rule.id }}" type="date" name="start_date" value="{{ rule.start_date }}" aria-label="Start date"></label>
+          <label class="paired-input"><span>Payoff</span><input form="rule-update-{{ rule.id }}" type="date" name="payoff_date" value="{{ rule.payoff_date }}" aria-label="Payoff date"></label>
         </td>
         <td>
           <label class="checkbox-inline">
@@ -465,6 +472,14 @@
         <td>
           <div class="table-action-rail">
             <button form="rule-update-{{ rule.id }}" type="submit" class="icon-action-btn icon-action-update" title="Update rule" aria-label="Update rule">✎</button>
+
+            {% if rule.rule_type == 'amortized' %}
+            <form method="post" class="row-action-form">
+              <input type="hidden" name="action" value="recalculate_rule">
+              <input type="hidden" name="id" value="{{ rule.id }}">
+              <button type="submit" class="secondary-btn compact-btn" title="Recompute from the current remaining balance">Recalculate</button>
+            </form>
+            {% endif %}
 
             {% if rule.is_payable %}
             <form method="post" class="row-action-form">
