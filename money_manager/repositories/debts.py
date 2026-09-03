@@ -22,6 +22,7 @@ def append_debt(data: dict) -> int:
         "creditor": data.get("creditor", ""),
         "original_amount": amount,
         "remaining_amount": _amount(data.get("remaining_amount", amount)),
+        "topped_up_amount": _amount(data.get("topped_up_amount", 0)),
         "category": data.get("category", "Debt"),
         "account": data.get("account", ""),
         "start_date": data.get("start_date", ""),
@@ -51,7 +52,7 @@ def update_debt(debt_id: int, updates: dict) -> None:
         ]:
             if key in updates:
                 row[key] = updates[key]
-        for key in ["original_amount", "remaining_amount"]:
+        for key in ["original_amount", "remaining_amount", "topped_up_amount"]:
             if key in updates:
                 row[key] = _amount(updates[key])
         break
@@ -130,6 +131,7 @@ def _normalize_debt(row: dict) -> dict:
     normalized = {field: row.get(field, "") for field in DEBT_FIELDS}
     normalized["original_amount"] = _amount(normalized.get("original_amount"))
     normalized["remaining_amount"] = _amount(normalized.get("remaining_amount"))
+    normalized["topped_up_amount"] = _amount(normalized.get("topped_up_amount"))
     normalized["status"] = str(normalized.get("status") or "").strip().casefold().replace(" ", "_")
     if normalized["status"] not in {"active", "paid", "cancelled", "pocket"}:
         normalized["status"] = "active" if normalized["remaining_amount"] > 0 else "paid"

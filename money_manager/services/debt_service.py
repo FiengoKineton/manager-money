@@ -180,6 +180,50 @@ def pay_creditor_debts_from_form(form) -> None:
         )
 
 
+def add_amount_to_debt_from_form(form) -> None:
+    """Add more principal on top of an existing debt.
+
+    Bumps remaining (and the topped_up_amount running total) without
+    touching original_amount, so "Original" stays the true first-borrowed
+    figure while "Topped up" shows everything added since. Reactivates a
+    paid/cancelled/pocketed debt, since adding money to it means it's owed
+    again. Any amortized rule on this debt is re-spread over its remaining
+    term for the new balance right away.
+    """
+    debt_id = _safe_int(form.get("id"))
+    if debt_id is None:
+        return
+
+    amount = _amount(form.get("amount"))
+    if amount <= 0:
+        return
+
+    debt = debt_by_id(debt_id)
+    if not debt:
+        return
+
+    remaining_before = _amount(debt.get("remaining_amount"))
+    topped_up_before = _amount(debt.get("topped_up_amount"))
+    remaining_after = remaining_before + amount
+
+    updates = {
+        "remaining_amount": remaining_after,
+        "topped_up_amount": topped_up_before + amount,
+        "status": DEBT_STATUS_ACTIVE,
+        "closed_at": "",
+    }
+    update_debt(debt_id, updates)
+    _recompute_amortized_rules_for_debt(debt_id)
+
+    try:
+        from money_manager.services.timeline_service import record_amount_change, record_event
+
+        record_event("debt", debt_id, "topped_up", f"Added €{amount:.2f} on top of the debt")
+        record_amount_change("debt", debt_id, "remaining_amount", remaining_before, remaining_after)
+    except Exception:
+        pass
+
+
 def duplicate_debt_from_form(form) -> None:
     debt_id = _safe_int(form.get("id"))
     if debt_id is None:
@@ -610,6 +654,7 @@ def page_context(*, refresh_automatic: bool = True) -> dict:
         remaining = _amount(debt.get("remaining_amount"))
         debt["original_amount"] = original
         debt["remaining_amount"] = remaining
+        debt["topped_up_amount"] = _amount(debt.get("topped_up_amount"))
         debt["paid_amount"] = max(0.0, original - remaining)
         debt["progress"] = 0.0 if original <= 0 else min(100.0, debt["paid_amount"] / original * 100.0)
         debt["status"] = _normalize_debt_status(debt.get("status"), remaining)

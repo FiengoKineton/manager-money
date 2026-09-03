@@ -19,6 +19,9 @@
 }
 
 .mini-pay-form input[type="date"],
+.add-on-top-form input[type="number"] {
+  width: 150px;
+}
 .mini-pay-form input[type="number"] {
   width: 130px;
 }

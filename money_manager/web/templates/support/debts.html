@@ -111,6 +111,7 @@
         <th>Name</th>
         <th>Original</th>
         <th>Remaining</th>
+        <th>Topped up</th>
         <th>Progress</th>
         <th>Due</th>
         <th>Status</th>
@@ -178,6 +179,11 @@
             aria-label="Remaining amount">
         </td>
 
+        <td data-label="Topped up">
+          {{ '%.2f'|format(debt.topped_up_amount) }}
+          {% if debt.topped_up_amount > 0 %}<small class="field-hint">Added on top of {{ '%.2f'|format(debt.original_amount) }} original</small>{% endif %}
+        </td>
+
         <td data-label="Progress">
           <div class="progress-wrap">
             <div class="progress-bar" style="width: {{ debt.progress }}%"></div>
@@ -214,6 +220,13 @@
               class="icon-action-btn icon-action-update"
               title="Update debt"
               aria-label="Update debt">✎</button>
+
+            <form method="post" class="mini-pay-form add-on-top-form">
+              <input type="hidden" name="action" value="add_to_debt">
+              <input type="hidden" name="id" value="{{ debt.id }}">
+              <input type="number" step="0.01" min="0.01" name="amount" placeholder="Amount to add" required aria-label="Amount to add on top of this debt">
+              <button type="submit" class="secondary-btn compact-btn" title="Add on top of this debt">+ Add on top</button>
+            </form>
 
             {% if debt.status == 'active' and debt.remaining_amount > 0 %}
             <form method="post" class="row-action-form">

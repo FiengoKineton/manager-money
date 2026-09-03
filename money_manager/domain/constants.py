@@ -277,6 +277,7 @@ DEBT_FIELDS = [
     "creditor",
     "original_amount",
     "remaining_amount",
+    "topped_up_amount",
     "category",
     "account",
     "start_date",

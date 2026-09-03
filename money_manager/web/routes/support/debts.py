@@ -1,6 +1,7 @@
 from flask import Blueprint, redirect, render_template, request, url_for
 
 from money_manager.services.debt_service import (
+    add_amount_to_debt_from_form,
     add_debt_from_form,
     add_rule_from_form,
     delete_debt_from_form,
@@ -25,6 +26,8 @@ def debts_page():
 
         if action == "add_debt":
             add_debt_from_form(request.form)
+        elif action == "add_to_debt":
+            add_amount_to_debt_from_form(request.form)
         elif action == "delete_debt":
             delete_debt_from_form(request.form)
         elif action == "update_debt":
