@@ -36,6 +36,24 @@
       "created_at": "2026-06-29T16:43:42+00:00",
       "updated_at": "2026-08-26T11:32:49+00:00",
       "archived_at": ""
+    },
+    {
+      "id": "managed_66b55340f790",
+      "kind": "utility_bill",
+      "title": "Plenitude",
+      "contact_id": "",
+      "recurring_rule_id": "14",
+      "variable_amount": true,
+      "manual_check_required": true,
+      "next_due_amount": "82.39",
+      "notes": "",
+      "is_active": true,
+      "last_checked_at": "",
+      "last_checked_amount": "",
+      "last_checked_pending_id": "",
+      "created_at": "2026-09-16T10:02:33+00:00",
+      "updated_at": "2026-09-16T10:06:40+00:00",
+      "archived_at": ""
     }
   ],
   "events": [
@@ -134,7 +152,63 @@
       "event_type": "update",
       "message": "Updated NWG",
       "created_at": "2026-08-26T11:32:49+00:00"
+    },
+    {
+      "id": "event_9cd2b5b27a9c",
+      "item_id": "managed_66b55340f790",
+      "kind": "utility_bill",
+      "event_type": "create",
+      "message": "Created Plenitude",
+      "created_at": "2026-09-16T10:02:33+00:00"
+    },
+    {
+      "id": "event_7a4e2293791d",
+      "item_id": "managed_66b55340f790",
+      "kind": "utility_bill",
+      "event_type": "update",
+      "message": "Updated Plenitude",
+      "created_at": "2026-09-16T10:03:00+00:00"
+    },
+    {
+      "id": "event_0acccb1f2fbc",
+      "item_id": "managed_66b55340f790",
+      "kind": "utility_bill",
+      "event_type": "update",
+      "message": "Updated Plenitude",
+      "created_at": "2026-09-16T10:05:06+00:00"
+    },
+    {
+      "id": "event_dad91e365d49",
+      "item_id": "managed_66b55340f790",
+      "kind": "utility_bill",
+      "event_type": "update",
+      "message": "Updated Plenitude",
+      "created_at": "2026-09-16T10:05:33+00:00"
+    },
+    {
+      "id": "event_2ad9788e3972",
+      "item_id": "managed_66b55340f790",
+      "kind": "utility_bill",
+      "event_type": "update",
+      "message": "Updated Plenitude",
+      "created_at": "2026-09-16T10:06:10+00:00"
+    },
+    {
+      "id": "event_8bc93b326fdb",
+      "item_id": "managed_66b55340f790",
+      "kind": "utility_bill",
+      "event_type": "update",
+      "message": "Updated Plenitude",
+      "created_at": "2026-09-16T10:06:27+00:00"
+    },
+    {
+      "id": "event_bde56f8a1839",
+      "item_id": "managed_66b55340f790",
+      "kind": "utility_bill",
+      "event_type": "update",
+      "message": "Updated Plenitude",
+      "created_at": "2026-09-16T10:06:40+00:00"
     }
   ],
-  "updated_at": "2026-08-26T11:32:49+00:00"
+  "updated_at": "2026-09-16T10:06:40+00:00"
 }
